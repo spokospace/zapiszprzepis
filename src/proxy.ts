@@ -1,0 +1,31 @@
+import { NextResponse, type NextRequest } from 'next/server'
+import { updateSession } from '@/lib/supabase/proxy'
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const { response, user } = await updateSession(request)
+  const { pathname } = request.nextUrl
+
+  // /auth/callback always passes through — the route handler manages its own
+  // auth state by exchanging the PKCE code.
+  if (pathname.startsWith('/auth/callback')) {
+    return response
+  }
+
+  // Signed-in users skip the login screen.
+  if (pathname === '/login' || pathname.startsWith('/login/')) {
+    return user
+      ? NextResponse.redirect(new URL('/', request.url))
+      : response
+  }
+
+  // All other paths require a session.
+  if (!user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  return response
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|public).*)'],
+}
