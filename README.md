@@ -42,7 +42,10 @@ Wymagania: Node ≥ 20.6, npm, konto Supabase, konto Vercel.
    ```
 
 6. **Vercel** (po pierwszym deploy):
-   - Project Settings → Environment Variables → dodaj te same 3 zmienne (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`) dla Production + Preview + Development.
+   - Project Settings → Environment Variables:
+     - `NEXT_PUBLIC_SUPABASE_URL` — Production + Preview + Development (te same wartości)
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Production + Preview + Development (te same wartości)
+     - `NEXT_PUBLIC_SITE_URL` — **tylko Production** (`https://zapiszprzepis.vercel.app`) i Development (`http://localhost:3000`). **Zostaw NIEUSTAWIONE dla Preview**, żeby `getSiteUrl()` mógł użyć runtime fallback do `request.host` — magic-link z preview deploy powróci na ten sam preview URL, nie na Production.
 
 ## Development
 

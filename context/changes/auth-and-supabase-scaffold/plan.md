@@ -575,7 +575,7 @@ Greenfield — brak danych do migracji. Pierwsza migracja jest baseline; przysz�
 
 - [x] 2.1 TypeScript się kompiluje: `npx tsc --noEmit` — 7a6fca3
 - [x] 2.2 ESLint przechodzi: `npm run lint` — 7a6fca3
-- [x] 2.3 `proxy.ts` istnieje na root projektu — 7a6fca3
+- [x] 2.3 `proxy.ts` istnieje na root projektu (faktycznie `src/proxy.ts` — Next.js 16 wymaga tej lokalizacji obok `src/app/`) — 7a6fca3
 - [x] 2.4 `src/lib/supabase/{server,client,proxy}.ts` istnieją — 7a6fca3
 - [x] 2.5 `npm run build` przechodzi — 7a6fca3
 
@@ -624,14 +624,14 @@ Greenfield — brak danych do migracji. Pierwsza migracja jest baseline; przysz�
 
 #### Automatyczne
 
-- [x] 5.1 `npm run check:auth` exit 0 po wypełnieniu `.env.local`
-- [x] 5.2 `npm run build` przechodzi
-- [x] 5.3 `git status` pokazuje tylko zaplanowane nowe pliki
+- [x] 5.1 `npm run check:auth` exit 0 po wypełnieniu `.env.local` — 3508e37
+- [x] 5.2 `npm run build` przechodzi — 3508e37
+- [x] 5.3 `git status` pokazuje tylko zaplanowane nowe pliki — 3508e37
 
 #### Ręczne
 
 - [ ] 5.4 Vercel preview deploy zielony
 - [ ] 5.5 Preview URL: pełny flow magic-link → `/` z "Zalogowano jako <email>"
 - [ ] 5.6 Preview URL: wylogowanie czyści cookies (ponowna próba `/` → `/login`)
-- [x] 5.7 README opisuje wszystkie manual steps
-- [x] 5.8 Supabase Dashboard → Authentication → Users widać autora jako wpis w `auth.users`
+- [x] 5.7 README opisuje wszystkie manual steps — 3508e37
+- [x] 5.8 Supabase Dashboard → Authentication → Users widać autora jako wpis w `auth.users` — 3508e37
