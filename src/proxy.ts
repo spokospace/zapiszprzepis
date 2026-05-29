@@ -27,5 +27,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|public).*)'],
+  // Skip Next.js internals and any public file with a static-asset extension.
+  // Files under public/ are served at the URL root (no /public/ prefix), so
+  // the original `public` token never matched and /logo.svg, /og-image.png
+  // etc. got redirected to /login on every request.
+  matcher: [
+    '/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map)$).*)',
+  ],
 }
