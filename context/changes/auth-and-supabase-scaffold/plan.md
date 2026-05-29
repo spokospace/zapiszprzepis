@@ -630,8 +630,8 @@ Greenfield — brak danych do migracji. Pierwsza migracja jest baseline; przysz�
 
 #### Ręczne
 
-- [ ] 5.4 Vercel preview deploy zielony
-- [ ] 5.5 Preview URL: pełny flow magic-link → `/` z "Zalogowano jako <email>"
-- [ ] 5.6 Preview URL: wylogowanie czyści cookies (ponowna próba `/` → `/login`)
+- [x] 5.4 Vercel preview deploy zielony (verified post-merge across PR #1–#4 series)
+- [x] 5.5 Preview URL: pełny flow magic-link → `/` z "Zalogowano jako <email>" (verified on Production zapiszprzepis.vercel.app after NEXT_PUBLIC_SITE_URL fix)
+- [x] 5.6 Preview URL: wylogowanie czyści cookies (ponowna próba `/` → `/login`)
 - [x] 5.7 README opisuje wszystkie manual steps — 3508e37
 - [x] 5.8 Supabase Dashboard → Authentication → Users widać autora jako wpis w `auth.users` — 3508e37
