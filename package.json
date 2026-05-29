@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:auth": "node --env-file=.env.local --import tsx scripts/check-auth.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

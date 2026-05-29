@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ZapiszPrzepis
 
-## Getting Started
+PWA *archive-first* do zapisywania przepisów udostępnianych z mediów społecznościowych. Każdy URL trafia przez systemowy gest „Udostępnij" i jest przekształcany w trwałą, polskojęzyczną kopię przepisu, niezależną od oryginału.
 
-First, run the development server:
+Stack: Next.js 16 (App Router) + TypeScript + Tailwind v4 + Supabase (auth + Postgres + storage) + Vercel.
+
+## Setup
+
+Wymagania: Node ≥ 20.6, npm, konto Supabase, konto Vercel.
+
+1. **Sklonuj repo i zainstaluj zależności**:
+   ```bash
+   git clone https://github.com/spokospace/zapiszprzepis.git
+   cd zapiszprzepis
+   npm install
+   ```
+
+2. **Utwórz projekt Supabase** w https://supabase.com/dashboard:
+   - Name: `zapiszprzepis`, Region: `Central EU (Frankfurt)`, Plan: Free
+   - Project Settings → API Keys → skopiuj:
+     - **Project URL** (`https://<ref>.supabase.co`)
+     - **Publishable key** (lub legacy `anon` `public` JWT)
+
+3. **Skonfiguruj redirect URLs** w Supabase Authentication → URL Configuration:
+   - Site URL: `https://zapiszprzepis.vercel.app` (lub Twój)
+   - Redirect URLs (allowlist):
+     - `http://localhost:3000/auth/callback`
+     - `https://*-zapiszprzepis.vercel.app/auth/callback`
+     - `https://zapiszprzepis.vercel.app/auth/callback`
+
+4. **Lokalny `.env.local`**:
+   ```bash
+   cp .env.local.example .env.local
+   # uzupełnij NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_ANON_KEY
+   ```
+
+5. **Zaloguj się w Supabase CLI i połącz z projektem**:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <ref>
+   npx supabase db push --linked
+   ```
+
+6. **Vercel** (po pierwszym deploy):
+   - Project Settings → Environment Variables → dodaj te same 3 zmienne (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`) dla Production + Preview + Development.
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev           # http://localhost:3000
+npm run build         # production build
+npm run lint          # ESLint
+npm run check:auth    # smoke test: ping Supabase auth/v1/health
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Verification
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Po setupie sprawdź że auth flow działa:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run check:auth
+# → ✓ Supabase auth healthy: https://<ref>.supabase.co
+```
 
-## Learn More
+Następnie ręcznie:
 
-To learn more about Next.js, take a look at the following resources:
+1. `npm run dev` → wejdź na http://localhost:3000 → przekierowanie na `/login`
+2. Wpisz swój email → klik **Wyślij link** → komunikat „Wysłaliśmy link na …"
+3. Kliknij link z poczty → `/auth/callback` → redirect na `/` → widzisz „Zalogowano jako <email>"
+4. Klik **Wyloguj się** → wracasz na `/login`; próba wejścia na `/` znów przekierowuje na `/login`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architektura auth
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **`src/proxy.ts`** — Next.js 16 proxy (był `middleware.ts` w v15); odświeża sesję przez `supabase.auth.getUser()` na każdym żądaniu; przekierowuje niezalogowanych na `/login`.
+- **`src/lib/supabase/{server,client,proxy}.ts`** — trzy helpery klientów Supabase z adapterem cookies `getAll`/`setAll`.
+- **`src/app/login/`** — Server Component + Server Action (`signInWithOtp`).
+- **`src/app/auth/callback/`** — Route Handler (`exchangeCodeForSession` z mapowaniem błędów).
+- **`src/app/(actions)/sign-out.ts`** — Server Action `signOut` w route group (bez segmentu URL).
+- **`supabase/migrations/`** — baseline: `pg_trgm` + `public.current_user_id()`.
 
-## Deploy on Vercel
+## Project context
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Pełny PRD, roadmap i plan implementacji żyją w `context/`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `context/foundation/prd.md` — Product Requirements Document
+- `context/foundation/roadmap.md` — wycinki F-01 ... S-07
+- `context/foundation/tech-stack.md` — uzasadnienie wyboru stacka
+- `context/changes/<change-id>/` — folder per change z planem i progress
