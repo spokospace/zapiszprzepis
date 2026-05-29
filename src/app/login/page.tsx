@@ -38,17 +38,17 @@ export default async function LoginPage({
             height={668}
             priority
             unoptimized
-            className="block h-auto w-48 dark:invert"
+            className="block h-auto w-48"
           />
         </h1>
-        <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-4 text-sm text-zinc-600">
           Wpisz email, żeby zalogować się jednorazowym linkiem.
         </p>
 
         {errorMessage && (
           <div
             role="alert"
-            className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
+            className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
           >
             {errorMessage}
           </div>
@@ -57,14 +57,14 @@ export default async function LoginPage({
         {sentMessage && (
           <div
             role="status"
-            className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
+            className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
           >
             {sentMessage}
           </div>
         )}
 
         <form action={signInWithEmail} className="mt-6 flex flex-col gap-3">
-          <label htmlFor="email" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label htmlFor="email" className="text-sm font-medium text-zinc-700">
             Email
           </label>
           <input
@@ -77,11 +77,11 @@ export default async function LoginPage({
             autoFocus
             defaultValue={email ?? ''}
             placeholder="ty@example.com"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-50"
+            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none"
           />
           <button
             type="submit"
-            className="mt-2 rounded-md bg-zinc-900 px-4 py-2.5 text-base font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="mt-2 rounded-md bg-zinc-900 px-4 py-2.5 text-base font-medium text-white hover:bg-zinc-800"
           >
             Wyślij link
           </button>
