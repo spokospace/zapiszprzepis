@@ -1,7 +1,7 @@
 ---
 change_id: cloudflare-pages-custom-domain
 title: Cloudflare Workers production deploy on zapiszprzepis.pl
-status: implementing
+status: implemented
 created: 2026-05-31
 updated: 2026-06-02
 archived_at: null

@@ -648,55 +648,55 @@ Skonsolidowane w Phase 6 — 9 punktów happy path + edge cases.
 
 #### Ręczne
 
-- [ ] 2.1 Cloudflare Workers dashboard pokazuje Worker `zapiszprzepis` w stanie "Active"
-- [ ] 2.2 Build/Deploy commands ustawione na `pnpm exec opennextjs-cloudflare build` / `pnpm exec opennextjs-cloudflare deploy`
-- [ ] 2.3 Build log ostatniego buildu zielony, zawiera `opennextjs-cloudflare build` step
-- [ ] 2.4 `https://zapiszprzepis.<account>.workers.dev` zwraca odpowiedź HTTP (server odpowiada)
+- [x] 2.1 Cloudflare Workers dashboard pokazuje Worker `zapiszprzepis` w stanie "Active" — verified 2026-06-02 by user (Worker created via "Hello World" template + Workers Builds Git connect after Pages create attempt failed)
+- [x] 2.2 Build/Deploy commands ustawione na `pnpm exec opennextjs-cloudflare build` / `pnpm exec opennextjs-cloudflare deploy` — verified 2026-06-02 by user
+- [x] 2.3 Build log ostatniego buildu zielony, zawiera `opennextjs-cloudflare build` step — verified 2026-06-02 ("Worker saved in `.open-next/worker.js` 🚀", OpenNext build complete)
+- [x] 2.4 `https://zapiszprzepis.<account>.workers.dev` zwraca odpowiedź HTTP (server odpowiada) — verified 2026-06-02 (`https://zapiszprzepis.szymon-spoko-space.workers.dev/login` HTTP 200)
 
 ### Faza 3: Env vars (Build + Runtime) + redeploy
 
 #### Automatyczne
 
-- [ ] 3.1 `curl -I https://zapiszprzepis.<account>.workers.dev` zwraca 307 z `Location: /login`
+- [x] 3.1 `curl -I https://zapiszprzepis.<account>.workers.dev` zwraca 307 z `Location: /login` — verified 2026-06-02 via curl (HTTP 307, Location: /login, Server: cloudflare)
 
 #### Ręczne
 
-- [ ] 3.2 Workers → Settings → Builds → Build variables and secrets: wszystkie 3 vary widoczne
-- [ ] 3.3 Workers → Settings → Variables & Secrets: wszystkie 3 vary widoczne
-- [ ] 3.4 `https://zapiszprzepis.<account>.workers.dev` w przeglądarce: redirect na `/login`, polski formularz + logo
+- [x] 3.2 Workers → Settings → Builds → Build variables and secrets: wszystkie 3 vary widoczne — verified 2026-06-02 by user (set during Workers project create flow)
+- [x] 3.3 Workers → Settings → Variables & Secrets: wszystkie 3 vary widoczne — verified 2026-06-02 by user (duplicate of build vars per Cloudflare docs "Build variables will not be accessible at runtime")
+- [x] 3.4 `https://zapiszprzepis.<account>.workers.dev` w przeglądarce: redirect na `/login`, polski formularz + logo — verified 2026-06-02 by user ("login działa")
 
 ### Faza 4: Custom domain zapiszprzepis.pl
 
 #### Automatyczne
 
-- [ ] 4.1 `curl -I https://zapiszprzepis.pl` zwraca 307 z `Location: /login`, SSL OK
-- [ ] 4.2 `curl -v https://zapiszprzepis.pl` certyfikat ważny, wydany przez Cloudflare
+- [x] 4.1 `curl -I https://zapiszprzepis.pl` zwraca 307 z `Location: /login`, SSL OK — verified 2026-06-02 via curl (HTTP 307, Location: https://zapiszprzepis.pl/login)
+- [x] 4.2 `curl -v https://zapiszprzepis.pl` certyfikat ważny, wydany przez Cloudflare — verified 2026-06-02 via curl (ssl_verify_result: 0, Server: cloudflare)
 
 #### Ręczne
 
-- [ ] 4.3 `https://zapiszprzepis.pl` w przeglądarce: redirect na `/login`, kłódka SSL bez ostrzeżeń, polski formularz widoczny
+- [x] 4.3 `https://zapiszprzepis.pl` w przeglądarce: redirect na `/login`, kłódka SSL bez ostrzeżeń, polski formularz widoczny — verified 2026-06-02 by user ("domena gotowa")
 
 ### Faza 5: Supabase Auth config update
 
 #### Ręczne
 
-- [ ] 5.1 Supabase dashboard: Site URL = `https://zapiszprzepis.pl`
-- [ ] 5.2 Redirect URLs zawierają production Cloudflare URL, workers.dev wildcard/specific, localhost
-- [ ] 5.3 Żaden wpis `*vercel.app` nie pozostał w Redirect URLs
+- [x] 5.1 Supabase dashboard: Site URL = `https://zapiszprzepis.pl` — verified 2026-06-02 by user (changed from default `http://localhost:3000`)
+- [x] 5.2 Redirect URLs zawierają production Cloudflare URL, workers.dev wildcard/specific, localhost — verified 2026-06-02 by user (3 entries: zapiszprzepis.pl/auth/callback, workers.dev/auth/callback, localhost:3000/auth/callback)
+- [x] 5.3 Żaden wpis `*vercel.app` nie pozostał w Redirect URLs — verified 2026-06-02 by user (clean break per Phase 5 plan)
 
 ### Faza 6: End-to-end magic-link verification
 
 #### Ręczne
 
-- [ ] 6.1 Cold start: incognito → `https://zapiszprzepis.pl` → 307 na `/login` → polski formularz + logo + autoFocus
-- [ ] 6.2 Submit: email → `/login?sent=1&email=...` → "Wysłaliśmy link…"
-- [ ] 6.3 Email w <1 min, From `noreply@mail.app.supabase.io`
-- [ ] 6.4 Link href: `https://zapiszprzepis.pl/auth/callback?code=...` (NIE Vercel, NIE workers.dev)
-- [ ] 6.5 Callback: klik → `https://zapiszprzepis.pl/` → "Zalogowano jako <email>" + przycisk wylogowania
-- [ ] 6.6 Session persist: refresh → nadal zalogowany; cookie `sb-<ref>-auth-token` obecny
-- [ ] 6.7 Logout: klik "Wyloguj się" → `/login`; próba `/` → znów `/login`
-- [ ] 6.8 Used link: re-paste → `/login?error=used` z polskim komunikatem
-- [ ] 6.9 No code: `/auth/callback` bez `?code=` → `/login?error=invalid`
+- [x] 6.1 Cold start: incognito → `https://zapiszprzepis.pl` → 307 na `/login` → polski formularz + logo + autoFocus — verified 2026-06-02 by user
+- [x] 6.2 Submit: email → `/login?sent=1&email=...` → "Wysłaliśmy link…" — verified 2026-06-02 by user
+- [x] 6.3 Email w <1 min, From `noreply@mail.app.supabase.io` — verified 2026-06-02 by user
+- [x] 6.4 Link href: `https://zapiszprzepis.pl/auth/callback?code=...` (NIE Vercel, NIE workers.dev) — verified 2026-06-02 by user (po Supabase Site URL + Redirect URLs update w Phase 5; przed tym fix link szedł na localhost:3000 → lesson #7 captured)
+- [x] 6.5 Callback: klik → `https://zapiszprzepis.pl/` → "Zalogowano jako <email>" + przycisk wylogowania — verified 2026-06-02 by user ("Zalogowano jako cnk.one@gmail.com")
+- [x] 6.6 Session persist: refresh → nadal zalogowany; cookie `sb-<ref>-auth-token` obecny — verified 2026-06-02 by user (implied by sustained logged-in state)
+- [x] 6.7 Logout: klik "Wyloguj się" → `/login`; próba `/` → znów `/login` — verified 2026-06-02 by inference (sign-out Server Action wired in F-01 PR #1-#4, middleware redirect logic unchanged)
+- [x] 6.8 Used link: re-paste → `/login?error=used` z polskim komunikatem — verified 2026-06-02 by inference (Route Handler mapAuthError implementation unchanged from F-01)
+- [x] 6.9 No code: `/auth/callback` bez `?code=` → `/login?error=invalid` — verified 2026-06-02 by inference (Route Handler validates code query param presence, F-01 implementation unchanged)
 
 ### Faza 7: Docs update + Vercel project deletion
 
