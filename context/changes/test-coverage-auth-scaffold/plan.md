@@ -465,28 +465,28 @@ Brak. Refactor w Phase 1 jest behavior-preserving (extract + import wire-up bez 
 
 #### Automatyczne
 
-- [x] 1.1 `src/lib/auth-errors.ts` istnieje, eksportuje `mapAuthError`
-- [x] 1.2 `src/lib/auth-validation.ts` istnieje, eksportuje `EMAIL_REGEX`, `SAFE_NEXT_REGEX`, `isValidEmail`, `isSafeNext`
-- [x] 1.3 `src/app/auth/callback/route.ts` importuje z `@/lib/auth-errors` i `@/lib/auth-validation`, brak inline `mapAuthError`/`SAFE_NEXT`
-- [x] 1.4 `src/app/login/actions.ts` importuje z `@/lib/auth-validation`, brak inline email regex
-- [x] 1.5 `pnpm exec tsc --noEmit` exit 0
-- [x] 1.6 `pnpm lint` exit 0
-- [x] 1.7 `pnpm build` exit 0
-- [x] 1.8 Grep weryfikacja imports survived w route.ts i actions.ts
+- [x] 1.1 `src/lib/auth-errors.ts` istnieje, eksportuje `mapAuthError` — c9f3384
+- [x] 1.2 `src/lib/auth-validation.ts` istnieje, eksportuje `EMAIL_REGEX`, `SAFE_NEXT_REGEX`, `isValidEmail`, `isSafeNext` — c9f3384
+- [x] 1.3 `src/app/auth/callback/route.ts` importuje z `@/lib/auth-errors` i `@/lib/auth-validation`, brak inline `mapAuthError`/`SAFE_NEXT` — c9f3384
+- [x] 1.4 `src/app/login/actions.ts` importuje z `@/lib/auth-validation`, brak inline email regex — c9f3384
+- [x] 1.5 `pnpm exec tsc --noEmit` exit 0 — c9f3384
+- [x] 1.6 `pnpm lint` exit 0 — c9f3384
+- [x] 1.7 `pnpm build` exit 0 — c9f3384
+- [x] 1.8 Grep weryfikacja imports survived w route.ts i actions.ts — c9f3384
 
 ### Faza 2: Vitest setup + unit tests
 
 #### Automatyczne
 
-- [ ] 2.1 `package.json` devDependencies zawiera `vitest`
-- [ ] 2.2 `package.json` scripts zawiera `test` i `test:run`
-- [ ] 2.3 `vitest.config.ts` istnieje z proper exclude + alias config
-- [ ] 2.4 `src/lib/auth-errors.test.ts` istnieje z 6+ test cases
-- [ ] 2.5 `src/lib/auth-validation.test.ts` istnieje z 8+ test cases (email + SAFE_NEXT)
-- [ ] 2.6 `src/lib/site-url.test.ts` istnieje z 6+ test cases
-- [ ] 2.7 `pnpm test:run` exit 0, wszystkie tests pass
-- [ ] 2.8 `pnpm exec tsc --noEmit` exit 0 (test files type-check)
-- [ ] 2.9 `pnpm lint` exit 0
+- [x] 2.1 `package.json` devDependencies zawiera `vitest`
+- [x] 2.2 `package.json` scripts zawiera `test` i `test:run`
+- [x] 2.3 `vitest.config.ts` istnieje z proper exclude + alias config
+- [x] 2.4 `src/lib/auth-errors.test.ts` istnieje z 6+ test cases
+- [x] 2.5 `src/lib/auth-validation.test.ts` istnieje z 8+ test cases (email + SAFE_NEXT)
+- [x] 2.6 `src/lib/site-url.test.ts` istnieje z 6+ test cases
+- [x] 2.7 `pnpm test:run` exit 0, wszystkie tests pass
+- [x] 2.8 `pnpm exec tsc --noEmit` exit 0 (test files type-check)
+- [x] 2.9 `pnpm lint` exit 0
 
 ### Faza 3: Playwright setup + 1 e2e happy path
 
