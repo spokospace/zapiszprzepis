@@ -702,13 +702,13 @@ Skonsolidowane w Phase 6 — 9 punktów happy path + edge cases.
 
 #### Automatyczne
 
-- [ ] 7.1 `context/foundation/infrastructure.md` frontmatter ma `migration_status: completed`
-- [ ] 7.2 `README.md` wymienia "Cloudflare Workers" (NIE Vercel, NIE Pages)
-- [ ] 7.3 `context/changes/auth-and-supabase-scaffold/follow-ups/platform-migration.md` istnieje
-- [ ] 7.4 `git log --oneline -1` pokazuje commit `docs: complete Cloudflare Workers migration...`
+- [x] 7.1 `context/foundation/infrastructure.md` frontmatter ma `migration_status: completed` — 3ad5a28
+- [x] 7.2 `README.md` wymienia "Cloudflare Workers" (NIE Vercel, NIE Pages) — 3ad5a28
+- [x] 7.3 `context/changes/auth-and-supabase-scaffold/follow-ups/platform-migration.md` istnieje — 3ad5a28
+- [x] 7.4 `git log --oneline -1` pokazuje commit `docs(cloudflare-pages-custom-domain): migration docs close-out (p7)` — 3ad5a28
 
 #### Ręczne
 
-- [ ] 7.5 Vercel dashboard: projekt `zapiszprzepis` skasowany (Settings → Advanced → Delete)
-- [ ] 7.6 `https://zapiszprzepis.vercel.app` zwraca 404 / "Project not found"
-- [ ] 7.7 `https://zapiszprzepis.pl` nadal stable (Phase 6 verification trzyma)
+- [x] 7.5 Vercel dashboard: projekt `zapiszprzepis` skasowany (Settings → Advanced → Delete) — confirmed by user 2026-06-02
+- [x] 7.6 `https://zapiszprzepis.vercel.app` zwraca 404 / "Project not found" — verified 2026-06-02 via curl (`HTTP 404`)
+- [x] 7.7 `https://zapiszprzepis.pl` nadal stable (Phase 6 verification trzyma) — verified 2026-06-02 via curl (HTTP 307 → /login, SSL OK)
