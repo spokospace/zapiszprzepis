@@ -70,3 +70,25 @@ const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
 **Rule**: Centralize required env reads in `src/lib/env.ts` that throws a clear `Missing required env: NEXT_PUBLIC_SUPABASE_URL` at module load. Every other file imports `{ SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'`. Optional vars stay as `process.env.X` with explicit `?? defaultValue`. Apply the same pattern to any new third-party integration (OpenAI key, Trigger.dev token, etc.).
 
 **Applies to**: Every Next.js / Node project. The rule scales: as the env-var count grows, having one place to add validations beats scattering `!` assertions across imports.
+
+## Update Supabase Auth Site URL + Redirect URLs on every deployment URL change
+
+**Context**: Recurring bottleneck observed across two platform iterations:
+1. F-01 Vercel deploy (PR #1-#4) — magic-link redirect resolved to `localhost` until manual env-var fix on Vercel + Supabase Site URL update; Phase 5.4 verification slipped multiple times.
+2. F-01 Cloudflare Workers deploy (Phase 6 first attempt) — magic-link email contained `http://localhost:3000/?code=...` because Supabase Site URL was still the default and `https://zapiszprzepis.pl/auth/callback` (what the app sent in `emailRedirectTo`) wasn't in Redirect URLs allowlist.
+
+**Problem**: Supabase has TWO config locations that must stay in sync with deployment URLs:
+1. **Site URL** (project setting, defaults to `http://localhost:3000`) — used as silent fallback
+2. **Redirect URLs** allowlist — per-URL whitelist for `emailRedirectTo`
+
+When `emailRedirectTo` is NOT in the allowlist, Supabase silently falls back to Site URL. The magic-link email then points to a wrong/dead URL. The failure is silent: `signInWithOtp` returns success and only the email content reveals the drift. Looks like an app bug; it's dashboard config drift. The pattern recurs because every deployment URL change (new platform, new domain, new preview environment) reintroduces the gap until the dashboard is updated.
+
+**Rule**: Any deployment plan that introduces a new URL (custom domain, new platform, new preview environment) MUST include a phase that:
+1. Adds `<new-url>/auth/callback` to Supabase **Redirect URLs** allowlist
+2. Updates **Site URL** to the canonical production URL (if the new deploy is production)
+
+Verify by sending one magic link to a real inbox, copying the link from the email, and confirming it matches the expected URL (not `localhost`, not a stale platform URL). Do this on EVERY deploy URL change, even if "we already updated Supabase once" — the moment a new URL appears the drift returns. This step belongs in the plan's `plan.md` as a named phase or sub-step so it cannot be forgotten.
+
+**Mitigation pattern (optional, makes drift loud)**: In the Server Action that calls `signInWithOtp`, log the exact `emailRedirectTo` value sent right before the call. When a user reports a broken link, the value in logs vs the value in the email tells you immediately whether the issue is app-side (wrong URL constructed) or Supabase-side (allowlist drift). Without this, you grep code for hours before realizing the URL never left the app correctly.
+
+**Applies to**: Any Next.js + Supabase magic-link / OAuth flow. Pattern generalizes to ANY external auth provider with a redirect URL allowlist + a fallback default redirect (Auth0, Clerk, NextAuth providers, Stripe Checkout `success_url` validation, OAuth `redirect_uri` allowlists).

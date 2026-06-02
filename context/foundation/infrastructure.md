@@ -1,20 +1,24 @@
 ---
 project: zapiszprzepis
 researched_at: 2026-05-31
-recommended_platform: Cloudflare Workers + Pages
+recommended_platform: Cloudflare Workers + Static Assets
 runner_up: Vercel
+migration_status: completed
+migrated_at: 2026-06-02
+production_url: https://zapiszprzepis.pl
+worker_url: https://zapiszprzepis.szymon-spoko-space.workers.dev
 context_type: mvp
 tech_stack:
   language: TypeScript
   framework: Next.js 16 (App Router)
-  runtime: Node.js / Workers (via @opennextjs/cloudflare adapter)
+  runtime: Cloudflare Workers (via @opennextjs/cloudflare adapter)
 ---
 
 ## Rekomendacja
 
-**Wdróż na Cloudflare Workers + Pages** za pośrednictwem adaptera `@opennextjs/cloudflare`.
+**Wdrożono na Cloudflare Workers + Static Assets** za pośrednictwem adaptera `@opennextjs/cloudflare` — production URL: `https://zapiszprzepis.pl` (od 2026-06-02).
 
-Decyzja zapadła na podstawie pięciu kryteriów przyjaznych agentom (CF zalicza wszystkie 5 z GA), priorytetu minimalizacji kosztów (free tier realnie pokrywa 1 użytkownika z PRD), znajomości platformy zadeklarowanej w wywiadzie oraz świadomej wymiany na ryzyko związane z adapterem OpenNext (pre-2.0, wymaga pinningu Next.js >=16.2.3 + adapter >=1.19). Vercel pozostaje runner-up jako natywne środowisko Next.js — w pełni gotowa ścieżka odwrotu, jeśli adapter OpenNext zablokuje upgrade Next.js w trakcie sprintu MVP.
+Decyzja zapadła na podstawie pięciu kryteriów przyjaznych agentom (CF zalicza wszystkie 5 z GA), priorytetu minimalizacji kosztów (free tier realnie pokrywa 1 użytkownika z PRD), znajomości platformy zadeklarowanej w wywiadzie oraz świadomej wymiany na ryzyko związane z adapterem OpenNext (pre-2.0, wymaga pinningu Next.js >=16.2.3 + adapter >=1.19). Wdrożenie potwierdziło zarówno wykonalność (e2e magic-link działa na production URL), jak i jedno z prognozowanych ryzyk — issue #962 (`proxy.ts` nie wspierany przez adapter) wymusił rename `src/proxy.ts` → `src/middleware.ts` jako workaround per `context/changes/auth-and-supabase-scaffold/follow-ups/platform-migration.md`. Vercel został skasowany (clean break — patrz "Plan ewakuacji" niżej).
 
 ## Porównanie platform
 
@@ -94,42 +98,49 @@ Sześć miesięcy później autor jest w S-05 (Trigger.dev jobs wracają callbac
 | Cloudflare Pages build cache mniej skuteczny → wolniejsze deploye | Nieznane niewiadome #5 | W | N | Akceptuj; jeśli ból narośnie, użyj `cache@v4` w GitHub Actions zamiast Cloudflare Pages auto-build |
 | Brak `node:child_process` zamyka path "odepchnij ffmpeg do Server Action" | Adwokat diabła #4 | N | N | PRD już wskazuje Trigger.dev jako runner dla long-running jobs; akceptuj jako wzmocnienie istniejącej decyzji |
 
-## Rozpoczęcie pracy
+## Wykonane kroki
 
-Projekt jest aktualnie zdeployowany na Vercel (F-01 mergnięte). Migracja do Cloudflare wymaga:
+Migracja zakończona 2026-06-02. Faktyczne kroki (z deltami względem planu pre-implementation):
 
-1. **Zainstaluj adapter i wrangler** (zachowaj `next` na obecnej wersji 16.2.6, która spełnia wymóg >=16.2.3):
+1. **Zainstalowano adapter i wrangler** (commit `74001ff` w PR #5):
    ```powershell
-   pnpm add -D wrangler @opennextjs/cloudflare
+   pnpm add @opennextjs/cloudflare    # 1.19.11 (prod)
+   pnpm add -D wrangler                # 4.96.0 (dev)
    ```
 
-2. **Utwórz `open-next.config.ts`** w korzeniu projektu — minimalna konfiguracja adaptera dla Next.js App Router + Server Actions + proxy.ts. Skopiuj z [OpenNext Cloudflare docs](https://opennext.js.org/cloudflare/get-started); upewnij się że pin adaptera w `package.json` to `^1.19` (NIE `*`, NIE `latest`).
+2. **`open-next.config.ts`** — minimalna konfiguracja: `defineCloudflareConfig({})`. R2/D1/KV bindings poza zakresem F-01.
 
-3. **Utwórz `wrangler.jsonc`** (preferowane over `wrangler.toml` per current CF guidance) z:
-   - `compatibility_date` ustawioną świadomie (np. `"2026-03-17"` aby aktywować `node:child_process` stub jeśli przyda się dla type compat — sprawdź release notes Workers przed bumpem)
-   - `compatibility_flags: ["nodejs_compat"]`
-   - placement: domyślnie zostaw nieustawione — Workers wtedy uruchamia się w PoP najbliższym użytkownika (WAW dla mamy w PL). `"placement": { "mode": "smart" }` przenosi Worker bliżej origin (Supabase Frankfurt) — rozważ dopiero, gdy każdy request robi >2 round-tripy do Supabase i widzisz to w `wrangler tail` jako bottleneck
+3. **`wrangler.jsonc`** (NIE `wrangler.toml`):
+   - `compatibility_date: "2025-05-05"` (minimum dla `FinalizationRegistry` per adapter v1.19.11)
+   - `compatibility_flags: ["nodejs_compat", "global_fetch_strictly_public"]`
+   - `main: ".open-next/worker.js"`, `assets.directory: ".open-next/assets"`, `assets.binding: "ASSETS"`
+   - `placement` zostawione default (PoP user-closest = WAW dla mamy w PL)
 
-4. **Skonfiguruj sekrety**:
-   ```powershell
-   pnpm exec wrangler secret put NEXT_PUBLIC_SUPABASE_URL
-   pnpm exec wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY
-   pnpm exec wrangler secret put NEXT_PUBLIC_SITE_URL
-   ```
-   Dla local dev: utwórz `.dev.vars` (dodaj do `.gitignore` jeśli nie jest) z tymi samymi kluczami.
+4. **Env vars w Cloudflare Workers dashboard** — DWA scope:
+   - Build variables (Settings → Builds → Build variables and secrets): 3× `NEXT_PUBLIC_*` (inline w client bundle na `next build`)
+   - Runtime variables (Settings → Variables and Secrets): te same 3× `NEXT_PUBLIC_*` (dla `process.env` w Server Components / middleware)
+   - Cloudflare docs: "Build variables will not be accessible at runtime" — duplikacja obowiązkowa
 
-5. **Pierwszy deploy preview**:
-   ```powershell
-   pnpm exec opennextjs-cloudflare build
-   pnpm exec wrangler deploy
-   ```
-   Wynik: URL `<project>.<account>.workers.dev`. Dodaj ten URL do Supabase Auth → Redirect URLs allowlist (analogicznie do tego, co README dokumentuje dla `*-zapiszprzepis.vercel.app`).
+5. **Workers Builds setup** (NIE Pages create flow):
+   - Worker `zapiszprzepis` utworzony z "Hello World" template, potem Settings → Builds → Connect to Git → `spokospace/zapiszprzepis` na branch `master`
+   - Build command: `pnpm exec opennextjs-cloudflare build`
+   - Deploy command: `pnpm exec opennextjs-cloudflare deploy`
+   - pnpm 10.23.0 auto-detected via `packageManager` field + corepack (PNPM_VERSION env var NIE był potrzebny)
+   - Wynik: `https://zapiszprzepis.szymon-spoko-space.workers.dev`
 
-6. **Dodaj `pnpm preview`** do `package.json` jako `"opennextjs-cloudflare build && opennextjs-cloudflare preview"` — używaj przed każdym mergiem do `master`, żeby złapać runtime diferences niewidoczne w `pnpm dev`.
+6. **Custom domain `zapiszprzepis.pl`** — Worker → Settings → Domains & Routes → Add Custom Domain → SSL provisioning ~3 min. DNS już w Cloudflare (CNAME flattening dla apex auto).
 
-7. **Zaktualizuj `README.md`**: nowa sekcja `## Deployment (Cloudflare)` zastępująca lub uzupełniająca obecne Vercel instructions; wymień obie ścieżki ze wskazaniem która jest aktywna.
+7. **Supabase Auth update**: Site URL → `https://zapiszprzepis.pl`, Redirect URLs: production + workers.dev + localhost (Vercel URLs usunięte).
 
-**Plan ewakuacji**: jeśli OpenNext adapter zablokuje upgrade Next.js w trakcie sprintu MVP, Vercel pozostaje runner-up — projekt nadal działa tam z F-01, więc `vercel --prod` na bieżącej gałęzi przywróci produkcję w <5 min. Trzymaj Vercel Hobby projekt aktywny przez pierwsze 30 dni Cloudflare jako "warm fallback".
+8. **`pnpm preview` / `pnpm deploy` scripts** dodane do `package.json` per OpenNext docs.
+
+9. **README.md przepisany** na Cloudflare Workers-first (sekcja Deployment z `pnpm preview` + `pnpm deploy`, sekcja Setup z dwoma env var scopes).
+
+**Workaround #962**: `src/proxy.ts` → `src/middleware.ts` rename (Next.js 16 deprecated rename, ale OpenNext nie wspiera nowej nazwy — issue open od Oct 2025). Detal w `context/changes/auth-and-supabase-scaffold/follow-ups/platform-migration.md`.
+
+**Pełen plan migracji**: `context/changes/cloudflare-pages-custom-domain/plan.md`.
+
+**Plan ewakuacji**: Vercel projekt **skasowany** 2026-06-02 (clean break, no warm fallback). Emergency hotfix path: `vercel --prod` z lokalnego repo (CLI tworzy nowy projekt Vercel jeśli kiedyś trzeba), plus re-add `zapiszprzepis.pl` jako Vercel custom domain + edit DNS w Cloudflare → wskaż na Vercel.
 
 ## Poza zakresem
 
