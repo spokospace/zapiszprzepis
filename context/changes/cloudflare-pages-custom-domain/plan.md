@@ -631,17 +631,17 @@ Skonsolidowane w Phase 6 — 9 punktów happy path + edge cases.
 
 #### Automatyczne
 
-- [x] 1.1 `.nvmrc` istnieje z wartością `22.11.0`
-- [x] 1.2 `src/middleware.ts` istnieje, `src/proxy.ts` NIE istnieje, funkcja przemianowana na `middleware`
-- [x] 1.3 `package.json` zawiera `@opennextjs/cloudflare` (deps) i `wrangler` (devDeps)
-- [x] 1.4 `package.json` scripts zawiera `preview`, `deploy`, `upload`, `cf-typegen`
-- [x] 1.5 `wrangler.jsonc` istnieje z `compatibility_date >= 2025-05-05`, `nodejs_compat`, assets binding
-- [x] 1.6 `open-next.config.ts` istnieje i eksportuje `defineCloudflareConfig({})`
-- [x] 1.7 `next.config.ts` importuje `initOpenNextCloudflareForDev` z `@opennextjs/cloudflare` i wywołuje
-- [x] 1.8 `.gitignore` zawiera linię `.open-next/`
-- [x] 1.9 `pnpm install` exit 0, `pnpm-lock.yaml` zaktualizowany
-- [x] 1.10 `pnpm exec tsc --noEmit` exit 0
-- [x] 1.11 `pnpm lint` exit 0
+- [x] 1.1 `.nvmrc` istnieje z wartością `22.11.0` — 74001ff
+- [x] 1.2 `src/middleware.ts` istnieje, `src/proxy.ts` NIE istnieje, funkcja przemianowana na `middleware` — 74001ff
+- [x] 1.3 `package.json` zawiera `@opennextjs/cloudflare` (deps) i `wrangler` (devDeps) — 74001ff
+- [x] 1.4 `package.json` scripts zawiera `preview`, `deploy`, `upload`, `cf-typegen` — 74001ff
+- [x] 1.5 `wrangler.jsonc` istnieje z `compatibility_date >= 2025-05-05`, `nodejs_compat`, assets binding — 74001ff
+- [x] 1.6 `open-next.config.ts` istnieje i eksportuje `defineCloudflareConfig({})` — 74001ff
+- [x] 1.7 `next.config.ts` importuje `initOpenNextCloudflareForDev` z `@opennextjs/cloudflare` i wywołuje — 74001ff
+- [x] 1.8 `.gitignore` zawiera linię `.open-next/` — 74001ff
+- [x] 1.9 `pnpm install` exit 0, `pnpm-lock.yaml` zaktualizowany — 74001ff
+- [x] 1.10 `pnpm exec tsc --noEmit` exit 0 — 74001ff
+- [x] 1.11 `pnpm lint` exit 0 — 74001ff
 - [x] 1.12 `pnpm exec opennextjs-cloudflare build` exit 0, `.open-next/worker.js` istnieje — SKIPPED on Windows (EPERM symlink, known OpenNext limitation per top-of-build WARN); validated in cloud via Workers Builds (Phase 2.3)
 
 ### Faza 2: Workers project + Workers Builds Git connect
