@@ -509,10 +509,10 @@ Brak. Refactor w Phase 1 jest behavior-preserving (extract + import wire-up bez 
 
 #### Automatyczne
 
-- [x] 4.1 `README.md` zawiera `## Testing` section
-- [x] 4.2 `## Testing` wymienia `pnpm test`, `pnpm test:e2e`, `pnpm test:e2e:ui`
-- [x] 4.3 `## Testing` dokumentuje conventions (unit co-located, e2e w tests/e2e/)
-- [x] 4.4 (Optional) `lessons.md` rule #7 wzmiankuje e2e test jako automated mitigation
+- [x] 4.1 `README.md` zawiera `## Testing` section — 232eb04
+- [x] 4.2 `## Testing` wymienia `pnpm test`, `pnpm test:e2e`, `pnpm test:e2e:ui` — 232eb04
+- [x] 4.3 `## Testing` dokumentuje conventions (unit co-located, e2e w tests/e2e/) — 232eb04
+- [x] 4.4 (Optional) `lessons.md` rule #7 wzmiankuje e2e test jako automated mitigation — 232eb04
 
 #### Ręczne
 

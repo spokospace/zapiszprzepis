@@ -1,7 +1,7 @@
 ---
 change_id: test-coverage-auth-scaffold
 title: Test coverage auth scaffold
-status: implementing
+status: implemented
 created: 2026-06-02
 updated: 2026-06-02
 archived_at: null
