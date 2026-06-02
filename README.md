@@ -6,13 +6,14 @@ Stack: Next.js 16 (App Router) + TypeScript + Tailwind v4 + Supabase (auth + Pos
 
 ## Setup
 
-Wymagania: Node ≥ 20.6, npm, konto Supabase, konto Vercel.
+Wymagania: Node ≥ 20.6, pnpm (Corepack-managed — projekt pinuje wersję w `package.json#packageManager`), konto Supabase, konto Vercel.
 
 1. **Sklonuj repo i zainstaluj zależności**:
    ```bash
    git clone https://github.com/spokospace/zapiszprzepis.git
    cd zapiszprzepis
-   npm install
+   corepack enable    # jednorazowo — aktywuje pnpm pinned w package.json
+   pnpm install
    ```
 
 2. **Utwórz projekt Supabase** w https://supabase.com/dashboard:
@@ -36,9 +37,9 @@ Wymagania: Node ≥ 20.6, npm, konto Supabase, konto Vercel.
 
 5. **Zaloguj się w Supabase CLI i połącz z projektem**:
    ```bash
-   npx supabase login
-   npx supabase link --project-ref <ref>
-   npx supabase db push --linked
+   pnpm exec supabase login
+   pnpm exec supabase link --project-ref <ref>
+   pnpm exec supabase db push --linked
    ```
 
 6. **Vercel** (po pierwszym deploy):
@@ -50,10 +51,10 @@ Wymagania: Node ≥ 20.6, npm, konto Supabase, konto Vercel.
 ## Development
 
 ```bash
-npm run dev           # http://localhost:3000
-npm run build         # production build
-npm run lint          # ESLint
-npm run check:auth    # smoke test: ping Supabase auth/v1/health
+pnpm dev              # http://localhost:3000
+pnpm build            # production build
+pnpm lint             # ESLint
+pnpm check:auth       # smoke test: ping Supabase auth/v1/health
 ```
 
 ## Verification
@@ -61,13 +62,13 @@ npm run check:auth    # smoke test: ping Supabase auth/v1/health
 Po setupie sprawdź że auth flow działa:
 
 ```bash
-npm run check:auth
+pnpm check:auth
 # → ✓ Supabase auth healthy: https://<ref>.supabase.co
 ```
 
 Następnie ręcznie:
 
-1. `npm run dev` → wejdź na http://localhost:3000 → przekierowanie na `/login`
+1. `pnpm dev` → wejdź na http://localhost:3000 → przekierowanie na `/login`
 2. Wpisz swój email → klik **Wyślij link** → komunikat „Wysłaliśmy link na …"
 3. Kliknij link z poczty → `/auth/callback` → redirect na `/` → widzisz „Zalogowano jako <email>"
 4. Klik **Wyloguj się** → wracasz na `/login`; próba wejścia na `/` znów przekierowuje na `/login`

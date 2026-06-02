@@ -1,9 +1,9 @@
 ---
 id: auth-and-supabase-scaffold
 title: Supabase scaffold + magic-link auth (F-01)
-status: implementing
+status: impl_reviewed
 created: 2026-05-28
-updated: 2026-05-29
+updated: 2026-05-31
 roadmap_id: F-01
 prd_refs:
   - FR-001

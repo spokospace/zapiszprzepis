@@ -40,3 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code — per-user permissions / local overrides
+.claude/settings.local.json
+
+# cloudflare workers / opennext
+.open-next/
+.dev.vars
+cloudflare-env.d.ts
+.wrangler/

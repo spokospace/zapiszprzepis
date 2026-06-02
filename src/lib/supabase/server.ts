@@ -17,9 +17,17 @@ export async function createSupabaseServerClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options),
             )
-          } catch {
-            // Called from a Server Component render — safe to ignore;
-            // proxy.ts refreshes the session on every request.
+          } catch (e) {
+            // Server Component renders cannot write cookies — proxy.ts
+            // refreshes the session, so this path is safe to swallow.
+            // Anything else (e.g. a real failure in a Route Handler)
+            // must surface, not silently lose the session.
+            if (
+              !(e instanceof Error) ||
+              !e.message.includes('Cookies can only be modified')
+            ) {
+              throw e
+            }
           }
         },
       },
