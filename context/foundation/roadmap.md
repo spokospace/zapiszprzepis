@@ -3,7 +3,7 @@ project: ZapiszPrzepis
 version: 1
 status: draft
 created: 2026-05-28
-updated: 2026-05-28
+updated: 2026-06-02
 prd_version: 1
 main_goal: market-feedback
 top_blocker: time
@@ -29,7 +29,7 @@ ZapiszPrzepis to PWA *archive-first* do zapisywania przepisów udostępnianych z
 
 | ID    | Change ID                       | Wynik (użytkownik może…)                                                                  | Wymagania wstępne     | Odnośniki PRD                          | Status   |
 | ----- | ------------------------------- | ----------------------------------------------------------------------------------------- | --------------------- | -------------------------------------- | -------- |
-| F-01  | auth-and-supabase-scaffold      | (fundament) projekt Supabase z magic-link auth, sesja długo-żyjąca, RLS-ready             | —                     | FR-001, Access Control                 | ready    |
+| F-01  | auth-and-supabase-scaffold      | (fundament) projekt Supabase z magic-link auth, sesja długo-żyjąca, RLS-ready             | —                     | FR-001, Access Control                 | done     |
 | F-02  | async-job-runner                | (fundament) Trigger.dev odbiera zadanie i kończy je poza request-path                     | —                     | FR-003, NFR p95 ≤ 3 min                | ready    |
 | F-03  | pwa-shell-and-share-target      | (fundament) PWA instalowalna z Web Share Target — Pixel 9 widzi ZapiszPrzepis na liście udostępniania | —                     | FR-002, NFR PWA + Web Share Target     | ready    |
 | S-01  | first-shared-recipe-fb-text     | udostępnić URL FB-tekstowy i po 1-3 min zobaczyć w aplikacji polskojęzyczny przepis (karta + detal) | F-01, F-02, F-03      | US-01, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-009 | proposed |
@@ -76,7 +76,7 @@ Warstwy zadeklarowane w `tech-stack.md`, ale jeszcze nie wpięte (każda zostani
 - **Blokady:** —
 - **Niewiadome:** —
 - **Ryzyko:** najniższe technicznie spośród fundamentów (Supabase magic-link to dobrze udokumentowana ścieżka), ale jest prerekwizytem każdego wycinka per-użytkownik — sekwencjonowane najwcześniej, by odblokować pozostałe; jedyna pułapka to konfiguracja redirect URL w Supabase dla środowiska Vercel preview vs produkcyjnego.
-- **Status:** ready
+- **Status:** done
 
 ### F-02: Async job runner (Trigger.dev)
 
@@ -230,4 +230,4 @@ Warstwy zadeklarowane w `tech-stack.md`, ale jeszcze nie wpięte (każda zostani
 
 ## Zrobione
 
-(Puste przy pierwszym generowaniu. `/10x-archive` doda tutaj wpis i zmieni `Status` na `done`, gdy zmiana zostanie zarchiwizowana.)
+- **F-01: (fundament) projekt Supabase utworzony i powiązany; mama (po jednorazowym setupie autora) dostaje magic-link, klika go i jest zalogowana z sesją długo-żyjącą; middleware Next.js chroni trasy zalogowane; schema gotowa do dodania pierwszej tabeli przez S-01 z RLS per `auth.uid()`.** — Zarchiwizowano 2026-06-02 → `context/archive/2026-05-28-auth-and-supabase-scaffold/`. Lekcja: —.
