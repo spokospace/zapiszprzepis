@@ -63,6 +63,37 @@ pnpm lint             # ESLint
 pnpm check:auth       # smoke test: ping Supabase auth/v1/health
 ```
 
+## Testing
+
+### Unit tests (Vitest)
+
+```bash
+pnpm test           # watch mode (re-runs on file change)
+pnpm test:run       # single run with exit code (for manual gates)
+```
+
+Pokrywa pure auth logic: `mapAuthError` (callback error code mapping), email regex + SAFE_NEXT regex (input validation), `getSiteUrl()` (env/host/protocol decision). Test files są co-located z source jako `src/lib/<name>.test.ts`.
+
+### End-to-end tests (Playwright)
+
+```bash
+pnpm test:e2e       # headless run against https://zapiszprzepis.pl
+pnpm test:e2e:ui    # interactive UI mode (debugging, watch test runs)
+```
+
+Pojedynczy happy-path test (`tests/e2e/auth-magic-link.spec.ts`) hits production URL. Asserts że Worker deploy + middleware + form + Server Action + Supabase wiring działają end-to-end.
+
+### Konwencje
+
+- **Unit tests**: co-located z source (`src/lib/X.ts` → `src/lib/X.test.ts`)
+- **E2E tests**: separate `tests/e2e/` directory (różny runtime + config)
+- **Test runtime**: Vitest używa Node (pure logic, no workerd fidelity needed); Playwright launches Chromium against live prod URL
+- **CI**: brak. Tests biegają lokalnie / manualnie
+
+### Pre-deploy ritual
+
+Po każdym deploy do production uruchom `pnpm test:e2e` jako smoke check. Catches: Worker deploy regressions, middleware drift, Server Action crash, Supabase reachability issues. Per `context/foundation/lessons.md` rule #7 (Supabase allowlist drift) — manual verification of magic-link **email link target** nadal recommended dla pełnej allowlist drift detection (e2e test cannot distinguish `?sent=1` od `?error=*` bez real test inbox).
+
 ## Deployment
 
 Produkcja na Cloudflare Workers przez **Workers Builds** (Git CI/CD). Każdy push do `master` auto-buduje + deployuje.
