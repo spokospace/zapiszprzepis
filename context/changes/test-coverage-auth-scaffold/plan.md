@@ -492,27 +492,27 @@ Brak. Refactor w Phase 1 jest behavior-preserving (extract + import wire-up bez 
 
 #### Automatyczne
 
-- [x] 3.1 `package.json` devDependencies zawiera `@playwright/test`
-- [x] 3.2 `package.json` scripts zawiera `test:e2e` i `test:e2e:ui`
-- [x] 3.3 `playwright.config.ts` istnieje z `baseURL: 'https://zapiszprzepis.pl'`
-- [x] 3.4 `tests/e2e/auth-magic-link.spec.ts` istnieje
-- [x] 3.5 `.gitignore` zawiera `/test-results/` i `/playwright-report/`
-- [x] 3.6 `pnpm exec playwright install chromium` exit 0 (browser cached)
-- [x] 3.7 `pnpm test:e2e` exit 0 (1 test passed)
-- [x] 3.8 `pnpm exec tsc --noEmit` exit 0
+- [x] 3.1 `package.json` devDependencies zawiera `@playwright/test` — ca34134
+- [x] 3.2 `package.json` scripts zawiera `test:e2e` i `test:e2e:ui` — ca34134
+- [x] 3.3 `playwright.config.ts` istnieje z `baseURL: 'https://zapiszprzepis.pl'` — ca34134
+- [x] 3.4 `tests/e2e/auth-magic-link.spec.ts` istnieje — ca34134
+- [x] 3.5 `.gitignore` zawiera `/test-results/` i `/playwright-report/` — ca34134
+- [x] 3.6 `pnpm exec playwright install chromium` exit 0 (browser cached) — ca34134
+- [x] 3.7 `pnpm test:e2e` exit 0 (1 test passed) — ca34134
+- [x] 3.8 `pnpm exec tsc --noEmit` exit 0 — ca34134
 
 #### Ręczne
 
-- [x] 3.9 `pnpm test:e2e:ui` opens Playwright UI mode w przeglądarce, test runnable
+- [x] 3.9 `pnpm test:e2e:ui` opens Playwright UI mode w przeglądarce, test runnable — verified by user 2026-06-02
 
 ### Faza 4: Docs update
 
 #### Automatyczne
 
-- [ ] 4.1 `README.md` zawiera `## Testing` section
-- [ ] 4.2 `## Testing` wymienia `pnpm test`, `pnpm test:e2e`, `pnpm test:e2e:ui`
-- [ ] 4.3 `## Testing` dokumentuje conventions (unit co-located, e2e w tests/e2e/)
-- [ ] 4.4 (Optional) `lessons.md` rule #7 wzmiankuje e2e test jako automated mitigation
+- [x] 4.1 `README.md` zawiera `## Testing` section
+- [x] 4.2 `## Testing` wymienia `pnpm test`, `pnpm test:e2e`, `pnpm test:e2e:ui`
+- [x] 4.3 `## Testing` dokumentuje conventions (unit co-located, e2e w tests/e2e/)
+- [x] 4.4 (Optional) `lessons.md` rule #7 wzmiankuje e2e test jako automated mitigation
 
 #### Ręczne
 
