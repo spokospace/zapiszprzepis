@@ -478,32 +478,32 @@ Brak. Refactor w Phase 1 jest behavior-preserving (extract + import wire-up bez 
 
 #### Automatyczne
 
-- [x] 2.1 `package.json` devDependencies zawiera `vitest`
-- [x] 2.2 `package.json` scripts zawiera `test` i `test:run`
-- [x] 2.3 `vitest.config.ts` istnieje z proper exclude + alias config
-- [x] 2.4 `src/lib/auth-errors.test.ts` istnieje z 6+ test cases
-- [x] 2.5 `src/lib/auth-validation.test.ts` istnieje z 8+ test cases (email + SAFE_NEXT)
-- [x] 2.6 `src/lib/site-url.test.ts` istnieje z 6+ test cases
-- [x] 2.7 `pnpm test:run` exit 0, wszystkie tests pass
-- [x] 2.8 `pnpm exec tsc --noEmit` exit 0 (test files type-check)
-- [x] 2.9 `pnpm lint` exit 0
+- [x] 2.1 `package.json` devDependencies zawiera `vitest` — f3d1345
+- [x] 2.2 `package.json` scripts zawiera `test` i `test:run` — f3d1345
+- [x] 2.3 `vitest.config.ts` istnieje z proper exclude + alias config — f3d1345
+- [x] 2.4 `src/lib/auth-errors.test.ts` istnieje z 6+ test cases — f3d1345
+- [x] 2.5 `src/lib/auth-validation.test.ts` istnieje z 8+ test cases (email + SAFE_NEXT) — f3d1345
+- [x] 2.6 `src/lib/site-url.test.ts` istnieje z 6+ test cases — f3d1345
+- [x] 2.7 `pnpm test:run` exit 0, wszystkie tests pass — f3d1345
+- [x] 2.8 `pnpm exec tsc --noEmit` exit 0 (test files type-check) — f3d1345
+- [x] 2.9 `pnpm lint` exit 0 — f3d1345
 
 ### Faza 3: Playwright setup + 1 e2e happy path
 
 #### Automatyczne
 
-- [ ] 3.1 `package.json` devDependencies zawiera `@playwright/test`
-- [ ] 3.2 `package.json` scripts zawiera `test:e2e` i `test:e2e:ui`
-- [ ] 3.3 `playwright.config.ts` istnieje z `baseURL: 'https://zapiszprzepis.pl'`
-- [ ] 3.4 `tests/e2e/auth-magic-link.spec.ts` istnieje
-- [ ] 3.5 `.gitignore` zawiera `/test-results/` i `/playwright-report/`
-- [ ] 3.6 `pnpm exec playwright install chromium` exit 0 (browser cached)
-- [ ] 3.7 `pnpm test:e2e` exit 0 (1 test passed)
-- [ ] 3.8 `pnpm exec tsc --noEmit` exit 0
+- [x] 3.1 `package.json` devDependencies zawiera `@playwright/test`
+- [x] 3.2 `package.json` scripts zawiera `test:e2e` i `test:e2e:ui`
+- [x] 3.3 `playwright.config.ts` istnieje z `baseURL: 'https://zapiszprzepis.pl'`
+- [x] 3.4 `tests/e2e/auth-magic-link.spec.ts` istnieje
+- [x] 3.5 `.gitignore` zawiera `/test-results/` i `/playwright-report/`
+- [x] 3.6 `pnpm exec playwright install chromium` exit 0 (browser cached)
+- [x] 3.7 `pnpm test:e2e` exit 0 (1 test passed)
+- [x] 3.8 `pnpm exec tsc --noEmit` exit 0
 
 #### Ręczne
 
-- [ ] 3.9 `pnpm test:e2e:ui` opens Playwright UI mode w przeglądarce, test runnable
+- [x] 3.9 `pnpm test:e2e:ui` opens Playwright UI mode w przeglądarce, test runnable
 
 ### Faza 4: Docs update
 
