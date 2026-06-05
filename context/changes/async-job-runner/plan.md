@@ -216,15 +216,17 @@ Założyć projekt na Trigger.dev Cloud, dodać SDK, zdefiniować `trigger.confi
 - `maxDuration: 300` (5 min — z marginesem nad PRD p95 3 min)
 - `retries: { default: { maxAttempts: 3 } }` (default; per-task może override)
 
-#### 4. Rozszerz `src/lib/env.ts` o Trigger.dev vars
+#### 4. NIE eksportować `TRIGGER_SECRET_KEY` z `src/lib/env.ts` (świadoma decyzja, Phase 2 implementation)
 
-**Plik**: `src/lib/env.ts`
+**Plik**: `src/lib/env.ts` — dodać tylko comment notatkę
 
-**Cel**: Dodać `TRIGGER_SECRET_KEY` (required dla Server Action triggering) jako walidowany export. `TRIGGER_PROJECT_ID` typowo ląduje w `trigger.config.ts` jako literal (Trigger.dev tak rekomenduje), więc niekoniecznie w env.ts.
+**Cel**: Udokumentować dlaczego TRIGGER_SECRET_KEY jest świadomie poza `lib/env.ts`, delegowane do SDK.
 
 **Kontrakt**:
-- Add `export const TRIGGER_SECRET_KEY = requireEnv('TRIGGER_SECRET_KEY')`
-- Per CLAUDE.md: import + first usage w jednym Edit (z fazą 2.6 Server Action)
+- Eager `requireEnv('TRIGGER_SECRET_KEY')` w `lib/env.ts` jest hit przez Next.js `collect page data` step (build time) — każdy import `@/lib/env` (np. z `supabase/server.ts` w `auth/callback/route.ts`) load'uje wszystkie eksporty. Wymaganie `TRIGGER_SECRET_KEY` przy build = dual scope w Workers dashboard (Build + Runtime), co nie zostało zaakceptowane w plan-review F3.
+- Trigger.dev SDK natywnie czyta `process.env.TRIGGER_SECRET_KEY` przy `tasks.trigger()` / `runs.retrieve()` calls (runtime only) i throw'uje czytelny `TRIGGER_SECRET_KEY is required` error — zachowuje motywację lessons.md #6 (clear error early).
+- `TRIGGER_PROJECT_ID` jest literal w `trigger.config.ts` per Trigger.dev recommendation.
+- Dodać krótki comment w `lib/env.ts` wyjaśniający dlaczego TRIGGER_SECRET_KEY tu nie żyje.
 
 #### 5. Utwórz `src/trigger/example.ts`
 
@@ -524,44 +526,44 @@ Brak dedykowanych — manual smoke (lokalny + production) pokrywa integracje SDK
 
 #### Automatyczne
 
-- [x] 1.1 `src/lib/env.ts` istnieje, eksportuje `SUPABASE_URL`, `SUPABASE_ANON_KEY`
-- [x] 1.2 `src/lib/supabase/server.ts` importuje z `@/lib/env`, brak `process.env.NEXT_PUBLIC_SUPABASE_*!`
-- [x] 1.3 `src/middleware.ts` (lub `src/lib/supabase/proxy.ts`) importuje z `@/lib/env`, brak `process.env.NEXT_PUBLIC_SUPABASE_*!`
-- [x] 1.4 `scripts/check-auth.ts` zachowuje własną explicit walidację (świadomie nie migrowany — Node script niekompatybilny z `import 'server-only'`); brak `process.env.X!` w skrypcie
-- [x] 1.5 `pnpm exec tsc --noEmit` exit 0
-- [x] 1.6 `pnpm lint` exit 0
-- [x] 1.7 `pnpm build` exit 0
-- [x] 1.8 `pnpm check:auth` exit 0
-- [x] 1.9 Grep weryfikacja: brak `process.env.NEXT_PUBLIC_SUPABASE_URL!` w `src/**/*` (poza `src/lib/supabase/client.ts` — świadomie pozostawione literale, patrz Faza 1 / #5)
+- [x] 1.1 `src/lib/env.ts` istnieje, eksportuje `SUPABASE_URL`, `SUPABASE_ANON_KEY` — 49bb76d
+- [x] 1.2 `src/lib/supabase/server.ts` importuje z `@/lib/env`, brak `process.env.NEXT_PUBLIC_SUPABASE_*!` — 49bb76d
+- [x] 1.3 `src/middleware.ts` (lub `src/lib/supabase/proxy.ts`) importuje z `@/lib/env`, brak `process.env.NEXT_PUBLIC_SUPABASE_*!` — 49bb76d
+- [x] 1.4 `scripts/check-auth.ts` zachowuje własną explicit walidację (świadomie nie migrowany — Node script niekompatybilny z `import 'server-only'`); brak `process.env.X!` w skrypcie — 49bb76d
+- [x] 1.5 `pnpm exec tsc --noEmit` exit 0 — 49bb76d
+- [x] 1.6 `pnpm lint` exit 0 — 49bb76d
+- [x] 1.7 `pnpm build` exit 0 — 49bb76d
+- [x] 1.8 `pnpm check:auth` exit 0 — 49bb76d
+- [x] 1.9 Grep weryfikacja: brak `process.env.NEXT_PUBLIC_SUPABASE_URL!` w `src/**/*` (poza `src/lib/supabase/client.ts` — świadomie pozostawione literale, patrz Faza 1 / #5) — 49bb76d
 
 #### Ręczne
 
-- [x] 1.10 `pnpm dev` magic-link smoke: login formularz → `/login?sent=1`, link wskazuje na localhost
+- [x] 1.10 `pnpm dev` magic-link smoke: login formularz → `/login?sent=1`, link wskazuje na localhost — 49bb76d
 
 ### Faza 2: Trigger.dev install + przykładowy task + lokalny smoke
 
 #### Automatyczne
 
-- [ ] 2.1 `package.json` zawiera `@trigger.dev/sdk`
-- [ ] 2.2 `trigger.config.ts` istnieje i przechodzi `pnpm exec tsc --noEmit`
-- [ ] 2.3 `src/trigger/example.ts` istnieje, eksportuje `exampleTask`
-- [ ] 2.4 `src/app/(actions)/trigger-example.ts` i `src/app/(actions)/get-example-status.ts` istnieją
-- [ ] 2.5 `src/app/test-trigger/page.tsx` istnieje
-- [ ] 2.6 `src/lib/env.ts` eksportuje `TRIGGER_SECRET_KEY`
-- [ ] 2.7 `.env.local.example` zawiera `TRIGGER_SECRET_KEY` i `TRIGGER_PROJECT_ID` komentarze
-- [ ] 2.8 `pnpm exec tsc --noEmit` exit 0
-- [ ] 2.9 `pnpm lint` exit 0
-- [ ] 2.10 `pnpm build` exit 0
-- [ ] 2.11 Grep: `src/trigger/example.ts` zawiera `AbortSignal.timeout`
-- [ ] 2.12 Middleware matcher pomija `/test-trigger`
+- [x] 2.1 `package.json` zawiera `@trigger.dev/sdk`
+- [x] 2.2 `trigger.config.ts` istnieje i przechodzi `pnpm exec tsc --noEmit`
+- [x] 2.3 `src/trigger/example.ts` istnieje, eksportuje `exampleTask`
+- [x] 2.4 `src/app/(actions)/trigger-example.ts` i `src/app/(actions)/get-example-status.ts` istnieją
+- [x] 2.5 `src/app/test-trigger/page.tsx` istnieje
+- [x] 2.6 `src/lib/env.ts` zawiera komentarz wyjaśniający dlaczego `TRIGGER_SECRET_KEY` jest świadomie delegowany do Trigger.dev SDK (NIE eksportowany), patrz Faza 2 / #4
+- [x] 2.7 `.env.local.example` zawiera `TRIGGER_SECRET_KEY` (TRIGGER_PROJECT_ID jest literalem w `trigger.config.ts` per Trigger.dev recommendation)
+- [x] 2.8 `pnpm exec tsc --noEmit` exit 0
+- [x] 2.9 `pnpm lint` exit 0
+- [x] 2.10 `pnpm build` exit 0
+- [x] 2.11 Grep: `src/trigger/example.ts` zawiera `AbortSignal.timeout`
+- [x] 2.12 `src/middleware.ts` zawiera explicit bypass `if (pathname.startsWith('/test-trigger'))` z komentarzem `DELETE w S-01`
 
 #### Ręczne
 
-- [ ] 2.13 `pnpm dev` + `npx trigger.dev dev` — oba startują bez błędów
-- [ ] 2.14 `http://localhost:3000/test-trigger` ładuje się bez 302 do `/login`
-- [ ] 2.15 Klik "Triggeruj task" → `runId` widoczny w UI w <1 s
-- [ ] 2.16 Klik "Sprawdź status" po ~6 s → `status: completed`, `output.status: 200`
-- [ ] 2.17 `runId` koreluje w 3 logach (Server Action, task, dashboard)
+- [x] 2.13 `pnpm dev` + `npx trigger.dev dev` — oba startują bez błędów
+- [x] 2.14 `http://localhost:3000/test-trigger` ładuje się bez 302 do `/login`
+- [x] 2.15 Klik "Triggeruj task" → `runId` widoczny w UI w <1 s
+- [x] 2.16 Klik "Sprawdź status" po ~6 s → `status: completed`, `output.status: 200`
+- [x] 2.17 `runId` koreluje w 3 logach (Server Action, task, dashboard)
 
 ### Faza 3: Production deploy + Vitest + dokumentacja
 
