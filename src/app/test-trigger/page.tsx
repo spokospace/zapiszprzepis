@@ -54,6 +54,7 @@ export default function TestTriggerPage() {
 
       <div className="mb-6 flex gap-2">
         <button
+          type="button"
           onClick={handleTrigger}
           disabled={isPending}
           className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
@@ -61,6 +62,7 @@ export default function TestTriggerPage() {
           Triggeruj task
         </button>
         <button
+          type="button"
           onClick={handleCheckStatus}
           disabled={isPending || !state.runId}
           className="rounded bg-gray-700 px-4 py-2 text-white disabled:opacity-50"

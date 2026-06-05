@@ -3,7 +3,7 @@ change_id: async-job-runner
 title: Trigger.dev async job runner (F-01)
 status: implementing
 created: 2026-06-02
-updated: 2026-06-04
+updated: 2026-06-05
 archived_at: null
 roadmap_id: F-01
 ---

@@ -544,37 +544,37 @@ Brak dedykowanych — manual smoke (lokalny + production) pokrywa integracje SDK
 
 #### Automatyczne
 
-- [x] 2.1 `package.json` zawiera `@trigger.dev/sdk`
-- [x] 2.2 `trigger.config.ts` istnieje i przechodzi `pnpm exec tsc --noEmit`
-- [x] 2.3 `src/trigger/example.ts` istnieje, eksportuje `exampleTask`
-- [x] 2.4 `src/app/(actions)/trigger-example.ts` i `src/app/(actions)/get-example-status.ts` istnieją
-- [x] 2.5 `src/app/test-trigger/page.tsx` istnieje
-- [x] 2.6 `src/lib/env.ts` zawiera komentarz wyjaśniający dlaczego `TRIGGER_SECRET_KEY` jest świadomie delegowany do Trigger.dev SDK (NIE eksportowany), patrz Faza 2 / #4
-- [x] 2.7 `.env.local.example` zawiera `TRIGGER_SECRET_KEY` (TRIGGER_PROJECT_ID jest literalem w `trigger.config.ts` per Trigger.dev recommendation)
-- [x] 2.8 `pnpm exec tsc --noEmit` exit 0
-- [x] 2.9 `pnpm lint` exit 0
-- [x] 2.10 `pnpm build` exit 0
-- [x] 2.11 Grep: `src/trigger/example.ts` zawiera `AbortSignal.timeout`
-- [x] 2.12 `src/middleware.ts` zawiera explicit bypass `if (pathname.startsWith('/test-trigger'))` z komentarzem `DELETE w S-01`
+- [x] 2.1 `package.json` zawiera `@trigger.dev/sdk` — ab87344
+- [x] 2.2 `trigger.config.ts` istnieje i przechodzi `pnpm exec tsc --noEmit` — ab87344
+- [x] 2.3 `src/trigger/example.ts` istnieje, eksportuje `exampleTask` — ab87344
+- [x] 2.4 `src/app/(actions)/trigger-example.ts` i `src/app/(actions)/get-example-status.ts` istnieją — ab87344
+- [x] 2.5 `src/app/test-trigger/page.tsx` istnieje — ab87344
+- [x] 2.6 `src/lib/env.ts` zawiera komentarz wyjaśniający dlaczego `TRIGGER_SECRET_KEY` jest świadomie delegowany do Trigger.dev SDK (NIE eksportowany), patrz Faza 2 / #4 — ab87344
+- [x] 2.7 `.env.local.example` zawiera `TRIGGER_SECRET_KEY` (TRIGGER_PROJECT_ID jest literalem w `trigger.config.ts` per Trigger.dev recommendation) — ab87344
+- [x] 2.8 `pnpm exec tsc --noEmit` exit 0 — ab87344
+- [x] 2.9 `pnpm lint` exit 0 — ab87344
+- [x] 2.10 `pnpm build` exit 0 — ab87344
+- [x] 2.11 Grep: `src/trigger/example.ts` zawiera `AbortSignal.timeout` — ab87344
+- [x] 2.12 `src/middleware.ts` zawiera explicit bypass `if (pathname.startsWith('/test-trigger'))` z komentarzem `DELETE w S-01` — ab87344
 
 #### Ręczne
 
-- [x] 2.13 `pnpm dev` + `npx trigger.dev dev` — oba startują bez błędów
-- [x] 2.14 `http://localhost:3000/test-trigger` ładuje się bez 302 do `/login`
-- [x] 2.15 Klik "Triggeruj task" → `runId` widoczny w UI w <1 s
-- [x] 2.16 Klik "Sprawdź status" po ~6 s → `status: completed`, `output.status: 200`
-- [x] 2.17 `runId` koreluje w 3 logach (Server Action, task, dashboard)
+- [x] 2.13 `pnpm dev` + `npx trigger.dev dev` — oba startują bez błędów — ab87344
+- [x] 2.14 `http://localhost:3000/test-trigger` ładuje się bez 302 do `/login` — ab87344
+- [x] 2.15 Klik "Triggeruj task" → `runId` widoczny w UI w <1 s — ab87344
+- [x] 2.16 Klik "Sprawdź status" po ~6 s → `status: completed`, `output.status: 200` — ab87344
+- [x] 2.17 `runId` koreluje w 3 logach (Server Action, task, dashboard) — ab87344
 
 ### Faza 3: Production deploy + Vitest + dokumentacja
 
 #### Automatyczne
 
-- [ ] 3.1 `src/lib/env.test.ts` istnieje z 4+ test cases
-- [ ] 3.2 `pnpm test:run` exit 0
-- [ ] 3.3 `pnpm exec tsc --noEmit` exit 0
-- [ ] 3.4 `pnpm lint` exit 0
-- [ ] 3.5 `pnpm build` exit 0
-- [ ] 3.6 `README.md` zawiera sekcję `## Background jobs (Trigger.dev)`
+- [x] 3.1 `src/lib/env.test.ts` istnieje z 4+ test cases
+- [x] 3.2 `pnpm test:run` exit 0
+- [x] 3.3 `pnpm exec tsc --noEmit` exit 0
+- [x] 3.4 `pnpm lint` exit 0
+- [x] 3.5 `pnpm build` exit 0
+- [x] 3.6 `README.md` zawiera sekcję `## Background jobs (Trigger.dev)`
 - [ ] 3.7 `context/foundation/roadmap.md` F-01 status to `done`
 
 #### Ręczne
