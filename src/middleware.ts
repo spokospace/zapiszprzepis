@@ -2,8 +2,15 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
-  const { response, user } = await updateSession(request)
   const { pathname } = request.nextUrl
+
+  // Dev-only smoke page; remove once real share-target flow lands.
+  // Bypass before updateSession() to skip the Supabase auth roundtrip.
+  if (pathname.startsWith('/test-trigger')) {
+    return NextResponse.next({ request })
+  }
+
+  const { response, user } = await updateSession(request)
 
   // /auth/callback always passes through — the route handler manages its own
   // auth state by exchanging the PKCE code.

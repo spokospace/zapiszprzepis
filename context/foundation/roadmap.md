@@ -31,7 +31,7 @@ ZapiszPrzepis to PWA *archive-first* do zapisywania przepisów udostępnianych z
 
 | ID    | Change ID                       | Wynik (użytkownik może…)                                                                  | Wymagania wstępne     | Odnośniki PRD                          | Status   |
 | ----- | ------------------------------- | ----------------------------------------------------------------------------------------- | --------------------- | -------------------------------------- | -------- |
-| F-01  | async-job-runner                | (fundament) Trigger.dev odbiera zadanie i kończy je poza request-path Workera (>10ms CPU) | —                     | FR-003, NFR p95 ≤ 3 min                | ready    |
+| F-01  | async-job-runner                | (fundament) Trigger.dev odbiera zadanie i kończy je poza request-path Workera (>10ms CPU) | —                     | FR-003, NFR p95 ≤ 3 min                | done     |
 | F-02  | pwa-shell-and-share-target      | (fundament) PWA instalowalna z Web Share Target — Pixel 9 widzi ZapiszPrzepis na liście udostępniania | —                     | FR-002, NFR PWA + Web Share Target     | ready    |
 | S-01  | web-blog-recipe-source          | udostępnić URL bloga kulinarnego i po 1-3 min zobaczyć w aplikacji polskojęzyczny przepis (karta + detal) | F-01, F-02            | US-01, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-009 | ready    |
 | S-02  | first-shared-recipe-fb-text     | udostępnić URL postu tekstowego Facebook i zobaczyć przepis (drugie źródło, reuse pipeline)    | S-01                  | FR-004                                 | ready    |
@@ -79,7 +79,7 @@ Warstwy zadeklarowane w `tech-stack.md`, ale jeszcze nie wpięte (każda zostani
   - Czy Trigger.dev SDK działa stabilnie z workerd runtime (Cloudflare Workers nie Node)? Właściciel: autor. Blokuje: nie. Decyzja po /10x-research (planowane przed /10x-plan).
   - Czy webhook callback z Trigger.dev z powrotem do Workera ma stabilny URL + secret pattern dla `wrangler.jsonc` env vars? Właściciel: autor. Blokuje: nie. Standard pattern, do potwierdzenia.
 - **Ryzyko:** Trigger.dev jest mniej znany niż natywne Cloudflare Queues, więc krzywa nauki narzędzia jest realna; wybór jest podyktowany NFR (Cloudflare Workers + Queues bez Durable Objects ma własne ograniczenia czasu wykonania; Trigger.dev daje pełne 1-3 min). Pułapka: nie próbuj uruchamiać scrapera w samym Workerze — 30s HTTP timeout to brutal.
-- **Status:** ready
+- **Status:** done
 
 ### F-02: PWA shell + Web Share Target
 
