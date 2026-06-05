@@ -48,6 +48,46 @@ Wymagania: Node ≥ 20.6, pnpm (Corepack-managed — projekt pinuje wersję w `p
      - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Production + Preview + Development (te same wartości)
      - `NEXT_PUBLIC_SITE_URL` — **tylko Production** (`https://zapiszprzepis.vercel.app`) i Development (`http://localhost:3000`). **Zostaw NIEUSTAWIONE dla Preview**, żeby `getSiteUrl()` mógł użyć runtime fallback do `request.host` — magic-link z preview deploy powróci na ten sam preview URL, nie na Production.
 
+## Background jobs (Trigger.dev)
+
+Ekstrakcja przepisów (scraping + LLM) uruchamia się asynchronicznie przez Trigger.dev w cloud'u, poza request-path Workera (NFR p95 ≤ 3 min). Lokalnie:
+
+1. **Zaloguj się do Trigger.dev CLI** (jednorazowo):
+   ```bash
+   npx trigger.dev login
+   # → otwiera przeglądarkę, authoryzujesz, zwraca `npx trigger.dev dev`
+   ```
+
+2. **Uruchom dev server z taskami**:
+   ```bash
+   npx trigger.dev dev
+   # → wyświetla project ID i dev URL (ostatnia linia – zapisz sobie)
+   ```
+
+3. **W drugiej terminalu (normalny dev Next.js)**:
+   ```bash
+   pnpm dev
+   ```
+
+4. **Test**: http://localhost:3000/test-trigger
+   - Kliknij "Trigger Task" → otrzymujesz runId
+   - Kliknij "Sprawdź status" → widzisz "completed"
+   - Dashboard: https://dashboard.trigger.dev — tab "Runs" pokazuje historię
+
+**Secrets lokalnie** (`.env.local`):
+```
+TRIGGER_PROJECT_ID=proj_xxx...      # z `npx trigger.dev login` lub dashboard
+TRIGGER_SECRET_KEY=tr_dev_xxx...    # API token z dashboard → API Tokens → DEV
+```
+
+**Deployment** (siehe Faza 3):
+```bash
+npx trigger.dev deploy          # deploy tasks do Trigger.dev Cloud
+pnpm deploy                     # deploy Workera do Cloudflare
+```
+
+Testy: `pnpm exec vitest run src/lib/env.test.ts`
+
 ## Development
 
 ```bash
