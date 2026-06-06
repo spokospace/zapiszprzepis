@@ -2,7 +2,7 @@
 
 PWA *archive-first* do zapisywania przepisów udostępnianych z mediów społecznościowych. Każdy URL trafia przez systemowy gest „Udostępnij" i jest przekształcany w trwałą, polskojęzyczną kopię przepisu, niezależną od oryginału.
 
-Stack: Next.js 16 (App Router) + TypeScript + Tailwind v4 + Supabase (auth + Postgres + storage) + Vercel.
+Stack: Next.js 16 (App Router) + TypeScript + Tailwind v4 + Supabase (auth + Postgres + storage) + Trigger.dev (async jobs) + PWA (offline + Web Share Target) + Vercel.
 
 ## Setup
 
@@ -87,6 +87,40 @@ pnpm deploy                     # deploy Workera do Cloudflare
 ```
 
 Testy: `pnpm exec vitest run src/lib/env.test.ts`
+
+## Progressive Web App (PWA)
+
+Aplikacja jest installowalna na urządzeniach mobilnych (Android Chrome/Edge) i desktopowych (Windows, macOS), z offline wsparciami i Web Share Target API.
+
+**Instalacja**:
+- **Android**: Chrome → menu (⋮) → „Install app" — otworzy się full-screen
+- **Windows/macOS**: Desktop app z Windows Start/macOS Launchpad — dostępne po dodaniu do shelf
+- **iOS**: Web clip opcji (nie full PWA, ze względów na ograniczenia Safari)
+
+**Web Share Target** (systemowy gest „Udostępnij"):
+- Android: System → Udostępnij → ZapiszPrzepis → formularz (title + text + URL)
+- Obsługiwane formaty: `text/plain`, `text/uri-list`
+- POST `/share` → redirect na home (S-01 doda persistencję i LLM processing)
+
+**Service Worker & Offline**:
+- **Precache**: next-pwa injects manifest podczas build (zminifikowan JS/CSS/fonts)
+- **Cache strategies**:
+  - Static assets (.js, .css, .woff2, images): cache-first, 30-day revalidate
+  - API routes (`/api/*`): network-first, 3s timeout, fallback do cache
+  - HTML pages: network-first, fallback do stale cache lub home (`/`)
+  - Web Share Target: zawsze network (brak cache)
+- **Update detection**: check co 60s, dispatchuje custom event `pwa-update-available` (S-01 wyświetli prompt)
+
+**Config**:
+- `public/manifest.json` — PWA manifest (icons, theme colors, share_target)
+- `public/sw.js` — service worker z cache strategies
+- `src/lib/pwa-utils.ts` — helpers: `registerServiceWorker()`, `isUpdateAvailable()`, `reloadForUpdate()`, `installPromptReady()`
+- `next.config.ts` — `withPWA` plugin z precache destination
+
+**Testing** (Pixel 9 / Android Chrome 130+):
+1. `pnpm dev` → wejdź na http://localhost:3000 (HTTPS local lub ngrok)
+2. Chrome menu → Install → weryfikuj offline mode (kliknij offline DevTools → F12 → Network tab → check "Offline")
+3. System menu → Udostępnij → ZapiszPrzepis → test Web Share flow
 
 ## Development
 
