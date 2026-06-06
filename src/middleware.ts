@@ -11,6 +11,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
+  // Web Share Target API: allow POST /share without auth
+  // Browser invokes this when user selects "Share with ZapiszPrzepis" from system menu
+  // User may not be logged in yet; S-01 will handle auth requirements
+  if (pathname === '/share' && request.method === 'POST') {
+    return response
+  }
+
   // Signed-in users skip the login screen.
   if (pathname === '/login' || pathname.startsWith('/login/')) {
     return user
