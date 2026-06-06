@@ -1,10 +1,26 @@
-import type { NextConfig } from "next";
-import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+import type { NextConfig } from "next"
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare"
+// @ts-ignore - next-pwa doesn't have TypeScript definitions
+import withPWA from "next-pwa"
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+const baseConfig: NextConfig = {
+  turbopack: {},
+}
 
-initOpenNextCloudflareForDev();
+const nextConfig = withPWA({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  dynamicStartUrl: false,
+  scope: "/",
+  register: false,
+  skipWaiting: false,
+  workboxOptions: {
+    disableDevLogs: true,
+    clientsClaim: true,
+    skipWaiting: false,
+  },
+})(baseConfig)
 
-export default nextConfig;
+initOpenNextCloudflareForDev()
+
+export default nextConfig
