@@ -16,6 +16,10 @@ export default function ResetPasswordPage() {
     const accessToken = params.get('access_token')
     const urlEmail = new URLSearchParams(window.location.search).get('email')
 
+    console.log('[reset-password] hash:', hash)
+    console.log('[reset-password] accessToken:', accessToken)
+    console.log('[reset-password] urlEmail:', urlEmail)
+
     if (accessToken) {
       setCode(accessToken)
     }
