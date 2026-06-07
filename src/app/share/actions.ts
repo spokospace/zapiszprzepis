@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
-import { extractRecipeTask } from '@/trigger/extract-recipe'
+import { inngest } from '@/inngest/client'
 
 export async function triggerRecipeExtraction(
   url: string,
@@ -46,14 +46,17 @@ export async function triggerRecipeExtraction(
     throw new Error(`Failed to create share record: ${shareError?.message}`)
   }
 
-  // Trigger extraction task
+  // Trigger extraction task via Inngest
   try {
-    await extractRecipeTask.trigger({
-      shareId: share.id,
-      sharedUrl: url,
-      sharedTitle: title,
-      sharedText: text,
-      userId: user.id,
+    await inngest.send({
+      name: 'recipe/extract',
+      data: {
+        shareId: share.id,
+        sharedUrl: url,
+        sharedTitle: title,
+        sharedText: text,
+        userId: user.id,
+      },
     })
   } catch (error) {
     // Log error but don't fail the share submission
