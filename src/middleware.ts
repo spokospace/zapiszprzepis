@@ -18,8 +18,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
-  // Signed-in users skip the login screen.
-  if (pathname === '/login' || pathname.startsWith('/login/')) {
+  // Auth pages are accessible to all users
+  const isAuthPage = pathname === '/login' || pathname.startsWith('/login/')
+    || pathname === '/signup' || pathname.startsWith('/signup/')
+    || pathname === '/forgot-password' || pathname.startsWith('/forgot-password/')
+    || pathname === '/reset-password' || pathname.startsWith('/reset-password/')
+
+  if (isAuthPage) {
     return user
       ? NextResponse.redirect(new URL('/', request.url))
       : response
