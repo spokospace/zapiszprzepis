@@ -11,17 +11,17 @@ const ERROR_MESSAGES: Record<string, string> = {
 }
 
 interface ResetPasswordFormProps {
-  code?: string
+  accessToken?: string
   email?: string
   error?: string
 }
 
-export function ResetPasswordForm({ code, email, error }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ accessToken, email, error }: ResetPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.unknown) : null
 
-  if (!code) {
+  if (!accessToken) {
     return (
       <div className="w-full max-w-sm">
         <div
@@ -42,7 +42,7 @@ export function ResetPasswordForm({ code, email, error }: ResetPasswordFormProps
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true)
     try {
-      await resetPassword(formData, code, email)
+      await resetPassword(formData, accessToken, email)
     } finally {
       setIsLoading(false)
     }
