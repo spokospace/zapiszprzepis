@@ -89,7 +89,15 @@ export function SignInForm({ error, email, sent }: SignInFormProps) {
           role="alert"
           className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
         >
-          {errorMessage}
+          <p>{errorMessage}</p>
+          {tab === 'password' && error === 'invalid_credentials' && (
+            <p className="mt-2 text-xs text-red-700">
+              Nie masz hasła?{' '}
+              <a href="/forgot-password" className="font-medium underline hover:no-underline">
+                Resetuj je tutaj
+              </a>
+            </p>
+          )}
         </div>
       )}
 
@@ -170,6 +178,23 @@ export function SignInForm({ error, email, sent }: SignInFormProps) {
           >
             {isLoading ? 'Logowanie...' : 'Zaloguj się'}
           </button>
+
+          <p className="mt-3 rounded-md bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
+            Logujesz się po raz pierwszy? Możesz użyć{' '}
+            <button
+              type="button"
+              onClick={() => setTab('link')}
+              className="font-medium text-zinc-900 underline hover:no-underline"
+            >
+              linku email
+            </button>
+            {' '}zamiast hasła, lub{' '}
+            <a href="/forgot-password" className="font-medium text-zinc-900 underline hover:no-underline">
+              ustaw hasło
+            </a>
+            .
+          </p>
+
           <div className="flex items-center justify-between text-sm">
             <a href="/forgot-password" className="font-medium text-zinc-900 hover:underline">
               Zapomniałem hasła
