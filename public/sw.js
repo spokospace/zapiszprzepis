@@ -102,6 +102,8 @@ self.addEventListener('fetch', (event) => {
             })
           }
           return response
+        }).catch(() => {
+          return new Response('Offline', { status: 503 })
         })
       })
     )
@@ -112,9 +114,10 @@ self.addEventListener('fetch', (event) => {
     return event.respondWith(
       fetch(event.request)
         .then((response) => {
-          if (response.ok) {
+          if (response.ok && response.status === 200) {
+            const responseToCache = response.clone()
             caches.open(RUNTIME_CACHE_NAME).then((cache) => {
-              cache.put(event.request, response.clone())
+              cache.put(event.request, responseToCache)
             })
           }
           return response
