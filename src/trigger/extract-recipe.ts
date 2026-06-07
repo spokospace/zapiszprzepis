@@ -1,6 +1,6 @@
 import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from '@/lib/env'
+import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
 
 interface ExtractRecipeInput {
   shareId: number
@@ -115,7 +115,7 @@ ${html}`,
       }
 
       // Step 3: Insert recipe into Supabase
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      const supabase = createClient(SUPABASE_URL, getSuabaseServiceRoleKey(), {
         auth: {
           autoRefreshToken: false,
           persistSession: false,
@@ -179,7 +179,7 @@ ${html}`,
       const errorMessage = error instanceof Error ? error.message : String(error)
 
       // Update recipe_shares status to failed
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      const supabase = createClient(SUPABASE_URL, getSuabaseServiceRoleKey(), {
         auth: {
           autoRefreshToken: false,
           persistSession: false,
