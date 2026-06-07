@@ -170,12 +170,14 @@ export function SignInForm({ error, email, sent }: SignInFormProps) {
           >
             {isLoading ? 'Logowanie...' : 'Zaloguj się'}
           </button>
-          <p className="text-center text-sm text-zinc-600">
-            Nie masz konta?{' '}
-            <a href="/signup" className="font-medium text-zinc-900 hover:underline">
-              Zarejestruj się
+          <div className="flex items-center justify-between text-sm">
+            <a href="/forgot-password" className="font-medium text-zinc-900 hover:underline">
+              Zapomniałem hasła
             </a>
-          </p>
+            <a href="/signup" className="text-zinc-600 hover:text-zinc-900">
+              Rejestracja
+            </a>
+          </div>
         </form>
       )}
     </div>
