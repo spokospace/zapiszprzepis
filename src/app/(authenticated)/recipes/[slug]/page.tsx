@@ -1,8 +1,7 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/supabase.types'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
@@ -19,12 +18,16 @@ interface RecipeDetailPageProps {
 }
 
 export default async function RecipeDetailPage({ params }: RecipeDetailPageProps) {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-    },
-  })
+  const supabase = await createSupabaseServerClient()
+
+  // Verify user is authenticated
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
 
   const { data: recipe, error } = await supabase
     .from('recipes')

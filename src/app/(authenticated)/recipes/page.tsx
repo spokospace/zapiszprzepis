@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
+import { redirect } from 'next/navigation'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { RecipeCard } from '@/app/components/recipe-card'
 import type { Database } from '@/lib/supabase.types'
 
@@ -11,12 +11,16 @@ export const metadata = {
 }
 
 export default async function RecipesPage() {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-    },
-  })
+  const supabase = await createSupabaseServerClient()
+
+  // Verify user is authenticated
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
 
   const { data: recipes, error } = await supabase
     .from('recipes')
