@@ -5,16 +5,12 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 export async function resetPassword(
   formData: FormData,
-  token: string | undefined,
+  _token: string | undefined, // Token is not used - session is set by Supabase /auth/v1/verify
   email: string | undefined
 ): Promise<void> {
   const password = String(formData.get('password') ?? '')
   const passwordConfirm = String(formData.get('passwordConfirm') ?? '')
   const encodedEmail = email ? encodeURIComponent(email) : ''
-
-  if (!token) {
-    redirect(`/reset-password?error=invalid_code`)
-  }
 
   if (!password || password.length < 6) {
     redirect(`/reset-password?error=weak_password`)

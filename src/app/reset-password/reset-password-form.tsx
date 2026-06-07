@@ -11,17 +11,29 @@ const ERROR_MESSAGES: Record<string, string> = {
 }
 
 interface ResetPasswordFormProps {
-  token?: string
+  hasSession?: boolean | null
   email?: string
   error?: string
 }
 
-export function ResetPasswordForm({ token, email, error }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ hasSession, email, error }: ResetPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.unknown) : null
 
-  if (!token) {
+  // Show loading while checking session
+  if (hasSession === null) {
+    return (
+      <div className="w-full max-w-sm">
+        <div className="text-center text-sm text-zinc-600">
+          Sprawdzam link resetowania...
+        </div>
+      </div>
+    )
+  }
+
+  // No session = invalid/expired link
+  if (!hasSession) {
     return (
       <div className="w-full max-w-sm">
         <div
@@ -42,7 +54,7 @@ export function ResetPasswordForm({ token, email, error }: ResetPasswordFormProp
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true)
     try {
-      await resetPassword(formData, token, email)
+      await resetPassword(formData, '', email)
     } finally {
       setIsLoading(false)
     }

@@ -2,28 +2,37 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { ResetPasswordForm } from './reset-password-form'
 
 export default function ResetPasswordPage() {
-  const [code, setCode] = useState<string | undefined>()
+  const [hasSession, setHasSession] = useState<boolean | null>(null)
   const [email, setEmail] = useState<string | undefined>()
   const [error, setError] = useState<string | undefined>()
 
   useEffect(() => {
-    // Extract token from query params (Supabase /auth/v1/verify redirects with ?token=...&type=recovery)
-    const searchParams = new URLSearchParams(window.location.search)
-    const token = searchParams.get('token')
-    const urlEmail = searchParams.get('email')
+    // Check if user has a session (set by Supabase /auth/v1/verify after token verification)
+    const checkSession = async () => {
+      try {
+        const supabase = createSupabaseBrowserClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        const urlEmail = new URLSearchParams(window.location.search).get('email')
 
-    console.log('[reset-password] token:', token)
-    console.log('[reset-password] email:', urlEmail)
+        console.log('[reset-password] session:', session?.user?.email)
 
-    if (token) {
-      setCode(token)
+        if (session) {
+          setHasSession(true)
+          setEmail(session.user?.email || urlEmail || undefined)
+        } else {
+          setHasSession(false)
+        }
+      } catch (err) {
+        console.error('[reset-password] error checking session:', err)
+        setHasSession(false)
+      }
     }
-    if (urlEmail) {
-      setEmail(decodeURIComponent(urlEmail))
-    }
+
+    checkSession()
   }, [])
 
   return (
@@ -40,7 +49,7 @@ export default function ResetPasswordPage() {
             className="block h-auto w-48"
           />
         </h1>
-        <ResetPasswordForm token={code} email={email} error={error} />
+        <ResetPasswordForm hasSession={hasSession} email={email} error={error} />
       </div>
     </main>
   )
