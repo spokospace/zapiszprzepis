@@ -42,8 +42,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log('[share] Extraction triggered', result)
 
-    // Redirect to recipes list (user will see new recipe appear after 1-3 min)
-    return NextResponse.redirect(new URL('/recipes', request.url), { status: 303 })
+    // Redirect to recipes list with shared flag (shows toast confirmation)
+    const recipesUrl = new URL('/recipes?shared=1', request.url)
+    return NextResponse.redirect(recipesUrl, { status: 303 })
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error)
     console.error('[share] Error:', errorMsg)
