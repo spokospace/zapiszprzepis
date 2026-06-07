@@ -10,14 +10,16 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | undefined>()
 
   useEffect(() => {
-    // Extract token and email from hash (Supabase sends as #access_token=...&type=recovery)
-    const hash = window.location.hash.slice(1)
-    const params = new URLSearchParams(hash)
-    const accessToken = params.get('access_token')
-    const urlEmail = new URLSearchParams(window.location.search).get('email')
+    // Extract token from query params (Supabase /auth/v1/verify redirects with ?token=...&type=recovery)
+    const searchParams = new URLSearchParams(window.location.search)
+    const token = searchParams.get('token')
+    const urlEmail = searchParams.get('email')
 
-    if (accessToken) {
-      setCode(accessToken)
+    console.log('[reset-password] token:', token)
+    console.log('[reset-password] email:', urlEmail)
+
+    if (token) {
+      setCode(token)
     }
     if (urlEmail) {
       setEmail(decodeURIComponent(urlEmail))
@@ -38,7 +40,7 @@ export default function ResetPasswordPage() {
             className="block h-auto w-48"
           />
         </h1>
-        <ResetPasswordForm accessToken={code} email={email} error={error} />
+        <ResetPasswordForm token={code} email={email} error={error} />
       </div>
     </main>
   )
