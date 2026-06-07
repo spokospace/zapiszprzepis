@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { triggerRecipeExtraction } from './actions'
 
 /**
  * Web Share Target API endpoint
@@ -9,7 +10,8 @@ import { type NextRequest, NextResponse } from 'next/server'
  *   - title: string (optional) — page title
  *   - text: string (optional) — page description
  *
- * Returns 303 redirect to home (app opens) + triggers Trigger.dev job (S-01).
+ * S-01: Store share intent in DB, trigger Trigger.dev extraction job, redirect to /recipes.
+ * User must be logged in; if not, middleware redirects to /login (with redirect_to fallback).
  *
  * @see https://web.dev/web-share-target/
  */
@@ -27,18 +29,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     })
 
     if (!sharedUrl) {
-      // Web Share Target spec: malformed requests should redirect home, not error
       console.warn('[share] Missing URL in share data')
       return NextResponse.redirect(new URL('/', request.url), { status: 303 })
     }
 
-    // Phase 2: Accept share intent, redirect to home
-    // Phase 3 / S-01: Store in session/DB, trigger Trigger.dev job, show receipt
+    // Trigger recipe extraction (server action handles auth check)
+    const result = await triggerRecipeExtraction(
+      sharedUrl,
+      sharedTitle ?? undefined,
+      sharedText ?? undefined
+    )
 
-    // Redirect back to home with success (per spec: 303 See Other)
-    return NextResponse.redirect(new URL('/', request.url), { status: 303 })
+    console.log('[share] Extraction triggered', result)
+
+    // Redirect to recipes list (user will see new recipe appear after 1-3 min)
+    return NextResponse.redirect(new URL('/recipes', request.url), { status: 303 })
   } catch (error) {
-    console.error('[share] Unhandled error:', error)
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error('[share] Error:', errorMsg)
+
+    // If auth error, redirect to login with return URL
+    if (errorMsg.includes('Not authenticated')) {
+      return NextResponse.redirect(new URL('/login', request.url), { status: 303 })
+    }
+
+    // On other errors, redirect to home
     return NextResponse.redirect(new URL('/', request.url), { status: 303 })
   }
 }
