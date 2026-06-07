@@ -2,7 +2,7 @@
 change_id: first-shared-recipe-fb-text
 title: Pierwszy udostępniony przepis (FB tekstowy)
 status: in_progress
-phases_completed: 0
+phases_completed: 3
 phases_total: 4
 started_at: 2026-06-07
 ---
@@ -10,7 +10,7 @@ started_at: 2026-06-07
 # S-01 Progress
 
 ## Phase 1: Recipe schema + RLS + DB migrations
-**Status**: pending  
+**Status**: ✓ completed  
 **Objective**: Create `recipes` and `recipe_shares` tables with RLS, run migrations, verify typegen
 
 **Files to create/modify**:
@@ -27,7 +27,7 @@ started_at: 2026-06-07
 ---
 
 ## Phase 2: Recipe extraction task (Trigger.dev)
-**Status**: pending  
+**Status**: ✓ completed  
 **Objective**: Implement Firecrawl + OpenAI extraction task, create server action to trigger it
 
 **Files to create/modify**:
@@ -45,7 +45,7 @@ started_at: 2026-06-07
 ---
 
 ## Phase 3: Recipe list UI + detail view
-**Status**: pending  
+**Status**: ✓ completed  
 **Objective**: Create recipes list page, detail page, recipe card component
 
 **Files to create/modify**:
@@ -62,18 +62,20 @@ started_at: 2026-06-07
 
 ---
 
-## Phase 4: Share intent integration + redirect
-**Status**: pending  
-**Objective**: Wire Web Share Target to recipe extraction, handle redirect/toast
+## Phase 4: Share intent integration + delete endpoint
+**Status**: in progress
+**Objective**: Complete recipe deletion + verify full flow
 
 **Files to create/modify**:
-- `src/app/share/route.ts` — update to call triggerRecipeExtraction
-- Middleware or endpoint guard for login
+- `src/app/api/recipes/delete/route.ts` — delete endpoint with RLS
+- Test Web Share Target flow end-to-end
 
 **Completion criteria**:
-- [ ] Web Share Target form submits → extraction triggered
-- [ ] User redirected to /recipes with confirmation
-- [ ] RLS verified (user can only see own recipes)
+- [x] Web Share Target form submits → extraction triggered (Phase 2)
+- [x] User redirected to /recipes (Phase 2 route.ts update)
+- [x] RLS verified (user can only see own recipes in Phase 3)
+- [ ] Delete endpoint working
+- [ ] Full flow tested: share → extract → list → detail → delete
 
 ---
 
