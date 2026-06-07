@@ -8,13 +8,9 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "env": {
-    "production": {
-      "vars": {
-        "NEXT_PUBLIC_SUPABASE_URL": "https://wvrlgddgdddwmgzbvtij.supabase.co",
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2",
-        "NEXT_PUBLIC_SITE_URL": "https://zapiszprzepis.pl"
-      }
-    }
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://wvrlgddgdddwmgzbvtij.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2",
+    "NEXT_PUBLIC_SITE_URL": "https://zapiszprzepis.pl"
   }
 }
