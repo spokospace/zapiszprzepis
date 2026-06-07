@@ -1,18 +1,17 @@
 import Image from 'next/image'
-import { SignInForm } from './signin-form'
+import { SignUpForm } from './signup-form'
 
 type SearchParams = Promise<{
   error?: string
   email?: string
-  sent?: string
 }>
 
-export default async function LoginPage({
+export default async function SignUpPage({
   searchParams,
 }: {
   searchParams: SearchParams
 }) {
-  const { error, email, sent } = await searchParams
+  const { error, email } = await searchParams
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
@@ -28,7 +27,7 @@ export default async function LoginPage({
             className="block h-auto w-48"
           />
         </h1>
-        <SignInForm error={error} email={email} sent={sent} />
+        <SignUpForm error={error} email={email} />
       </div>
     </main>
   )

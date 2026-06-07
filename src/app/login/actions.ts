@@ -34,3 +34,37 @@ export async function signInWithEmail(formData: FormData): Promise<void> {
 
   redirect(`/login?sent=1&email=${encodedEmail}`)
 }
+
+export async function signInWithPassword(formData: FormData): Promise<void> {
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  const password = String(formData.get('password') ?? '')
+  const encodedEmail = encodeURIComponent(email)
+
+  if (!EMAIL_RE.test(email)) {
+    redirect(`/login?error=invalid_email&email=${encodedEmail}`)
+  }
+
+  if (!password || password.length < 6) {
+    redirect(`/login?error=weak_password&email=${encodedEmail}`)
+  }
+
+  const supabase = await createSupabaseServerClient()
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (error) {
+    if (error.status === 401 || error.code === 'invalid_credentials') {
+      redirect(`/login?error=invalid_credentials&email=${encodedEmail}`)
+    }
+    if (error.message.includes('Email not confirmed')) {
+      redirect(`/login?error=email_not_confirmed&email=${encodedEmail}`)
+    }
+    console.error('signInWithPassword failed', { code: error.code, status: error.status })
+    redirect(`/login?error=unknown&email=${encodedEmail}`)
+  }
+
+  redirect('/recipes')
+}
