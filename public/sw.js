@@ -96,11 +96,13 @@ self.addEventListener('fetch', (event) => {
       caches.match(event.request).then((cached) => {
         if (cached) return cached
         return fetch(event.request).then((response) => {
-          if (response.ok) {
-            caches.open(PRECACHE_NAME).then((cache) => {
-              cache.put(event.request, response.clone())
-            })
-          }
+          if (!response.ok) return response
+
+          // Clone immediately — response body stream may be consumed by browser
+          const responseToCache = response.clone()
+          caches.open(PRECACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache)
+          })
           return response
         }).catch(() => {
           return new Response('Offline', { status: 503 })
