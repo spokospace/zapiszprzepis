@@ -3,6 +3,7 @@ import { ResetPasswordForm } from './reset-password-form'
 
 type SearchParams = Promise<{
   code?: string
+  email?: string
   error?: string
 }>
 
@@ -11,7 +12,7 @@ export default async function ResetPasswordPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { code, error } = await searchParams
+  const { code, email, error } = await searchParams
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
@@ -27,7 +28,7 @@ export default async function ResetPasswordPage({
             className="block h-auto w-48"
           />
         </h1>
-        <ResetPasswordForm code={code} error={error} />
+        <ResetPasswordForm code={code} email={email} error={error} />
       </div>
     </main>
   )
