@@ -10,8 +10,12 @@ function requireEnv(name: string): string {
 
 export const SUPABASE_URL = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
 export const SUPABASE_ANON_KEY = requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-export const SUPABASE_SERVICE_ROLE_KEY = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? undefined
+
+// Lazy-loaded service role key — only needed at runtime in Trigger.dev tasks
+export function getSuabaseServiceRoleKey(): string {
+  return requireEnv('SUPABASE_SERVICE_ROLE_KEY')
+}
 
 // Lazy-loaded Trigger.dev vars — only evaluated when called, not at module load
 export function getTriggerSecretKey(): string {
