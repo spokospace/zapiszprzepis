@@ -8,23 +8,18 @@ export default function ResetPasswordPage() {
   const [code, setCode] = useState<string | undefined>()
   const [email, setEmail] = useState<string | undefined>()
   const [error, setError] = useState<string | undefined>()
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    // Extract code and email from URL query params
-    // Supabase /auth/v1/verify redirects with ?code=TOKEN&email=USER_EMAIL
     const searchParams = new URLSearchParams(window.location.search)
     const codeParam = searchParams.get('code')
     const emailParam = searchParams.get('email')
+    const errorParam = searchParams.get('error')
 
-    console.log('[reset-password] code:', codeParam ? 'present' : 'missing')
-    console.log('[reset-password] email:', emailParam)
-
-    if (codeParam) {
-      setCode(codeParam)
-    }
-    if (emailParam) {
-      setEmail(decodeURIComponent(emailParam))
-    }
+    if (codeParam) setCode(codeParam)
+    if (emailParam) setEmail(decodeURIComponent(emailParam))
+    if (errorParam) setError(errorParam)
+    setIsReady(true)
   }, [])
 
   return (
@@ -41,7 +36,7 @@ export default function ResetPasswordPage() {
             className="block h-auto w-48"
           />
         </h1>
-        <ResetPasswordForm code={code} email={email} error={error} />
+        {isReady && <ResetPasswordForm code={code} email={email} error={error} />}
       </div>
     </main>
   )

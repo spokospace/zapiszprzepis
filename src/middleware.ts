@@ -44,6 +44,6 @@ export const config = {
   // the original `public` token never matched and /logo.svg, /og-image.png
   // etc. got redirected to /login on every request.
   matcher: [
-    '/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map)$).*)',
+    '/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
   ],
 }

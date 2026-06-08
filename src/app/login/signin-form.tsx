@@ -21,9 +21,10 @@ interface SignInFormProps {
   error?: string
   email?: string
   sent?: string
+  success?: string
 }
 
-export function SignInForm({ error, email, sent }: SignInFormProps) {
+export function SignInForm({ error, email, sent, success }: SignInFormProps) {
   const [tab, setTab] = useState<TabType>('link')
   const [isLoading, setIsLoading] = useState(false)
   const [formEmail, setFormEmail] = useState(email ?? '')
@@ -31,6 +32,9 @@ export function SignInForm({ error, email, sent }: SignInFormProps) {
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.unknown) : null
   const sentMessage = sent === '1' && email
     ? `Wysłaliśmy link na ${email} — sprawdź pocztę.`
+    : null
+  const successMessage = success === 'password_reset'
+    ? 'Hasło zostało zmienione. Zaloguj się nowym hasłem.'
     : null
 
   const handleLinkSubmit = async (formData: FormData) => {
@@ -107,6 +111,15 @@ export function SignInForm({ error, email, sent }: SignInFormProps) {
           className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
         >
           {sentMessage}
+        </div>
+      )}
+
+      {successMessage && (
+        <div
+          role="status"
+          className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+        >
+          {successMessage}
         </div>
       )}
 
