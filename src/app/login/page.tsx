@@ -5,6 +5,7 @@ type SearchParams = Promise<{
   error?: string
   email?: string
   sent?: string
+  success?: string
 }>
 
 export default async function LoginPage({
@@ -12,7 +13,7 @@ export default async function LoginPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { error, email, sent } = await searchParams
+  const { error, email, sent, success } = await searchParams
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
@@ -28,7 +29,7 @@ export default async function LoginPage({
             className="block h-auto w-48"
           />
         </h1>
-        <SignInForm error={error} email={email} sent={sent} />
+        <SignInForm error={error} email={email} sent={sent} success={success} />
       </div>
     </main>
   )
