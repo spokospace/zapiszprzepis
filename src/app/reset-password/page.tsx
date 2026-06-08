@@ -6,18 +6,15 @@ import { ResetPasswordForm } from './reset-password-form'
 
 export default function ResetPasswordPage() {
   const [code, setCode] = useState<string | undefined>()
-  const [email, setEmail] = useState<string | undefined>()
   const [error, setError] = useState<string | undefined>()
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
     const codeParam = searchParams.get('code')
-    const emailParam = searchParams.get('email')
     const errorParam = searchParams.get('error')
 
     if (codeParam) setCode(codeParam)
-    if (emailParam) setEmail(decodeURIComponent(emailParam))
     if (errorParam) setError(errorParam)
     setIsReady(true)
   }, [])
@@ -36,7 +33,7 @@ export default function ResetPasswordPage() {
             className="block h-auto w-48"
           />
         </h1>
-        {isReady && <ResetPasswordForm code={code} email={email} error={error} />}
+        {isReady && <ResetPasswordForm code={code} error={error} />}
       </div>
     </main>
   )

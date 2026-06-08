@@ -12,7 +12,6 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 interface ResetPasswordFormProps {
   code?: string
-  email?: string
   error?: string
 }
 
