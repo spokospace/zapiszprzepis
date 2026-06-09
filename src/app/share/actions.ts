@@ -4,6 +4,18 @@ import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
 import { inngest } from '@/inngest/client'
 
+function detectSourceType(url: string): 'facebook_text' | 'web_blog' {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '')
+    if (host === 'facebook.com' || host === 'fb.watch' || host === 'fb.me') {
+      return 'facebook_text'
+    }
+  } catch {
+    // malformed URL — treat as web_blog
+  }
+  return 'web_blog'
+}
+
 export async function triggerRecipeExtraction(
   url: string,
   title?: string,
@@ -46,6 +58,8 @@ export async function triggerRecipeExtraction(
     throw new Error(`Failed to create share record: ${shareError?.message}`)
   }
 
+  const sourceType = detectSourceType(url)
+
   // Trigger extraction task via Inngest
   try {
     await inngest.send({
@@ -56,6 +70,7 @@ export async function triggerRecipeExtraction(
         sharedTitle: title,
         sharedText: text,
         userId: user.id,
+        sourceType,
       },
     })
   } catch (error) {

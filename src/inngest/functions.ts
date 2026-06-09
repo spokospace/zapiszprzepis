@@ -8,6 +8,7 @@ interface ExtractRecipeEvent {
   sharedTitle?: string
   sharedText?: string
   userId: string
+  sourceType?: 'facebook_text' | 'web_blog'
 }
 
 interface RecipeData {
@@ -24,23 +25,32 @@ export const extractRecipe = inngest.createFunction(
     retries: 3,
   },
   async ({ event }) => {
-    const { shareId, sharedUrl, sharedTitle, sharedText, userId } = event.data as ExtractRecipeEvent
+    const { shareId, sharedUrl, sharedTitle, sharedText, userId, sourceType = 'facebook_text' } = event.data as ExtractRecipeEvent
 
     try {
       // Step 1: Fetch page with Firecrawl
       const firecrawlData = await (async () => {
+        const scrapeOptions = sourceType === 'web_blog'
+          ? {
+              url: sharedUrl,
+              formats: ['markdown', 'html'],
+              onlyMainContent: true,
+              actions: [{ type: 'wait', milliseconds: 2000 }],
+            }
+          : {
+              url: sharedUrl,
+              formats: ['markdown', 'html'],
+              onlyMainContent: true,
+            }
+
         const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            url: sharedUrl,
-            formats: ['markdown', 'html'],
-            onlyMainContent: true,
-          }),
-          signal: AbortSignal.timeout(30_000),
+          body: JSON.stringify(scrapeOptions),
+          signal: AbortSignal.timeout(45_000),
         })
 
         if (!response.ok) {
@@ -141,7 +151,7 @@ ${html}`,
             image_url: recipeJSON.imageUrl || ogImage,
             ingredients: recipeJSON.ingredients,
             steps: recipeJSON.steps,
-            source_type: 'facebook_text',
+            source_type: sourceType,
             source_url: sharedUrl,
             category: recipeJSON.category,
             extracted_at: new Date().toISOString(),

@@ -8,6 +8,7 @@ interface ExtractRecipeInput {
   sharedTitle?: string
   sharedText?: string
   userId: string
+  sourceType?: 'facebook_text' | 'web_blog'
 }
 
 interface RecipeData {
@@ -21,21 +22,30 @@ interface RecipeData {
 export const extractRecipeTask = task({
   id: 'extract-recipe',
   run: async (input: ExtractRecipeInput) => {
-    const { shareId, sharedUrl, sharedTitle, sharedText, userId } = input
+    const { shareId, sharedUrl, sharedTitle, sharedText, userId, sourceType = 'facebook_text' } = input
 
     try {
       // Step 1: Fetch page with Firecrawl
+      const scrapeOptions = sourceType === 'web_blog'
+        ? {
+            url: sharedUrl,
+            formats: ['markdown', 'html'],
+            onlyMainContent: true,
+            actions: [{ type: 'wait', milliseconds: 2000 }],
+          }
+        : {
+            url: sharedUrl,
+            formats: ['markdown', 'html'],
+            onlyMainContent: true,
+          }
+
       const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          url: sharedUrl,
-          formats: ['markdown', 'html'],
-          onlyMainContent: true,
-        }),
+        body: JSON.stringify(scrapeOptions),
       })
 
       if (!firecrawlResponse.ok) {
@@ -139,7 +149,7 @@ ${html}`,
           image_url: recipeData.imageUrl || ogImage,
           ingredients: recipeData.ingredients,
           steps: recipeData.steps,
-          source_type: 'facebook_text',
+          source_type: sourceType,
           source_url: sharedUrl,
           category: recipeData.category,
           extracted_at: new Date().toISOString(),
