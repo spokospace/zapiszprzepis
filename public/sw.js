@@ -12,7 +12,7 @@
  * - Web Share Target: always network
  */
 
-const PRECACHE_NAME = 'zapiszprzepis-precache-v1'
+const PRECACHE_NAME = 'zapiszprzepis-precache-v2'
 const RUNTIME_CACHE_NAME = 'zapiszprzepis-runtime'
 const API_CACHE_NAME = 'zapiszprzepis-api'
 
@@ -61,10 +61,17 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { method, url } = event.request
   const urlObj = new URL(url)
-  const pathname = urlObj.pathname
+  const { protocol, pathname } = urlObj
 
-  // Web Share Target: always network (no caching)
-  if (method === 'POST' && pathname === '/share') {
+  // Skip non-http(s) requests — chrome-extension:// injected by browser
+  // extensions cannot be cached and must not be intercepted by the SW.
+  if (protocol !== 'http:' && protocol !== 'https:') return
+
+  // All POST requests except /api/ routes go directly to network:
+  // - Next.js Server Actions must not be cached or intercepted
+  // - Web Share Target (/share) always goes to network
+  // API POST routes fall through to the api handler below.
+  if (method === 'POST' && !pathname.startsWith('/api/')) {
     return event.respondWith(fetch(event.request))
   }
 
