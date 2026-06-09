@@ -11,37 +11,18 @@ const ERROR_MESSAGES: Record<string, string> = {
 }
 
 interface ResetPasswordFormProps {
-  code?: string
   error?: string
 }
 
-export function ResetPasswordForm({ code, error }: ResetPasswordFormProps) {
+export function ResetPasswordForm({ error }: ResetPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.unknown) : null
 
-  if (!code) {
-    return (
-      <div className="w-full max-w-sm">
-        <div
-          role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-        >
-          Link resetowania jest nieprawidłowy. Spróbuj ponownie z linku w emailu.
-        </div>
-        <p className="mt-6 text-center text-sm text-zinc-600">
-          <a href="/forgot-password" className="font-medium text-zinc-900 hover:underline">
-            Wyślij nowy link
-          </a>
-        </p>
-      </div>
-    )
-  }
-
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true)
     try {
-      await resetPassword(formData, code)
+      await resetPassword(formData)
     } finally {
       setIsLoading(false)
     }
@@ -98,8 +79,14 @@ export function ResetPasswordForm({ code, error }: ResetPasswordFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="mt-2 rounded-md bg-zinc-900 px-4 py-2.5 text-base font-medium text-white hover:bg-zinc-800 disabled:bg-zinc-400"
+          className="mt-2 flex items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2.5 text-base font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
         >
+          {isLoading && (
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+          )}
           {isLoading ? 'Ustawianie...' : 'Ustaw hasło'}
         </button>
 
