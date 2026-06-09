@@ -19,10 +19,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // Auth pages are accessible to all users
+  // /reset-password is intentionally excluded: after /auth/callback exchanges the
+  // PKCE code the user is authenticated, so it must be reachable while logged in.
   const isAuthPage = pathname === '/login' || pathname.startsWith('/login/')
     || pathname === '/signup' || pathname.startsWith('/signup/')
     || pathname === '/forgot-password' || pathname.startsWith('/forgot-password/')
-    || pathname === '/reset-password' || pathname.startsWith('/reset-password/')
 
   if (isAuthPage) {
     return user

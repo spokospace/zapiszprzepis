@@ -1,23 +1,14 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { ResetPasswordForm } from './reset-password-form'
 
-export default function ResetPasswordPage() {
-  const [code, setCode] = useState<string | undefined>()
-  const [error, setError] = useState<string | undefined>()
-  const [isReady, setIsReady] = useState(false)
+type SearchParams = Promise<{ error?: string }>
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search)
-    const codeParam = searchParams.get('code')
-    const errorParam = searchParams.get('error')
-
-    if (codeParam) setCode(codeParam)
-    if (errorParam) setError(errorParam)
-    setIsReady(true)
-  }, [])
+export default async function ResetPasswordPage({
+  searchParams,
+}: {
+  searchParams: SearchParams
+}) {
+  const { error } = await searchParams
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
@@ -33,7 +24,7 @@ export default function ResetPasswordPage() {
             className="block h-auto w-48"
           />
         </h1>
-        {isReady && <ResetPasswordForm code={code} error={error} />}
+        <ResetPasswordForm error={error} />
       </div>
     </main>
   )
