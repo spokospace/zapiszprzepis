@@ -1,6 +1,7 @@
 import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
+import { buildFirecrawlOptions } from '@/lib/firecrawl'
 
 interface ExtractRecipeInput {
   shareId: number
@@ -26,26 +27,13 @@ export const extractRecipeTask = task({
 
     try {
       // Step 1: Fetch page with Firecrawl
-      const scrapeOptions = sourceType === 'web_blog'
-        ? {
-            url: sharedUrl,
-            formats: ['markdown', 'html'],
-            onlyMainContent: true,
-            actions: [{ type: 'wait', milliseconds: 2000 }],
-          }
-        : {
-            url: sharedUrl,
-            formats: ['markdown', 'html'],
-            onlyMainContent: true,
-          }
-
       const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(scrapeOptions),
+        body: JSON.stringify(buildFirecrawlOptions(sharedUrl, sourceType)),
       })
 
       if (!firecrawlResponse.ok) {

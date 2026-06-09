@@ -37,6 +37,8 @@ export async function triggerRecipeExtraction(
     throw new Error('Not authenticated')
   }
 
+  const sourceType = detectSourceType(url)
+
   // Create recipe_share record
   const { data: share, error: shareError } = await supabase
     .from('recipe_shares')
@@ -57,8 +59,6 @@ export async function triggerRecipeExtraction(
   if (shareError || !share) {
     throw new Error(`Failed to create share record: ${shareError?.message}`)
   }
-
-  const sourceType = detectSourceType(url)
 
   // Trigger extraction task via Inngest
   try {

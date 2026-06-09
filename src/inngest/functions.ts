@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { inngest } from './client'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
+import { buildFirecrawlOptions } from '@/lib/firecrawl'
 
 interface ExtractRecipeEvent {
   shareId: number
@@ -30,26 +31,13 @@ export const extractRecipe = inngest.createFunction(
     try {
       // Step 1: Fetch page with Firecrawl
       const firecrawlData = await (async () => {
-        const scrapeOptions = sourceType === 'web_blog'
-          ? {
-              url: sharedUrl,
-              formats: ['markdown', 'html'],
-              onlyMainContent: true,
-              actions: [{ type: 'wait', milliseconds: 2000 }],
-            }
-          : {
-              url: sharedUrl,
-              formats: ['markdown', 'html'],
-              onlyMainContent: true,
-            }
-
         const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(scrapeOptions),
+          body: JSON.stringify(buildFirecrawlOptions(sharedUrl, sourceType)),
           signal: AbortSignal.timeout(45_000),
         })
 
