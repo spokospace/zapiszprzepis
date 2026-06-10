@@ -1,6 +1,7 @@
 import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
+import { buildFirecrawlOptions } from '@/lib/firecrawl'
 
 interface ExtractRecipeInput {
   shareId: number
@@ -8,6 +9,7 @@ interface ExtractRecipeInput {
   sharedTitle?: string
   sharedText?: string
   userId: string
+  sourceType?: 'facebook_text' | 'web_blog'
 }
 
 interface RecipeData {
@@ -21,7 +23,7 @@ interface RecipeData {
 export const extractRecipeTask = task({
   id: 'extract-recipe',
   run: async (input: ExtractRecipeInput) => {
-    const { shareId, sharedUrl, sharedTitle, sharedText, userId } = input
+    const { shareId, sharedUrl, sharedTitle, sharedText, userId, sourceType = 'facebook_text' } = input
 
     try {
       // Step 1: Fetch page with Firecrawl
@@ -31,11 +33,7 @@ export const extractRecipeTask = task({
           'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          url: sharedUrl,
-          formats: ['markdown', 'html'],
-          onlyMainContent: true,
-        }),
+        body: JSON.stringify(buildFirecrawlOptions(sharedUrl, sourceType)),
       })
 
       if (!firecrawlResponse.ok) {
@@ -139,7 +137,7 @@ ${html}`,
           image_url: recipeData.imageUrl || ogImage,
           ingredients: recipeData.ingredients,
           steps: recipeData.steps,
-          source_type: 'facebook_text',
+          source_type: sourceType,
           source_url: sharedUrl,
           category: recipeData.category,
           extracted_at: new Date().toISOString(),

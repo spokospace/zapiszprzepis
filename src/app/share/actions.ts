@@ -4,6 +4,18 @@ import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
 import { inngest } from '@/inngest/client'
 
+function detectSourceType(url: string): 'facebook_text' | 'web_blog' {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '')
+    if (host === 'facebook.com' || host === 'fb.watch' || host === 'fb.me') {
+      return 'facebook_text'
+    }
+  } catch {
+    // malformed URL — treat as web_blog
+  }
+  return 'web_blog'
+}
+
 export async function triggerRecipeExtraction(
   url: string,
   title?: string,
@@ -24,6 +36,8 @@ export async function triggerRecipeExtraction(
   if (!user) {
     throw new Error('Not authenticated')
   }
+
+  const sourceType = detectSourceType(url)
 
   // Create recipe_share record
   const { data: share, error: shareError } = await supabase
@@ -56,6 +70,7 @@ export async function triggerRecipeExtraction(
         sharedTitle: title,
         sharedText: text,
         userId: user.id,
+        sourceType,
       },
     })
   } catch (error) {
