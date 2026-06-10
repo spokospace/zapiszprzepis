@@ -1,17 +1,27 @@
 'use client'
 
+import { Suspense } from 'react'
 import { RecipeCard } from '@/app/components/recipe-card'
+import { CategoryFilter } from '@/app/components/category-filter'
 import { Toast } from '@/app/components/toast'
 import type { Database } from '@/lib/supabase.types'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
+type RecipeCategory = Database['public']['Enums']['recipe_category']
 
 interface RecipesContentProps {
   recipes: Recipe[]
   showSharedToast: boolean
+  activeCategory?: RecipeCategory | null
+  categoryCounts?: Partial<Record<RecipeCategory, number>>
 }
 
-export function RecipesContent({ recipes, showSharedToast }: RecipesContentProps) {
+export function RecipesContent({
+  recipes,
+  showSharedToast,
+  activeCategory,
+  categoryCounts,
+}: RecipesContentProps) {
   return (
     <div className="min-h-screen bg-white py-8">
       {showSharedToast && (
@@ -23,14 +33,21 @@ export function RecipesContent({ recipes, showSharedToast }: RecipesContentProps
       )}
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Moje przepisy</h1>
           <p className="mt-2 text-gray-600">
             {recipes.length === 0
-              ? 'Brak przepisów. Udostępnij link z Facebooka!'
+              ? activeCategory
+                ? 'Brak przepisów w tej kategorii.'
+                : 'Brak przepisów. Udostępnij link z Facebooka!'
               : `${recipes.length} przepis${recipes.length === 1 ? '' : 'ów'}`}
           </p>
+        </div>
+
+        <div className="mb-8">
+          <Suspense>
+            <CategoryFilter activeCategory={activeCategory} counts={categoryCounts} />
+          </Suspense>
         </div>
 
         {/* Empty state */}
@@ -51,11 +68,12 @@ export function RecipesContent({ recipes, showSharedToast }: RecipesContentProps
             </svg>
             <h3 className="mt-4 text-lg font-medium text-gray-900">Brak przepisów</h3>
             <p className="mt-2 text-gray-600">
-              Udostępnij URL przepisu z Facebooka lub bloga kulinarnego, a pojawi się on tutaj.
+              {activeCategory
+                ? 'Nie masz jeszcze przepisów w tej kategorii.'
+                : 'Udostępnij URL przepisu z Facebooka lub bloga kulinarnego, a pojawi się on tutaj.'}
             </p>
           </div>
         ) : (
-          /* Recipe grid */
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {recipes.map((recipe) => (
               <RecipeCard
