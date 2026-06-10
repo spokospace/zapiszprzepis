@@ -1,33 +1,15 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
 import { inngest } from '@/inngest/client'
-
-function detectSourceType(url: string): 'facebook_text' | 'web_blog' {
-  try {
-    const host = new URL(url).hostname.replace(/^www\./, '')
-    if (host === 'facebook.com' || host === 'fb.watch' || host === 'fb.me') {
-      return 'facebook_text'
-    }
-  } catch {
-    // malformed URL — treat as web_blog
-  }
-  return 'web_blog'
-}
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { detectSourceType } from '@/lib/detect-source-type'
 
 export async function triggerRecipeExtraction(
   url: string,
   title?: string,
   text?: string
 ) {
-  // Get authenticated user
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-    },
-  })
+  const supabase = await createSupabaseServerClient()
 
   const {
     data: { user },
@@ -39,7 +21,6 @@ export async function triggerRecipeExtraction(
 
   const sourceType = detectSourceType(url)
 
-  // Create recipe_share record
   const { data: share, error: shareError } = await supabase
     .from('recipe_shares')
     .insert({
@@ -60,7 +41,6 @@ export async function triggerRecipeExtraction(
     throw new Error(`Failed to create share record: ${shareError?.message}`)
   }
 
-  // Trigger extraction task via Inngest
   try {
     await inngest.send({
       name: 'recipe/extract',
@@ -74,7 +54,6 @@ export async function triggerRecipeExtraction(
       },
     })
   } catch (error) {
-    // Log error but don't fail the share submission
     console.error('Failed to trigger extraction task:', error)
   }
 

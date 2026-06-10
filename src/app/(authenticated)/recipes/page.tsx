@@ -11,6 +11,7 @@ const VALID_CATEGORIES = Constants.public.Enums.recipe_category
 type SearchParams = Promise<{
   shared?: string
   category?: string
+  add_error?: string
 }>
 
 export const metadata = {
@@ -23,7 +24,7 @@ export default async function RecipesPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { shared, category } = await searchParams
+  const { shared, category, add_error } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   const {
@@ -70,6 +71,7 @@ export default async function RecipesPage({
     <RecipesContent
       recipes={(recipes || []) as Recipe[]}
       showSharedToast={shared === '1'}
+      addError={add_error}
       activeCategory={activeCategory}
       categoryCounts={counts}
     />
