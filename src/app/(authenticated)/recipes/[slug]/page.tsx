@@ -81,7 +81,6 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
               href={`/recipes?category=${typedRecipe.category}`}
               className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded-full hover:bg-orange-200 transition"
             >
-              {cat && <span>{cat.emoji}</span>}
               <span>{cat ? cat.label : typedRecipe.category}</span>
             </Link>
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
