@@ -3,18 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
 import { inngest } from '@/inngest/client'
-
-function detectSourceType(url: string): 'facebook_text' | 'web_blog' {
-  try {
-    const host = new URL(url).hostname.replace(/^www\./, '')
-    if (host === 'facebook.com' || host === 'fb.watch' || host === 'fb.me') {
-      return 'facebook_text'
-    }
-  } catch {
-    // malformed URL — treat as web_blog
-  }
-  return 'web_blog'
-}
+import { detectSourceType } from '@/lib/detect-source-type'
 
 export async function triggerRecipeExtraction(
   url: string,
