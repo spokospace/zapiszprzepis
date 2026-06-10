@@ -7,7 +7,7 @@ test.describe('Add recipe form', () => {
 
   test('shows error when submitted empty', async ({ page }) => {
     await page.getByRole('button', { name: 'Dodaj przepis' }).click()
-    await expect(page.getByRole('alert')).toContainText('Wklej adres URL przepisu.')
+    await expect(page.locator('p[role="alert"]')).toContainText('Wklej adres URL przepisu.')
   })
 
   test('shows error for invalid URL', async ({ page }) => {
@@ -15,7 +15,7 @@ test.describe('Add recipe form', () => {
     await page.locator('form').evaluate((form: HTMLFormElement) => { form.noValidate = true })
     await page.getByLabel('URL przepisu').fill('to-nie-jest-url')
     await page.getByRole('button', { name: 'Dodaj przepis' }).click()
-    await expect(page.getByRole('alert')).toContainText('To nie wygląda jak prawidłowy URL.')
+    await expect(page.locator('p[role="alert"]')).toContainText('To nie wygląda jak prawidłowy URL.')
   })
 
   test('accepts valid URL and shows success toast', async ({ page }) => {

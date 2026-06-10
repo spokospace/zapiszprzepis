@@ -1,9 +1,8 @@
 import { test as setup } from '@playwright/test'
 import { mkdirSync } from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
 
-const authFile = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth/user.json')
+const authFile = path.join(__dirname, '.auth/user.json')
 mkdirSync(path.dirname(authFile), { recursive: true })
 
 setup('authenticate', async ({ page }) => {
