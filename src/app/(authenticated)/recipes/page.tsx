@@ -1,13 +1,16 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { RecipeCard } from '@/app/components/recipe-card'
 import { RecipesContent } from './recipes-content'
-import type { Database } from '@/lib/supabase.types'
+import { Constants, type Database } from '@/lib/supabase.types'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
+type RecipeCategory = Database['public']['Enums']['recipe_category']
+
+const VALID_CATEGORIES = Constants.public.Enums.recipe_category
 
 type SearchParams = Promise<{
   shared?: string
+  category?: string
 }>
 
 export const metadata = {
@@ -20,10 +23,9 @@ export default async function RecipesPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { shared } = await searchParams
+  const { shared, category } = await searchParams
   const supabase = await createSupabaseServerClient()
 
-  // Verify user is authenticated
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -32,21 +34,44 @@ export default async function RecipesPage({
     redirect('/login')
   }
 
-  const { data: recipes, error } = await supabase
+  const activeCategory =
+    category && (VALID_CATEGORIES as readonly string[]).includes(category)
+      ? (category as RecipeCategory)
+      : null
+
+  let filteredQuery = supabase
     .from('recipes')
     .select('id, slug, title, image_url, category')
     .order('created_at', { ascending: false })
+
+  if (activeCategory) {
+    filteredQuery = filteredQuery.eq('category', activeCategory)
+  }
+
+  const [{ data: recipes, error }, { data: allRecipes }] = await Promise.all([
+    filteredQuery,
+    supabase.from('recipes').select('category'),
+  ])
 
   if (error) {
     console.error('[recipes] Query error:', error)
   }
 
-  const typedRecipes = (recipes || []) as Recipe[]
+  const counts = (allRecipes || []).reduce<Partial<Record<RecipeCategory, number>>>(
+    (acc, r) => {
+      const cat = r.category as RecipeCategory
+      acc[cat] = (acc[cat] ?? 0) + 1
+      return acc
+    },
+    {},
+  )
 
   return (
     <RecipesContent
-      recipes={typedRecipes}
+      recipes={(recipes || []) as Recipe[]}
       showSharedToast={shared === '1'}
+      activeCategory={activeCategory}
+      categoryCounts={counts}
     />
   )
 }
