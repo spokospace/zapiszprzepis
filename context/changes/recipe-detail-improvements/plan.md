@@ -258,8 +258,8 @@ Brak istotnych. Dodanie 3 kolumn int nullable to brak praktycznego wpływu. Open
 
 #### Automatyczne
 
-- [ ] 3.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [ ] 3.2 ESLint przechodzi na zmienionych plikach
+- [x] 3.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
+- [x] 3.2 ESLint przechodzi na zmienionych plikach
 
 #### Ręczne
 
