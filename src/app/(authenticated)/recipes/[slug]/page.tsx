@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { CATEGORIES } from '@/app/components/category-filter'
+import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { Toast } from '@/app/components/toast'
 import type { Database } from '@/lib/supabase.types'
 
@@ -56,7 +56,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     ? typedRecipe.steps
     : JSON.parse(typedRecipe.steps as any)
 
-  const cat = CATEGORIES.find((c) => c.value === typedRecipe.category)
+  const cat = RECIPE_CATEGORIES.find((c) => c.value === typedRecipe.category)
 
   return (
     <div className="min-h-screen bg-white py-8">
