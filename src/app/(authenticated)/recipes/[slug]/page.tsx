@@ -13,12 +13,13 @@ export const metadata = {
 }
 
 interface RecipeDetailPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 export default async function RecipeDetailPage({ params }: RecipeDetailPageProps) {
+  const { slug } = await params
   const supabase = await createSupabaseServerClient()
 
   const {
@@ -32,7 +33,7 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
   const { data: recipe, error } = await supabase
     .from('recipes')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single()
 
   if (error || !recipe) {
