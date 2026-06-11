@@ -239,30 +239,30 @@ Brak istotnych. Dodanie 3 kolumn int nullable to brak praktycznego wpływu. Open
 #### Ręczne
 
 - [x] 1.4 Schema query potwierdza 3 nowe nullable int kolumny — f98f606
-- [ ] 1.5 Nowy share przepisu z bloga zwraca wartości w nowych polach (gdy obecne w treści)
+- [x] 1.5 Nowy share przepisu z bloga zwraca wartości w nowych polach (gdy obecne w treści) — 1e10eb2
 
 ### Faza 2: Render
 
 #### Automatyczne
 
-- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [x] 2.2 ESLint przechodzi na zmienionych plikach
+- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit` — cd74892
+- [x] 2.2 ESLint przechodzi na zmienionych plikach — cd74892
 
 #### Ręczne
 
-- [ ] 2.3 Detail page przepisu z czasami pokazuje badge'y z poprawnym formatem PL
-- [ ] 2.4 Detail page bez czasów (wszystkie null) nie pokazuje sekcji
-- [ ] 2.5 Częściowe dane (1 z 3 null) renderuje tylko niepuste badge'y
+- [x] 2.3 Detail page przepisu z czasami pokazuje badge'y z poprawnym formatem PL — cd74892
+- [x] 2.4 Detail page bez czasów (wszystkie null) nie pokazuje sekcji — cd74892
+- [x] 2.5 Częściowe dane (1 z 3 null) renderuje tylko niepuste badge'y — cd74892
 
 ### Faza 3: Bulk refresh existing recipes
 
 #### Automatyczne
 
-- [x] 3.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [x] 3.2 ESLint przechodzi na zmienionych plikach
+- [x] 3.1 TypeScript przechodzi: `pnpm exec tsc --noEmit` — 1e10eb2
+- [x] 3.2 ESLint przechodzi na zmienionych plikach — 1e10eb2
 
 #### Ręczne
 
-- [ ] 3.3 Skrypt loguje wyzwolone eventy
-- [ ] 3.4 Po Inngest run, Tortilla z patelni ma wypełnione czasy
-- [ ] 3.5 Detail page Tortilli pokazuje sekcję czasów
+- [x] 3.3 Skrypt loguje wyzwolone eventy — 1e10eb2
+- [x] 3.4 Po Inngest run, Tortilla z patelni ma wypełnione czasy (10/10/18 min) — 1e10eb2
+- [x] 3.5 Detail page Tortilli pokazuje sekcję czasów — 1e10eb2
