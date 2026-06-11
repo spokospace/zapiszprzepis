@@ -89,49 +89,58 @@ export type Database = {
       recipes: {
         Row: {
           category: Database["public"]["Enums"]["recipe_category"]
+          cook_time_minutes: number | null
           created_at: string
           description: string | null
           extracted_at: string | null
           id: number
           image_url: string | null
           ingredients: Json
+          prep_time_minutes: number | null
           slug: string
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url: string | null
           steps: Json
           title: string
+          total_time_minutes: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           category: Database["public"]["Enums"]["recipe_category"]
+          cook_time_minutes?: number | null
           created_at?: string
           description?: string | null
           extracted_at?: string | null
           id?: number
           image_url?: string | null
           ingredients?: Json
+          prep_time_minutes?: number | null
           slug: string
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
           steps?: Json
           title: string
+          total_time_minutes?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           category?: Database["public"]["Enums"]["recipe_category"]
+          cook_time_minutes?: number | null
           created_at?: string
           description?: string | null
           extracted_at?: string | null
           id?: number
           image_url?: string | null
           ingredients?: Json
+          prep_time_minutes?: number | null
           slug?: string
           source_type?: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
           steps?: Json
           title?: string
+          total_time_minutes?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -143,6 +152,7 @@ export type Database = {
     }
     Functions: {
       current_user_id: { Args: never; Returns: string }
+      normalize_url: { Args: { raw: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
