@@ -2,6 +2,7 @@ import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
 import { buildFirecrawlOptions } from '@/lib/firecrawl'
+import { slugify } from '@/lib/slugify'
 
 interface ExtractRecipeInput {
   shareId: number
@@ -41,9 +42,8 @@ export const extractRecipeTask = task({
       }
 
       const firecrawlData = await firecrawlResponse.json()
-      const markdown = firecrawlData.markdown || ''
-      const html = firecrawlData.html || ''
-      const ogImage = firecrawlData.metadata?.ogImage
+      const { markdown = '', html = '', metadata } = firecrawlData.data ?? {}
+      const ogImage = metadata?.ogImage
 
       // Step 2: Extract recipe with OpenAI
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -120,21 +120,14 @@ ${html}`,
         },
       })
 
-      // Create slug from title
-      const slug = recipeData.title
-        .toLowerCase()
-        .replace(/[^a-ząćęłńóśźż0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .substring(0, 100)
-
       const { data: recipe, error: recipeError } = await supabase
         .from('recipes')
         .insert({
           user_id: userId,
           title: recipeData.title,
-          slug,
+          slug: slugify(recipeData.title),
           description: null,
-          image_url: recipeData.imageUrl || ogImage,
+          image_url: ogImage ?? null,
           ingredients: recipeData.ingredients,
           steps: recipeData.steps,
           source_type: sourceType,
