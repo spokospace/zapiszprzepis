@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Link } from 'lucide-react'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { CategoryFilter } from '@/app/components/category-filter'
@@ -28,6 +28,14 @@ interface RecipesContentProps {
 
 function AddRecipeForm({ addError }: { addError?: string | null }) {
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (addError) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('add_error')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [addError])
 
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true)
@@ -93,6 +101,7 @@ export function RecipesContent({
           message="Przepis wysłany do przetwarzania! Pojawi się za 1-3 minuty."
           type="success"
           duration={5000}
+          clearParam="shared"
         />
       )}
       {showPendingDuplicateToast && (
@@ -100,6 +109,7 @@ export function RecipesContent({
           message="Już przetwarzam ten przepis — wróć za chwilę."
           type="info"
           duration={5000}
+          clearParam="duplicate"
         />
       )}
 

@@ -73,7 +73,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   return (
     <div className="min-h-screen bg-white py-8">
       {duplicate === '1' && (
-        <Toast message="Ten przepis już masz." type="info" duration={5000} />
+        <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
       )}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link href="/recipes" className="inline-flex items-center text-orange-600 hover:text-orange-700 mb-8">
