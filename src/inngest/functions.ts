@@ -19,6 +19,9 @@ interface RecipeData {
   steps: string[]
   category: string
   imageUrl?: string
+  prepTimeMinutes?: number | null
+  cookTimeMinutes?: number | null
+  totalTimeMinutes?: number | null
 }
 
 export const extractRecipe = inngest.createFunction(
@@ -68,9 +71,17 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
     {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string"}
   ],
   "steps": ["Step 1 description", "Step 2 description"],
-  "category": "one of: obiady, zupy, desery, sniadania, przekaski, wegetarianskie, napoje, inne"
+  "category": "one of: obiady, zupy, desery, sniadania, przekaski, wegetarianskie, napoje, inne",
+  "prepTimeMinutes": integer or null,
+  "cookTimeMinutes": integer or null,
+  "totalTimeMinutes": integer or null
 }
-Rules: translate to Polish, convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml), best-effort if content incomplete.`,
+Rules:
+- Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml).
+- Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
+- prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
+- Return null for any field the source does not specify. Do not guess.
+- Best-effort if content incomplete.`,
             },
             {
               role: 'user',
@@ -116,6 +127,9 @@ Rules: translate to Polish, convert US units to metric (1 cup ≈ 240ml, 1 tbsp 
             source_type: sourceType,
             source_url: sharedUrl,
             category: recipeJSON.category,
+            prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
+            cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
+            total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
             extracted_at: new Date().toISOString(),
           })
           .select('id')
