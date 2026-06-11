@@ -5,6 +5,9 @@ import withPWA from "next-pwa"
 
 const baseConfig: NextConfig = {
   turbopack: {},
+  images: {
+    remotePatterns: [{ protocol: 'https', hostname: '**' }],
+  },
 }
 
 const nextConfig = withPWA({
