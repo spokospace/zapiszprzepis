@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { extractStoragePath } from '@/lib/recipe-image-archive'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -27,12 +28,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { data: recipe, error: getError } = await supabase
       .from('recipes')
-      .select('id')
+      .select('id, image_url')
       .eq('slug', slug)
       .single()
 
     if (getError || !recipe) {
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 })
+    }
+
+    if (recipe.image_url) {
+      const storagePath = extractStoragePath(recipe.image_url)
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage
+          .from('recipe-images')
+          .remove([storagePath])
+        if (storageError) {
+          console.warn('[delete] Storage cleanup failed:', storageError.message)
+        }
+      }
     }
 
     const { error: deleteError } = await supabase.from('recipes').delete().eq('id', recipe.id)

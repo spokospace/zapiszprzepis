@@ -3,6 +3,7 @@ import { inngest } from './client'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
 import { buildFirecrawlOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
+import { archiveImage } from '@/lib/recipe-image-archive'
 
 interface ExtractRecipeEvent {
   shareId: number
@@ -141,6 +142,14 @@ Rules:
 
         if (data) {
           recipe = data
+          // Archive the external og:image into Supabase Storage. On failure
+          // we keep the external URL already stored in image_url.
+          if (ogImage != null) {
+            const archivedUrl = await archiveImage(supabase, userId, data.id, ogImage)
+            if (archivedUrl != null) {
+              await supabase.from('recipes').update({ image_url: archivedUrl }).eq('id', data.id)
+            }
+          }
           break
         }
 
@@ -168,7 +177,8 @@ Rules:
               gapFill.total_time_minutes = recipeJSON.totalTimeMinutes
             }
             if (existing.image_url == null && ogImage != null) {
-              gapFill.image_url = ogImage
+              const archivedUrl = await archiveImage(supabase, userId, existing.id, ogImage)
+              gapFill.image_url = archivedUrl ?? ogImage
             }
 
             if (Object.keys(gapFill).length > 0) {
