@@ -18,6 +18,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
+  // Inngest webhook: external service hits this endpoint to sync functions
+  // and trigger runs. Auth is verified by Inngest's own signature
+  // (INNGEST_SIGNING_KEY), not Supabase session.
+  if (pathname === '/api/inngest') {
+    return response
+  }
+
   // Auth pages are accessible to all users
   // /reset-password is intentionally excluded: after /auth/callback exchanges the
   // PKCE code the user is authenticated, so it must be reachable while logged in.
