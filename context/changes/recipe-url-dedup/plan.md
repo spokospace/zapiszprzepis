@@ -285,8 +285,8 @@ Dedup check dodaje 1-2 query do Supabase przed insertem (~50-100ms łącznie na 
 
 #### Automatyczne
 
-- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [x] 2.2 ESLint przechodzi: `pnpm lint`
+- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit` — 51e581e
+- [x] 2.2 ESLint przechodzi: `pnpm lint` — 51e581e
 - [ ] 2.3 Playwright testy add-recipe przechodzą: `pnpm exec playwright test add-recipe`
 
 #### Ręczne
@@ -300,7 +300,7 @@ Dedup check dodaje 1-2 query do Supabase przed insertem (~50-100ms łącznie na 
 
 #### Automatyczne
 
-- [ ] 3.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
+- [x] 3.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
 
 #### Ręczne
 
