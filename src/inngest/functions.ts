@@ -144,18 +144,38 @@ Rules:
           break
         }
 
-        // URL collision: a parallel share won the race. Link this share to the
-        // already-stored recipe instead of creating a duplicate.
+        // URL collision: a parallel share won the race, OR this is a refresh
+        // run for an already-stored recipe. Link this share to the existing
+        // recipe and gap-fill any null fields with newly extracted values
+        // (we never overwrite already-populated fields).
         if (error?.message.includes(URL_KEY)) {
           const { data: existing } = await supabase
             .from('recipes')
-            .select('id')
+            .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url')
             .eq('user_id', userId)
             .eq('source_url', sharedUrl)
             .single()
 
           if (existing) {
-            recipe = existing
+            const gapFill: Record<string, number | string> = {}
+            if (existing.prep_time_minutes == null && recipeJSON.prepTimeMinutes != null) {
+              gapFill.prep_time_minutes = recipeJSON.prepTimeMinutes
+            }
+            if (existing.cook_time_minutes == null && recipeJSON.cookTimeMinutes != null) {
+              gapFill.cook_time_minutes = recipeJSON.cookTimeMinutes
+            }
+            if (existing.total_time_minutes == null && recipeJSON.totalTimeMinutes != null) {
+              gapFill.total_time_minutes = recipeJSON.totalTimeMinutes
+            }
+            if (existing.image_url == null && ogImage != null) {
+              gapFill.image_url = ogImage
+            }
+
+            if (Object.keys(gapFill).length > 0) {
+              await supabase.from('recipes').update(gapFill).eq('id', existing.id)
+            }
+
+            recipe = { id: existing.id }
             break
           }
         }
