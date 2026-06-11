@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:auth": "node --env-file=.env.local --import tsx scripts/check-auth.ts",
+    "refresh:recipe-times": "node --env-file=.env.local --import tsx scripts/refresh-recipe-times.ts",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
