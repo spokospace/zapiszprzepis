@@ -232,21 +232,21 @@ Brak istotnych. Dodanie 3 kolumn int nullable to brak praktycznego wpływu. Open
 
 #### Automatyczne
 
-- [x] 1.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [x] 1.2 Migration aplikuje się: `pnpm exec supabase db push`
-- [x] 1.3 ESLint przechodzi na zmienionych plikach
+- [x] 1.1 TypeScript przechodzi: `pnpm exec tsc --noEmit` — f98f606
+- [x] 1.2 Migration aplikuje się: `pnpm exec supabase db push` — f98f606
+- [x] 1.3 ESLint przechodzi na zmienionych plikach — f98f606
 
 #### Ręczne
 
-- [x] 1.4 Schema query potwierdza 3 nowe nullable int kolumny
+- [x] 1.4 Schema query potwierdza 3 nowe nullable int kolumny — f98f606
 - [ ] 1.5 Nowy share przepisu z bloga zwraca wartości w nowych polach (gdy obecne w treści)
 
 ### Faza 2: Render
 
 #### Automatyczne
 
-- [ ] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [ ] 2.2 ESLint przechodzi na zmienionych plikach
+- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
+- [x] 2.2 ESLint przechodzi na zmienionych plikach
 
 #### Ręczne
 
