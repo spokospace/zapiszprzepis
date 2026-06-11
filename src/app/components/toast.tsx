@@ -6,10 +6,21 @@ export interface ToastProps {
   message: string
   type?: 'success' | 'error' | 'info'
   duration?: number
+  // When set, the named query param is removed from the URL on mount so
+  // a refresh doesn't re-trigger the toast.
+  clearParam?: string
 }
 
-export function Toast({ message, type = 'success', duration = 3000 }: ToastProps) {
+export function Toast({ message, type = 'success', duration = 3000, clearParam }: ToastProps) {
   const [isVisible, setIsVisible] = useState(true)
+
+  useEffect(() => {
+    if (clearParam) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete(clearParam)
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [clearParam])
 
   useEffect(() => {
     const timer = setTimeout(() => {
