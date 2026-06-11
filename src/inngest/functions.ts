@@ -98,12 +98,17 @@ Rules:
             },
             {
               role: 'user',
-              content: `Extract recipe from this content:\nTitle hint: ${sharedTitle || 'unknown'}\nExtra text: ${sharedText || ''}\n\nPage markdown:\n${markdown}\n\nPage HTML:\n${html}`,
+              // Cap each field — Firecrawl with onlyMainContent: false on a
+              // classic blog template can return tens of KB once the
+              // sidebar, archive, popular-posts widget and labels are kept.
+              // gpt-4o-mini extracts the recipe from the first few KB; the
+              // tail is sidebar noise and inflates latency past the timeout.
+              content: `Extract recipe from this content:\nTitle hint: ${sharedTitle || 'unknown'}\nExtra text: ${sharedText || ''}\n\nPage markdown:\n${markdown.slice(0, 20_000)}\n\nPage HTML:\n${html.slice(0, 20_000)}`,
             },
           ],
           temperature: 0.3,
         }),
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(60_000),
       })
 
       if (!openaiResponse.ok) {
