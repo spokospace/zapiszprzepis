@@ -20,6 +20,7 @@ const ADD_ERROR_MESSAGES: Record<string, string> = {
 interface RecipesContentProps {
   recipes: Recipe[]
   showSharedToast: boolean
+  showPendingDuplicateToast?: boolean
   addError?: string | null
   activeCategory?: RecipeCategory | null
   categoryCounts?: Partial<Record<RecipeCategory, number>>
@@ -80,6 +81,7 @@ function AddRecipeForm({ addError }: { addError?: string | null }) {
 export function RecipesContent({
   recipes,
   showSharedToast,
+  showPendingDuplicateToast,
   addError,
   activeCategory,
   categoryCounts,
@@ -90,6 +92,13 @@ export function RecipesContent({
         <Toast
           message="Przepis wysłany do przetwarzania! Pojawi się za 1-3 minuty."
           type="success"
+          duration={5000}
+        />
+      )}
+      {showPendingDuplicateToast && (
+        <Toast
+          message="Już przetwarzam ten przepis — wróć za chwilę."
+          type="info"
           duration={5000}
         />
       )}

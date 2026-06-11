@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { CATEGORIES } from '@/app/components/category-filter'
+import { Toast } from '@/app/components/toast'
 import type { Database } from '@/lib/supabase.types'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
@@ -16,10 +17,14 @@ interface RecipeDetailPageProps {
   params: Promise<{
     slug: string
   }>
+  searchParams: Promise<{
+    duplicate?: string
+  }>
 }
 
-export default async function RecipeDetailPage({ params }: RecipeDetailPageProps) {
+export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
+  const { duplicate } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   const {
@@ -55,6 +60,9 @@ export default async function RecipeDetailPage({ params }: RecipeDetailPageProps
 
   return (
     <div className="min-h-screen bg-white py-8">
+      {duplicate === '1' && (
+        <Toast message="Ten przepis już masz." type="info" duration={5000} />
+      )}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link href="/recipes" className="inline-flex items-center text-orange-600 hover:text-orange-700 mb-8">
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
