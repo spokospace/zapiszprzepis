@@ -197,9 +197,18 @@ Rules:
             if (existing.total_time_minutes == null && recipeJSON.totalTimeMinutes != null) {
               gapFill.total_time_minutes = recipeJSON.totalTimeMinutes
             }
-            if (existing.image_url == null && ogImage != null) {
+            // Archive flow: when archiveImage returns a Storage URL, always
+            // overwrite image_url — even if it's already populated with an
+            // external link. That's how scripts/archive-recipe-images.ts
+            // backfills existing recipes to be archive-first. External URL
+            // is only kept when there was no prior value AND archive failed.
+            if (ogImage != null) {
               const archivedUrl = await archiveImage(supabase, userId, existing.id, ogImage)
-              gapFill.image_url = archivedUrl ?? ogImage
+              if (archivedUrl != null) {
+                gapFill.image_url = archivedUrl
+              } else if (existing.image_url == null) {
+                gapFill.image_url = ogImage
+              }
             }
 
             if (Object.keys(gapFill).length > 0) {

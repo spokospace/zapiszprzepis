@@ -256,8 +256,8 @@ Zachowuje semantykę „archive wins over external; external wins over null".
 
 #### Ręczne
 
-- [ ] 1.5 Nowy share przepisu → `image_url` zaczyna się od storage URL; plik w bucket
-- [ ] 1.6 Detail page nowego przepisu renderuje obrazek
+- [x] 1.5 Nowy share przepisu → `image_url` zaczyna się od storage URL; plik w bucket — 2fdd663
+- [x] 1.6 Detail page nowego przepisu renderuje obrazek — 2fdd663
 - [ ] 1.7 Delete recipe → plik znika ze Storage
 - [ ] 1.8 Fallback: og:image > 5MB lub 404 → `image_url` pozostaje external (lub null), detail nadal działa
 
@@ -265,8 +265,8 @@ Zachowuje semantykę „archive wins over external; external wins over null".
 
 #### Automatyczne
 
-- [ ] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [ ] 2.2 ESLint przechodzi na zmienionych plikach
+- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
+- [x] 2.2 ESLint przechodzi na zmienionych plikach
 
 #### Ręczne
 
