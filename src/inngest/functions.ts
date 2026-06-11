@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { inngest } from './client'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
 import { buildFirecrawlOptions } from '@/lib/firecrawl'
+import { slugify } from '@/lib/slugify'
 
 interface ExtractRecipeEvent {
   shareId: number
@@ -21,8 +22,7 @@ interface RecipeData {
 }
 
 export const extractRecipe = inngest.createFunction(
-  { id: 'extract-recipe', retries: 3 },
-  { event: 'recipe/extract' },
+  { id: 'extract-recipe', retries: 3, triggers: { event: 'recipe/extract' } },
   async ({ event }) => {
     const { shareId, sharedUrl, sharedTitle, sharedText, userId, sourceType = 'facebook_text' } = event.data as ExtractRecipeEvent
 
@@ -46,9 +46,8 @@ export const extractRecipe = inngest.createFunction(
       }
 
       const firecrawlData = await firecrawlResponse.json()
-      const markdown = firecrawlData.markdown || ''
-      const html = firecrawlData.html || ''
-      const ogImage = firecrawlData.metadata?.ogImage
+      const { markdown = '', html = '', metadata } = firecrawlData.data ?? {}
+      const ogImage = metadata?.ogImage
 
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -93,20 +92,14 @@ Rules: translate to Polish, convert US units to metric (1 cup ≈ 240ml, 1 tbsp 
 
       const recipeJSON = JSON.parse(content) as RecipeData
 
-      const slug = recipeJSON.title
-        .toLowerCase()
-        .replace(/[^a-ząćęłńóśźż0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .substring(0, 100)
-
       const { data: recipe, error: insertError } = await supabase
         .from('recipes')
         .insert({
           user_id: userId,
           title: recipeJSON.title,
-          slug,
+          slug: slugify(recipeJSON.title),
           description: null,
-          image_url: recipeJSON.imageUrl || ogImage || null,
+          image_url: ogImage ?? null,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
           source_type: sourceType,
