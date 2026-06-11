@@ -35,22 +35,33 @@ export const extractRecipe = inngest.createFunction(
     })
 
     try {
-      const firecrawlResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(buildFirecrawlOptions(sharedUrl, sourceType)),
-        signal: AbortSignal.timeout(45_000),
-      })
-
-      if (!firecrawlResponse.ok) {
-        throw new Error(`Firecrawl failed: ${firecrawlResponse.statusText}`)
+      async function scrape(fullContent: boolean) {
+        const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent })),
+          signal: AbortSignal.timeout(45_000),
+        })
+        if (!response.ok) {
+          throw new Error(`Firecrawl failed: ${response.statusText}`)
+        }
+        const data = await response.json()
+        return data.data ?? {}
       }
 
-      const firecrawlData = await firecrawlResponse.json()
-      const { markdown = '', html = '', metadata } = firecrawlData.data ?? {}
+      let scraped = await scrape(false)
+      // Blogspot and some WordPress templates trip Firecrawl's main-content
+      // heuristic and leave just a "Skip to main content" link. Retry once
+      // with onlyMainContent: false to give the LLM something to work with.
+      if (!scraped.markdown || scraped.markdown.length < 200) {
+        console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
+        scraped = await scrape(true)
+      }
+
+      const { markdown = '', html = '', metadata } = scraped
       const ogImage = metadata?.ogImage
 
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
