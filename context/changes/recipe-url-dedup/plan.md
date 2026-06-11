@@ -300,7 +300,7 @@ Dedup check dodaje 1-2 query do Supabase przed insertem (~50-100ms łącznie na 
 
 #### Automatyczne
 
-- [x] 3.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
+- [x] 3.1 TypeScript przechodzi: `pnpm exec tsc --noEmit` — f0563f4
 
 #### Ręczne
 

@@ -1,7 +1,7 @@
 ---
 change_id: recipe-detail-improvements
 title: Recipe detail page — prep time and additional media
-status: implementing
+status: implemented
 created: 2026-06-11
 updated: 2026-06-11
 archived_at: null
