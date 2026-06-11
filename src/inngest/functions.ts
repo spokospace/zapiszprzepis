@@ -92,25 +92,71 @@ Rules: translate to Polish, convert US units to metric (1 cup ≈ 240ml, 1 tbsp 
 
       const recipeJSON = JSON.parse(content) as RecipeData
 
-      const { data: recipe, error: insertError } = await supabase
-        .from('recipes')
-        .insert({
-          user_id: userId,
-          title: recipeJSON.title,
-          slug: slugify(recipeJSON.title),
-          description: null,
-          image_url: ogImage ?? null,
-          ingredients: recipeJSON.ingredients,
-          steps: recipeJSON.steps,
-          source_type: sourceType,
-          source_url: sharedUrl,
-          category: recipeJSON.category,
-          extracted_at: new Date().toISOString(),
-        })
-        .select()
-        .single()
+      const baseSlug = slugify(recipeJSON.title)
+      const SLUG_KEY = 'recipes_user_id_slug_key'
+      const URL_KEY = 'recipes_user_source_url_uniq'
+      const MAX_ATTEMPTS = 10
 
-      if (insertError) throw new Error(`Database insert failed: ${insertError.message}`)
+      let recipe: { id: number } | null = null
+      let lastInsertError: { message: string } | null = null
+
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const slug = attempt === 1 ? baseSlug : `${baseSlug}-${attempt}`
+
+        const { data, error } = await supabase
+          .from('recipes')
+          .insert({
+            user_id: userId,
+            title: recipeJSON.title,
+            slug,
+            description: null,
+            image_url: ogImage ?? null,
+            ingredients: recipeJSON.ingredients,
+            steps: recipeJSON.steps,
+            source_type: sourceType,
+            source_url: sharedUrl,
+            category: recipeJSON.category,
+            extracted_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single()
+
+        if (!data) {
+          lastInsertError = error
+        }
+
+        if (data) {
+          recipe = data
+          break
+        }
+
+        // URL collision: a parallel share won the race. Link this share to the
+        // already-stored recipe instead of creating a duplicate.
+        if (error?.message.includes(URL_KEY)) {
+          const { data: existing } = await supabase
+            .from('recipes')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('source_url', sharedUrl)
+            .single()
+
+          if (existing) {
+            recipe = existing
+            break
+          }
+        }
+
+        // Slug collision against a different URL with the same title: retry
+        // with `-2`, `-3`, … suffix.
+        if (error?.message.includes(SLUG_KEY)) continue
+
+        // Any other error is terminal.
+        break
+      }
+
+      if (!recipe) {
+        throw new Error(`Database insert failed: ${lastInsertError?.message ?? 'exhausted slug retry attempts'}`)
+      }
 
       await supabase
         .from('recipe_shares')
