@@ -271,22 +271,22 @@ Dedup check dodaje 1-2 query do Supabase przed insertem (~50-100ms łącznie na 
 
 #### Automatyczne
 
-- [x] 1.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
+- [x] 1.1 TypeScript przechodzi: `pnpm exec tsc --noEmit` — 42e7401
 - [ ] 1.2 Unit testy normalizera przechodzą (jeśli dodane)
-- [x] 1.3 Migration aplikuje się czysto: `supabase db reset` lub `supabase migration up`
-- [x] 1.4 Brak nowych ESLint warnings: `pnpm lint`
+- [x] 1.3 Migration aplikuje się czysto: `supabase db reset` lub `supabase migration up` — 42e7401
+- [x] 1.4 Brak nowych ESLint warnings: `pnpm lint` — 42e7401
 
 #### Ręczne
 
-- [x] 1.5 Istniejący wiersz „Tortilla z patelni" ma znormalizowany `source_url`
-- [x] 1.6 Duplikat INSERT do `recipes` z tym samym `(user_id, source_url)` rzuca unique violation
+- [x] 1.5 Istniejący wiersz „Tortilla z patelni" ma znormalizowany `source_url` — 42e7401
+- [x] 1.6 Duplikat INSERT do `recipes` z tym samym `(user_id, source_url)` rzuca unique violation — 42e7401
 
 ### Faza 2: Dedup helper + Server Actions integration
 
 #### Automatyczne
 
-- [ ] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [ ] 2.2 ESLint przechodzi: `pnpm lint`
+- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
+- [x] 2.2 ESLint przechodzi: `pnpm lint`
 - [ ] 2.3 Playwright testy add-recipe przechodzą: `pnpm exec playwright test add-recipe`
 
 #### Ręczne
