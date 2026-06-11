@@ -12,20 +12,18 @@ import {
   UtensilsCrossed,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { Database } from '@/lib/supabase.types'
+import { RECIPE_CATEGORIES, type RecipeCategory } from '@/lib/recipe-categories'
 
-type RecipeCategory = Database['public']['Enums']['recipe_category']
-
-const CATEGORIES: { value: RecipeCategory; label: string; Icon: LucideIcon }[] = [
-  { value: 'obiady',         label: 'Obiady',         Icon: Utensils },
-  { value: 'zupy',           label: 'Zupy',           Icon: Soup },
-  { value: 'desery',         label: 'Desery',         Icon: CakeSlice },
-  { value: 'sniadania',      label: 'Śniadania',      Icon: Coffee },
-  { value: 'przekaski',      label: 'Przekąski',      Icon: Sandwich },
-  { value: 'wegetarianskie', label: 'Wegetariańskie', Icon: Salad },
-  { value: 'napoje',         label: 'Napoje',         Icon: GlassWater },
-  { value: 'inne',           label: 'Inne',           Icon: UtensilsCrossed },
-]
+const CATEGORY_ICONS: Record<RecipeCategory, LucideIcon> = {
+  obiady: Utensils,
+  zupy: Soup,
+  desery: CakeSlice,
+  sniadania: Coffee,
+  przekaski: Sandwich,
+  wegetarianskie: Salad,
+  napoje: GlassWater,
+  inne: UtensilsCrossed,
+}
 
 interface CategoryFilterProps {
   activeCategory?: string | null
@@ -48,7 +46,8 @@ export function CategoryFilter({ activeCategory, counts }: CategoryFilterProps) 
 
   return (
     <div className="flex flex-wrap gap-2">
-      {CATEGORIES.map(({ value, label, Icon }) => {
+      {RECIPE_CATEGORIES.map(({ value, label }) => {
+        const Icon = CATEGORY_ICONS[value]
         const isActive = activeCategory === value
         const count = counts?.[value]
         return (
@@ -75,5 +74,3 @@ export function CategoryFilter({ activeCategory, counts }: CategoryFilterProps) 
   )
 }
 
-export { CATEGORIES }
-export type { RecipeCategory }
