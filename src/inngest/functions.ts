@@ -104,6 +104,10 @@ Rules:
 
       const recipeJSON = JSON.parse(content) as RecipeData
 
+      if (!recipeJSON.title || typeof recipeJSON.title !== 'string') {
+        throw new Error('No recipe title extracted — source page may not contain a recipe')
+      }
+
       const baseSlug = slugify(recipeJSON.title)
       const SLUG_KEY = 'recipes_user_id_slug_key'
       const URL_KEY = 'recipes_user_source_url_uniq'
