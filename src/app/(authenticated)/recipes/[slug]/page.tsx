@@ -1,12 +1,22 @@
 import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Clock, Flame, Timer } from 'lucide-react'
+import { Clock, Flame, Timer, type LucideIcon } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { Toast } from '@/app/components/toast'
 import { formatMinutes } from '@/lib/format-minutes'
 import type { Database } from '@/lib/supabase.types'
+
+function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: string; minutes: number }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Icon aria-hidden="true" size={16} className="text-orange-500" />
+      <span className="text-gray-500">{label}:</span>
+      <span className="font-medium">{formatMinutes(minutes)}</span>
+    </span>
+  )
+}
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
 
@@ -113,25 +123,13 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             || typedRecipe.total_time_minutes != null) && (
             <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-700">
               {typedRecipe.prep_time_minutes != null && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock aria-hidden="true" size={16} className="text-orange-500" />
-                  <span className="text-gray-500">Przygotowanie:</span>
-                  <span className="font-medium">{formatMinutes(typedRecipe.prep_time_minutes)}</span>
-                </span>
+                <TimeBadge icon={Clock} label="Przygotowanie" minutes={typedRecipe.prep_time_minutes} />
               )}
               {typedRecipe.cook_time_minutes != null && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Flame aria-hidden="true" size={16} className="text-orange-500" />
-                  <span className="text-gray-500">Gotowanie:</span>
-                  <span className="font-medium">{formatMinutes(typedRecipe.cook_time_minutes)}</span>
-                </span>
+                <TimeBadge icon={Flame} label="Gotowanie" minutes={typedRecipe.cook_time_minutes} />
               )}
               {typedRecipe.total_time_minutes != null && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Timer aria-hidden="true" size={16} className="text-orange-500" />
-                  <span className="text-gray-500">Łącznie:</span>
-                  <span className="font-medium">{formatMinutes(typedRecipe.total_time_minutes)}</span>
-                </span>
+                <TimeBadge icon={Timer} label="Łącznie" minutes={typedRecipe.total_time_minutes} />
               )}
             </div>
           )}
