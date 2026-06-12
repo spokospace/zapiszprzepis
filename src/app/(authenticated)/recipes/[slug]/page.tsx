@@ -20,6 +20,13 @@ function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: st
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
 
+const SOURCE_LABELS: Partial<Record<Recipe['source_type'], string>> = {
+  facebook_text: 'Facebook',
+  facebook_reel: 'Facebook',
+  web_blog: 'Blog',
+  youtube: 'YouTube',
+}
+
 export const metadata = {
   title: 'Przepis',
   description: 'Szczegóły przepisu',
@@ -105,7 +112,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               <span>{cat ? cat.label : typedRecipe.category}</span>
             </Link>
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
-              {typedRecipe.source_type === 'facebook_text' ? 'Facebook' : 'Inny'}
+              {SOURCE_LABELS[typedRecipe.source_type] ?? 'Inny'}
             </span>
             {typedRecipe.source_url && (
               <a
@@ -170,6 +177,23 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             </ol>
           </section>
         </div>
+
+        {typedRecipe.youtube_id && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Wideo</h2>
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${typedRecipe.youtube_id}`}
+                title={`${typedRecipe.title} — wideo`}
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            </div>
+          </section>
+        )}
 
         <div className="border-t pt-8">
           <form action="/api/recipes/delete" method="POST" className="flex justify-end">

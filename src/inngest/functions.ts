@@ -4,6 +4,7 @@ import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
 import { buildFirecrawlOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
 import { archiveImage } from '@/lib/recipe-image-archive'
+import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
 
 interface ExtractRecipeEvent {
   shareId: number
@@ -11,7 +12,7 @@ interface ExtractRecipeEvent {
   sharedTitle?: string
   sharedText?: string
   userId: string
-  sourceType?: 'facebook_text' | 'web_blog'
+  sourceType?: 'facebook_text' | 'web_blog' | 'youtube'
 }
 
 interface RecipeData {
@@ -63,6 +64,11 @@ export const extractRecipe = inngest.createFunction(
 
       const { markdown = '', html = '', metadata } = scraped
       const ogImage = metadata?.ogImage
+
+      // S-04: capture a YouTube video id for the detail-page embed (rendered
+      // below the recipe). Either the shared URL is itself a YouTube link
+      // (source_type 'youtube'), or a scraped blog page embeds a player.
+      const youtubeId = youtubeIdFromUrl(sharedUrl) ?? findEmbeddedYoutubeId(html)
 
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -148,6 +154,7 @@ Rules:
             steps: recipeJSON.steps,
             source_type: sourceType,
             source_url: sharedUrl,
+            youtube_id: youtubeId,
             category: recipeJSON.category,
             prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
             cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
@@ -181,7 +188,7 @@ Rules:
         if (error?.message.includes(URL_KEY)) {
           const { data: existing } = await supabase
             .from('recipes')
-            .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url')
+            .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id')
             .eq('user_id', userId)
             .eq('source_url', sharedUrl)
             .single()
@@ -196,6 +203,9 @@ Rules:
             }
             if (existing.total_time_minutes == null && recipeJSON.totalTimeMinutes != null) {
               gapFill.total_time_minutes = recipeJSON.totalTimeMinutes
+            }
+            if (existing.youtube_id == null && youtubeId != null) {
+              gapFill.youtube_id = youtubeId
             }
             // Archive flow: when archiveImage returns a Storage URL, always
             // overwrite image_url — even if it's already populated with an
