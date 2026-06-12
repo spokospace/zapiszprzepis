@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { inngest } from './client'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
-import { buildFirecrawlOptions } from '@/lib/firecrawl'
+import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
 import { archiveImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
@@ -36,14 +36,14 @@ export const extractRecipe = inngest.createFunction(
     })
 
     try {
-      async function scrape(fullContent: boolean) {
+      async function firecrawlScrape(options: ReturnType<typeof buildFirecrawlOptions>) {
         const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent })),
+          body: JSON.stringify(options),
           signal: AbortSignal.timeout(45_000),
         })
         if (!response.ok) {
@@ -53,22 +53,43 @@ export const extractRecipe = inngest.createFunction(
         return data.data ?? {}
       }
 
-      let scraped = await scrape(false)
-      // Blogspot and some WordPress templates trip Firecrawl's main-content
-      // heuristic and leave just a "Skip to main content" link. Retry once
-      // with onlyMainContent: false to give the LLM something to work with.
-      if (!scraped.markdown || scraped.markdown.length < 200) {
-        console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
-        scraped = await scrape(true)
+      // Recipe text comes from the main-content scrape, retrying with
+      // fullContent when a blog template trips Firecrawl's main-content
+      // heuristic and leaves just a "Skip to main content" link.
+      async function scrapeWithRetry() {
+        let s = await firecrawlScrape(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent: false }))
+        if (!s.markdown || s.markdown.length < 200) {
+          console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
+          s = await firecrawlScrape(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent: true }))
+        }
+        return s
       }
+
+      // In parallel, for blog sources, run a dedicated full-page scrape to find
+      // an embedded YouTube player — the recipe-text scrape strips iframes
+      // (onlyMainContent + BLOG_EXCLUDE_TAGS's 'iframe'), so it can never see
+      // one. No extra latency (Promise.all), and a failure there must not sink
+      // the extraction (the video is a bonus).
+      const [scraped, embedHtml] = await Promise.all([
+        scrapeWithRetry(),
+        sourceType === 'web_blog'
+          ? firecrawlScrape(buildEmbedScanOptions(sharedUrl))
+              .then((d) => (d.html ?? '') as string)
+              .catch((err) => {
+                console.warn('[extract-recipe] embed scan failed:', err)
+                return ''
+              })
+          : Promise.resolve(''),
+      ])
 
       const { markdown = '', html = '', metadata } = scraped
       const ogImage = metadata?.ogImage
 
       // S-04: capture a YouTube video id for the detail-page embed (rendered
       // below the recipe). Either the shared URL is itself a YouTube link
-      // (source_type 'youtube'), or a scraped blog page embeds a player.
-      const youtubeId = youtubeIdFromUrl(sharedUrl) ?? findEmbeddedYoutubeId(html)
+      // (source_type 'youtube'), or a blog page embeds a player — found via the
+      // dedicated full-page embed scan above, with main html as a cheap fallback.
+      const youtubeId = youtubeIdFromUrl(sharedUrl) ?? findEmbeddedYoutubeId(embedHtml || html)
 
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
