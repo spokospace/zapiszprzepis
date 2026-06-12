@@ -1,7 +1,7 @@
 ---
 change_id: image-archive-storage
 title: Archive recipe images into Supabase Storage
-status: implementing
+status: implemented
 created: 2026-06-11
 updated: 2026-06-11
 archived_at: null

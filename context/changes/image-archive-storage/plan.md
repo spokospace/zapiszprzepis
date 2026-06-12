@@ -249,10 +249,10 @@ Zachowuje semantykę „archive wins over external; external wins over null".
 
 #### Automatyczne
 
-- [x] 1.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [x] 1.2 Migration aplikuje się: `pnpm exec supabase db push`
-- [x] 1.3 ESLint przechodzi na zmienionych plikach
-- [x] 1.4 Bucket `recipe-images` widoczny w Supabase dashboard (public, 5MB limit, MIME jpeg/png/webp)
+- [x] 1.1 TypeScript przechodzi: `pnpm exec tsc --noEmit` — 2fdd663
+- [x] 1.2 Migration aplikuje się: `pnpm exec supabase db push` — 2fdd663
+- [x] 1.3 ESLint przechodzi na zmienionych plikach — 2fdd663
+- [x] 1.4 Bucket `recipe-images` widoczny w Supabase dashboard (public, 5MB limit, MIME jpeg/png/webp) — 2fdd663
 
 #### Ręczne
 
@@ -265,11 +265,11 @@ Zachowuje semantykę „archive wins over external; external wins over null".
 
 #### Automatyczne
 
-- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit`
-- [x] 2.2 ESLint przechodzi na zmienionych plikach
+- [x] 2.1 TypeScript przechodzi: `pnpm exec tsc --noEmit` — fd5d876
+- [x] 2.2 ESLint przechodzi na zmienionych plikach — fd5d876
 
 #### Ręczne
 
-- [ ] 2.3 `pnpm archive:recipe-images` loguje wyzwolone eventy
-- [ ] 2.4 Po Inngest run Tortilla z patelni ma storage URL w `image_url`
-- [ ] 2.5 Detail page Tortilli renderuje zarchiwizowany obrazek
+- [x] 2.3 `pnpm archive:recipe-images` loguje wyzwolone eventy — fd5d876
+- [x] 2.4 Po Inngest run Tortilla z patelni ma storage URL w `image_url` — fd5d876
+- [x] 2.5 Detail page Tortilli renderuje zarchiwizowany obrazek — fd5d876
