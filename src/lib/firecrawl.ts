@@ -60,3 +60,19 @@ export function buildFirecrawlOptions(
   }
   return base
 }
+
+// Options for a dedicated full-page scrape used ONLY to detect an embedded
+// YouTube player on a blog post (S-04 Opcja 2). The main-content scrape that
+// feeds recipe extraction strips iframes — both because onlyMainContent: true
+// drops the player and because BLOG_EXCLUDE_TAGS lists 'iframe' on the
+// fullContent fallback. Here we keep the whole page (no onlyMainContent, no
+// excludeTags) so the iframe survives; we only read `html` and scan it for a
+// video id, so we don't request markdown.
+export function buildEmbedScanOptions(url: string): FirecrawlScrapeOptions {
+  return {
+    url,
+    formats: ['html'],
+    onlyMainContent: false,
+    actions: [{ type: 'wait', milliseconds: 2000 }],
+  }
+}
