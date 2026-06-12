@@ -105,6 +105,7 @@ export type Database = {
           total_time_minutes: number | null
           updated_at: string
           user_id: string
+          youtube_id: string | null
         }
         Insert: {
           category: Database["public"]["Enums"]["recipe_category"]
@@ -124,6 +125,7 @@ export type Database = {
           total_time_minutes?: number | null
           updated_at?: string
           user_id: string
+          youtube_id?: string | null
         }
         Update: {
           category?: Database["public"]["Enums"]["recipe_category"]
@@ -143,6 +145,7 @@ export type Database = {
           total_time_minutes?: number | null
           updated_at?: string
           user_id?: string
+          youtube_id?: string | null
         }
         Relationships: []
       }
