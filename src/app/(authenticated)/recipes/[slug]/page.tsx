@@ -20,6 +20,8 @@ function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: st
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
 
+type Ingredient = { name: string; amount?: string; unit?: string; section?: string }
+
 const SOURCE_LABELS: Partial<Record<Recipe['source_type'], string>> = {
   facebook_text: 'Facebook',
   facebook_reel: 'Facebook',
@@ -67,13 +69,24 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
   const typedRecipe = recipe as Recipe
 
-  const ingredients = Array.isArray(typedRecipe.ingredients)
+  const ingredients = (Array.isArray(typedRecipe.ingredients)
     ? typedRecipe.ingredients
-    : JSON.parse(typedRecipe.ingredients as any)
+    : JSON.parse(typedRecipe.ingredients as string)) as Ingredient[]
 
-  const steps = Array.isArray(typedRecipe.steps)
+  // Group ingredients by their optional `section` (e.g. "Podmłoda",
+  // "Masa waniliowa"), preserving source order. Ingredients with no section
+  // (existing recipes / ungrouped lists) collapse into one unlabeled group.
+  const ingredientGroups: { section: string; items: Ingredient[] }[] = []
+  for (const ing of ingredients) {
+    const section = (ing?.section ?? '').trim()
+    const last = ingredientGroups.at(-1)
+    if (last && last.section === section) last.items.push(ing)
+    else ingredientGroups.push({ section, items: [ing] })
+  }
+
+  const steps = (Array.isArray(typedRecipe.steps)
     ? typedRecipe.steps
-    : JSON.parse(typedRecipe.steps as any)
+    : JSON.parse(typedRecipe.steps as string)) as string[]
 
   const cat = RECIPE_CATEGORIES.find((c) => c.value === typedRecipe.category)
 
@@ -145,22 +158,31 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           <section>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Składniki</h2>
-            <ul className="space-y-2">
-              {ingredients.map((ingredient: any, idx: number) => (
-                <li key={idx} className="flex items-start text-gray-700">
-                  <span className="inline-block w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                  <span>
-                    {ingredient.name}
-                    {ingredient.amount && (
-                      <span className="text-gray-500 ml-1">
-                        — {ingredient.amount}
-                        {ingredient.unit && ` ${ingredient.unit}`}
+            {ingredientGroups.map((group, gi) => (
+              <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
+                {group.section && (
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                    {group.section}
+                  </h3>
+                )}
+                <ul className="space-y-2">
+                  {group.items.map((ingredient, idx) => (
+                    <li key={idx} className="flex items-start text-gray-700">
+                      <span className="inline-block w-2 h-2 bg-orange-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                      <span>
+                        {ingredient.name}
+                        {ingredient.amount && (
+                          <span className="text-gray-500 ml-1">
+                            — {ingredient.amount}
+                            {ingredient.unit && ` ${ingredient.unit}`}
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </section>
 
           <section>

@@ -17,7 +17,7 @@ interface ExtractRecipeEvent {
 
 interface RecipeData {
   title: string
-  ingredients: Array<{ name: string; amount?: string; unit?: string }>
+  ingredients: Array<{ name: string; amount?: string; unit?: string; section?: string }>
   steps: string[]
   category: string
   imageUrl?: string
@@ -107,7 +107,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
 {
   "title": "Recipe title in Polish",
   "ingredients": [
-    {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string"}
+    {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "section": "section heading or empty string"}
   ],
   "steps": ["Step 1 description", "Step 2 description"],
   "category": "one of: obiady, zupy, desery, sniadania, przekaski, wegetarianskie, napoje, inne",
@@ -117,6 +117,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
 }
 Rules:
 - The page often includes navigation, related/popular posts widgets, comments and ads. Focus ONLY on the PRIMARY recipe — usually the post-body content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
+- Ingredient sections: many recipes split ingredients into named parts (e.g. "Podmłoda", "Ciasto właściwe", "Masa waniliowa", "Masa truskawkowa", "Spód", "Krem", "Dodatkowo"). When the source groups ingredients under such a heading, set "section" to that heading (in Polish, keep it short) for every ingredient in that group, preserving the source order so groups stay contiguous. If the ingredients are a single ungrouped list, use an empty string for "section" on every ingredient.
 - Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml).
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
