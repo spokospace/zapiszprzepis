@@ -48,7 +48,7 @@ export function Toast({ message, type = 'success', duration = 3000, clearParam }
     <div
       role="status"
       aria-live="polite"
-      className={`fixed bottom-6 right-6 flex items-center gap-3 rounded-lg ${bgColor} px-4 py-3 text-sm font-medium text-white shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300`}
+      className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg ${bgColor} px-4 py-3 text-sm font-medium text-white shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300`}
     >
       <span className="text-lg">{icon}</span>
       <span>{message}</span>
