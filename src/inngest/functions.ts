@@ -5,6 +5,7 @@ import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
 import { archiveImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
+import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 
 interface ExtractRecipeEvent {
   shareId: number
@@ -65,30 +66,56 @@ export const extractRecipe = inngest.createFunction(
         return s
       }
 
-      // In parallel, for blog sources, run a dedicated full-page scrape to find
-      // an embedded YouTube player — the recipe-text scrape strips iframes
-      // (onlyMainContent + BLOG_EXCLUDE_TAGS's 'iframe'), so it can never see
-      // one. No extra latency (Promise.all), and a failure there must not sink
-      // the extraction (the video is a bonus).
-      const [scraped, embedHtml] = await Promise.all([
-        scrapeWithRetry(),
-        sourceType === 'web_blog'
-          ? firecrawlScrape(buildEmbedScanOptions(sharedUrl))
-              .then((d) => (d.html ?? '') as string)
-              .catch((err) => {
-                console.warn('[extract-recipe] embed scan failed:', err)
-                return ''
-              })
-          : Promise.resolve(''),
-      ])
+      let markdown = ''
+      let html = ''
+      let ogImage: string | undefined
+      let embedHtml = ''
 
-      const { markdown = '', html = '', metadata } = scraped
-      const ogImage = metadata?.ogImage
+      // Blogspot: pull the post straight from the Blogger JSON feed instead of
+      // rendering with Firecrawl — deterministic, no Google Translate / empty
+      // main-content junk. Fall back to Firecrawl when the feed has nothing
+      // (custom-domain blogs, disabled feed).
+      const bloggerPost = isBlogspotUrl(sharedUrl)
+        ? await fetchBloggerPost(sharedUrl).catch((err) => {
+            console.warn('[extract-recipe] Blogger feed failed, falling back to Firecrawl:', err)
+            return null
+          })
+        : null
 
-      // S-04: capture a YouTube video id for the detail-page embed (rendered
-      // below the recipe). Either the shared URL is itself a YouTube link
-      // (source_type 'youtube'), or a blog page embeds a player — found via the
-      // dedicated full-page embed scan above, with main html as a cheap fallback.
+      if (bloggerPost) {
+        console.log('[extract-recipe] using Blogger feed for', sharedUrl)
+        html = bloggerPost.html
+        embedHtml = bloggerPost.html
+        ogImage = bloggerPost.image ?? undefined
+        // Give the LLM clean text, prefixed with the post title as a strong
+        // title signal.
+        const text = bloggerPost.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        markdown = bloggerPost.title ? `${bloggerPost.title}\n\n${text}` : text
+      } else {
+        // For blog sources also run a dedicated full-page scrape in parallel to
+        // find an embedded YouTube player — the recipe-text scrape strips
+        // iframes (onlyMainContent + BLOG_EXCLUDE_TAGS's 'iframe'). No extra
+        // latency (Promise.all); a failure there must not sink the extraction.
+        const [scraped, scrapedEmbedHtml] = await Promise.all([
+          scrapeWithRetry(),
+          sourceType === 'web_blog'
+            ? firecrawlScrape(buildEmbedScanOptions(sharedUrl))
+                .then((d) => (d.html ?? '') as string)
+                .catch((err) => {
+                  console.warn('[extract-recipe] embed scan failed:', err)
+                  return ''
+                })
+            : Promise.resolve(''),
+        ])
+        markdown = scraped.markdown ?? ''
+        html = scraped.html ?? ''
+        ogImage = scraped.metadata?.ogImage
+        embedHtml = scrapedEmbedHtml
+      }
+
+      // S-04: capture a YouTube video id for the detail-page embed. Either the
+      // shared URL is itself a YouTube link (source_type 'youtube'), or a blog
+      // page embeds a player (found in the Blogger feed html / the embed scan).
       const youtubeId = youtubeIdFromUrl(sharedUrl) ?? findEmbeddedYoutubeId(embedHtml || html)
 
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
