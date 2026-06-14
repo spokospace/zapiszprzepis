@@ -6,6 +6,7 @@ import { slugify } from '@/lib/slugify'
 import { archiveImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
+import { looksUnextractable } from '@/lib/content-quality'
 
 interface ExtractRecipeEvent {
   shareId: number
@@ -117,6 +118,13 @@ export const extractRecipe = inngest.createFunction(
       // shared URL is itself a YouTube link (source_type 'youtube'), or a blog
       // page embeds a player (found in the Blogger feed html / the embed scan).
       const youtubeId = youtubeIdFromUrl(sharedUrl) ?? findEmbeddedYoutubeId(embedHtml || html)
+
+      // Fail fast on junk (Google Translate interstitial, empty main content)
+      // before spending an OpenAI call — throwing lets Inngest retry, since the
+      // junk is usually transient, and yields a clear error if it persists.
+      if (looksUnextractable(markdown) && looksUnextractable(html)) {
+        throw new Error('Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)')
+      }
 
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
