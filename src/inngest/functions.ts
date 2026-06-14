@@ -15,6 +15,9 @@ interface ExtractRecipeEvent {
   sharedText?: string
   userId: string
   sourceType?: 'facebook_text' | 'web_blog' | 'youtube'
+  // Force refresh: overwrite the existing recipe for this source_url in place
+  // (the "Odśwież przepis" action) instead of insert / gap-fill.
+  force?: boolean
 }
 
 interface RecipeData {
@@ -31,7 +34,7 @@ interface RecipeData {
 export const extractRecipe = inngest.createFunction(
   { id: 'extract-recipe', retries: 3, triggers: { event: 'recipe/extract' } },
   async ({ event }) => {
-    const { shareId, sharedUrl, sharedTitle, sharedText, userId, sourceType = 'facebook_text' } = event.data as ExtractRecipeEvent
+    const { shareId, sharedUrl, sharedTitle, sharedText, userId, sourceType = 'facebook_text', force: forceRefresh = false } = event.data as ExtractRecipeEvent
 
     const supabase = createClient(SUPABASE_URL, getSuabaseServiceRoleKey(), {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -186,6 +189,47 @@ Rules:
 
       if (!recipeJSON.title || typeof recipeJSON.title !== 'string') {
         throw new Error('No recipe title extracted — source page may not contain a recipe')
+      }
+
+      // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
+      // this (user, source_url) in place. The normal path below dedups and
+      // gap-fills, so it can never replace already-populated fields. We keep
+      // the existing slug so the recipe URL stays stable.
+      if (forceRefresh) {
+        const { data: refreshed, error: refreshError } = await supabase
+          .from('recipes')
+          .update({
+            title: recipeJSON.title,
+            ingredients: recipeJSON.ingredients,
+            steps: recipeJSON.steps,
+            category: recipeJSON.category,
+            source_type: sourceType,
+            youtube_id: youtubeId,
+            prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
+            cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
+            total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
+            extracted_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId)
+          .eq('source_url', sharedUrl)
+          .select('id')
+          .single()
+
+        if (refreshError || !refreshed) {
+          throw new Error(`Refresh update failed: ${refreshError?.message ?? 'recipe not found'}`)
+        }
+
+        if (ogImage != null) {
+          const archivedUrl = await archiveImage(supabase, userId, refreshed.id, ogImage)
+          await supabase.from('recipes').update({ image_url: archivedUrl ?? ogImage }).eq('id', refreshed.id)
+        }
+
+        await supabase
+          .from('recipe_shares')
+          .update({ recipe_id: refreshed.id, status: 'completed' })
+          .eq('id', shareId)
+
+        return { recipeId: refreshed.id, title: recipeJSON.title, category: recipeJSON.category, status: 'refreshed' }
       }
 
       const baseSlug = slugify(recipeJSON.title)

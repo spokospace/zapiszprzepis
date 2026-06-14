@@ -5,6 +5,7 @@ import { Clock, Flame, Timer, type LucideIcon } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { Toast } from '@/app/components/toast'
+import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
 import type { Database } from '@/lib/supabase.types'
 
@@ -40,12 +41,14 @@ interface RecipeDetailPageProps {
   }>
   searchParams: Promise<{
     duplicate?: string
+    refreshing?: string
+    refresh_error?: string
   }>
 }
 
 export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
-  const { duplicate } = await searchParams
+  const { duplicate, refreshing, refresh_error } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   const {
@@ -94,6 +97,12 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     <div className="min-h-screen bg-white py-8">
       {duplicate === '1' && (
         <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
+      )}
+      {refreshing === '1' && (
+        <Toast message="Odświeżam przepis — zmiany pojawią się za chwilę." type="success" duration={5000} clearParam="refreshing" />
+      )}
+      {refresh_error === '1' && (
+        <Toast message="Nie można odświeżyć — przepis nie ma źródłowego adresu." type="error" duration={5000} clearParam="refresh_error" />
       )}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link href="/recipes" className="inline-flex items-center text-orange-600 hover:text-orange-700 mb-8">
@@ -217,8 +226,17 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           </section>
         )}
 
-        <div className="border-t pt-8">
-          <form action="/api/recipes/delete" method="POST" className="flex justify-end">
+        <div className="border-t pt-8 flex items-center justify-between gap-3">
+          <form action={refreshRecipe}>
+            <input type="hidden" name="slug" value={typedRecipe.slug} />
+            <button
+              type="submit"
+              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition text-sm font-medium"
+            >
+              Odśwież przepis
+            </button>
+          </form>
+          <form action="/api/recipes/delete" method="POST">
             <input type="hidden" name="slug" value={typedRecipe.slug} />
             <button
               type="submit"
