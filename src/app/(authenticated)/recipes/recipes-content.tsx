@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { Link } from 'lucide-react'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { CategoryFilter } from '@/app/components/category-filter'
+import { RecipeSearch } from '@/app/components/recipe-search'
 import { Toast } from '@/app/components/toast'
 import { addRecipeFromUrl } from './add-recipe-action'
 import type { Database } from '@/lib/supabase.types'
@@ -24,6 +25,7 @@ interface RecipesContentProps {
   addError?: string | null
   activeCategory?: RecipeCategory | null
   categoryCounts?: Partial<Record<RecipeCategory, number>>
+  searchQuery?: string
 }
 
 function AddRecipeForm({ addError }: { addError?: string | null }) {
@@ -93,7 +95,10 @@ export function RecipesContent({
   addError,
   activeCategory,
   categoryCounts,
+  searchQuery,
 }: RecipesContentProps) {
+  // `searchQuery` arrives already trimmed from the server component.
+  const hasSearch = Boolean(searchQuery)
   return (
     <div className="min-h-screen bg-white py-8">
       {showSharedToast && (
@@ -118,14 +123,22 @@ export function RecipesContent({
           <h1 className="text-3xl font-bold text-gray-900">Moje przepisy</h1>
           <p className="mt-2 text-gray-600">
             {recipes.length === 0
-              ? activeCategory
-                ? 'Brak przepisów w tej kategorii.'
-                : 'Brak przepisów. Dodaj pierwszy przepis!'
+              ? hasSearch
+                ? `Brak wyników dla „${searchQuery}".`
+                : activeCategory
+                  ? 'Brak przepisów w tej kategorii.'
+                  : 'Brak przepisów. Dodaj pierwszy przepis!'
               : `${recipes.length} przepis${recipes.length === 1 ? '' : 'ów'}`}
           </p>
         </div>
 
         <AddRecipeForm addError={addError} />
+
+        <div className="mb-4">
+          <Suspense>
+            <RecipeSearch query={searchQuery} />
+          </Suspense>
+        </div>
 
         <div className="mb-8">
           <Suspense>
@@ -150,11 +163,15 @@ export function RecipesContent({
                 d="M19 14l-7 7m0 0l-7-7m7 7V3"
               />
             </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Brak przepisów</h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">
+              {hasSearch ? 'Brak wyników' : 'Brak przepisów'}
+            </h3>
             <p className="mt-2 text-gray-600">
-              {activeCategory
-                ? 'Nie masz jeszcze przepisów w tej kategorii.'
-                : 'Udostępnij URL przepisu z Facebooka lub bloga kulinarnego, a pojawi się on tutaj.'}
+              {hasSearch
+                ? `Żaden przepis nie pasuje do „${searchQuery}". Spróbuj innej nazwy lub składnika.`
+                : activeCategory
+                  ? 'Nie masz jeszcze przepisów w tej kategorii.'
+                  : 'Udostępnij URL przepisu z Facebooka lub bloga kulinarnego, a pojawi się on tutaj.'}
             </p>
           </div>
         ) : (
