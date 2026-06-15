@@ -504,19 +504,19 @@ registration; `example.ts` and the trigger.dev config stay.
 ### Phase 4: Risk 2 validator + dead-code removal
 
 #### Automated
-- [x] 4.1 `pnpm test` passes (validator specs green)
-- [x] 4.2 `pnpm typecheck` clean (no dangling reference)
-- [x] 4.3 `pnpm lint` passes
-- [x] 4.4 `grep -r extractRecipeTask src` returns nothing
+- [x] 4.1 `pnpm test` passes (validator specs green) — 61dca94
+- [x] 4.2 `pnpm typecheck` clean (no dangling reference) — 61dca94
+- [x] 4.3 `pnpm lint` passes — 61dca94
+- [x] 4.4 `grep -r extractRecipeTask src` returns nothing — 61dca94
 
 #### Manual
-- [x] 4.5 `test-trigger` demo route still builds (example.ts untouched)
+- [x] 4.5 `test-trigger` demo route still builds (example.ts untouched) — 61dca94
 
 ### Phase 5: Cookbook + rollout state
 
 #### Automated
-- [ ] 5.1 `pnpm test && pnpm typecheck && pnpm lint` all green
+- [x] 5.1 `pnpm test && pnpm typecheck && pnpm lint` all green
 
 #### Manual
-- [ ] 5.2 test-plan §6.1 reads as a usable unit-test recipe
-- [ ] 5.3 §3 Phase 1 shows `complete` with the change folder
+- [x] 5.2 test-plan §6.1 reads as a usable unit-test recipe
+- [x] 5.3 §3 Phase 1 shows `complete` with the change folder
