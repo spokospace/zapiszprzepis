@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { looksUnextractable } from '@/lib/content-quality'
+import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 
 // Risk 2 — "Extraction 'succeeds' but stores junk". looksUnextractable is the
 // input-side gate. These tests lock the cases it correctly rejects, and
@@ -51,5 +51,35 @@ describe('looksUnextractable — known MISSES (pinned, not fixed in this phase)'
     const plGt = `Oceń to tłumaczenie ${'tekst '.repeat(25)}` // not in JUNK_SIGNATURES
     expect(plGt.length).toBeLessThan(500)
     expect(looksUnextractable(plGt)).toBe(false)
+  })
+})
+
+describe('isExtractedRecipeUsable — output-side gate (Risk 2)', () => {
+  const ok = {
+    title: 'Naleśniki',
+    ingredients: [{ name: 'Mąka' }],
+    steps: ['Wymieszaj'],
+  }
+
+  it('accepts a recipe with title + non-empty ingredients + non-empty steps', () => {
+    expect(isExtractedRecipeUsable(ok)).toBe(true)
+  })
+
+  it('rejects a missing / empty / non-string title', () => {
+    expect(isExtractedRecipeUsable({ ...ok, title: '' })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, title: '   ' })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, title: undefined })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, title: 123 })).toBe(false)
+  })
+
+  it('rejects empty or non-array ingredients (the body-less recipe)', () => {
+    expect(isExtractedRecipeUsable({ ...ok, ingredients: [] })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, ingredients: undefined })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, ingredients: 'Mąka' })).toBe(false)
+  })
+
+  it('rejects empty or non-array steps', () => {
+    expect(isExtractedRecipeUsable({ ...ok, steps: [] })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, steps: undefined })).toBe(false)
   })
 })

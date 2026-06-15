@@ -493,24 +493,24 @@ registration; `example.ts` and the trigger.dev config stay.
 ### Phase 3: Risk 4 — extract ingredient helpers
 
 #### Automated
-- [x] 3.1 `pnpm test` passes (ingredients spec green)
-- [x] 3.2 `pnpm typecheck` clean
-- [x] 3.3 `pnpm lint` passes (new import survived formatter)
+- [x] 3.1 `pnpm test` passes (ingredients spec green) — 1939f57
+- [x] 3.2 `pnpm typecheck` clean — 1939f57
+- [x] 3.3 `pnpm lint` passes (new import survived formatter) — 1939f57
 
 #### Manual
-- [x] 3.4 Detail page renders flat + sectioned recipe identically to before
-- [x] 3.5 Malformed/empty ingredients render without crashing
+- [x] 3.4 Detail page renders flat + sectioned recipe identically to before — 1939f57
+- [x] 3.5 Malformed/empty ingredients render without crashing — 1939f57
 
 ### Phase 4: Risk 2 validator + dead-code removal
 
 #### Automated
-- [ ] 4.1 `pnpm test` passes (validator specs green)
-- [ ] 4.2 `pnpm typecheck` clean (no dangling reference)
-- [ ] 4.3 `pnpm lint` passes
-- [ ] 4.4 `grep -r extractRecipeTask src` returns nothing
+- [x] 4.1 `pnpm test` passes (validator specs green)
+- [x] 4.2 `pnpm typecheck` clean (no dangling reference)
+- [x] 4.3 `pnpm lint` passes
+- [x] 4.4 `grep -r extractRecipeTask src` returns nothing
 
 #### Manual
-- [ ] 4.5 `test-trigger` demo route still builds (example.ts untouched)
+- [x] 4.5 `test-trigger` demo route still builds (example.ts untouched)
 
 ### Phase 5: Cookbook + rollout state
 
