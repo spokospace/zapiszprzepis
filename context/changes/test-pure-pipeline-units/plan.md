@@ -515,8 +515,8 @@ registration; `example.ts` and the trigger.dev config stay.
 ### Phase 5: Cookbook + rollout state
 
 #### Automated
-- [x] 5.1 `pnpm test && pnpm typecheck && pnpm lint` all green
+- [x] 5.1 `pnpm test && pnpm typecheck && pnpm lint` all green — 5a24fb2
 
 #### Manual
-- [x] 5.2 test-plan §6.1 reads as a usable unit-test recipe
-- [x] 5.3 §3 Phase 1 shows `complete` with the change folder
+- [x] 5.2 test-plan §6.1 reads as a usable unit-test recipe — 5a24fb2
+- [x] 5.3 §3 Phase 1 shows `complete` with the change folder — 5a24fb2
