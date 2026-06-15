@@ -470,25 +470,25 @@ registration; `example.ts` and the trigger.dev config stay.
 ### Phase 1: Vitest infrastructure
 
 #### Automated
-- [x] 1.1 `pnpm test` runs and existing `env.test.ts` passes
-- [x] 1.2 `pnpm typecheck` runs clean
-- [x] 1.3 `pnpm lint` passes
+- [x] 1.1 `pnpm test` runs and existing `env.test.ts` passes — c95a00c
+- [x] 1.2 `pnpm typecheck` runs clean — c95a00c
+- [x] 1.3 `pnpm lint` passes — c95a00c
 
 #### Manual
-- [x] 1.4 vitest discovers only `src/**/*.test.ts` (no e2e, no worktree)
+- [x] 1.4 vitest discovers only `src/**/*.test.ts` (no e2e, no worktree) — c95a00c
 
 ### Phase 2: Pure detection/quality/Firecrawl tests + two obvious fixes
 
 #### Automated
-- [ ] 2.1 `pnpm test` passes (all new specs green)
-- [ ] 2.2 `pnpm typecheck` clean
-- [ ] 2.3 `pnpm lint` passes
-- [ ] 2.4 `gaming.youtube.com` → `youtube` asserted green
-- [ ] 2.5 `blogspot.de` → `true` asserted green
+- [x] 2.1 `pnpm test` passes (all new specs green)
+- [x] 2.2 `pnpm typecheck` clean
+- [x] 2.3 `pnpm lint` passes
+- [x] 2.4 `gaming.youtube.com` → `youtube` asserted green
+- [x] 2.5 `blogspot.de` → `true` asserted green
 
 #### Manual
-- [ ] 2.6 Characterization tests comment-marked as pinned limitations
-- [ ] 2.7 No production behavior changed beyond the two named fixes
+- [x] 2.6 Characterization tests comment-marked as pinned limitations
+- [x] 2.7 No production behavior changed beyond the two named fixes
 
 ### Phase 3: Risk 4 — extract ingredient helpers
 

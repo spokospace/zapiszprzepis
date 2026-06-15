@@ -6,7 +6,11 @@
 
 export function isBlogspotUrl(url: string): boolean {
   try {
-    return new URL(url).hostname.endsWith('.blogspot.com')
+    // Match every blogspot TLD, not just .com — Blogger serves the same post on
+    // country-coded mirrors (foo.blogspot.de, foo.blogspot.co.uk, …) and they all
+    // expose the JSON feed. Anchored at the end so foo.blogspot.com.evil.com is
+    // rejected. Covers single (.de) and two-part (.co.uk) TLDs.
+    return /\.blogspot\.[a-z]{2,}(\.[a-z]{2,})?$/i.test(new URL(url).hostname)
   } catch {
     return false
   }
