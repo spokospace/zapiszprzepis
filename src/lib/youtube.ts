@@ -23,7 +23,13 @@ export function normalizeHost(host: string): string {
 }
 
 export function isYoutubeHost(host: string): boolean {
-  return YOUTUBE_HOSTS.has(normalizeHost(host))
+  // Accept any subdomain of a known YouTube host (gaming./studio./tv.youtube.com,
+  // …), not just www./m./music. — otherwise those links misroute to web_blog.
+  const h = normalizeHost(host)
+  for (const base of YOUTUBE_HOSTS) {
+    if (h === base || h.endsWith(`.${base}`)) return true
+  }
+  return false
 }
 
 /**
@@ -40,7 +46,7 @@ export function youtubeIdFromUrl(url: string): string | null {
   }
 
   const host = normalizeHost(parsed.hostname)
-  if (!YOUTUBE_HOSTS.has(host)) return null
+  if (!isYoutubeHost(host)) return null
 
   // youtu.be/<id>
   if (host === 'youtu.be') {

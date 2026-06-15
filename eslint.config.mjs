@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent worktree scratch copies (git-ignored) — never lint these.
+    ".claude/**",
   ]),
 ]);
 

@@ -47,7 +47,7 @@ Hot-spot scope used for likelihood weighting: `src/lib`, `src/inngest`,
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
-| 1 | Pure pipeline functions | Configure vitest and unit-test the cheap, high-signal pure functions: junk gate, source/id detection, ingredient grouping, Firecrawl option builders | 2, 4, 5 | unit | not started | |
+| 1 | Pure pipeline functions | Configure vitest and unit-test the cheap, high-signal pure functions: junk gate, source/id detection, ingredient grouping, Firecrawl option builders | 2, 4, 5 | unit | complete | test-pure-pipeline-units |
 | 2 | Inngest orchestration | Integration-test step ordering (junk-gate-before-persist, youtube_id gap-fill, force-overwrite) and add a focused SSRF guard test on asset fetch | 2, 3, 6 | integration | not started | |
 | 3 | Share → recipe path | Extend the existing Playwright suite: shared URL becomes a row, no share is silently lost, the "Ponów" retry is visible and works | 3 | e2e | not started | |
 | 4 | Archive durability | Assert the stored image lives in our storage (not the source domain) and recipe content is fully materialized — survives source deletion | 1 | integration / e2e | not started | |
@@ -85,11 +85,26 @@ Hot-spot scope used for likelihood weighting: `src/lib`, `src/inngest`,
 Post-edit hook is recommended locally, not a substitute for CI. Multimodal
 visual review is selective — at most the recipe page (1 critical screen).
 
+As of §3 Phase 1 (`test-pure-pipeline-units`), the lint, typecheck and unit gates
+are locally runnable: `pnpm lint`, `pnpm typecheck`, `pnpm test`. Wiring them as
+enforced CI steps is still pending (owned by M1 L5 / M2 L5).
+
 ## §6 — Cookbook Patterns
 
 ### 6.1 Unit tests
-TBD — see §3 Phase 1 (vitest location, naming, a reference test for a pure
-function, and the run command, filled when Phase 1 lands).
+Vitest, configured in `vitest.config.ts` (node env, `@/` → `./src` alias,
+`include: src/**/*.test.ts`, excludes `e2e/**`).
+- **Location & naming:** colocate `*.test.ts` next to the source under `src/`
+  (e.g. `src/lib/firecrawl.test.ts` beside `src/lib/firecrawl.ts`).
+- **Scope:** pure functions only — no IO, no mocks. Modules that import
+  `src/lib/env.ts` throw on load (`server-only` + top-level `requireEnv`), so
+  keep unit tests on the env-free pure surface.
+- **Reference test:** `src/lib/firecrawl.test.ts` — one assertion group per
+  branch of a pure config builder; copy its shape. For known-buggy behavior that
+  is intentionally not fixed yet, write a characterization test commented
+  `PINNED:` (see `content-quality.test.ts`, `ingredients.test.ts`).
+- **Run:** `pnpm test` (one-shot/CI) or `pnpm test:watch`; `pnpm typecheck`
+  (`tsc --noEmit`) is the companion type gate.
 
 ### 6.2 Integration tests
 TBD — see §3 Phase 2 (how to exercise Inngest step ordering and a guarded fetch

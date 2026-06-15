@@ -26,3 +26,21 @@ export function looksUnextractable(content: string): boolean {
   const lower = clean.toLowerCase()
   return clean.length < 500 && JUNK_SIGNATURES.some((sig) => lower.includes(sig))
 }
+
+/**
+ * Output-side gate (Risk 2): true only when the LLM actually returned a usable
+ * recipe — a non-empty title AND a non-empty ingredients array AND a non-empty
+ * steps array. The current pipeline only checks the title, so a page with no
+ * recipe can be persisted as a titled, body-less recipe. Pure; wiring this into
+ * the pipeline (reject-before-persist) is a later rollout phase.
+ */
+export function isExtractedRecipeUsable(recipe: {
+  title?: unknown
+  ingredients?: unknown
+  steps?: unknown
+}): boolean {
+  const titleOk = typeof recipe.title === 'string' && recipe.title.trim().length > 0
+  const ingredientsOk = Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
+  const stepsOk = Array.isArray(recipe.steps) && recipe.steps.length > 0
+  return titleOk && ingredientsOk && stepsOk
+}
