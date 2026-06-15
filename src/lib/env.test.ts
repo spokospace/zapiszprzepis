@@ -16,15 +16,15 @@ describe('lib/env', () => {
   })
 
   it('requireEnv helper should fail with empty string', () => {
-    const testValue = ''
-    const result = !testValue || testValue.trim() === '' ? null : testValue
+    const testValue: string = ''
+    const result = testValue && testValue.trim() !== '' ? testValue : null
 
     expect(result).toBeNull()
   })
 
   it('requireEnv helper should fail with undefined', () => {
-    const testValue: string | undefined = undefined
-    const result = !testValue || testValue.trim() === '' ? null : testValue
+    const testValue = undefined as string | undefined
+    const result = testValue && testValue.trim() !== '' ? testValue : null
 
     expect(result).toBeNull()
   })

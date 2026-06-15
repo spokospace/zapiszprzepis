@@ -1,7 +1,7 @@
 ---
 change_id: test-pure-pipeline-units
 title: Test pure pipeline units
-status: preparing
+status: implementing
 created: 2026-06-15
 updated: 2026-06-15
 archived_at: null
