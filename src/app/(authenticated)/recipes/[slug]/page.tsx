@@ -7,6 +7,7 @@ import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { Toast } from '@/app/components/toast'
 import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
+import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import type { Database } from '@/lib/supabase.types'
 
 function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: string; minutes: number }) {
@@ -20,8 +21,6 @@ function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: st
 }
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
-
-type Ingredient = { name: string; amount?: string; unit?: string; section?: string }
 
 const SOURCE_LABELS: Partial<Record<Recipe['source_type'], string>> = {
   facebook_text: 'Facebook',
@@ -72,20 +71,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
   const typedRecipe = recipe as Recipe
 
-  const ingredients = (Array.isArray(typedRecipe.ingredients)
-    ? typedRecipe.ingredients
-    : JSON.parse(typedRecipe.ingredients as string)) as Ingredient[]
-
-  // Group ingredients by their optional `section` (e.g. "Podmłoda",
-  // "Masa waniliowa"), preserving source order. Ingredients with no section
-  // (existing recipes / ungrouped lists) collapse into one unlabeled group.
-  const ingredientGroups: { section: string; items: Ingredient[] }[] = []
-  for (const ing of ingredients) {
-    const section = (ing?.section ?? '').trim()
-    const last = ingredientGroups.at(-1)
-    if (last && last.section === section) last.items.push(ing)
-    else ingredientGroups.push({ section, items: [ing] })
-  }
+  // Parse + group the jsonb ingredients. parseIngredients is crash-safe (an RSC
+  // exception is a full page crash); groupBySection splits by optional `section`.
+  const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
 
   const steps = (Array.isArray(typedRecipe.steps)
     ? typedRecipe.steps

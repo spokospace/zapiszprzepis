@@ -480,26 +480,26 @@ registration; `example.ts` and the trigger.dev config stay.
 ### Phase 2: Pure detection/quality/Firecrawl tests + two obvious fixes
 
 #### Automated
-- [x] 2.1 `pnpm test` passes (all new specs green)
-- [x] 2.2 `pnpm typecheck` clean
-- [x] 2.3 `pnpm lint` passes
-- [x] 2.4 `gaming.youtube.com` → `youtube` asserted green
-- [x] 2.5 `blogspot.de` → `true` asserted green
+- [x] 2.1 `pnpm test` passes (all new specs green) — e86fead
+- [x] 2.2 `pnpm typecheck` clean — e86fead
+- [x] 2.3 `pnpm lint` passes — e86fead
+- [x] 2.4 `gaming.youtube.com` → `youtube` asserted green — e86fead
+- [x] 2.5 `blogspot.de` → `true` asserted green — e86fead
 
 #### Manual
-- [x] 2.6 Characterization tests comment-marked as pinned limitations
-- [x] 2.7 No production behavior changed beyond the two named fixes
+- [x] 2.6 Characterization tests comment-marked as pinned limitations — e86fead
+- [x] 2.7 No production behavior changed beyond the two named fixes — e86fead
 
 ### Phase 3: Risk 4 — extract ingredient helpers
 
 #### Automated
-- [ ] 3.1 `pnpm test` passes (ingredients spec green)
-- [ ] 3.2 `pnpm typecheck` clean
-- [ ] 3.3 `pnpm lint` passes (new import survived formatter)
+- [x] 3.1 `pnpm test` passes (ingredients spec green)
+- [x] 3.2 `pnpm typecheck` clean
+- [x] 3.3 `pnpm lint` passes (new import survived formatter)
 
 #### Manual
-- [ ] 3.4 Detail page renders flat + sectioned recipe identically to before
-- [ ] 3.5 Malformed/empty ingredients render without crashing
+- [x] 3.4 Detail page renders flat + sectioned recipe identically to before
+- [x] 3.5 Malformed/empty ingredients render without crashing
 
 ### Phase 4: Risk 2 validator + dead-code removal
 
