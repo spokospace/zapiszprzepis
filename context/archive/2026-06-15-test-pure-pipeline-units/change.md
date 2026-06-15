@@ -1,10 +1,10 @@
 ---
 change_id: test-pure-pipeline-units
 title: Test pure pipeline units
-status: impl_reviewed
+status: archived
 created: 2026-06-15
 updated: 2026-06-16
-archived_at: null
+archived_at: 2026-06-15T23:49:44Z
 ---
 
 ## Notes
