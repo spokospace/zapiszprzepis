@@ -87,29 +87,17 @@ export default async function RecipesPage({
     filteredQuery = filteredQuery.eq('category', activeCategory)
   }
 
-  const [{ data: recipes, error }, { data: allRecipes }, { data: failed }] = await Promise.all([
+  const [{ data: recipes, error }, { data: allRecipes }] = await Promise.all([
     filteredQuery,
     supabase.from('recipes').select('category'),
-    supabase
-      .from('recipe_shares')
-      .select('id, shared_url, error_message')
-      .eq('status', 'failed')
-      .is('recipe_id', null)
-      .order('created_at', { ascending: false }),
   ])
 
   if (error) {
     console.error('[recipes] Query error:', error)
   }
 
-  // Failed extractions that never produced a recipe — surfaced so no shared URL
-  // is silently lost (NFR). Dedupe by URL; retries can leave several rows.
-  const seenFailed = new Set<string>()
-  const failedShares = (failed || []).filter((s) => {
-    if (seenFailed.has(s.shared_url)) return false
-    seenFailed.add(s.shared_url)
-    return true
-  })
+  // Failed extractions surface in the header notification bell (see the
+  // authenticated layout + getFailedShares), not inline on this page.
 
   const filteredRecipes = ((recipes || []) as Recipe[]).filter((recipe) =>
     normalizedQuery ? matchesQuery(recipe, normalizedQuery) : true,
@@ -133,7 +121,6 @@ export default async function RecipesPage({
       activeCategory={activeCategory}
       categoryCounts={counts}
       searchQuery={searchQuery}
-      failedShares={failedShares}
       showRetryingToast={retrying === '1'}
     />
   )

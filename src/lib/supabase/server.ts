@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
 
 export async function createSupabaseServerClient() {
@@ -34,4 +35,20 @@ export async function createSupabaseServerClient() {
       },
     },
   )
+}
+
+/**
+ * Auth guard for Server Actions / Server Components downstream of the proxy:
+ * build the client, confirm a user, redirect to /login otherwise. Returns both
+ * so callers needing only identity can ignore `supabase` and vice versa.
+ */
+export async function requireUser() {
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    redirect('/login')
+  }
+  return { supabase, user }
 }

@@ -2,26 +2,20 @@
 
 import { redirect } from 'next/navigation'
 import { inngest } from '@/inngest/client'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { requireUser } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
 
 /**
  * "Ponów" — re-trigger extraction for a share whose automatic retries (Inngest
  * retries: 3) were exhausted and left it failed. Resets the share to pending
- * and re-sends the recipe/extract event. Part of S-07 ("no shared request is
- * silently lost").
+ * and re-sends the recipe/extract event. Part of S-06 ("no shared request is
+ * silently lost"). Called directly from the notification bell inside a
+ * transition, so it takes a plain shareId rather than FormData.
  */
-export async function retryShare(formData: FormData): Promise<void> {
-  const shareId = Number(formData.get('shareId'))
+export async function retryShare(shareId: number): Promise<void> {
   if (!Number.isInteger(shareId) || shareId <= 0) return
 
-  const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect('/login')
-  }
+  const { supabase, user } = await requireUser()
 
   // RLS scopes recipe_shares to the current user.
   const { data: share } = await supabase
