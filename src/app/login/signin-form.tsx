@@ -14,6 +14,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: 'Email lub hasło są nieprawidłowe.',
   weak_password: 'Hasło musi mieć co najmniej 6 znaków.',
   user_not_found: 'Użytkownik z takim emailem nie istnieje. Zarejestruj się.',
+  no_account: 'Nie znaleziono konta. Zarejestruj się z kodem zaproszenia.',
   unknown: 'Coś poszło nie tak. Spróbuj ponownie.',
 }
 
