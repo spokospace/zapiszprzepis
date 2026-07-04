@@ -34,12 +34,21 @@ export async function retryShare(shareId: number): Promise<void> {
 
   const intent = (share.share_intent ?? {}) as { title?: string | null; text?: string | null }
 
-  const { error: resetError } = await supabase
+  // Compare-and-swap on status: the guard above ran on the SELECT, so gate the
+  // UPDATE on `status = 'failed'` too. A concurrent "Ponów" that already flipped
+  // this share to `pending` leaves us with zero rows — don't double-dispatch.
+  const { data: reset, error: resetError } = await supabase
     .from('recipe_shares')
     .update({ status: 'pending', error_message: null })
     .eq('id', share.id)
+    .eq('status', 'failed')
+    .select('id')
   if (resetError) {
     console.error('[retry] Failed to reset share to pending:', resetError)
+    revalidatePath('/recipes')
+    return
+  }
+  if (!reset || reset.length === 0) {
     revalidatePath('/recipes')
     return
   }

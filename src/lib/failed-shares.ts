@@ -27,13 +27,18 @@ type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
  * are failed rows, and is bounded to their URLs.
  */
 export async function getFailedShares(supabase: ServerClient): Promise<FailedShare[]> {
-  const { data: failed } = await supabase
+  const { data: failed, error: failedError } = await supabase
     .from('recipe_shares')
     .select('id, shared_url, error_message')
     .eq('status', 'failed')
     .is('recipe_id', null)
     .order('created_at', { ascending: false })
 
+  if (failedError) {
+    // Don't let a query failure render an empty bell — that would silently hide
+    // failed shares, the exact NFR this feature upholds.
+    console.error('[failed-shares] Failed to load failed shares:', failedError)
+  }
   if (!failed || failed.length === 0) return []
 
   const failedUrls = [...new Set(failed.map((s) => s.shared_url))]

@@ -88,14 +88,20 @@ export function NotificationBell({ failedShares }: { failedShares: FailedShare[]
                   <p className="mb-0.5 text-sm font-medium text-gray-900">
                     Nie udało się zapisać przepisu
                   </p>
-                  <a
-                    href={share.shared_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block truncate text-xs text-gray-500 hover:underline"
-                  >
-                    {share.shared_url}
-                  </a>
+                  {share.shared_url.startsWith('http') ? (
+                    <a
+                      href={share.shared_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block truncate text-xs text-gray-500 hover:underline"
+                    >
+                      {share.shared_url}
+                    </a>
+                  ) : (
+                    // Only http(s) URLs are linkable — a non-http scheme
+                    // (javascript:, data:) is shown as inert text.
+                    <p className="block truncate text-xs text-gray-500">{share.shared_url}</p>
+                  )}
                   {share.error_message && (
                     <p className="mt-0.5 truncate text-xs text-gray-400">{share.error_message}</p>
                   )}
