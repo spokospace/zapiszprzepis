@@ -2,45 +2,49 @@
 
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { getSiteUrl } from '@/lib/site-url'
+import { getInviteCode } from '@/lib/env'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+/**
+ * Passwordless registration gated by an invite code. A valid code sends a
+ * magic link that is allowed to create the user (`shouldCreateUser: true`);
+ * clicking it provisions the account. The invite code is the only thing that
+ * lets a brand-new email create an account — the /login magic-link path uses
+ * `shouldCreateUser: false` so it can't be used to bypass this gate.
+ */
 export async function signUp(formData: FormData): Promise<void> {
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
-  const password = String(formData.get('password') ?? '')
-  const passwordConfirm = String(formData.get('passwordConfirm') ?? '')
+  const inviteCode = String(formData.get('inviteCode') ?? '').trim()
   const encodedEmail = encodeURIComponent(email)
 
   if (!EMAIL_RE.test(email)) {
     redirect(`/signup?error=invalid_email&email=${encodedEmail}`)
   }
 
-  if (!password || password.length < 6) {
-    redirect(`/signup?error=weak_password&email=${encodedEmail}`)
-  }
-
-  if (password !== passwordConfirm) {
-    redirect(`/signup?error=password_mismatch&email=${encodedEmail}`)
+  if (inviteCode !== getInviteCode()) {
+    redirect(`/signup?error=invalid_code&email=${encodedEmail}`)
   }
 
   const supabase = await createSupabaseServerClient()
+  const siteUrl = await getSiteUrl()
 
-  const { error } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.signInWithOtp({
     email,
-    password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      shouldCreateUser: true,
+      emailRedirectTo: `${siteUrl}/auth/callback`,
     },
   })
 
   if (error) {
-    if (error.code === 'user_already_exists' || error.message.includes('already exists')) {
-      redirect(`/signup?error=user_already_exists&email=${encodedEmail}`)
+    if (error.status === 429 || error.code === 'over_email_send_rate_limit') {
+      redirect(`/signup?error=cooldown&email=${encodedEmail}`)
     }
-    console.error('signUp failed', { code: error.code, status: error.status })
+    console.error('signUp signInWithOtp failed', { code: error.code, status: error.status })
     redirect(`/signup?error=unknown&email=${encodedEmail}`)
   }
 
-  // After successful signup, redirect to login with info to check email or login directly
-  redirect(`/login?email=${encodedEmail}`)
+  redirect(`/signup?sent=1&email=${encodedEmail}`)
 }

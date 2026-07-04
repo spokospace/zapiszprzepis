@@ -5,21 +5,25 @@ import { signUp } from './actions'
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_email: 'Wpisz prawidłowy adres email.',
-  weak_password: 'Hasło musi mieć co najmniej 6 znaków.',
-  user_already_exists: 'Użytkownik z takim emailem już istnieje. Zaloguj się.',
-  password_mismatch: 'Hasła nie są identyczne.',
+  invalid_code: 'Nieprawidłowy kod zaproszenia.',
+  cooldown: 'Poczekaj chwilę, zanim wyślesz kolejny link.',
   unknown: 'Coś poszło nie tak. Spróbuj ponownie.',
 }
 
 interface SignUpFormProps {
   error?: string
   email?: string
+  sent?: string
 }
 
-export function SignUpForm({ error, email }: SignUpFormProps) {
+export function SignUpForm({ error, email, sent }: SignUpFormProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.unknown) : null
+  const sentMessage =
+    sent === '1' && email
+      ? `Wysłaliśmy link na ${email} — kliknij go, aby dokończyć rejestrację.`
+      : null
 
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true)
@@ -32,9 +36,7 @@ export function SignUpForm({ error, email }: SignUpFormProps) {
 
   return (
     <div className="w-full max-w-sm">
-      <h2 className="mt-4 text-sm text-zinc-600">
-        Stwórz nowe konto z hasłem
-      </h2>
+      <h2 className="mt-4 text-sm text-zinc-600">Zarejestruj się kodem zaproszenia</h2>
 
       {errorMessage && (
         <div
@@ -42,6 +44,15 @@ export function SignUpForm({ error, email }: SignUpFormProps) {
           className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
         >
           {errorMessage}
+        </div>
+      )}
+
+      {sentMessage && (
+        <div
+          role="status"
+          className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+        >
+          {sentMessage}
         </div>
       )}
 
@@ -66,33 +77,17 @@ export function SignUpForm({ error, email }: SignUpFormProps) {
         </div>
 
         <div>
-          <label htmlFor="password" className="text-sm font-medium text-zinc-700">
-            Hasło
+          <label htmlFor="invite-code" className="text-sm font-medium text-zinc-700">
+            Kod zaproszenia
           </label>
           <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
+            id="invite-code"
+            name="inviteCode"
+            type="text"
+            autoComplete="off"
             required
             disabled={isLoading}
-            placeholder="Minimum 6 znaków"
-            className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password-confirm" className="text-sm font-medium text-zinc-700">
-            Powtórz hasło
-          </label>
-          <input
-            id="password-confirm"
-            name="passwordConfirm"
-            type="password"
-            autoComplete="new-password"
-            required
-            disabled={isLoading}
-            placeholder="Powtórz hasło"
+            placeholder="Wpisz kod otrzymany od autora"
             className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-500"
           />
         </div>
@@ -102,7 +97,7 @@ export function SignUpForm({ error, email }: SignUpFormProps) {
           disabled={isLoading}
           className="mt-2 rounded-md bg-zinc-900 px-4 py-2.5 text-base font-medium text-white hover:bg-zinc-800 disabled:bg-zinc-400"
         >
-          {isLoading ? 'Tworzenie konta...' : 'Utwórz konto'}
+          {isLoading ? 'Wysyłanie...' : 'Zarejestruj się'}
         </button>
 
         <p className="text-center text-sm text-zinc-600">

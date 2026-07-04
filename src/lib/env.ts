@@ -25,3 +25,11 @@ export function getTriggerSecretKey(): string {
 export function getTriggerProjectId(): string {
   return requireEnv('TRIGGER_PROJECT_ID')
 }
+
+// Lazy-loaded invite code — required only at runtime when gating registration.
+// Trimmed so a trailing newline/space in the stored secret (common when pasting
+// into a dashboard/CI) can't reject an otherwise-correct code (user input is
+// trimmed at the compare site).
+export function getInviteCode(): string {
+  return requireEnv('INVITE_CODE').trim()
+}
