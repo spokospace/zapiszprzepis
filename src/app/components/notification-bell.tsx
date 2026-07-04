@@ -26,8 +26,15 @@ export function NotificationBell({ failedShares }: { failedShares: FailedShare[]
         setOpen(false)
       }
     }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
   }, [open])
 
   return (
@@ -37,6 +44,8 @@ export function NotificationBell({ failedShares }: { failedShares: FailedShare[]
         onClick={() => setOpen((o) => !o)}
         aria-label={count > 0 ? `Powiadomienia (${count})` : 'Powiadomienia'}
         aria-expanded={open}
+        aria-controls="notifications-panel"
+        aria-haspopup="menu"
         className="relative rounded-lg p-2 text-gray-600 hover:bg-gray-100"
       >
         <Bell aria-hidden="true" className="h-5 w-5" />
@@ -48,7 +57,12 @@ export function NotificationBell({ failedShares }: { failedShares: FailedShare[]
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+        <div
+          id="notifications-panel"
+          role="menu"
+          aria-label="Powiadomienia"
+          className="absolute right-0 z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+        >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
             <span className="text-sm font-semibold text-gray-900">Powiadomienia</span>
             {count > 0 && (
