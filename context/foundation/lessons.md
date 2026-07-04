@@ -70,3 +70,13 @@ const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
 **Rule**: Centralize required env reads in `src/lib/env.ts` that throws a clear `Missing required env: NEXT_PUBLIC_SUPABASE_URL` at module load. Every other file imports `{ SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'`. Optional vars stay as `process.env.X` with explicit `?? defaultValue`. Apply the same pattern to any new third-party integration (OpenAI key, Trigger.dev token, etc.).
 
 **Applies to**: Every Next.js / Node project. The rule scales: as the env-var count grows, having one place to add validations beats scattering `!` assertions across imports.
+
+## Write commit messages, PRs, and code reviews in English
+
+**Context**: Any git commit subject/body, GitHub PR title/description, or code-review output (comments, review reports) — regardless of the language of the conversation, PRD, roadmap.md, or plan.md.
+
+**Problem**: On 2026-07-04 PRs #90/#91 were opened with Polish titles/descriptions and a code review was written in Polish to "match the chat"; the user corrected this emphatically (twice). Mixed-language git history and review artifacts are inconsistent with the project's English identifiers and harder for tooling and future contributors.
+
+**Rule**: Always write git commit subjects and bodies, PR titles and descriptions, and code-review output in English — even when the surrounding work (chat, PRD, roadmap.md, plan.md, change.md) is in Polish. Only these Git/review artifacts are forced to English; project docs stay in the user's language.
+
+**Applies to**: implement, impl-review, all
