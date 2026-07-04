@@ -1,3 +1,4 @@
+import 'server-only'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 export type FailedShare = {

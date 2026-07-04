@@ -15,7 +15,6 @@ type SearchParams = Promise<{
   add_error?: string
   duplicate?: string
   q?: string
-  retrying?: string
 }>
 
 /**
@@ -50,7 +49,7 @@ export default async function RecipesPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { shared, category, add_error, duplicate, q, retrying } = await searchParams
+  const { shared, category, add_error, duplicate, q } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   const searchQuery = (q ?? '').trim()
@@ -121,7 +120,6 @@ export default async function RecipesPage({
       activeCategory={activeCategory}
       categoryCounts={counts}
       searchQuery={searchQuery}
-      showRetryingToast={retrying === '1'}
     />
   )
 }

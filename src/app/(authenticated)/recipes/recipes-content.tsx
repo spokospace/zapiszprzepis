@@ -26,7 +26,6 @@ interface RecipesContentProps {
   activeCategory?: RecipeCategory | null
   categoryCounts?: Partial<Record<RecipeCategory, number>>
   searchQuery?: string
-  showRetryingToast?: boolean
 }
 
 function AddRecipeForm({ addError }: { addError?: string | null }) {
@@ -97,7 +96,6 @@ export function RecipesContent({
   activeCategory,
   categoryCounts,
   searchQuery,
-  showRetryingToast,
 }: RecipesContentProps) {
   // `searchQuery` arrives already trimmed from the server component.
   const hasSearch = Boolean(searchQuery)
@@ -117,14 +115,6 @@ export function RecipesContent({
           type="info"
           duration={5000}
           clearParam="duplicate"
-        />
-      )}
-      {showRetryingToast && (
-        <Toast
-          message="Ponawiam przetwarzanie — przepis pojawi się za chwilę."
-          type="success"
-          duration={5000}
-          clearParam="retrying"
         />
       )}
 

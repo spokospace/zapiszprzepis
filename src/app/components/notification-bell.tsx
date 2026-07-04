@@ -44,7 +44,7 @@ export function NotificationBell({ failedShares }: { failedShares: FailedShare[]
         onClick={() => setOpen((o) => !o)}
         aria-label={count > 0 ? `Powiadomienia (${count})` : 'Powiadomienia'}
         aria-expanded={open}
-        aria-controls="notifications-panel"
+        aria-controls={open ? 'notifications-panel' : undefined}
         aria-haspopup="menu"
         className="relative rounded-lg p-2 text-gray-600 hover:bg-gray-100"
       >

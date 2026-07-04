@@ -15,18 +15,28 @@ export async function dismissShare(shareId: number): Promise<void> {
   if (!Number.isInteger(shareId) || shareId <= 0) return
 
   const { supabase } = await requireUser()
-  await supabase.from('recipe_shares').delete().eq('id', shareId).eq('status', 'failed')
+  const { error } = await supabase
+    .from('recipe_shares')
+    .delete()
+    .eq('id', shareId)
+    .eq('status', 'failed')
+  if (error) {
+    console.error('[dismiss] Failed to dismiss share:', error)
+  }
 
   revalidatePath('/recipes')
 }
 
 export async function dismissAllFailedShares(): Promise<void> {
   const { supabase } = await requireUser()
-  await supabase
+  const { error } = await supabase
     .from('recipe_shares')
     .delete()
     .eq('status', 'failed')
     .is('recipe_id', null)
+  if (error) {
+    console.error('[dismiss] Failed to dismiss all shares:', error)
+  }
 
   revalidatePath('/recipes')
 }

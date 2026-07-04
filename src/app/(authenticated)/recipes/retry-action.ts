@@ -1,6 +1,6 @@
 'use server'
 
-import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { inngest } from '@/inngest/client'
 import { requireUser } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
@@ -10,7 +10,9 @@ import { detectSourceType } from '@/lib/detect-source-type'
  * retries: 3) were exhausted and left it failed. Resets the share to pending
  * and re-sends the recipe/extract event. Part of S-06 ("no shared request is
  * silently lost"). Called directly from the notification bell inside a
- * transition, so it takes a plain shareId rather than FormData.
+ * transition, so it takes a plain shareId rather than FormData and stays on the
+ * current route (revalidate, no redirect) — the bell lives on every
+ * authenticated screen, so a redirect would yank the user off the detail page.
  */
 export async function retryShare(shareId: number): Promise<void> {
   if (!Number.isInteger(shareId) || shareId <= 0) return
@@ -24,16 +26,23 @@ export async function retryShare(shareId: number): Promise<void> {
     .eq('id', shareId)
     .single()
 
+  // Gone, or a concurrent retry already moved it off `failed` — nothing to do.
   if (!share || share.status !== 'failed') {
-    redirect('/recipes')
+    revalidatePath('/recipes')
+    return
   }
 
   const intent = (share.share_intent ?? {}) as { title?: string | null; text?: string | null }
 
-  await supabase
+  const { error: resetError } = await supabase
     .from('recipe_shares')
     .update({ status: 'pending', error_message: null })
     .eq('id', share.id)
+  if (resetError) {
+    console.error('[retry] Failed to reset share to pending:', resetError)
+    revalidatePath('/recipes')
+    return
+  }
 
   try {
     await inngest.send({
@@ -48,8 +57,18 @@ export async function retryShare(shareId: number): Promise<void> {
       },
     })
   } catch (error) {
+    // Dispatch failed — put the share back to `failed` so it stays visible in
+    // the bell instead of stranded in `pending` and silently lost (the NFR
+    // this whole feature exists to uphold).
     console.error('[retry] Failed to re-trigger extraction:', error)
+    await supabase
+      .from('recipe_shares')
+      .update({
+        status: 'failed',
+        error_message: 'Nie udało się ponowić przetwarzania. Spróbuj ponownie.',
+      })
+      .eq('id', share.id)
   }
 
-  redirect('/recipes?retrying=1')
+  revalidatePath('/recipes')
 }
