@@ -173,9 +173,9 @@ The `/login` magic-link tab stops creating new users.
 - [x] 1.3 Build compiles: `pnpm build` — e6c42e2
 
 #### Manual
-- [ ] 1.4 Valid code + email → "sprawdź email" → link creates account, lands on /recipes
-- [ ] 1.5 Wrong/empty code → error, no email, no account
-- [ ] 1.6 Signup form has no password fields
+- [x] 1.4 Valid code + email → "sprawdź email" → link creates account, lands on /recipes
+- [x] 1.5 Wrong/empty code → error, no email, no account
+- [x] 1.6 Signup form has no password fields
 
 ### Phase 2: Close the login magic-link backdoor
 
@@ -185,6 +185,6 @@ The `/login` magic-link tab stops creating new users.
 - [x] 2.3 Build compiles: `pnpm build` — 4375c21
 
 #### Manual
-- [ ] 2.4 Existing user magic-link login (no code) works
-- [ ] 2.5 Brand-new email on login → no account created, "no account" message
+- [x] 2.4 Existing user magic-link login (no code) works
+- [x] 2.5 Brand-new email on login → no account created, "no account" message
 - [ ] 2.6 Existing password login unaffected
