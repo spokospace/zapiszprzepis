@@ -4,6 +4,7 @@ import { SignUpForm } from './signup-form'
 type SearchParams = Promise<{
   error?: string
   email?: string
+  sent?: string
 }>
 
 export default async function SignUpPage({
@@ -11,7 +12,7 @@ export default async function SignUpPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { error, email } = await searchParams
+  const { error, email, sent } = await searchParams
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
@@ -27,7 +28,7 @@ export default async function SignUpPage({
             className="block h-auto w-48"
           />
         </h1>
-        <SignUpForm error={error} email={email} />
+        <SignUpForm error={error} email={email} sent={sent} />
       </div>
     </main>
   )

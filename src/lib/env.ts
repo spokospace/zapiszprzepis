@@ -25,3 +25,8 @@ export function getTriggerSecretKey(): string {
 export function getTriggerProjectId(): string {
   return requireEnv('TRIGGER_PROJECT_ID')
 }
+
+// Lazy-loaded invite code — required only at runtime when gating registration
+export function getInviteCode(): string {
+  return requireEnv('INVITE_CODE')
+}

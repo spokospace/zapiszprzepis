@@ -168,9 +168,9 @@ The `/login` magic-link tab stops creating new users.
 ### Phase 1: Registration via magic-link + invite code
 
 #### Automated
-- [ ] 1.1 Typecheck passes: `pnpm typecheck`
-- [ ] 1.2 Lint passes (0 errors): `pnpm lint`
-- [ ] 1.3 Build compiles: `pnpm build`
+- [x] 1.1 Typecheck passes: `pnpm typecheck`
+- [x] 1.2 Lint passes (0 errors): `pnpm lint`
+- [x] 1.3 Build compiles: `pnpm build`
 
 #### Manual
 - [ ] 1.4 Valid code + email → "sprawdź email" → link creates account, lands on /recipes
