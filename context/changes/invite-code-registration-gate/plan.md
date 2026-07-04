@@ -180,9 +180,9 @@ The `/login` magic-link tab stops creating new users.
 ### Phase 2: Close the login magic-link backdoor
 
 #### Automated
-- [x] 2.1 Typecheck passes: `pnpm typecheck`
-- [x] 2.2 Lint passes (0 errors): `pnpm lint`
-- [x] 2.3 Build compiles: `pnpm build`
+- [x] 2.1 Typecheck passes: `pnpm typecheck` — 4375c21
+- [x] 2.2 Lint passes (0 errors): `pnpm lint` — 4375c21
+- [x] 2.3 Build compiles: `pnpm build` — 4375c21
 
 #### Manual
 - [ ] 2.4 Existing user magic-link login (no code) works

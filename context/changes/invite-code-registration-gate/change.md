@@ -1,7 +1,7 @@
 ---
 change_id: invite-code-registration-gate
 title: Invite-code registration gate
-status: implementing
+status: implemented
 created: 2026-07-04
 updated: 2026-07-04
 archived_at: null
