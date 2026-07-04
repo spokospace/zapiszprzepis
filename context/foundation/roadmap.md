@@ -26,6 +26,8 @@ Rdzeń tej pętli jest już wdrożony (F-01..F-03, S-01..S-03). Ta wersja mapy s
 
 **S-04: Mama otwiera kategorię lub wpisuje fragment nazwy i odnajduje zapisany przepis** (razem z `S-05` wyszukiwaniem) — to następny kamień milowy walidacji: dowód, że kolekcja przepisów jest użyteczna **w czasie**, a nie tylko w momencie zapisu.
 
+> **Korekta 2026-07-04:** S-04 (przeglądanie po kategoriach) okazał się **już wdrożony** — inline chipsy `CategoryFilter` na `/recipes` (PR #50), nie osobna trasa. Regeneracja mapy błędnie oznaczyła go `ready` (sonda szukała trasy). Praktyczną następną walidacją jest więc `S-05` (wyszukiwanie) + `S-06` (obsługa błędów).
+
 > *Gwiazda północna* to tutaj najmniejszy kompleksowy (end-to-end) wycinek, którego pomyślne dostarczenie udowodniłoby aktualną hipotezę produktu — umieszczony tak wcześnie, jak pozwalają na to Wymagania wstępne. Pierwotna gwiazda (pierwszy zapisany przepis FB) jest już wdrożona; nowa hipoteza brzmi: „mama używa aplikacji samodzielnie ≥ 3 dni z rzędu" (Kryterium Wtórne PRD, zretargetowane z 30 → 3 dni), a jej warunkiem jest możliwość *odnalezienia* wcześniej zapisanego przepisu bez przewijania listy chronologicznej.
 
 ## W skrócie
@@ -38,7 +40,7 @@ Rdzeń tej pętli jest już wdrożony (F-01..F-03, S-01..S-03). Ta wersja mapy s
 | S-01  | first-shared-recipe-fb-text     | udostępnić URL FB-tekstowy i zobaczyć polskojęzyczny przepis (karta + detal + trwałe zdjęcie) | F-01, F-02, F-03  | US-01, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-009 | done   |
 | S-02  | web-blog-recipe-source          | udostępnić URL bloga WWW i zobaczyć przepis (Blogger feed + Firecrawl)                       | S-01              | FR-004                                                  | done   |
 | S-03  | youtube-recipe-source           | udostępnić URL YouTube i zobaczyć przepis (odnośnik + embed; bez transkrypcji — pivot)       | S-01              | FR-004                                                  | done   |
-| S-04  | category-browse                 | przeglądać przepisy pogrupowane wg kategorii (fixed taxonomy, 8 pozycji)                     | S-01              | FR-008                                                  | ready  |
+| S-04  | category-browse                 | przeglądać przepisy pogrupowane wg kategorii (fixed taxonomy, 8 pozycji)                     | S-01              | FR-008                                                  | done   |
 | S-05  | recipe-search                   | wyszukać przepis wpisując fragment tytułu lub składnika (utwardzone ILIKE/pg_trgm)           | S-01              | FR-013                                                  | ready  |
 | S-06  | error-ux-and-author-alerts      | obsłużyć nieudane przepisy w **dzwoneczku powiadomień** (Ponów / Odrzuć / Wyczyść wszystkie) — autor dostaje email | S-01              | FR-012, NFR „żadne żądanie nie ginie cicho"             | ready  |
 | S-07  | invite-code-registration-gate   | zarejestrować się tylko z ważnym kodem zaproszenia (zamknięte rejestracje)                   | F-01              | Access Control (rozszerzenie — Otwarte Pytanie #5)      | ready  |
@@ -51,7 +53,7 @@ Pomoc nawigacyjna — grupuje elementy współdzielące łańcuch Wymagań wstę
 | Strumień | Temat                              | Łańcuch                                              | Uwaga                                                                                       |
 | -------- | ---------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | A        | Rdzeń pipeline'u (wdrożony)        | `F-01` / `F-02` / `F-03` → `S-01` → `S-02` / `S-03`  | Cały strumień `done` — pętla „udostępnij → polskojęzyczny przepis" działa na 3 źródłach.     |
-| B        | Odnajdywanie (gwiazda północna)    | `S-04` / `S-05`                                      | Oba zależą tylko od `S-01` (wdrożone) → równoległe i `ready`. Cel: kolekcja użyteczna w czasie. |
+| B        | Odnajdywanie (gwiazda północna)    | `S-04` / `S-05`                                      | `S-04` wdrożony (PR #50); `S-05` `ready`. Cel: kolekcja użyteczna w czasie. |
 | C        | Niezawodność i kontrola dostępu    | `S-06` / `S-07`                                      | `S-06` naprawia aktywny błąd (baner „nie udało się" nie znika + zepsuty „Ponów"); `S-07` zamyka rejestracje. |
 | D        | Rozszerzenie źródeł                | `S-08`                                               | FB Reel jako odnośnik (nie pełna ekstrakcja). Zależy od `S-01`; równoległy do B i C.         |
 
@@ -162,8 +164,8 @@ Wdrożone increments złożone w powyższą bazę (bez własnych wierszy w Wycin
 - **Blokady:** —
 - **Niewiadome:**
   - Lista kategorii do potwierdzenia z mamą (Otwarte Pytanie #3): czy 8 pozycji wystarcza, czy brakuje „Wypieki" / „Sałatki" / „Przetwory"? — Właściciel: autor (rozmowa z mamą). Blokuje: nie. Ship z domyślną 8-pozycyjną listą; refine promptu klasyfikatora po rozmowie.
-- **Ryzyko:** mało ryzyka technicznego (filtr `WHERE category = X` — kolumna istnieje); folder zmiany `context/changes/category-browse/` już otwarty, ale trasa jeszcze nieobecna. Główne ryzyko produktowe to spójność klasyfikacji LLM — audytować na pierwszych ~20 przepisach.
-- **Status:** ready
+- **Ryzyko:** **wdrożony** (PR #50) jako inline chipsy `CategoryFilter` na `/recipes` (ikony + liczniki, filtr `?category=X` server-side, badge na detalu) — nie osobna trasa. Pozostałe ryzyko produktowe to spójność klasyfikacji LLM — audytować na pierwszych ~20 przepisach; lista kategorii do potwierdzenia z mamą (Otwarte Pytanie #3).
+- **Status:** done
 
 ### S-05: Wyszukiwanie po tytule i składniku (utwardzone)
 
@@ -226,7 +228,7 @@ Wdrożone increments złożone w powyższą bazę (bez własnych wierszy w Wycin
 | S-01             | first-shared-recipe-fb-text   | Udostępnij FB-tekst → polskojęzyczny przepis (end-to-end)                        | no                    | done                                                       |
 | S-02             | web-blog-recipe-source        | Źródło bloga WWW (Blogger feed + Firecrawl)                                      | no                    | done                                                       |
 | S-03             | youtube-recipe-source         | Źródło YouTube (odnośnik + embed)                                                | no                    | done — pivot bez transkrypcji                              |
-| S-04             | category-browse               | Przeglądanie po kategoriach (fixed taxonomy 8 pozycji)                           | yes                   | **Gwiazda północna.** Uruchom `/10x-plan category-browse`  |
+| S-04             | category-browse               | Przeglądanie po kategoriach (fixed taxonomy 8 pozycji)                           | no                    | done — wdrożony w PR #50 (inline chipsy)                   |
 | S-05             | recipe-search                 | Utwardzone wyszukiwanie ILIKE/pg_trgm po tytule i składniku                      | yes                   | Uruchom `/10x-plan recipe-search` — równolegle z S-04      |
 | S-06             | error-ux-and-author-alerts    | Zamykalne błędy + naprawa „Ponów" + email do autora                             | yes                   | Naprawia aktywny błąd na produkcji                         |
 | S-07             | invite-code-registration-gate | Brama rejestracji z kodem zaproszenia                                            | yes                   | Zaktualizuj PRD (FR-014) — nowa powierzchnia               |
@@ -266,3 +268,4 @@ Wdrożone increments złożone w powyższą bazę (bez własnych wierszy w Wycin
 - **S-01: Pierwszy udostępniony przepis (FB tekstowy)** — wdrożony; złożył increments dedup + image-archive + detail-improvements. Folder: `context/changes/first-shared-recipe-fb-text/`.
 - **S-02: Źródło bloga WWW** — wdrożony (Blogger feed pivot). Folder: `context/changes/web-blog-recipe-source/`.
 - **S-03: Źródło YouTube** — wdrożony (odnośnik + embed pivot). Folder: `context/changes/youtube-recipe-source/`.
+- **S-04: Przeglądanie po kategoriach** — wdrożony w PR #50 jako inline chipsy `CategoryFilter` na `/recipes` (nie osobna trasa). Folder: `context/changes/category-browse/` (status `implemented`). Korekta 2026-07-04: regeneracja mapy błędnie oznaczyła go `ready`.
