@@ -1,9 +1,9 @@
 ---
 project: ZapiszPrzepis
-version: 1
-status: draft
+version: 2
+status: active
 created: 2026-05-28
-updated: 2026-05-28
+updated: 2026-07-04
 prd_version: 1
 main_goal: market-feedback
 top_blocker: time
@@ -11,223 +11,258 @@ top_blocker: time
 
 # Mapa drogowa: ZapiszPrzepis
 
-> Wywiedziono z `context/foundation/prd.md` (v1) + automatycznie zbadana baza kodu (świeży scaffold Next.js po `/10x-bootstrapper`).
+> Wywiedziono z `context/foundation/prd.md` (v1) + automatycznie zbadana baza kodu (stan na 2026-07-04, projekt w toku — nie świeży scaffold).
+> Regeneracja mid-flight: rdzeń „udostępnij → archiwum" już działa. Poprzednia mapa (v1, 2026-05-28) w `context/foundation/archive/2026-07-04-roadmap.md`.
 > Edytuj na miejscu; archiwizuj po zastąpieniu.
-> Poniższe wycinki są wymienione w kolejności zależności. Tabela „W skrócie" to indeks.
+> Wycinki są wymienione w kolejności zależności. Tabela „W skrócie" to indeks.
 
 ## Podsumowanie wizji
 
 ZapiszPrzepis to PWA *archive-first* do zapisywania przepisów udostępnianych z mediów społecznościowych (głównie Facebook), zaprojektowane dla jednej niedoświadczonej technicznie użytkowniczki — mamy autora aplikacji. Każdy URL trafia do aplikacji przez systemowy gest „udostępnij" i jest przekształcany w trwałą, polskojęzyczną kopię przepisu (tytuł, składniki jako lista wypunktowana, kroki, zdjęcie/screenshot, znormalizowana etykieta źródła) — niezależną od oryginału. *Archive-first* — termin produktowy — znaczy: aplikacja przechowuje KOPIĘ przepisu, a nie link do niego, więc gdy oryginał zniknie z Facebooka czy bloga, przepis nadal jest w pełni czytelny.
 
+Rdzeń tej pętli jest już wdrożony (F-01..F-03, S-01..S-03). Ta wersja mapy sekwencjonuje **pozostałą powierzchnię must-have**: odnajdywanie zapisanych przepisów (kategorie + wyszukiwanie), niezawodność (zamykalne błędy + alert autora), kontrolę dostępu (brama rejestracji z kodem) oraz Facebook Reels/Video jako proste źródło-odnośnik.
+
 ## Gwiazda północna
 
-**S-01: Mama udostępnia URL z postu tekstowego Facebook i widzi w aplikacji gotowy, polskojęzyczny przepis** — to kamień milowy walidacji rdzennej hipotezy produktu (AI dziś wystarczy do automatycznej ekstrakcji przepisu z dowolnego źródła) na faktycznie dominującym źródle z Wizji PRD.
+**S-04: Mama otwiera kategorię lub wpisuje fragment nazwy i odnajduje zapisany przepis** (razem z `S-05` wyszukiwaniem) — to następny kamień milowy walidacji: dowód, że kolekcja przepisów jest użyteczna **w czasie**, a nie tylko w momencie zapisu.
 
-> *Gwiazda północna* to tutaj najmniejszy kompleksowy (end-to-end) wycinek, którego pomyślne dostarczenie udowodniłoby podstawową hipotezę produktu — umieszczony tak wcześnie, jak pozwalają na to Wymagania wstępne, ponieważ wszystko inne ma znaczenie tylko wtedy, gdy to działa.
+> *Gwiazda północna* to tutaj najmniejszy kompleksowy (end-to-end) wycinek, którego pomyślne dostarczenie udowodniłoby aktualną hipotezę produktu — umieszczony tak wcześnie, jak pozwalają na to Wymagania wstępne. Pierwotna gwiazda (pierwszy zapisany przepis FB) jest już wdrożona; nowa hipoteza brzmi: „mama używa aplikacji samodzielnie ≥ 3 dni z rzędu" (Kryterium Wtórne PRD, zretargetowane z 30 → 3 dni), a jej warunkiem jest możliwość *odnalezienia* wcześniej zapisanego przepisu bez przewijania listy chronologicznej.
 
 ## W skrócie
 
-| ID    | Change ID                       | Wynik (użytkownik może…)                                                                  | Wymagania wstępne     | Odnośniki PRD                          | Status   |
-| ----- | ------------------------------- | ----------------------------------------------------------------------------------------- | --------------------- | -------------------------------------- | -------- |
-| F-01  | auth-and-supabase-scaffold      | (fundament) projekt Supabase z magic-link auth, sesja długo-żyjąca, RLS-ready             | —                     | FR-001, Access Control                 | ready    |
-| F-02  | async-job-runner                | (fundament) Trigger.dev odbiera zadanie i kończy je poza request-path                     | —                     | FR-003, NFR p95 ≤ 3 min                | ready    |
-| F-03  | pwa-shell-and-share-target      | (fundament) PWA instalowalna z Web Share Target — Pixel 9 widzi ZapiszPrzepis na liście udostępniania | —                     | FR-002, NFR PWA + Web Share Target     | ready    |
-| S-01  | first-shared-recipe-fb-text     | udostępnić URL FB-tekstowy i po 1-3 min zobaczyć w aplikacji polskojęzyczny przepis (karta + detal) | F-01, F-02, F-03      | US-01, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-009 | proposed |
-| S-02  | web-blog-recipe-source          | udostępnić URL bloga WWW i zobaczyć przepis (drugie źródło)                               | S-01                  | FR-004                                 | proposed |
-| S-03  | fb-reel-recipe-source           | udostępnić URL Facebook Reel i zobaczyć przepis (z audio przez Whisper)                   | S-01                  | FR-004                                 | blocked  |
-| S-04  | youtube-recipe-source           | udostępnić URL YouTube (film lub Short) i zobaczyć przepis (yt-dlp + Whisper)             | S-01                  | FR-004                                 | proposed |
-| S-05  | category-browse                 | przeglądać przepisy pogrupowane wg kategorii (fixed taxonomy 8 pozycji)                   | S-01                  | FR-008                                 | proposed |
-| S-06  | recipe-search                   | wyszukać przepis wpisując fragment tytułu lub składnika                                   | S-01                  | FR-013                                 | proposed |
-| S-07  | error-ux-and-author-alerts      | zobaczyć czytelny komunikat błędu z bounded retry (max 3) — autor dostaje email o trwałym fail | S-01                  | FR-012, NFR „żadne żądanie nie ginie cicho" | proposed |
+| ID    | Change ID                       | Wynik (użytkownik może…)                                                                     | Wymagania wstępne | Odnośniki PRD                                            | Status |
+| ----- | ------------------------------- | -------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------- | ------ |
+| F-01  | auth-and-supabase-scaffold      | (fundament) Supabase + magic-link, sesja długo-żyjąca, RLS per-user                          | —                 | FR-001, Access Control                                  | done   |
+| F-02  | async-job-runner                | (fundament) runner zadań w tle poza request-path (Inngest — pivot z Trigger.dev)             | —                 | FR-003, NFR p95 ≤ 3 min                                 | done   |
+| F-03  | pwa-shell-and-share-target      | (fundament) PWA instalowalna z Web Share Target — Pixel 9 widzi ZapiszPrzepis                | —                 | FR-002, NFR PWA + Web Share Target                      | done   |
+| S-01  | first-shared-recipe-fb-text     | udostępnić URL FB-tekstowy i zobaczyć polskojęzyczny przepis (karta + detal + trwałe zdjęcie) | F-01, F-02, F-03  | US-01, FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-009 | done   |
+| S-02  | web-blog-recipe-source          | udostępnić URL bloga WWW i zobaczyć przepis (Blogger feed + Firecrawl)                       | S-01              | FR-004                                                  | done   |
+| S-03  | youtube-recipe-source           | udostępnić URL YouTube i zobaczyć przepis (odnośnik + embed; bez transkrypcji — pivot)       | S-01              | FR-004                                                  | done   |
+| S-04  | category-browse                 | przeglądać przepisy pogrupowane wg kategorii (fixed taxonomy, 8 pozycji)                     | S-01              | FR-008                                                  | ready  |
+| S-05  | recipe-search                   | wyszukać przepis wpisując fragment tytułu lub składnika (utwardzone ILIKE/pg_trgm)           | S-01              | FR-013                                                  | ready  |
+| S-06  | error-ux-and-author-alerts      | obsłużyć nieudane przepisy w **dzwoneczku powiadomień** (Ponów / Odrzuć / Wyczyść wszystkie) — autor dostaje email | S-01              | FR-012, NFR „żadne żądanie nie ginie cicho"             | ready  |
+| S-07  | invite-code-registration-gate   | zarejestrować się tylko z ważnym kodem zaproszenia (zamknięte rejestracje)                   | F-01              | Access Control (rozszerzenie — Otwarte Pytanie #5)      | ready  |
+| S-08  | fb-reel-link-reference          | udostępnić URL FB Reel/Video i zapisać go jako odnośnik + og:image (best-effort)             | S-01              | FR-004                                                  | ready  |
 
 ## Strumienie
 
-Pomoc nawigacyjna — grupuje elementy, które współdzielą łańcuch Wymagań wstępnych. Kanoniczna kolejność nadal znajduje się w grafie zależności poniżej; ta tabela to proponowana kolejność czytania w równoległych ścieżkach.
+Pomoc nawigacyjna — grupuje elementy współdzielące łańcuch Wymagań wstępnych. Kanoniczna kolejność jest w grafie zależności poniżej; ta tabela to proponowana kolejność czytania w równoległych ścieżkach.
 
-| Strumień | Temat                                  | Łańcuch                                  | Uwaga                                                                                                       |
-| -------- | -------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| A        | Rdzeń pipeline'u i pierwsza walidacja  | `F-01` / `F-02` / `F-03` → `S-01`        | Wszystkie 3 fundamenty są od siebie niezależne — mogą być realizowane równolegle. S-01 to punkt zbiegu i gwiazda północna. |
-| B        | Dodatkowe źródła                       | `S-02` / `S-03` / `S-04` (po `S-01`)     | Każde nowe źródło to wymiana scrapera w pipelinie z S-01. `S-03` zablokowany do rozwiązania Otwartego Pytania #1. |
-| C        | Przeglądanie i sieć bezpieczeństwa     | `S-05` / `S-06` / `S-07` (po `S-01`)     | Wszystkie wymagają zapisanych przepisów (S-01). Cel: kategoryzacja, wyszukiwanie i obsługa trwałych błędów. |
+| Strumień | Temat                              | Łańcuch                                              | Uwaga                                                                                       |
+| -------- | ---------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| A        | Rdzeń pipeline'u (wdrożony)        | `F-01` / `F-02` / `F-03` → `S-01` → `S-02` / `S-03`  | Cały strumień `done` — pętla „udostępnij → polskojęzyczny przepis" działa na 3 źródłach.     |
+| B        | Odnajdywanie (gwiazda północna)    | `S-04` / `S-05`                                      | Oba zależą tylko od `S-01` (wdrożone) → równoległe i `ready`. Cel: kolekcja użyteczna w czasie. |
+| C        | Niezawodność i kontrola dostępu    | `S-06` / `S-07`                                      | `S-06` naprawia aktywny błąd (baner „nie udało się" nie znika + zepsuty „Ponów"); `S-07` zamyka rejestracje. |
+| D        | Rozszerzenie źródeł                | `S-08`                                               | FB Reel jako odnośnik (nie pełna ekstrakcja). Zależy od `S-01`; równoległy do B i C.         |
 
 ## Baza
 
-Co już jest na miejscu w bazie kodu na dzień `2026-05-28` (świeży scaffold po `/10x-bootstrapper`). Poniższe fundamenty zakładają, że są one obecne i NIE odbudowują ich.
+Co już jest na miejscu w bazie kodu na dzień `2026-07-04` (automatycznie zbadane). Poniższe fundamenty i wdrożone wycinki NIE są odbudowywane.
 
-- **Frontend:** obecny — Next.js 16.2.6 (App Router) + Tailwind v4 + TypeScript; `src/app/page.tsx`, `layout.tsx`, `globals.css` z scaffolda.
-- **Backend / API:** częściowy — Next.js obsługuje API routes (Server Actions + route handlers), ale `src/app/api/` jeszcze nie istnieje; brak własnych endpointów.
-- **Dane:** nieobecny — brak SDK Supabase w `package.json`, brak `supabase/` ani migracji. Zadeklarowane w `tech-stack.md`, ale niewpięte.
-- **Uwierzytelnianie:** nieobecny — brak middleware uwierzytelniania, brak helperów Supabase auth. Zadeklarowane jako magic-link Supabase w `tech-stack.md`.
-- **Wdrożenie / infrastruktura:** częściowy — Next.js jest natywny dla Vercel (zerokonfiguracyjny deploy), ale brak `vercel.json`, brak zmiennych środowiskowych, brak powiązania projektu z kontem Vercel.
-- **Obserwowalność:** nieobecny — niezadeklarowana w `tech-stack.md`, brak loggera w zależnościach.
+- **Frontend:** obecny — Next.js 16.2.6 (App Router) + React 19 + Tailwind v4. Lista przepisów (`src/app/(authenticated)/recipes/page.tsx`) i detal (`[slug]/page.tsx`) wdrożone; ekrany auth (`/login`, `/signup`, `/forgot-password`, `/reset-password`) obecne. Dedykowane trasy „kategorie" i „wyszukiwanie" — **nieobecne**.
+- **Backend / API:** obecny — route handlers (`/share`, `/api/recipes/delete`, `/api/inngest`, `/auth/callback`) + Server Actions (dodawanie, retry, refresh, auth). Pipeline: intake → dedup → `recipe_shares` → `inngest.send('recipe/extract')` → scrape (Firecrawl / Blogger feed) → ekstrakcja gpt-4o-mini → zapis + archiwum obrazu (`src/inngest/functions.ts`).
+- **Async jobs:** obecny — **Inngest** jest realnym runnerem (`src/inngest/client.ts`, `functions.ts`). Trigger.dev pozostał tylko jako smoke-test (`src/trigger/example.ts`) — **martwy kod do usunięcia** (patrz Otwarte Pytanie #6).
+- **Dane:** obecny — `recipes` (title, slug, description, image_url, ingredients jsonb, steps jsonb, source_type, source_url, category enum, prep/cook/total_time, youtube_id) + `recipe_shares`; RLS per-user (`current_user_id()`); unikalny indeks dedup URL; bucket `recipe-images` z archiwizacją (`src/lib/recipe-image-archive.ts`).
+- **Uwierzytelnianie:** obecny — Supabase magic-link w pełni wpięty (`login/actions.ts` → `/auth/callback` → `updateSession` w `middleware.ts`).
+- **Wdrożenie / infrastruktura:** obecny — **Cloudflare Workers via OpenNext** (pivot z Vercel; `wrangler.jsonc`, `open-next.config.ts`), domena produkcyjna `zapiszprzepis.pl`. Env przez `src/lib/env.ts`. CI — **nieobecny** (manualny `wrangler deploy`).
+- **Obserwowalność:** nieobecny — tylko `console.*` + try/catch; brak error trackingu, brak alertu autora o nieudanym przepisie (potrzebne przez `S-06`).
+- **Wyszukiwanie:** częściowy — `pg_trgm` włączony, ale bez indeksu GIN; filtrowanie działa jako JS `.includes()` po pobranych wierszach (`recipes/page.tsx`) — działa dla małej kolekcji, `S-05` je utwardza.
 
-Warstwy zadeklarowane w `tech-stack.md`, ale jeszcze nie wpięte (każda zostanie wprowadzona przez pierwszy wycinek, który jej potrzebuje, lub przez fundament — zasada progresywnego ujawniania): Supabase (DB + auth + storage), Trigger.dev (async jobs), Firecrawl (web scraping), Playwright (FB scraping fallback), Whisper API + FFmpeg (transkrypcja audio), OpenAI (ekstrakcja LLM + tłumaczenie + klasyfikacja), next-pwa (Web Share Target + PWA shell).
+Wdrożone increments złożone w powyższą bazę (bez własnych wierszy w Wycinkach): `recipe-url-dedup` (idempotencja udostępnień), `image-archive-storage` (trwała kopia zdjęcia, FR-006), `recipe-detail-improvements` (FR-009), `cloudflare-pages-custom-domain` (pivot hostingu).
 
 ## Fundamenty
 
+> Wszystkie fundamenty są `done` (obecne w bazie). Wymienione dla kompletnego obrazu; nie są odbudowywane. Brak nowych fundamentów — pozostała praca to pionowe wycinki, które progresywnie wprowadzają potrzebne elementy (indeks GIN w `S-05`, kanał email w `S-06`).
+
 ### F-01: Supabase scaffold + magic-link auth
 
-- **Wynik:** (fundament) projekt Supabase utworzony i powiązany; mama (po jednorazowym setupie autora) dostaje magic-link, klika go i jest zalogowana z sesją długo-żyjącą; middleware Next.js chroni trasy zalogowane; schema gotowa do dodania pierwszej tabeli przez S-01 z RLS per `auth.uid()`.
+- **Wynik:** (fundament) projekt Supabase powiązany; magic-link → sesja długo-żyjąca; middleware chroni trasy zalogowane; RLS per `auth.uid()`.
 - **Change ID:** auth-and-supabase-scaffold
-- **Odnośniki PRD:** FR-001 (sesja długo-żyjąca), Access Control (passwordless magic link, jeden e-mail → jedno konto → prywatna skrzynka)
-- **Odblokowuje:** S-01 (i każdy kolejny wycinek per-użytkownik) — bez sesji i RLS, żaden wycinek nie może zapisać przepisu w imieniu mamy.
+- **Odnośniki PRD:** FR-001, Access Control
+- **Odblokowuje:** S-01 (i każdy wycinek per-użytkownik), S-07 (brama rejestracji nadbudowuje ten sam przepływ auth).
 - **Wymagania wstępne:** —
 - **Równolegle z:** F-02, F-03
 - **Blokady:** —
 - **Niewiadome:** —
-- **Ryzyko:** najniższe technicznie spośród fundamentów (Supabase magic-link to dobrze udokumentowana ścieżka), ale jest prerekwizytem każdego wycinka per-użytkownik — sekwencjonowane najwcześniej, by odblokować pozostałe; jedyna pułapka to konfiguracja redirect URL w Supabase dla środowiska Vercel preview vs produkcyjnego.
-- **Status:** ready
+- **Ryzyko:** wdrożony i zweryfikowany (patrz `lessons.md` — 5 reguł z review F-01: walidacja `next=`, mapowanie kodów błędów Setem, `getSession` vs `getUser`, `SECURITY DEFINER`, walidacja env).
+- **Status:** done
 
-### F-02: Async job runner (Trigger.dev)
+### F-02: Async job runner (Inngest — pivot z Trigger.dev)
 
-- **Wynik:** (fundament) projekt Trigger.dev utworzony i powiązany z repo; jeden przykładowy task działa end-to-end: serwer Next.js triggeruje zadanie, Trigger.dev je wykonuje (poza request-path Vercel) i odsyła stan zakończenia.
+- **Wynik:** (fundament) zadania ekstrakcji wykonują się poza request-path; Next.js wysyła `recipe/extract`, Inngest je wykonuje i zapisuje wynik.
 - **Change ID:** async-job-runner
-- **Odnośniki PRD:** FR-003 (potwierdzenie odebrania < 1s + asynchroniczne przetwarzanie 1-3 min), NFR „typowy czas ≤ 3 minuty p95"
-- **Odblokowuje:** S-01 (FR-003 wymusza, by ekstrakcja przepisu była poza request-path — Vercel ma twardy timeout 60s na funkcji serverless, a NFR wymaga p95 ≤ 3 min). Również odblokowuje wszystkie kolejne wycinki źródłowe (S-02..S-04), które używają tej samej kolejki.
+- **Odnośniki PRD:** FR-003 (ack < 1s + async), NFR „typowy czas ≤ 3 min p95"
+- **Odblokowuje:** S-01 i wszystkie wycinki źródłowe (S-02, S-03, S-08) — dzielą tę samą kolejkę; S-06 (retry i alert autora działają na stanie zadania).
 - **Wymagania wstępne:** —
 - **Równolegle z:** F-01, F-03
 - **Blokady:** —
 - **Niewiadome:** —
-- **Ryzyko:** Trigger.dev jest mniej znany niż Vercel cron, więc krzywa nauki narzędzia jest realna; wybór jest podyktowany NFR (Vercel cron / functions mają timeout 60s, a NFR wymaga p95 ≤ 3 min). Pułapka: webhook callback z Trigger.dev z powrotem do Vercel musi mieć stabilny URL i sekret.
-- **Status:** ready
+- **Ryzyko:** wdrożony na Inngest (nie Trigger.dev jak zakładała mapa v1) — pivot dobrze pasuje do Cloudflare Workers. Pozostałość: martwy smoke-test Trigger.dev do usunięcia (Otwarte Pytanie #6).
+- **Status:** done
 
 ### F-03: PWA shell + Web Share Target
 
-- **Wynik:** (fundament) PWA jest instalowalna na ekranie głównym Pixel 9 (manifest + service worker + ikony); pole `share_target` w manifeście wskazuje endpoint Next.js; gdy mama klika „Udostępnij" w dowolnej aplikacji, ZapiszPrzepis pojawia się na liście odbiorców.
+- **Wynik:** (fundament) PWA instalowalna na Pixel 9; `share_target` w manifeście → route `/share`; ZapiszPrzepis pojawia się na liście „Udostępnij".
 - **Change ID:** pwa-shell-and-share-target
-- **Odnośniki PRD:** FR-002 (systemowy gest „Udostępnij" z dowolnej aplikacji), NFR „PWA instalowalna + Web Share Target API na dwóch najnowszych Chrome i Edge na Androidzie", Guardrail „działa na jej Pixel 9"
-- **Odblokowuje:** S-01 (bez Web Share Target żaden URL nie trafi do aplikacji — to JEDYNY kanał wejścia w MVP, brak ręcznego wklejania); odblokowuje również weryfikację Guardraila „działa na Pixel 9" przed jakimkolwiek pełnym wycinkiem.
+- **Odnośniki PRD:** FR-002, NFR „PWA + Web Share Target na Chrome/Edge Android", Guardrail „Pixel 9"
+- **Odblokowuje:** S-01 (jedyny kanał wejścia URL w MVP); weryfikację Guardraila „Pixel 9".
 - **Wymagania wstępne:** —
 - **Równolegle z:** F-01, F-02
 - **Blokady:** —
 - **Niewiadome:** —
-- **Ryzyko:** Web Share Target API ma wsparcie tylko w Chrome/Edge na Androidzie (nie iOS Safari), ale PRD `target_scale.users: small` + konkretne urządzenie = Pixel 9 Android sprawia, że ograniczenie jest akceptowalne. Pułapka: integracja z `next-pwa` w Next.js App Router wymaga uwagi (App Router + service workers mają znane chropowatości).
-- **Status:** ready
+- **Ryzyko:** wdrożony (`public/manifest.json`, `public/sw.js` via next-pwa, `src/app/share/route.ts`). Brak dedykowanego folderu zmiany — zbudowany inline; działa.
+- **Status:** done
 
 ## Wycinki
 
 ### S-01: Pierwszy udostępniony przepis (FB tekstowy, end-to-end)
 
-- **Wynik:** Mama udostępnia URL postu tekstowego z Facebooka przez systemowy gest „Udostępnij → ZapiszPrzepis", widzi w < 1s komunikat „Zapisałem — przepis pojawi się za chwilę", a po 1-3 minutach (gdy wraca do aplikacji) na liście jest karta nowego przepisu z polskim tytułem i miniaturą; po jej kliknięciu widzi pełny przepis: zdjęcie/screenshot, składniki jako lista wypunktowana (UL), kroki ponumerowane, znormalizowana etykieta źródła („Facebook"), opcjonalny przycisk „Otwórz oryginał".
+- **Wynik:** Mama udostępnia URL postu FB, widzi w < 1s „Zapisałem…", a po 1-3 min na liście jest karta z polskim tytułem i miniaturą; detal pokazuje trwałe zdjęcie, składniki jako UL, kroki ponumerowane, etykietę źródła i „Otwórz oryginał".
 - **Change ID:** first-shared-recipe-fb-text
-- **Odnośniki PRD:** US-01, FR-002 (share intent), FR-003 (ack < 1s + async 1-3 min), FR-004 (FB tekstowy — jedno źródło z czterech wymienionych), FR-005 (tłumaczenie EN→PL gdy oryginał po angielsku + konwersja miar metrycznych), FR-006 (trwała kopia z UL składników), FR-007 (lista uporządkowana od najnowszych — wersja minimalna), FR-009 (pojedynczy przepis pełny — wersja podstawowa)
+- **Odnośniki PRD:** US-01, FR-002, FR-003, FR-004 (FB tekstowy), FR-005 (EN→PL + miary metryczne), FR-006 (trwała kopia + UL składników), FR-007 (lista od najnowszych), FR-009 (detal)
 - **Wymagania wstępne:** F-01, F-02, F-03
 - **Równolegle z:** —
 - **Blokady:** —
 - **Niewiadome:**
-  - Precyzja konwersji miar US→metric (Otwarte Pytanie #2 z PRD): czy LLM jest wystarczająco dokładny dla niejednoznacznych przypadków („1 cup of flour" = 120-150g), czy potrzebna biblioteka `convert-units` z explicit mapowaniem? — Właściciel: autor. Blokuje: nie. Decyzja po pierwszych 10-20 testach EN; ship best-effort, refine.
-- **Ryzyko:** najwięcej koncentruje ryzyka — pierwszy raz pipeline (share → kolejka → scraping → LLM → DB → display) odpala się end-to-end; FB scraping postów tekstowych jest łatwiejszy niż Reels (treść jest w og:description / inline HTML), ale rate-limity FB są realne; fallback best-effort: przy niepełnej ekstrakcji zapisać og:image + tytuł + URL, oznaczyć przepis nutką „niekompletna ekstrakcja" (zgodnie z FR-004 best-effort i NFR „żadne żądanie nie ginie cicho").
-- **Status:** proposed
+  - Precyzja konwersji miar US→metric (Otwarte Pytanie #2) — Właściciel: autor. Blokuje: nie. Ship best-effort, refine po testach.
+- **Ryzyko:** wdrożony i działa na produkcji; złożył w sobie increments `image-archive-storage`, `recipe-detail-improvements`, `recipe-url-dedup`. Trwałość FB-tekst OK; rate-limity FB obsłużone best-effortem (og:image + tytuł, nota o niekompletności).
+- **Status:** done
 
-### S-02: Źródło bloga WWW (drugie źródło)
+### S-02: Źródło bloga WWW (Blogger feed + Firecrawl)
 
-- **Wynik:** Mama udostępnia URL strony WWW (typowo blog kulinarny) i widzi przepis w aplikacji tak samo jak dla FB postu tekstowego (ten sam pipeline, inny scraper na początku).
+- **Wynik:** Mama udostępnia URL bloga kulinarnego i widzi przepis tym samym pipeline'em co FB-tekst (inny scraper na wejściu).
 - **Change ID:** web-blog-recipe-source
-- **Odnośniki PRD:** FR-004 (strony WWW jako wspierane źródło)
+- **Odnośniki PRD:** FR-004 (strony WWW)
 - **Wymagania wstępne:** S-01
-- **Równolegle z:** S-03, S-04, S-05, S-06, S-07
+- **Równolegle z:** S-03, S-04, S-05, S-06, S-08
 - **Blokady:** —
 - **Niewiadome:** —
-- **Ryzyko:** najmniej ryzykowne ze wszystkich źródeł — Firecrawl/Jina są dojrzałe, większość blogów wystawia clean HTML z og:image. Pułapka: blogi z heavy JS rendering (single-page apps) mogą wymagać fallback do Playwright; sekwencjonowane jako pierwsze rozszerzenie źródła, bo daje mamie szybko drugie źródło bez nowego ryzyka.
-- **Status:** proposed
+- **Ryzyko:** wdrożony. Pivot: `*.blogspot.com` używa Blogger JSON feed zamiast Firecrawl (Firecrawl zwracał śmieci z Google Translate) — udokumentowane w pamięci projektu.
+- **Status:** done
 
-### S-03: Źródło Facebook Reels (audio + screenshot)
+### S-03: Źródło YouTube (odnośnik + embed — pivot)
 
-- **Wynik:** Mama udostępnia URL Facebook Reels (lub video FB) i widzi przepis — gdy ekstrakcja audio przez Whisper się powiedzie, treść jest pełna; w trybie best-effort (rate-limit FB) zapisany jest screenshot + tytuł + URL z notatką „niekompletna ekstrakcja".
-- **Change ID:** fb-reel-recipe-source
-- **Odnośniki PRD:** FR-004 (FB Reels/Video jako wspierane źródło, ze strategią best-effort z Sokratesa)
-- **Wymagania wstępne:** S-01
-- **Równolegle z:** S-02, S-04, S-05, S-06, S-07
-- **Blokady:** Otwarte Pytanie #1 z PRD: feasibility scrapingu Facebook Reels — czy Playwright / yt-dlp / FB Graph API są w stanie niezawodnie wyciągnąć audio + screenshot z Reels w MVP? Do potwierdzenia spike'em (1-2 dni) PRZED rozpoczęciem implementacji wycinka.
-- **Niewiadome:**
-  - Wynik spike'a feasibility FB Reels (Otwarte Pytanie #1) — Właściciel: autor. Blokuje: tak. Bez tej odpowiedzi nie da się zaplanować — strategia best-effort vs full scraping zmienia rozmiar pracy istotnie.
-- **Ryzyko:** najwyższe spośród źródeł — FB agresywnie blokuje scraping; może okazać się, że po stronie tła agentowego trzeba zmieniać IP, rotować user-agenty, akceptować częste fail i polegać prawie wyłącznie na og:image z share_target callback (nie na faktycznym Reels content).
-- **Status:** blocked
-
-### S-04: Źródło YouTube (film lub Short, audio przez Whisper)
-
-- **Wynik:** Mama udostępnia URL YouTube (film lub Short) i widzi przepis z pełną treścią pobraną z transkrypcji audio (Whisper).
+- **Wynik:** Mama udostępnia URL YouTube i zapisuje przepis; wideo jest osadzone przez `youtube_id` (iframe), a treść pochodzi z metadanych/opisu — bez pobierania i transkrypcji audio.
 - **Change ID:** youtube-recipe-source
-- **Odnośniki PRD:** FR-004 (YouTube + Shorts jako wspierane źródło)
+- **Odnośniki PRD:** FR-004 (YouTube + Shorts)
 - **Wymagania wstępne:** S-01
-- **Równolegle z:** S-02, S-03, S-05, S-06, S-07
+- **Równolegle z:** S-02, S-04, S-05, S-06, S-08
 - **Blokady:** —
 - **Niewiadome:** —
-- **Ryzyko:** yt-dlp jest dojrzały i niezawodny; główne ryzyko to jakość transkrypcji Whisper na polskich i angielskich akcentach kucharzy — zwykle akceptowalna, ale bywają przypadki, w których LLM ekstrakcji dostaje zaszumione wejście; koszt Whisper API mieści się w NFR ≤ 10 zł/m-c przy ~50 przepisach.
-- **Status:** proposed
+- **Ryzyko:** wdrożony jako **pivot** — mapa v1 zakładała yt-dlp + Whisper, ale serverless (Cloudflare Workers) nie uruchomi binariów; zamiast tego zapis `video_id` + iframe. Pełna transkrypcja audio → V2 (Zaparkowane).
+- **Status:** done
 
-### S-05: Przeglądanie po kategoriach (fixed taxonomy)
+### S-04: Przeglądanie po kategoriach (fixed taxonomy) — GWIAZDA PÓŁNOCNA
 
-- **Wynik:** Mama może otworzyć kategorię (Obiady / Zupy / Desery / Śniadania / Przekąski / Wegetariańskie / Napoje / Inne) i zobaczyć tylko przepisy z tej kategorii — kategoria była przypisana automatycznie przez LLM podczas ekstrakcji w S-01..S-04.
+- **Wynik:** Mama otwiera kategorię (Obiady / Zupy / Desery / Śniadania / Przekąski / Wegetariańskie / Napoje / Inne) i widzi tylko przepisy z tej kategorii — kategoria przypisana automatycznie przez LLM podczas ekstrakcji (kolumna `category` już w schemacie).
 - **Change ID:** category-browse
-- **Odnośniki PRD:** FR-008 (przeglądanie wg fixed taxonomy kategorii przypisanych automatycznie przez AI)
+- **Odnośniki PRD:** FR-008 (przeglądanie wg fixed taxonomy przypisanej przez AI)
 - **Wymagania wstępne:** S-01
-- **Równolegle z:** S-02, S-03, S-04, S-06, S-07
+- **Równolegle z:** S-05, S-06, S-07, S-08
 - **Blokady:** —
 - **Niewiadome:**
-  - Lista kategorii do potwierdzenia z mamą (Otwarte Pytanie #3): czy proponowane 8 pokrywa jej typowe wzorce, czy brakuje „Wypieki", „Sałatki", „Słoiki/przetwory"? — Właściciel: autor (rozmowa z mamą). Blokuje: nie. Ship z domyślną 8-pozycyjną listą; refine po pierwszej rozmowie i ewentualnie zmień prompt klasyfikatora w S-01..S-04.
-- **Ryzyko:** mało ryzyka technicznego (filtr WHERE category = X); główne ryzyko produktowe to spójność klasyfikacji LLM — ten sam typ przepisu może raz trafić do „Obiady", raz do „Wegetariańskie"; pomaga fixed taxonomy w prompt (już w PRD) ale jakość trzeba audytować na pierwszych ~20 przepisach.
-- **Status:** proposed
+  - Lista kategorii do potwierdzenia z mamą (Otwarte Pytanie #3): czy 8 pozycji wystarcza, czy brakuje „Wypieki" / „Sałatki" / „Przetwory"? — Właściciel: autor (rozmowa z mamą). Blokuje: nie. Ship z domyślną 8-pozycyjną listą; refine promptu klasyfikatora po rozmowie.
+- **Ryzyko:** mało ryzyka technicznego (filtr `WHERE category = X` — kolumna istnieje); folder zmiany `context/changes/category-browse/` już otwarty, ale trasa jeszcze nieobecna. Główne ryzyko produktowe to spójność klasyfikacji LLM — audytować na pierwszych ~20 przepisach.
+- **Status:** ready
 
-### S-06: Wyszukiwanie po tytule i składniku
+### S-05: Wyszukiwanie po tytule i składniku (utwardzone)
 
-- **Wynik:** Mama wpisuje fragment tytułu lub nazwy składnika w polu wyszukiwania na liście przepisów i widzi wyniki filtrowane natychmiast.
+- **Wynik:** Mama wpisuje fragment tytułu lub nazwy składnika i widzi wyniki filtrowane natychmiast, także dla rosnącej kolekcji (nie tylko po aktualnie pobranych wierszach).
 - **Change ID:** recipe-search
-- **Odnośniki PRD:** FR-013 (proste tekstowe wyszukiwanie po tytule i składniku — ILIKE / pg_trgm)
+- **Odnośniki PRD:** FR-013 (proste tekstowe wyszukiwanie po tytule i składniku)
 - **Wymagania wstępne:** S-01
-- **Równolegle z:** S-02, S-03, S-04, S-05, S-07
+- **Równolegle z:** S-04, S-06, S-07, S-08
 - **Blokady:** —
-- **Niewiadome:** —
-- **Ryzyko:** najmniej technicznego ryzyka — ILIKE wystarczy dla ~100 przepisów; pg_trgm gdyby wyniki LIKE okazały się zbyt sztywne (np. odmiana „mąka" vs „mąki"). Pułapka UX: wyszukiwanie po składniku wymaga rozkładania JSON-owego pola składników na osobne wiersze (lub indeksu GIN) — decyzja o kształcie schematu w S-01 wpływa na łatwość implementacji tutaj.
-- **Status:** proposed
+- **Niewiadome:**
+  - Kształt zapytania po składniku: składniki są w polu `jsonb` — czy wystarczy `ILIKE` na zmaterializowanym tekście, czy potrzebny indeks GIN / rozłożenie na wiersze? — Właściciel: autor. Blokuje: nie. Decyzja per `/10x-plan`.
+- **Ryzyko:** obecnie wyszukiwanie to JS `.includes()` po pobranych wierszach — działa dla ~100 przepisów, ale nie skaluje i nie łapie odmiany („mąka" vs „mąki"). Utwardzenie: `pg_trgm` (już włączony) + indeks GIN, przeniesienie filtra do zapytania SQL.
+- **Status:** ready
 
-### S-07: Obsługa błędów + bounded retry + email do autora
+### S-06: Zamykalne błędy + bounded retry + email do autora
 
-- **Wynik:** Gdy ekstrakcja przepisu się nie powiedzie (niewspierane źródło, video za długie, FB zablokował dostęp), mama widzi czytelny komunikat zamiast cichej awarii; przycisk „spróbuj ponownie" działa maksymalnie 3 razy, potem znika, zostaje tylko „usuń"; autor dostaje email o trwale nieudanym przepisie z URL-em i komunikatem błędu.
+- **Wynik:** Nieudane ekstrakcje nie wiszą już w banerze nad listą, tylko żyją w **dzwoneczku powiadomień** w nagłówku (badge = liczba spraw do uwagi). Mama otwiera dzwoneczek i dla każdego wpisu ma „Ponów" (naprawiony — nie renderuje już `javascript:throw`) oraz „Odrzuć"; na górze „Wyczyść wszystkie". Wpis znika po odrzuceniu i nie wraca dla przepisów, które dodały się inną drogą (auto-rozwiązywanie). Autor dostaje email o trwale nieudanym przepisie.
 - **Change ID:** error-ux-and-author-alerts
 - **Odnośniki PRD:** FR-012 (czytelny komunikat + bounded retry max 3 + powiadomienie autora), NFR „żadne udostępnione żądanie nie ginie cicho"
 - **Wymagania wstępne:** S-01
-- **Równolegle z:** S-02, S-03, S-04, S-05, S-06
+- **Równolegle z:** S-04, S-05, S-07, S-08
 - **Blokady:** —
 - **Niewiadome:**
-  - Kanał powiadomienia autora (Otwarte Pytanie #4): email? Slack? Manualny review w bazie? — Właściciel: autor. Blokuje: nie. Domyślnie email (najprostszy), decyzja per `/10x-plan`.
-- **Ryzyko:** mało ryzyka technicznego (counter w DB + transactional email). Pułapka UX: tekst komunikatu błędu musi być zrozumiały dla mamy (nie „HTTP 429 Too Many Requests", ale „Facebook nas chwilowo zablokował — spróbuj za chwilę"). Sekwencjonowane po stabilnym pipelinie z S-01, bo dopiero wtedy znamy realny katalog trybów awarii.
-- **Status:** proposed
+  - Kanał powiadomienia autora (Otwarte Pytanie #4): email (Resend?) vs inny? — Właściciel: autor. Blokuje: nie. Domyślnie email.
+- **Ryzyko:** adresuje **aktywny błąd na produkcji**: baner „Nie udało się przetworzyć (N)" wyświetla się cały czas, nawet gdy przepisy zostały już dodane; formularz „Ponów" ma `action="javascript:throw new Error('A React form was unexpectedly submitted…')"` — Server Action nie jest poprawnie podpięty (prawdopodobnie `form.submit()` zamiast `requestSubmit()` / błędne bindowanie akcji). Powierzchnia = dzwoneczek w nowym nagłówku `(authenticated)/layout.tsx` (dziś nie ma wspólnego paska — powstaje przy okazji, trafia tam też wylogowanie); baner inline z `recipes-content.tsx` usunięty. Wymaga: (a) odrzucania per-share + „Wyczyść wszystkie" (MVP: delete wiersza, bez migracji enuma), (b) naprawy retry przez `useTransition` (omija `javascript:throw`), (c) transactional email przy trwałym fail. Tekst błędu zrozumiały dla mamy (nie „HTTP 429").
+- **Status:** ready
+
+### S-07: Brama rejestracji z kodem zaproszenia
+
+- **Wynik:** Nowa rejestracja wymaga wpisania ważnego kodu zaproszenia; bez kodu rejestracja jest odrzucana. Istniejący, zalogowani użytkownicy (mama) nie są dotknięci. Zamyka otwarte rejestracje na publicznej domenie `zapiszprzepis.pl`.
+- **Change ID:** invite-code-registration-gate
+- **Odnośniki PRD:** Access Control (rozszerzenie — **nowa praca poza obecnym PRD**, patrz Otwarte Pytanie #5; rekomendowane dodanie FR-014)
+- **Wymagania wstępne:** F-01
+- **Równolegle z:** S-04, S-05, S-06, S-08
+- **Blokady:** —
+- **Niewiadome:**
+  - Mechanizm kodu: pojedynczy stały kod z env vs tabela kodów jednorazowych vs allow-lista e-maili? — Właściciel: autor. Blokuje: nie. Domyślnie: pojedynczy kod z env (najprostszy dla 1-2 użytkowników), decyzja per `/10x-plan`.
+- **Ryzyko:** nowa powierzchnia względem PRD (PRD §Access Control opisuje tylko magic-link bez bramy). Niski koszt techniczny (walidacja kodu przed `signInWithOtp` w Server Action rejestracji), ale należy zaktualizować PRD, by mapa nie rozjeżdżała się ze specyfikacją. Uwaga: nie zablokować mamy — brama dotyczy tylko *nowej* rejestracji, nie logowania istniejącej sesji.
+- **Status:** ready
+
+### S-08: Facebook Reel/Video jako odnośnik (best-effort)
+
+- **Wynik:** Mama udostępnia URL FB Reel lub video; aplikacja zapisuje go jako trwały odnośnik + og:image + tytuł (jak YouTube-embed), bez pełnej ekstrakcji treści z audio. Przepis oznaczony notą „źródło wideo — pełna treść w oryginale".
+- **Change ID:** fb-reel-link-reference
+- **Odnośniki PRD:** FR-004 (FB Reels/Video jako wspierane źródło — strategia best-effort z Sokratesa do FR-004)
+- **Wymagania wstępne:** S-01
+- **Równolegle z:** S-04, S-05, S-06, S-07
+- **Blokady:** —
+- **Niewiadome:** —
+- **Ryzyko:** **zdescopowane** względem mapy v1 (która blokowała FB Reel spike'em wykonalności audio scrapingu). Decyzja użytkownika: zamiast walczyć z anty-scrapingiem FB, zapisać sam odnośnik + og:image — niskie ryzyko, spójne z pivotem YouTube. Pełna ekstrakcja audio (Whisper) i auto-wykrywanie udostępnień z Messengera → V2 (Zaparkowane).
+- **Status:** ready
 
 ## Przekazanie backlogu
 
-| ID mapy drogowej | Change ID                      | Sugerowany tytuł problemu                                                            | Gotowe do `/10x-plan` | Uwagi                                                     |
-| ---------------- | ------------------------------ | ------------------------------------------------------------------------------------ | --------------------- | --------------------------------------------------------- |
-| F-01             | auth-and-supabase-scaffold     | Bootstrap projektu Supabase z magic-link auth i schematem gotowym do RLS             | yes                   | Uruchom `/10x-plan auth-and-supabase-scaffold`            |
-| F-02             | async-job-runner               | Skonfiguruj Trigger.dev dla asynchronicznych zadań w tle (poza request-path)         | yes                   | Uruchom `/10x-plan async-job-runner` — równolegle z F-01  |
-| F-03             | pwa-shell-and-share-target     | Dodaj PWA shell z manifestem Web Share Target i instalacją na Pixel 9                | yes                   | Uruchom `/10x-plan pwa-shell-and-share-target` — równolegle |
-| S-01             | first-shared-recipe-fb-text    | Wysyłaj URL FB tekstowy → polskojęzyczny przepis (gwiazda północna, end-to-end)      | no                    | Czeka na F-01, F-02, F-03                                 |
-| S-02             | web-blog-recipe-source         | Dodaj źródło bloga WWW przez Firecrawl/Jina                                          | no                    | Czeka na S-01                                             |
-| S-03             | fb-reel-recipe-source          | Dodaj źródło FB Reels przez Playwright + Whisper                                     | no                    | Zablokowany przez Otwarte Pytanie #1 (feasibility spike)  |
-| S-04             | youtube-recipe-source          | Dodaj źródło YouTube przez yt-dlp + Whisper                                          | no                    | Czeka na S-01                                             |
-| S-05             | category-browse                | Dodaj przeglądanie po kategoriach z fixed taxonomy (8 pozycji)                       | no                    | Czeka na S-01                                             |
-| S-06             | recipe-search                  | Dodaj wyszukiwanie ILIKE/pg_trgm po tytule i składniku                               | no                    | Czeka na S-01                                             |
-| S-07             | error-ux-and-author-alerts     | Dodaj UX błędów z bounded retry (max 3) i email do autora przy trwałym fail          | no                    | Czeka na S-01                                             |
+| ID mapy drogowej | Change ID                     | Sugerowany tytuł problemu                                                        | Gotowe do `/10x-plan` | Uwagi                                                       |
+| ---------------- | ----------------------------- | -------------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------- |
+| F-01             | auth-and-supabase-scaffold    | Supabase + magic-link auth z RLS                                                 | no                    | done — zarchiwizuj przez `/10x-archive`                    |
+| F-02             | async-job-runner              | Async job runner (Inngest)                                                       | no                    | done — pivot z Trigger.dev                                 |
+| F-03             | pwa-shell-and-share-target    | PWA shell + Web Share Target na Pixel 9                                          | no                    | done — zbudowany inline (brak folderu zmiany)              |
+| S-01             | first-shared-recipe-fb-text   | Udostępnij FB-tekst → polskojęzyczny przepis (end-to-end)                        | no                    | done                                                       |
+| S-02             | web-blog-recipe-source        | Źródło bloga WWW (Blogger feed + Firecrawl)                                      | no                    | done                                                       |
+| S-03             | youtube-recipe-source         | Źródło YouTube (odnośnik + embed)                                                | no                    | done — pivot bez transkrypcji                              |
+| S-04             | category-browse               | Przeglądanie po kategoriach (fixed taxonomy 8 pozycji)                           | yes                   | **Gwiazda północna.** Uruchom `/10x-plan category-browse`  |
+| S-05             | recipe-search                 | Utwardzone wyszukiwanie ILIKE/pg_trgm po tytule i składniku                      | yes                   | Uruchom `/10x-plan recipe-search` — równolegle z S-04      |
+| S-06             | error-ux-and-author-alerts    | Zamykalne błędy + naprawa „Ponów" + email do autora                             | yes                   | Naprawia aktywny błąd na produkcji                         |
+| S-07             | invite-code-registration-gate | Brama rejestracji z kodem zaproszenia                                            | yes                   | Zaktualizuj PRD (FR-014) — nowa powierzchnia               |
+| S-08             | fb-reel-link-reference        | FB Reel/Video jako odnośnik + og:image (best-effort)                            | yes                   | Zdescopowane; pełna ekstrakcja audio → V2                  |
 
 ## Otwarte pytania dotyczące mapy drogowej
 
-1. **Feasibility scrapingu Facebook Reels** (z PRD §Open Questions #1). Czy Playwright / yt-dlp / Facebook Graph API są w stanie niezawodnie wyciągnąć audio + screenshot z Reels w MVP, czy FB rate-limity / bot detection zmuszą nas do strategii best-effort tylko? Do potwierdzenia spike'em (1-2 dni) PRZED rozpoczęciem S-03. Właściciel: autor. Blokuje: S-03.
-2. **Precyzja konwersji miar US→metric** (z PRD §Open Questions #2). Czy LLM jest wystarczająco dokładny dla niejednoznacznych przypadków, czy potrzebna biblioteka `convert-units` z explicit mapowaniem? Właściciel: autor. Blokuje: nikogo (S-01 i kolejne shipują best-effort, decyzja po pierwszych 10-20 testach EN).
-3. **Lista kategorii fixed taxonomy do potwierdzenia z mamą** (z PRD §Open Questions #3). Czy 8 zaproponowanych (Obiady, Zupy, Desery, Śniadania, Przekąski, Wegetariańskie, Napoje, Inne) pokrywa jej typowe wzorce? Może brakuje „Wypieki", „Sałatki", „Słoiki/przetwory"? Właściciel: autor (rozmowa z mamą). Blokuje: nikogo (S-05 shipuje z domyślną listą, refine po rozmowie).
-4. **Kanał powiadomienia autora o trwale nieudanym przepisie** (z PRD §Open Questions #4). Email? Slack? Manualny review w bazie? Właściciel: autor. Blokuje: nikogo (decyzja per `/10x-plan` dla S-07).
+1. **Feasibility scrapingu Facebook Reels** (z PRD §Open Questions #1) — **ROZWIĄZANE / ZDESCOPOWANE.** Decyzja użytkownika: FB Reel zapisujemy jako odnośnik + og:image (S-08), nie walczymy z anty-scrapingiem. Pełna ekstrakcja audio → V2. Spike niepotrzebny.
+2. **Precyzja konwersji miar US→metric** (PRD §Open Questions #2). Czy LLM wystarcza, czy potrzebna biblioteka `convert-units`? Właściciel: autor. Blokuje: nikogo (S-01 shipuje best-effort; decyzja po testach EN).
+3. **Lista kategorii fixed taxonomy do potwierdzenia z mamą** (PRD §Open Questions #3). Czy 8 pozycji wystarcza? Właściciel: autor (rozmowa z mamą). Blokuje: nikogo (S-04 shipuje z domyślną listą).
+4. **Kanał powiadomienia autora o nieudanym przepisie** (PRD §Open Questions #4). Email (Resend)? Inny? Właściciel: autor. Blokuje: nikogo (S-06 domyślnie email).
+5. **Brama rejestracji z kodem zaproszenia — aktualizacja PRD.** Nowa praca (S-07) wykracza poza PRD §Access Control (opisuje tylko magic-link). Rekomendacja: dodać FR-014 „zamknięte rejestracje z kodem zaproszenia" do PRD, by specyfikacja i mapa się nie rozjechały. Właściciel: autor. Blokuje: nikogo (S-07 może ruszyć; PRD dogonić równolegle).
+6. **Retarget Kryterium Wtórnego 30 → 3 dni + usunięcie martwego Trigger.dev.** (a) PRD §Success Criteria Secondary mówi „≥ 30 dni bez pomocy"; użytkownik zretargetował do „≥ 3 dni" — zaktualizować PRD. (b) `src/trigger/example.ts` + `trigger.config.ts` to martwy smoke-test po pivocie na Inngest — usunąć przy okazji S-06. Właściciel: autor. Blokuje: nikogo.
 
 ## Zaparkowane
 
-- **Push notifications („Dodano: <tytuł>")** — FR-011 jest nice-to-have, nie must. Mama wraca do aplikacji ręcznie; wraca w V2 jeśli pojawi się potrzeba.
-- **Placeholder „Zapisuję…" w liście przepisów** — FR-010 jest nice-to-have. W MVP wystarczy ekran potwierdzenia „Zapisałem — przepis pojawi się za chwilę"; lista odświeża się przy następnym otwarciu.
-- **Wsparcie Instagram + TikTok** — PRD §Non-Goals. Mają trudniejszy share intent i wymagają osobnej pracy nad scraperem; V2.
-- **Współdzielenie rodzinne (ZapiszPrzepis Family)** — PRD §Non-Goals. Każdy użytkownik ma własną prywatną skrzynkę; brak zaproszeń, brak wspólnych folderów. V2.
-- **Ręczna edycja przepisu po ekstrakcji** — PRD §Non-Goals + Guardrail „zero data entry". Mama ufa AI lub przepis zostaje jak jest.
-- **Funkcje wokół gotowania** („co ugotować z tego co mam", lista zakupów, plan tygodnia, voice search) — PRD §Non-Goals. Inna apka, nie MVP.
-- **Wyszukiwanie semantyczne** („coś szybkiego", „bez mięsa") — PRD §Non-Goals. W MVP tylko proste tekstowe filtrowanie (FR-013 → S-06). V2.
-- **Aplikacja natywna iOS / Android (Capacitor wrap, App Store)** — PRD §Non-Goals. Tylko PWA. Wraca jeśli Web Share Target okaże się zawodny lub gdy celujemy w App Store.
-- **Offline-first przeglądanie zapisanych przepisów** — PRD §Non-Goals. PWA cache może działać best-effort, ale nie jest egzekwowane.
+- **Pełna ekstrakcja audio z FB Reel / YouTube (Whisper)** — serverless (Cloudflare Workers) nie uruchomi yt-dlp/FFmpeg; w MVP odnośnik + embed (S-03, S-08). V2, gdy dojdzie osobny worker do transkrypcji.
+- **Auto-wykrywanie udostępnień z Messengera i innych aplikacji** — decyzja użytkownika: w przyszłości aplikacja będzie „wyłapywać" udostępnienia z Messengera itp. V2.
+- **Push notifications („Dodano: <tytuł>")** — FR-011 nice-to-have. Mama wraca do aplikacji ręcznie. V2.
+- **Placeholder „Zapisuję…" w liście przepisów** — FR-010 nice-to-have. W MVP wystarczy ekran potwierdzenia po share; lista odświeża się przy otwarciu. V2.
+- **Wsparcie Instagram + TikTok** — PRD §Non-Goals. Trudniejszy share intent, osobny scraper. V2.
+- **Współdzielenie rodzinne (ZapiszPrzepis Family)** — PRD §Non-Goals. Płaski model per-użytkownik. V2.
+- **Ręczna edycja przepisu po ekstrakcji** — PRD §Non-Goals + Guardrail „zero data entry".
+- **Funkcje wokół gotowania** („co ugotować z tego co mam", lista zakupów, plan tygodnia, voice search) — PRD §Non-Goals. Inna apka.
+- **Wyszukiwanie semantyczne** („coś szybkiego", „bez mięsa") — PRD §Non-Goals. W MVP tylko tekstowe (S-05). V2.
+- **Aplikacja natywna iOS / Android (Capacitor wrap, App Store)** — PRD §Non-Goals. Tylko PWA.
+- **Offline-first przeglądanie** — PRD §Non-Goals. PWA cache best-effort, nieegzekwowane.
+- **CI/CD (GitHub Actions → auto-deploy)** — obecnie manualny `wrangler deploy`; tech-stack zakładał auto-deploy-on-merge. Nie blokuje MVP; podłączyć, gdy tempo zmian wzrośnie.
 
 ## Zrobione
 
-(Puste przy pierwszym generowaniu. `/10x-archive` doda tutaj wpis i zmieni `Status` na `done`, gdy zmiana zostanie zarchiwizowana.)
+> Uwaga: normalnie tę sekcję wypełnia wyłącznie `/10x-archive`. Poniższe wpisy są dodane ręcznie przy regeneracji mid-flight (wybór użytkownika „built = done"), bo praca jest wdrożona na produkcji, ale foldery zmian nie zostały jeszcze zarchiwizowane. Uruchom `/10x-archive <change-id>` dla każdej, by domknąć cykl formalnie.
+
+- **F-01: Supabase + magic-link auth** — wdrożony; 5 reguł z review w `context/foundation/lessons.md`. Folder: `context/changes/auth-and-supabase-scaffold/` (do zarchiwizowania).
+- **F-02: Async job runner (Inngest)** — wdrożony; pivot z Trigger.dev. Folder: `context/changes/async-job-runner/`.
+- **F-03: PWA shell + Web Share Target** — wdrożony inline (brak folderu zmiany).
+- **S-01: Pierwszy udostępniony przepis (FB tekstowy)** — wdrożony; złożył increments dedup + image-archive + detail-improvements. Folder: `context/changes/first-shared-recipe-fb-text/`.
+- **S-02: Źródło bloga WWW** — wdrożony (Blogger feed pivot). Folder: `context/changes/web-blog-recipe-source/`.
+- **S-03: Źródło YouTube** — wdrożony (odnośnik + embed pivot). Folder: `context/changes/youtube-recipe-source/`.
