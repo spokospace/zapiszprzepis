@@ -23,7 +23,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.19.11",
+    "@opennextjs/cloudflare": "^1.20.1",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "inngest": "^4.5.0",
@@ -49,6 +49,6 @@
     "tsx": "^4.22.3",
     "typescript": "^5",
     "vitest": "^4.1.8",
-    "wrangler": "^4.96.0"
+    "wrangler": "^4.107.0"
   }
 }
