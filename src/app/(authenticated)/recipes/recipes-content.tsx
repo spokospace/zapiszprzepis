@@ -7,12 +7,10 @@ import { CategoryFilter } from '@/app/components/category-filter'
 import { RecipeSearch } from '@/app/components/recipe-search'
 import { Toast } from '@/app/components/toast'
 import { addRecipeFromUrl } from './add-recipe-action'
-import { retryShare } from './retry-action'
 import type { Database } from '@/lib/supabase.types'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
 type RecipeCategory = Database['public']['Enums']['recipe_category']
-type FailedShare = { id: number; shared_url: string; error_message: string | null }
 
 const ADD_ERROR_MESSAGES: Record<string, string> = {
   empty: 'Wklej adres URL przepisu.',
@@ -28,8 +26,6 @@ interface RecipesContentProps {
   activeCategory?: RecipeCategory | null
   categoryCounts?: Partial<Record<RecipeCategory, number>>
   searchQuery?: string
-  failedShares?: FailedShare[]
-  showRetryingToast?: boolean
 }
 
 function AddRecipeForm({ addError }: { addError?: string | null }) {
@@ -100,8 +96,6 @@ export function RecipesContent({
   activeCategory,
   categoryCounts,
   searchQuery,
-  failedShares = [],
-  showRetryingToast,
 }: RecipesContentProps) {
   // `searchQuery` arrives already trimmed from the server component.
   const hasSearch = Boolean(searchQuery)
@@ -123,14 +117,6 @@ export function RecipesContent({
           clearParam="duplicate"
         />
       )}
-      {showRetryingToast && (
-        <Toast
-          message="Ponawiam przetwarzanie — przepis pojawi się za chwilę."
-          type="success"
-          duration={5000}
-          clearParam="retrying"
-        />
-      )}
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
@@ -147,42 +133,6 @@ export function RecipesContent({
         </div>
 
         <AddRecipeForm addError={addError} />
-
-        {failedShares.length > 0 && (
-          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-            <h2 className="mb-2 text-sm font-semibold text-red-800">
-              Nie udało się przetworzyć ({failedShares.length})
-            </h2>
-            <ul className="space-y-2">
-              {failedShares.map((share) => (
-                <li key={share.id} className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <a
-                      href={share.shared_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block truncate text-sm text-red-700 hover:underline"
-                    >
-                      {share.shared_url}
-                    </a>
-                    {share.error_message && (
-                      <p className="truncate text-xs text-red-500">{share.error_message}</p>
-                    )}
-                  </div>
-                  <form action={retryShare} className="flex-shrink-0">
-                    <input type="hidden" name="shareId" value={share.id} />
-                    <button
-                      type="submit"
-                      className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                    >
-                      Ponów
-                    </button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         <div className="mb-4">
           <Suspense>
