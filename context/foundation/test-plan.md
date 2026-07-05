@@ -48,7 +48,7 @@ Hot-spot scope used for likelihood weighting: `src/lib`, `src/inngest`,
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
 | 1 | Pure pipeline functions | Configure vitest and unit-test the cheap, high-signal pure functions: junk gate, source/id detection, ingredient grouping, Firecrawl option builders | 2, 4, 5 | unit | complete | test-pure-pipeline-units |
-| 2 | Inngest orchestration | Integration-test step ordering (junk-gate-before-persist, youtube_id gap-fill, force-overwrite) and add a focused SSRF guard test on asset fetch | 2, 3, 6 | integration | not started | |
+| 2 | Inngest orchestration | Integration-test step ordering (junk-gate-before-persist, youtube_id gap-fill, force-overwrite) and add a focused SSRF guard test on asset fetch | 2, 3, 6 | integration | change opened | testing-inngest-orchestration |
 | 3 | Share → recipe path | Extend the existing Playwright suite: shared URL becomes a row, no share is silently lost, the "Ponów" retry is visible and works | 3 | e2e | not started | |
 | 4 | Archive durability | Assert the stored image lives in our storage (not the source domain) and recipe content is fully materialized — survives source deletion | 1 | integration / e2e | not started | |
 

@@ -80,3 +80,10 @@ const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
 **Rule**: Always write git commit subjects and bodies, PR titles and descriptions, and code-review output in English — even when the surrounding work (chat, PRD, roadmap.md, plan.md, change.md) is in Polish. Only these Git/review artifacts are forced to English; project docs stay in the user's language.
 
 **Applies to**: implement, impl-review, all
+
+## Każda zmiana dostaje własny dedykowany branch — nigdy nie commituj do brancha worktree
+
+- **Context**: Każda zmiana (change-id) w projekcie, przy otwieraniu i implementacji
+- **Problem**: Niezwiązane commity mieszają się w jednym PR — np. zmiany test-plan.md lądują razem z feature commitami w branchu worktree, zaciemniając historię i utrudniając review
+- **Rule**: Każda zmiana (change-id) dostaje własny krótko-żyjący branch; nigdy nie commituj do współdzielonego brancha worktree
+- **Applies to**: all
