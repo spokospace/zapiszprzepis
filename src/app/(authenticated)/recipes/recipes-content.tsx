@@ -64,7 +64,7 @@ function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: 
                   <p className="text-sm font-medium text-gray-900 line-clamp-1">{result.title}</p>
                   <p className="text-xs text-gray-500 truncate">{hostname}</p>
                 </div>
-                {result.highlights && result.highlights.length > 0 && (
+                {!!result.highlights?.length && (
                   <ul className="space-y-1">
                     {result.highlights.map((h, i) => (
                       <li key={i} className="text-xs text-gray-600 leading-relaxed line-clamp-3">{h}</li>
