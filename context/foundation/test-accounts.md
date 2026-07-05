@@ -1,24 +1,24 @@
 # Test accounts
 
-Konta stworzone na produkcyjnej bazie Supabase, przeznaczone do testów manualnych i dokumentacji.
+Accounts created on the production Supabase database, intended for manual testing and documentation.
 
 ## test@zapiszprzepis.pl
 
-| Pole     | Wartość                   |
-|----------|---------------------------|
-| E-mail   | test@zapiszprzepis.pl     |
-| Hasło    | TestZapisz123!            |
-| Status   | potwierdzony (email_confirmed_at ustawiony przy tworzeniu) |
+| Field     | Value                     |
+|-----------|---------------------------|
+| E-mail    | test@zapiszprzepis.pl     |
+| Password  | TestZapisz123!            |
+| Status    | confirmed (`email_confirmed_at` set at creation) |
 | Supabase user ID | 7551c3cb-5697-4f4f-890e-bcda0f88d6d4 |
-| Utworzone | 2026-07-05                |
+| Created   | 2026-07-05                |
 
-### Przeznaczenie
+### Purpose
 
-- Testy manualne flows (logowanie, dodawanie przepisów, wyszukiwanie głosem)
-- Screenshoty i nagrania do dokumentacji
-- Weryfikacja regresji po deployach
+- Manual flow testing (login, adding recipes, voice search)
+- Screenshots and recordings for documentation
+- Regression checks after deploys
 
-### Uwagi
+### Notes
 
-- Konto na **produkcyjnym** Supabase — przepisy dodane podczas testów będą widoczne w prawdziwej bazie.
-- Przed nagraniami/screenami wyczyść listę przepisów lub użyj dedykowanego zestawu testowych przepisów.
+- This account targets the **production** Supabase — recipes added during testing will appear in the real database.
+- Before recordings or screenshots, clear the recipe list or use a dedicated set of test recipes.
