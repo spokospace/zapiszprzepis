@@ -1,9 +1,9 @@
 {
   "package": "@przeprogramowani/10x-cli",
-  "version": "1.7.0",
+  "version": "1.10.0",
   "manifestVersion": 3,
-  "lastApplied": "2026-06-14T23:44:36.836Z",
-  "lessonId": "m3l1",
+  "lastApplied": "2026-07-05T20:56:58.689Z",
+  "lessonId": "m0l0",
   "course": "10xdevs3",
   "tool": "claude-code",
   "files": {
@@ -231,18 +231,20 @@
       "m1l5-3-extend-prerequisites.md",
       "m1l5-4-store-plan.md",
       "m3l2-ad-hoc-testing.md",
-      "m3l4-e2e-prompt.md"
+      "m3l4-e2e-prompt.md",
+      "mvp-check.md"
     ],
     "configs": [],
     "promptHashes": {
       "m0l1-prework.md": "6a5bd20b0e373dba032308f896f4a25df5d959d9e2c0fa9c6b1c6c905333d4d4",
-      "skill-explainer.md": "51670ed28505a63b0c3e16f5d3af99f634b3ace79f204c33cae289435a2ea60e",
+      "skill-explainer.md": "aa847d69116fd9b95ecb06c0b597d2a38a3ad92c6463d9f0bb4424cf104331cd",
       "m1l5-1-plan-integration.md": "0f1491b163a9824645423a7bd3134466350f53de4f3631ba5504cac7fbd14dbd",
       "m1l5-2-constrain-approach.md": "79b0d476b630cebb0655878e8a02cd188a64c88174ef9079c76621cb5fc443ba",
       "m1l5-3-extend-prerequisites.md": "f774170c48cf33106e3201bd5e99a20e12ea1cffc65c532a63102b8ca2e7fb26",
       "m1l5-4-store-plan.md": "0bbba9c83a20cb04b720ffd67fdcbb8b3ff3968eb2bee66d1aa6775b178e730f",
       "m3l2-ad-hoc-testing.md": "086ae159990f7f24f7476ec31c5a15facbba68558978433eb03d7b11cb7deed7",
-      "m3l4-e2e-prompt.md": "4337c4b16b6cfd3967c612304a6df0951e5496cbc5ec9bddd901aaf060d506ec"
+      "m3l4-e2e-prompt.md": "4337c4b16b6cfd3967c612304a6df0951e5496cbc5ec9bddd901aaf060d506ec",
+      "mvp-check.md": "a72d3e3c67f1f6445042a5c9a459e33dc44825bc440fe86a1c3dcd48007e8f56"
     }
   },
   "lessons": {
@@ -1382,6 +1384,15 @@
         "m1l5-2-constrain-approach.md",
         "m1l5-3-extend-prerequisites.md",
         "m1l5-4-store-plan.md"
+      ],
+      "configs": []
+    },
+    "m0l0": {
+      "appliedAt": "2026-07-05T20:56:58.688Z",
+      "skills": {},
+      "prompts": [
+        "skill-explainer.md",
+        "mvp-check.md"
       ],
       "configs": []
     }
