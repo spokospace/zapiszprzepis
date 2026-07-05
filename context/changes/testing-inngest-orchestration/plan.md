@@ -397,14 +397,14 @@ After Phase 2: `pnpm test` is the primary gate; no additional manual test requir
 
 #### Automatic
 
-- [ ] 2.1 `pnpm test` — `run-extract-recipe.test.ts` passes (5 scenarios: junk input, title-only output, force-refresh+junk, gap-fill, happy path)
-- [ ] 2.2 `pnpm test` — `actions.test.ts` passes (send-failure → share marked failed)
-- [ ] 2.3 `pnpm test` — `recipe-image-archive.test.ts` passes (private URLs blocked, fetch not called)
-- [ ] 2.4 `pnpm typecheck` — no errors in new test files
+- [x] 2.1 `pnpm test` — `run-extract-recipe.test.ts` passes (5 scenarios: junk input, title-only output, force-refresh+junk, gap-fill, happy path)
+- [x] 2.2 `pnpm test` — `actions.test.ts` passes (send-failure → share marked failed)
+- [x] 2.3 `pnpm test` — `recipe-image-archive.test.ts` passes (private URLs blocked, fetch not called)
+- [x] 2.4 `pnpm typecheck` — no errors in new test files
 
 #### Manual
 
-- [ ] 2.5 Review failure messages in junk/output-gate tests for actionability
+- [x] 2.5 Review failure messages in junk/output-gate tests for actionability
 
 ### Phase 3: Cookbook Update
 
