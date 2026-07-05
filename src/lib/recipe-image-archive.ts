@@ -63,3 +63,14 @@ export function extractStoragePath(imageUrl: string): string | null {
   const match = imageUrl.match(/\/storage\/v1\/object\/public\/recipe-images\/(.+)$/)
   return match ? match[1] : null
 }
+
+const ATTR_RE = /\bdata-lazy-src=["']([^"']+)["']|\bdata-src=["']([^"']+)["']|\bsrc=["']([^"']+)["']/i
+const SKIP_RE = /gravatar|avatar|\/logo/i
+
+export function extractFirstImage(html: string): string | undefined {
+  for (const tag of html.match(/<img\b[^>]+>/gi) ?? []) {
+    const m = ATTR_RE.exec(tag)
+    const url = m?.[1] ?? m?.[2] ?? m?.[3]
+    if (url && !SKIP_RE.test(url)) return url
+  }
+}

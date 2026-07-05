@@ -128,8 +128,8 @@ ogImage = scraped.metadata?.ogImage ?? extractFirstImage(html) ?? undefined
 
 #### Automatyczne
 
-- [ ] 1.1 TypeScript typecheck passes: `npm run typecheck`
-- [ ] 1.2 No lint errors: `npm run lint`
+- [x] 1.1 TypeScript typecheck passes: `npm run typecheck`
+- [x] 1.2 No lint errors: `npm run lint`
 
 #### Ręczne
 
