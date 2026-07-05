@@ -72,28 +72,33 @@ function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: 
                   <p className="text-xs text-gray-500 truncate">{hostname}</p>
                 </button>
                 {expanded && (
-                  <div className="px-4 pb-3 flex items-center gap-3 border-t border-gray-50">
-                    <a
-                      href={result.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-orange-600 hover:underline flex-1 truncate"
-                    >
-                      Podgląd strony ↗
-                    </a>
-                    {result.alreadySaved ? (
-                      <span className="shrink-0 text-xs text-green-600 font-medium">Już zapisany</span>
-                    ) : (
-                      <form action={addRecipeFromUrl}>
-                        <input type="hidden" name="url" value={result.url} />
-                        <button
-                          type="submit"
-                          className="shrink-0 rounded-md bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600"
-                        >
-                          Zapisz
-                        </button>
-                      </form>
+                  <div className="px-4 pb-3 border-t border-gray-50 space-y-2">
+                    {result.text && (
+                      <p className="text-xs text-gray-600 leading-relaxed line-clamp-6 pt-2">{result.text}</p>
                     )}
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={result.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-orange-600 hover:underline flex-1 truncate"
+                      >
+                        Otwórz stronę ↗
+                      </a>
+                      {result.alreadySaved ? (
+                        <span className="shrink-0 text-xs text-green-600 font-medium">Już zapisany</span>
+                      ) : (
+                        <form action={addRecipeFromUrl}>
+                          <input type="hidden" name="url" value={result.url} />
+                          <button
+                            type="submit"
+                            className="shrink-0 rounded-md bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600"
+                          >
+                            Zapisz
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </div>
                 )}
               </li>
