@@ -8,7 +8,7 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'desery', label: 'Desery' },
   { value: 'sniadania', label: 'Śniadania' },
   { value: 'przekaski', label: 'Przekąski' },
-  { value: 'wegetarianskie', label: 'Wegetariańskie' },
+  { value: 'salatki', label: 'Sałatki' },
   { value: 'napoje', label: 'Napoje' },
   { value: 'inne', label: 'Inne' },
 ]

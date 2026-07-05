@@ -20,7 +20,7 @@ const CATEGORY_ICONS: Record<RecipeCategory, LucideIcon> = {
   desery: CakeSlice,
   sniadania: Coffee,
   przekaski: Sandwich,
-  wegetarianskie: Salad,
+  salatki: Salad,
   napoje: GlassWater,
   inne: UtensilsCrossed,
 }

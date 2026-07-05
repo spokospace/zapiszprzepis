@@ -7,6 +7,7 @@ import { archiveImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { looksUnextractable } from '@/lib/content-quality'
+import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 
 interface ExtractRecipeEvent {
   shareId: number
@@ -148,7 +149,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
     {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "section": "section heading or empty string"}
   ],
   "steps": ["Step 1 description", "Step 2 description"],
-  "category": "one of: obiady, zupy, desery, sniadania, przekaski, wegetarianskie, napoje, inne",
+  "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
   "prepTimeMinutes": integer or null,
   "cookTimeMinutes": integer or null,
   "totalTimeMinutes": integer or null

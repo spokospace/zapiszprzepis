@@ -166,7 +166,7 @@ export type Database = {
         | "desery"
         | "sniadania"
         | "przekaski"
-        | "wegetarianskie"
+        | "salatki"
         | "napoje"
         | "inne"
       recipe_share_status: "pending" | "completed" | "failed"
@@ -312,7 +312,7 @@ export const Constants = {
         "desery",
         "sniadania",
         "przekaski",
-        "wegetarianskie",
+        "salatki",
         "napoje",
         "inne",
       ],

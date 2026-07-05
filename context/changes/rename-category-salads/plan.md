@@ -152,20 +152,20 @@ Mechaniczne zastąpienie stringa `wegetarianskie` na `salatki` (i etykiety `Wege
 
 #### Automatyczne
 
-- [x] 1.1 Migracja stosuje się bez błędów: `npx supabase db push`
+- [x] 1.1 Migracja stosuje się bez błędów: `npx supabase db push` — 9ba7c92
 
 #### Ręczne
 
-- [x] 1.2 Istniejące przepisy mają `category = 'salatki'` w Dashboard
-- [x] 1.3 Aplikacja nie rzuca 500 po migracji
+- [x] 1.2 Istniejące przepisy mają `category = 'salatki'` w Dashboard — 9ba7c92
+- [x] 1.3 Aplikacja nie rzuca 500 po migracji — 9ba7c92
 
 ### Faza 2: Aktualizacja kodu TypeScript
 
 #### Automatyczne
 
-- [ ] 2.1 `npm run typecheck` przechodzi
-- [ ] 2.2 `npm run lint` przechodzi
-- [ ] 2.3 `grep -r "wegetarianskie" src/` — brak wyników
+- [x] 2.1 `npm run typecheck` przechodzi
+- [x] 2.2 `npm run lint` przechodzi
+- [x] 2.3 `grep -r "wegetarianskie" src/` — brak wyników
 
 #### Ręczne
 
