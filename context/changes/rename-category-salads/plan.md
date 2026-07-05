@@ -163,9 +163,9 @@ Mechaniczne zastąpienie stringa `wegetarianskie` na `salatki` (i etykiety `Wege
 
 #### Automatyczne
 
-- [x] 2.1 `npm run typecheck` przechodzi
-- [x] 2.2 `npm run lint` przechodzi
-- [x] 2.3 `grep -r "wegetarianskie" src/` — brak wyników
+- [x] 2.1 `npm run typecheck` przechodzi — 701aba4
+- [x] 2.2 `npm run lint` przechodzi — 701aba4
+- [x] 2.3 `grep -r "wegetarianskie" src/` — brak wyników — 701aba4
 
 #### Ręczne
 
