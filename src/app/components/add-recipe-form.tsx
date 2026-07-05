@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Link, Search, X } from 'lucide-react'
+import { Link, Mic, Search, X } from 'lucide-react'
 import { addRecipeFromUrl } from '@/app/(authenticated)/recipes/add-recipe-action'
 import { searchViaExa, type ExaResult } from '@/app/(authenticated)/recipes/search-via-exa-action'
 
-type SearchState = 'idle' | 'loading' | 'searching' | 'results' | 'error'
+type SearchState = 'idle' | 'loading' | 'searching' | 'results' | 'error' | 'recording' | 'mic_error'
 
 function parseHostname(url: string): string {
   try { return new URL(url).hostname } catch { return url }
@@ -90,6 +90,9 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
   const [activeTab, setActiveTab] = useState<'search' | 'add'>('search')
   const [searchState, setSearchState] = useState<SearchState>('idle')
   const [exaResults, setExaResults] = useState<ExaResult[]>([])
+  const [isSpeechSupported] = useState(
+    () => typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+  )
 
   useEffect(() => {
     if (addError) {
@@ -121,6 +124,40 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
     }
   }
 
+  const startVoiceSearch = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = ((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition) as new () => any
+    const recognition = new SR()
+    recognition.lang = 'pl-PL'
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+    setSearchState('recording')
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = async (event: any) => {
+      const transcript = event.results[0][0].transcript
+      setSearchState('searching')
+      const res = await searchViaExa(transcript)
+      if ('error' in res) {
+        setSearchState('error')
+      } else {
+        setExaResults(res.results)
+        setSearchState('results')
+      }
+    }
+
+    recognition.onerror = () => {
+      setSearchState('mic_error')
+    }
+
+    // If recognition ends before onresult fires (e.g. no speech detected), reset to idle.
+    recognition.onend = () => {
+      setSearchState((prev) => (prev === 'recording' ? 'idle' : prev))
+    }
+
+    recognition.start()
+  }
+
   const tabClass = (tab: 'search' | 'add') =>
     `px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
       activeTab === tab
@@ -128,7 +165,7 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
         : 'border-transparent text-gray-500 hover:text-gray-700'
     }`
 
-  const busy = searchState === 'loading' || searchState === 'searching'
+  const busy = searchState === 'loading' || searchState === 'searching' || searchState === 'recording'
 
   return (
     <div>
@@ -161,8 +198,19 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
             aria-label={activeTab === 'search' ? 'Szukaj przepisu' : 'URL przepisu'}
             placeholder={activeTab === 'search' ? 'Wpisz nazwę przepisu, np. tiramisu' : 'Wklej link do przepisu'}
             disabled={busy}
-            className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:bg-gray-50"
+            className={`w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 ${isSpeechSupported && activeTab === 'search' ? 'pr-9' : 'pr-3'} text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:bg-gray-50`}
           />
+          {isSpeechSupported && activeTab === 'search' && (
+            <button
+              type="button"
+              onClick={startVoiceSearch}
+              disabled={busy}
+              aria-label="Wyszukaj głosem"
+              className={`absolute right-3 top-1/2 -translate-y-1/2 disabled:opacity-40 ${searchState === 'recording' ? 'text-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <Mic className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <button
           type="submit"
@@ -175,7 +223,7 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
-              {searchState === 'searching' ? 'Szukam…' : 'Wysyłanie…'}
+              {searchState === 'recording' ? 'Słucham…' : searchState === 'searching' ? 'Szukam…' : 'Wysyłanie…'}
             </>
           ) : activeTab === 'search' ? 'Szukaj' : 'Dodaj przepis'}
         </button>
@@ -188,6 +236,11 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
       {searchState === 'error' && (
         <p role="alert" className="mt-1.5 text-sm text-red-600">
           Wyszukiwanie niedostępne — wklej link ręcznie.
+        </p>
+      )}
+      {searchState === 'mic_error' && (
+        <p role="alert" className="mt-1.5 text-sm text-red-600">
+          Brak dostępu do mikrofonu — wpisz ręcznie.
         </p>
       )}
       {searchState === 'results' && (
