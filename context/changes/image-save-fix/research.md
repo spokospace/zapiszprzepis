@@ -9,6 +9,7 @@ tags: [research, codebase, images, supabase-storage, inngest, recipe-extraction]
 status: complete
 last_updated: 2026-07-05
 last_updated_by: Claude (Sonnet 4.6)
+last_updated_note: "Added follow-up: root cause confirmed via live browser check on polskiekulinaria.pl"
 ---
 
 # Research: Image Save Flow (image-save-fix)
@@ -161,8 +162,31 @@ These are candidate areas where an image-save bug could exist, ordered by likeli
 
 - `context/changes/image-archive-storage/plan.md` — full implementation plan including archive helper contract
 
+## Follow-up Research — Root Cause (2026-07-05)
+
+Live browser check on `https://polskiekulinaria.pl/tiramisu-przepis-na-klasyczny-wloski-deser/` confirmed:
+
+- `document.querySelector('meta[property="og:image"]')` → **null** (tag does not exist)
+- `document.querySelector('meta[name="twitter:image"]')` → **null**
+- First article `<img>` src → `https://polskiekulinaria.pl/wp-content/uploads/2026/05/tiramisu-przepis-na-klasyczny-wloski-deser.jpg` ✓
+
+**Root cause**: Firecrawl returns `metadata.ogImage = null` for WordPress blogs that don't set `<meta property="og:image">`. Because `ogImage == null`, `archiveImage` is never called and `image_url` stays null.
+
+**Fix**: Add a fallback in `src/inngest/functions.ts` after `ogImage = scraped.metadata?.ogImage` (line 116): when `ogImage` is null/undefined, extract the first `<img src>` from the scraped `html` — identical to the pattern already used in `src/lib/blogger-feed.ts:56-58`:
+
+```ts
+// blogger-feed.ts:56-58 (existing pattern to reuse)
+const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i)
+image: imgMatch ? imgMatch[1] : null
+```
+
+Apply the same regex to `scraped.html` as a fallback when `scraped.metadata?.ogImage` is absent. This covers WordPress blogs, recipe aggregators, and any other site that has a content image but no OG meta tag.
+
+**Scope of change**: 2–3 lines in `src/inngest/functions.ts` (non-Blogspot path, after Firecrawl scrape). Existing `archiveImage` + Storage flow is unchanged — fallback URL goes through the same pipeline.
+
+**Affected sites**: Any `web_blog` source that omits `og:image`. Blogspot is already handled separately via the Blogger feed (`functions.ts:82-97`). YouTube has no image issue (thumbnail via `youtube_id`). Only the Firecrawl web-blog path needs this fix.
+
 ## Open Questions
 
-1. **What is the specific bug being fixed?** The change-id `image-save-fix` was opened but no bug description was provided. The research doc above maps the full flow; the user should describe the observed failure to narrow scope.
-2. **Is the Firecrawl `ogImage` response always a string?** If Firecrawl returns `string[]`, the current code passes an array to `fetch()` and silently gets null on every call.
-3. **Are Storage delete errors being swallowed silently on recipe delete?** The `console.warn` in the delete route might mean orphaned Storage files accumulate if deletion fails.
+1. **Is the Firecrawl `ogImage` response always a string?** If Firecrawl returns `string[]`, the current code passes an array to `fetch()` and silently gets null on every call. Low risk now that root cause is identified differently, but worth a type-guard.
+2. **Should the first-image fallback filter out small icons?** The regex picks the first `<img>` in the full HTML. Could match a logo or icon before the recipe photo. May want to skip Gravatar-style URLs or add `width`/`height` attribute heuristics.
