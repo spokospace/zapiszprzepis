@@ -1,126 +1,113 @@
 # ZapiszPrzepis
 
-PWA *archive-first* do zapisywania przepisów udostępnianych z mediów społecznościowych. Każdy URL trafia przez systemowy gest „Udostępnij" i jest przekształcany w trwałą, polskojęzyczną kopię przepisu, niezależną od oryginału.
+An *archive-first* PWA for saving recipes shared from social media. Every URL arrives via the system Share gesture and is transformed into a permanent, Polish-language copy of the recipe — independent of the original source.
 
-Stack: Next.js 16 (App Router) + TypeScript + Tailwind v4 + Supabase (auth + Postgres + storage) + Trigger.dev (async jobs) + PWA (offline + Web Share Target) + Vercel.
+![Next.js](https://github.spoko.space/icon?name=nextjs&size=28) ![TypeScript](https://github.spoko.space/icon?name=typescript&size=28) ![Tailwind CSS](https://github.spoko.space/icon?name=tailwindcss&size=28) ![Supabase](https://github.spoko.space/icon?name=supabase&size=28) ![Cloudflare](https://github.spoko.space/icon?name=cloudflare&size=28) ![Inngest](https://github.spoko.space/icon?name=bolt&size=28)
+
+**Stack:** Next.js 15 (App Router) · TypeScript · Tailwind v4 · Supabase (auth + Postgres + storage) · Inngest (async jobs) · PWA (offline + Web Share Target) · Cloudflare Workers
+
+---
+
+## Demo
+
+Live app: **https://zapiszprzepis.pl**
+
+To create a new account, enter the invite code at registration: `10XDEV`
+
+Test account credentials: see [`context/foundation/test-accounts.md`](context/foundation/test-accounts.md)
+
+---
 
 ## Setup
 
-Wymagania: Node ≥ 20.6, pnpm (Corepack-managed — projekt pinuje wersję w `package.json#packageManager`), konto Supabase, konto Vercel.
+Requirements: Node ≥ 20.6, pnpm (Corepack-managed — version pinned in `package.json#packageManager`), Supabase account, Cloudflare account.
 
-1. **Sklonuj repo i zainstaluj zależności**:
+1. **Clone and install**:
    ```bash
    git clone https://github.com/spokospace/zapiszprzepis.git
    cd zapiszprzepis
-   corepack enable    # jednorazowo — aktywuje pnpm pinned w package.json
+   corepack enable    # one-time — activates the pinned pnpm version
    pnpm install
    ```
 
-2. **Utwórz projekt Supabase** w https://supabase.com/dashboard:
+2. **Create a Supabase project** at https://supabase.com/dashboard:
    - Name: `zapiszprzepis`, Region: `Central EU (Frankfurt)`, Plan: Free
-   - Project Settings → API Keys → skopiuj:
+   - Project Settings → API Keys → copy:
      - **Project URL** (`https://<ref>.supabase.co`)
-     - **Publishable key** (lub legacy `anon` `public` JWT)
+     - **Publishable key** (or legacy `anon` `public` JWT)
 
-3. **Skonfiguruj redirect URLs** w Supabase Authentication → URL Configuration:
-   - Site URL: `https://zapiszprzepis.vercel.app` (lub Twój)
+3. **Configure redirect URLs** in Supabase Authentication → URL Configuration:
+   - Site URL: `https://zapiszprzepis.pl`
    - Redirect URLs (allowlist):
      - `http://localhost:3000/auth/callback`
-     - `https://*-zapiszprzepis.vercel.app/auth/callback`
-     - `https://zapiszprzepis.vercel.app/auth/callback`
+     - `https://zapiszprzepis.pl/auth/callback`
 
-4. **Lokalny `.env.local`**:
+4. **Local `.env.local`**:
    ```bash
    cp .env.local.example .env.local
-   # uzupełnij NEXT_PUBLIC_SUPABASE_URL i NEXT_PUBLIC_SUPABASE_ANON_KEY
+   # fill in NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
    ```
 
-5. **Zaloguj się w Supabase CLI i połącz z projektem**:
+5. **Link Supabase CLI and push migrations**:
    ```bash
    pnpm exec supabase login
    pnpm exec supabase link --project-ref <ref>
    pnpm exec supabase db push --linked
    ```
 
-6. **Vercel** (po pierwszym deploy):
-   - Project Settings → Environment Variables:
-     - `NEXT_PUBLIC_SUPABASE_URL` — Production + Preview + Development (te same wartości)
-     - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Production + Preview + Development (te same wartości)
-     - `NEXT_PUBLIC_SITE_URL` — **tylko Production** (`https://zapiszprzepis.vercel.app`) i Development (`http://localhost:3000`). **Zostaw NIEUSTAWIONE dla Preview**, żeby `getSiteUrl()` mógł użyć runtime fallback do `request.host` — magic-link z preview deploy powróci na ten sam preview URL, nie na Production.
+---
 
-## Background jobs (Trigger.dev)
+## Background jobs (Inngest)
 
-Ekstrakcja przepisów (scraping + LLM) uruchamia się asynchronicznie przez Trigger.dev w cloud'u, poza request-path Workera (NFR p95 ≤ 3 min). Lokalnie:
+Recipe extraction (scraping + LLM) runs asynchronously via Inngest, outside the Cloudflare Worker request path (NFR p95 ≤ 3 min). Locally:
 
-1. **Zaloguj się do Trigger.dev CLI** (jednorazowo):
+1. **Start the Inngest Dev Server** (separate terminal):
    ```bash
-   npx trigger.dev login
-   # → otwiera przeglądarkę, authoryzujesz, zwraca `npx trigger.dev dev`
+   npx inngest-cli@latest dev
+   # → listens on http://localhost:8288
    ```
 
-2. **Uruchom dev server z taskami**:
-   ```bash
-   npx trigger.dev dev
-   # → wyświetla project ID i dev URL (ostatnia linia – zapisz sobie)
-   ```
-
-3. **W drugiej terminalu (normalny dev Next.js)**:
+2. **Start Next.js dev**:
    ```bash
    pnpm dev
    ```
 
-4. **Test**: http://localhost:3000/test-trigger
-   - Kliknij "Trigger Task" → otrzymujesz runId
-   - Kliknij "Sprawdź status" → widzisz "completed"
-   - Dashboard: https://dashboard.trigger.dev — tab "Runs" pokazuje historię
+3. **Local dashboard**: http://localhost:8288 — "Runs" tab shows execution history
 
-**Secrets lokalnie** (`.env.local`):
+**Local secrets** (`.env.local`):
 ```
-TRIGGER_PROJECT_ID=proj_xxx...      # z `npx trigger.dev login` lub dashboard
-TRIGGER_SECRET_KEY=tr_dev_xxx...    # API token z dashboard → API Tokens → DEV
+INNGEST_EVENT_KEY=...     # Inngest Dashboard → Event Keys
+INNGEST_SIGNING_KEY=...   # Inngest Dashboard → Signing Keys
 ```
 
-**Deployment** (siehe Faza 3):
+**Deployment**:
 ```bash
-npx trigger.dev deploy          # deploy tasks do Trigger.dev Cloud
-pnpm deploy                     # deploy Workera do Cloudflare
+pnpm deploy   # deploys the Worker to Cloudflare (Inngest connects via /api/inngest)
 ```
 
-Testy: `pnpm exec vitest run src/lib/env.test.ts`
+---
 
 ## Progressive Web App (PWA)
 
-Aplikacja jest installowalna na urządzeniach mobilnych (Android Chrome/Edge) i desktopowych (Windows, macOS), z offline wsparciami i Web Share Target API.
+Installable on Android (Chrome/Edge), Windows, and macOS. Offline-capable with Web Share Target API.
 
-**Instalacja**:
-- **Android**: Chrome → menu (⋮) → „Install app" — otworzy się full-screen
-- **Windows/macOS**: Desktop app z Windows Start/macOS Launchpad — dostępne po dodaniu do shelf
-- **iOS**: Web clip opcji (nie full PWA, ze względów na ograniczenia Safari)
+**Installation**:
+- **Android**: Chrome → menu (⋮) → "Install app" — opens full-screen
+- **Windows/macOS**: available in Start / Launchpad after adding to shelf
+- **iOS**: web clip only (Safari PWA limitations)
 
-**Web Share Target** (systemowy gest „Udostępnij"):
-- Android: System → Udostępnij → ZapiszPrzepis → formularz (title + text + URL)
-- Obsługiwane formaty: `text/plain`, `text/uri-list`
-- POST `/share` → redirect na home (S-01 doda persistencję i LLM processing)
+**Web Share Target** (system Share gesture):
+- Android: System → Share → ZapiszPrzepis → form (title + text + URL)
+- Supported formats: `text/plain`, `text/uri-list`
+- POST `/share` → processes URL → recipe appears in list
 
 **Service Worker & Offline**:
-- **Precache**: next-pwa injects manifest podczas build (zminifikowan JS/CSS/fonts)
-- **Cache strategies**:
-  - Static assets (.js, .css, .woff2, images): cache-first, 30-day revalidate
-  - API routes (`/api/*`): network-first, 3s timeout, fallback do cache
-  - HTML pages: network-first, fallback do stale cache lub home (`/`)
-  - Web Share Target: zawsze network (brak cache)
-- **Update detection**: check co 60s, dispatchuje custom event `pwa-update-available` (S-01 wyświetli prompt)
+- Static assets (.js, .css, .woff2, images): cache-first, 30-day revalidate
+- API routes (`/api/*`): network-first, 3 s timeout, fallback to cache
+- HTML pages: network-first, fallback to stale cache or home (`/`)
+- Web Share Target: always network (no cache)
 
-**Config**:
-- `public/manifest.json` — PWA manifest (icons, theme colors, share_target)
-- `public/sw.js` — service worker z cache strategies
-- `src/lib/pwa-utils.ts` — helpers: `registerServiceWorker()`, `isUpdateAvailable()`, `reloadForUpdate()`, `installPromptReady()`
-- `next.config.ts` — `withPWA` plugin z precache destination
-
-**Testing** (Pixel 9 / Android Chrome 130+):
-1. `pnpm dev` → wejdź na http://localhost:3000 (HTTPS local lub ngrok)
-2. Chrome menu → Install → weryfikuj offline mode (kliknij offline DevTools → F12 → Network tab → check "Offline")
-3. System menu → Udostępnij → ZapiszPrzepis → test Web Share flow
+---
 
 ## Development
 
@@ -128,39 +115,29 @@ Aplikacja jest installowalna na urządzeniach mobilnych (Android Chrome/Edge) i 
 pnpm dev              # http://localhost:3000
 pnpm build            # production build
 pnpm lint             # ESLint
+pnpm test             # Vitest unit tests
 pnpm check:auth       # smoke test: ping Supabase auth/v1/health
 ```
 
-## Verification
+---
 
-Po setupie sprawdź że auth flow działa:
+## Auth architecture
 
-```bash
-pnpm check:auth
-# → ✓ Supabase auth healthy: https://<ref>.supabase.co
-```
+- **`src/middleware.ts`** — refreshes the session via `supabase.auth.getUser()` on every request; redirects unauthenticated users to `/login`.
+- **`src/lib/supabase/{server,client,proxy}.ts`** — three Supabase client helpers with `getAll`/`setAll` cookie adapter.
+- **`src/app/login/`** — Server Component + Server Action (`signInWithEmail` — magic-link OTP).
+- **`src/app/signup/`** — invite-code gated registration.
+- **`src/app/auth/callback/`** — Route Handler (`exchangeCodeForSession` with error mapping).
+- **`supabase/migrations/`** — baseline: `pg_trgm` + `public.current_user_id()` + RLS policies.
 
-Następnie ręcznie:
-
-1. `pnpm dev` → wejdź na http://localhost:3000 → przekierowanie na `/login`
-2. Wpisz swój email → klik **Wyślij link** → komunikat „Wysłaliśmy link na …"
-3. Kliknij link z poczty → `/auth/callback` → redirect na `/` → widzisz „Zalogowano jako <email>"
-4. Klik **Wyloguj się** → wracasz na `/login`; próba wejścia na `/` znów przekierowuje na `/login`
-
-## Architektura auth
-
-- **`src/proxy.ts`** — Next.js 16 proxy (był `middleware.ts` w v15); odświeża sesję przez `supabase.auth.getUser()` na każdym żądaniu; przekierowuje niezalogowanych na `/login`.
-- **`src/lib/supabase/{server,client,proxy}.ts`** — trzy helpery klientów Supabase z adapterem cookies `getAll`/`setAll`.
-- **`src/app/login/`** — Server Component + Server Action (`signInWithOtp`).
-- **`src/app/auth/callback/`** — Route Handler (`exchangeCodeForSession` z mapowaniem błędów).
-- **`src/app/(actions)/sign-out.ts`** — Server Action `signOut` w route group (bez segmentu URL).
-- **`supabase/migrations/`** — baseline: `pg_trgm` + `public.current_user_id()`.
+---
 
 ## Project context
 
-Pełny PRD, roadmap i plan implementacji żyją w `context/`:
+Full PRD, roadmap, and implementation plans live in `context/`:
 
 - `context/foundation/prd.md` — Product Requirements Document
-- `context/foundation/roadmap.md` — wycinki F-01 ... S-07
-- `context/foundation/tech-stack.md` — uzasadnienie wyboru stacka
-- `context/changes/<change-id>/` — folder per change z planem i progress
+- `context/foundation/roadmap.md` — feature map F-01 … S-09
+- `context/foundation/tech-stack.md` — stack rationale
+- `context/foundation/test-plan.md` — risk-based quality contract
+- `context/changes/<change-id>/` — per-change folder with plan and progress
