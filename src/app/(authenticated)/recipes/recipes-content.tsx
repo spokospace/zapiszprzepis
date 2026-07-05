@@ -61,7 +61,14 @@ function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: 
             return (
               <li key={result.url} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 line-clamp-1">{result.title}</p>
+                  <a
+                    href={result.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-gray-900 hover:text-orange-600 line-clamp-1 block"
+                  >
+                    {result.title}
+                  </a>
                   <p className="text-xs text-gray-500 truncate">{hostname}</p>
                 </div>
                 {result.alreadySaved ? (
