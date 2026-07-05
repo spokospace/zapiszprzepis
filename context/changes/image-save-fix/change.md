@@ -1,7 +1,7 @@
 ---
 change_id: image-save-fix
 title: Fix recipe image not being saved/processed
-status: implementing
+status: implemented
 created: 2026-07-05
 updated: 2026-07-05
 archived_at: null

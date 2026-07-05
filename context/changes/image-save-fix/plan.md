@@ -133,6 +133,6 @@ ogImage = scraped.metadata?.ogImage ?? extractFirstImage(html) ?? undefined
 
 #### Ręczne
 
-- [ ] 1.3 polskiekulinaria.pl recipe → `image_url` is Supabase Storage CDN URL after extraction
-- [ ] 1.4 Recipe with `og:image` — behavior unchanged
-- [ ] 1.5 Blogspot recipe — behavior unchanged
+- [x] 1.3 polskiekulinaria.pl recipe → `image_url` is Supabase Storage CDN URL after extraction — 0dc5738
+- [x] 1.4 Recipe with `og:image` — behavior unchanged — 0dc5738
+- [x] 1.5 Blogspot recipe — behavior unchanged — 0dc5738
