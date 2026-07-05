@@ -90,9 +90,11 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
   const [activeTab, setActiveTab] = useState<'search' | 'add'>('search')
   const [searchState, setSearchState] = useState<SearchState>('idle')
   const [exaResults, setExaResults] = useState<ExaResult[]>([])
-  const [isSpeechSupported] = useState(
-    () => typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
-  )
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false)
+
+  useEffect(() => {
+    setIsSpeechSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+  }, [])
 
   useEffect(() => {
     if (addError) {
@@ -186,36 +188,38 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
         </button>
       </div>
 
-      <form action={handleSubmit} className="flex gap-2">
-        <div className="relative flex-1">
-          {activeTab === 'search'
-            ? <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            : <Link aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          }
-          <input
-            name="url"
-            type="text"
-            aria-label={activeTab === 'search' ? 'Szukaj przepisu' : 'URL przepisu'}
-            placeholder={activeTab === 'search' ? 'Wpisz nazwę przepisu, np. tiramisu' : 'Wklej link do przepisu'}
-            disabled={busy}
-            className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:bg-gray-50"
-          />
+      <form action={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex gap-2 sm:flex-1 min-w-0">
+          <div className="relative flex-1 min-w-0">
+            {activeTab === 'search'
+              ? <Search aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              : <Link aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            }
+            <input
+              name="url"
+              type="text"
+              aria-label={activeTab === 'search' ? 'Szukaj przepisu' : 'URL przepisu'}
+              placeholder={activeTab === 'search' ? 'Wpisz nazwę przepisu, np. tiramisu' : 'Wklej link do przepisu'}
+              disabled={busy}
+              className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:bg-gray-50"
+            />
+          </div>
+          {isSpeechSupported && activeTab === 'search' && (
+            <button
+              type="button"
+              onClick={startVoiceSearch}
+              disabled={busy}
+              aria-label="Wyszukaj głosem"
+              className={`inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2.5 disabled:cursor-not-allowed disabled:opacity-40 ${searchState === 'recording' ? 'border-orange-400 text-orange-500' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
+            >
+              <Mic className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        {isSpeechSupported && activeTab === 'search' && (
-          <button
-            type="button"
-            onClick={startVoiceSearch}
-            disabled={busy}
-            aria-label="Wyszukaj głosem"
-            className={`inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2.5 disabled:cursor-not-allowed disabled:opacity-40 ${searchState === 'recording' ? 'border-orange-400 text-orange-500' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
-          >
-            <Mic className="h-4 w-4" />
-          </button>
-        )}
         <button
           type="submit"
           disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-orange-300"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-orange-300 sm:w-auto"
         >
           {busy ? (
             <>

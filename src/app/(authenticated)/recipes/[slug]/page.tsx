@@ -94,7 +94,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       )}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {typedRecipe.image_url && (
-          <div className="relative w-full h-96 rounded-lg overflow-hidden mb-8">
+          <div className="relative w-full aspect-[4/3] sm:aspect-video rounded-lg overflow-hidden mb-8">
             <Image
               src={typedRecipe.image_url}
               alt={typedRecipe.title}
