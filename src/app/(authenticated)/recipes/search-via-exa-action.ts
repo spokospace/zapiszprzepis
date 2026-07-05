@@ -6,7 +6,7 @@ import { getExaApiKey } from '@/lib/env'
 export type ExaResult = {
   url: string
   title: string
-  text?: string
+  highlights?: string[]
   alreadySaved: boolean
 }
 
@@ -17,7 +17,7 @@ export type ExaSearchResponse =
 type ExaApiResult = {
   url: string
   title: string
-  text?: string
+  highlights?: string[]
 }
 
 type ExaApiResponse = {
@@ -35,7 +35,14 @@ export async function searchViaExa(query: string): Promise<ExaSearchResponse> {
         'Content-Type': 'application/json',
         'x-api-key': getExaApiKey(),
       },
-      body: JSON.stringify({ query, numResults: 5, type: 'auto', contents: { text: { maxCharacters: 1500 } } }),
+      body: JSON.stringify({
+        query,
+        numResults: 5,
+        type: 'auto',
+        contents: {
+          highlights: { query: 'składniki i sposób przygotowania przepisu', numSentences: 3, highlightsPerUrl: 3 },
+        },
+      }),
       signal: AbortSignal.timeout(10000),
     })
 
@@ -61,7 +68,7 @@ export async function searchViaExa(query: string): Promise<ExaSearchResponse> {
     const results: ExaResult[] = rawResults.map((r) => ({
       url: r.url,
       title: r.title,
-      text: r.text,
+      highlights: r.highlights,
       alreadySaved: savedUrls.has(r.url),
     }))
 
