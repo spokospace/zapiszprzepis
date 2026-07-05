@@ -24,3 +24,8 @@ export function getSuabaseServiceRoleKey(): string {
 export function getInviteCode(): string {
   return requireEnv('INVITE_CODE').trim()
 }
+
+// Lazy-loaded Exa API key — required only at runtime in search-via-exa-action.
+export function getExaApiKey(): string {
+  return requireEnv('EXA_API_KEY')
+}
