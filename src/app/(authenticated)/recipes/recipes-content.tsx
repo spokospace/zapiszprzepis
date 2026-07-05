@@ -35,8 +35,6 @@ interface RecipesContentProps {
 }
 
 function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: () => void }) {
-  const [expandedUrl, setExpandedUrl] = useState<string | null>(null)
-
   return (
     <div className="mt-3 rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -60,51 +58,42 @@ function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: 
         <ul className="divide-y divide-gray-100">
           {results.map((result) => {
             const hostname = parseHostname(result.url)
-            const expanded = expandedUrl === result.url
             return (
-              <li key={result.url}>
-                <button
-                  type="button"
-                  onClick={() => setExpandedUrl(expanded ? null : result.url)}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"
-                >
+              <li key={result.url} className="px-4 py-3 space-y-2">
+                <div>
                   <p className="text-sm font-medium text-gray-900 line-clamp-1">{result.title}</p>
                   <p className="text-xs text-gray-500 truncate">{hostname}</p>
-                </button>
-                {expanded && (
-                  <div className="px-4 pb-3 border-t border-gray-50 space-y-2">
-                    {result.highlights && result.highlights.length > 0 && (
-                      <ul className="pt-2 space-y-1">
-                        {result.highlights.map((h, i) => (
-                          <li key={i} className="text-xs text-gray-600 leading-relaxed line-clamp-3">{h}</li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="flex items-center gap-3">
-                      <a
-                        href={result.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-orange-600 hover:underline flex-1 truncate"
-                      >
-                        Otwórz stronę ↗
-                      </a>
-                      {result.alreadySaved ? (
-                        <span className="shrink-0 text-xs text-green-600 font-medium">Już zapisany</span>
-                      ) : (
-                        <form action={addRecipeFromUrl}>
-                          <input type="hidden" name="url" value={result.url} />
-                          <button
-                            type="submit"
-                            className="shrink-0 rounded-md bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600"
-                          >
-                            Zapisz
-                          </button>
-                        </form>
-                      )}
-                    </div>
-                  </div>
+                </div>
+                {result.highlights && result.highlights.length > 0 && (
+                  <ul className="space-y-1">
+                    {result.highlights.map((h, i) => (
+                      <li key={i} className="text-xs text-gray-600 leading-relaxed line-clamp-3">{h}</li>
+                    ))}
+                  </ul>
                 )}
+                <div className="flex items-center gap-3">
+                  <a
+                    href={result.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-orange-600 hover:underline flex-1 truncate"
+                  >
+                    Otwórz stronę ↗
+                  </a>
+                  {result.alreadySaved ? (
+                    <span className="shrink-0 text-xs text-green-600 font-medium">Już zapisany</span>
+                  ) : (
+                    <form action={addRecipeFromUrl}>
+                      <input type="hidden" name="url" value={result.url} />
+                      <button
+                        type="submit"
+                        className="shrink-0 rounded-md bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600"
+                      >
+                        Zapisz
+                      </button>
+                    </form>
+                  )}
+                </div>
               </li>
             )
           })}
