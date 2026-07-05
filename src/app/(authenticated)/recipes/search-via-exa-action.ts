@@ -64,6 +64,9 @@ export async function searchViaExa(query: string): Promise<ExaSearchResponse> {
 
     return { results }
   } catch (err) {
+    // Re-throw Next.js redirect/notFound signals — must not be swallowed.
+    if (err && typeof err === 'object' && 'digest' in err) throw err
+    console.error('[searchViaExa]', err)
     const message = err instanceof Error ? err.message : 'Unknown error'
     return { error: message }
   }
