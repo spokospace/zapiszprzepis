@@ -30,7 +30,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     <>
       <AppHeader failedShares={failedShares} />
       <main className="min-h-screen bg-white">
-        <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+        <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-12">
           <p className="mb-6 text-sm text-gray-500">Znajdź przepis i zapisz go jednym kliknięciem.</p>
           <AddRecipeForm addError={add_error} />
           <Link

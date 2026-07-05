@@ -69,6 +69,12 @@ export async function triggerRecipeExtraction(
     })
   } catch (error) {
     console.error('Failed to trigger extraction task:', error)
+    // Mark the share as failed so it surfaces in the notification bell.
+    // The row was already created above, so this update is always safe.
+    await supabase
+      .from('recipe_shares')
+      .update({ status: 'failed', error_message: 'Failed to queue extraction' })
+      .eq('id', share.id)
   }
 
   return {

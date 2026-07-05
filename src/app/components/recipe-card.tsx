@@ -13,7 +13,7 @@ export function RecipeCard({ slug, title, imageUrl, category }: RecipeCardProps)
     <Link href={`/recipes/${slug}`}>
       <div className="group cursor-pointer rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
         {/* Image container */}
-        <div className="relative w-full aspect-square bg-gray-100">
+        <div className="relative w-full aspect-[4/3] bg-gray-100">
           {imageUrl ? (
             <Image
               src={imageUrl}
