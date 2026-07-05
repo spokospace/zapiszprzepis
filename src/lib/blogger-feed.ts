@@ -4,6 +4,8 @@
 // hand the scraper a Google Translate widget or an empty "main content" block
 // and produce junk extractions. The feed is deterministic, fast and free.
 
+import { extractFirstImage } from './recipe-image-archive'
+
 export function isBlogspotUrl(url: string): boolean {
   try {
     // Match every blogspot TLD, not just .com — Blogger serves the same post on
@@ -51,13 +53,9 @@ export async function fetchBloggerPost(url: string): Promise<BloggerPost | null>
   const html: string = entry?.content?.$t ?? ''
   if (!html) return null
 
-  // First inline image in the post body — Blogger serves these from
-  // blogspot/googleusercontent CDNs that the archive step can fetch.
-  const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i)
-
   return {
     title: entry?.title?.$t ?? '',
     html,
-    image: imgMatch ? imgMatch[1] : null,
+    image: extractFirstImage(html) ?? null,
   }
 }

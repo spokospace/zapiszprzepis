@@ -3,7 +3,7 @@ import { inngest } from './client'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
-import { archiveImage } from '@/lib/recipe-image-archive'
+import { archiveImage, extractFirstImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { looksUnextractable } from '@/lib/content-quality'
@@ -114,7 +114,7 @@ export const extractRecipe = inngest.createFunction(
         ])
         markdown = scraped.markdown ?? ''
         html = scraped.html ?? ''
-        ogImage = scraped.metadata?.ogImage
+        ogImage = scraped.metadata?.ogImage ?? extractFirstImage(html)
         embedHtml = scrapedEmbedHtml
       }
 
