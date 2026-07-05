@@ -39,7 +39,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           <AddRecipeForm addError={add_error} />
           <Link
             href="/recipes"
-            className="mt-6 flex items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 px-6 py-4 text-base font-semibold text-orange-700 hover:bg-orange-100 hover:border-orange-300 transition-colors"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 px-6 py-4 text-base font-semibold text-orange-700 shadow-sm hover:bg-orange-100 hover:border-orange-300 transition-colors"
           >
             Zapisane przepisy →
           </Link>

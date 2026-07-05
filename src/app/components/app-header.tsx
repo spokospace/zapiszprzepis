@@ -11,7 +11,7 @@ export function AppHeader({ failedShares }: { failedShares: FailedShare[] }) {
   return (
     <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <Link href="/recipes" className="text-lg font-bold text-gray-900">
+        <Link href="/" className="text-lg font-bold text-gray-900">
           ZapiszPrzepis
         </Link>
         <div className="flex items-center gap-1">

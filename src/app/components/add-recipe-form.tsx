@@ -198,20 +198,20 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
             aria-label={activeTab === 'search' ? 'Szukaj przepisu' : 'URL przepisu'}
             placeholder={activeTab === 'search' ? 'Wpisz nazwę przepisu, np. tiramisu' : 'Wklej link do przepisu'}
             disabled={busy}
-            className={`w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 ${isSpeechSupported && activeTab === 'search' ? 'pr-9' : 'pr-3'} text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:bg-gray-50`}
+            className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:bg-gray-50"
           />
-          {isSpeechSupported && activeTab === 'search' && (
-            <button
-              type="button"
-              onClick={startVoiceSearch}
-              disabled={busy}
-              aria-label="Wyszukaj głosem"
-              className={`absolute right-3 top-1/2 -translate-y-1/2 disabled:opacity-40 ${searchState === 'recording' ? 'text-orange-500' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              <Mic className="h-4 w-4" />
-            </button>
-          )}
         </div>
+        {isSpeechSupported && activeTab === 'search' && (
+          <button
+            type="button"
+            onClick={startVoiceSearch}
+            disabled={busy}
+            aria-label="Wyszukaj głosem"
+            className={`inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2.5 disabled:cursor-not-allowed disabled:opacity-40 ${searchState === 'recording' ? 'border-orange-400 text-orange-500' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}`}
+          >
+            <Mic className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="submit"
           disabled={busy}
