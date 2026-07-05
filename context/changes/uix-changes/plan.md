@@ -218,26 +218,26 @@ Drobne podwyżki rozmiarów tekstu w dwóch komponentach: `ExaResultsPanel` (tyt
 
 #### Automatyczne
 
-- [x] 1.1 TypeScript kompiluje się bez błędów (`npx tsc --noEmit`)
-- [x] 1.2 Linting przechodzi (`npx next lint`)
+- [x] 1.1 TypeScript kompiluje się bez błędów (`npx tsc --noEmit`) — 8cd7ed2
+- [x] 1.2 Linting przechodzi (`npx next lint`) — 8cd7ed2
 
 #### Ręczne
 
-- [ ] 1.3 Navbar na `/` pokazuje logo SVG, brak chevrona
-- [ ] 1.4 Navbar na `/recipes` pokazuje logo SVG, brak chevrona
-- [ ] 1.5 Navbar na `/recipes/[slug]` pokazuje chevron-left przed logo; kliknięcie → `/recipes`; brak duplikatu "Powrót" w treści
+- [x] 1.3 Navbar na `/` pokazuje logo SVG, brak chevrona — de026e8
+- [x] 1.4 Navbar na `/recipes` pokazuje logo SVG, brak chevrona — de026e8
+- [x] 1.5 Navbar na `/recipes/[slug]` pokazuje chevron-left przed logo; kliknięcie → `/recipes`; brak duplikatu "Powrót" w treści — de026e8
 
 ### Faza 2: Strona główna — 3 ostatnie przepisy
 
 #### Automatyczne
 
-- [ ] 2.1 TypeScript kompiluje się bez błędów (`npx tsc --noEmit`)
+- [x] 2.1 TypeScript kompiluje się bez błędów (`npx tsc --noEmit`) — e2078ff
 
 #### Ręczne
 
-- [ ] 2.2 Użytkownik z przepisami widzi sekcję "Ostatnio dodane" z ≤3 kartami
-- [ ] 2.3 Użytkownik bez przepisów nie widzi sekcji
-- [ ] 2.4 Karty linkują poprawnie; layout nie łamie się na mobile
+- [x] 2.2 Użytkownik z przepisami widzi sekcję "Ostatnio dodane" z ≤3 kartami — e2078ff
+- [x] 2.3 Użytkownik bez przepisów nie widzi sekcji — e2078ff
+- [x] 2.4 Karty linkują poprawnie; layout nie łamie się na mobile — e2078ff
 
 ### Faza 3: Powiększenie tekstu
 

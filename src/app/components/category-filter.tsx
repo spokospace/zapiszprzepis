@@ -54,13 +54,13 @@ export function CategoryFilter({ activeCategory, counts }: CategoryFilterProps) 
           <button
             key={value}
             onClick={() => handleClick(value)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-base font-medium transition-colors ${
               isActive
                 ? 'bg-orange-500 text-white'
                 : 'bg-orange-50 text-orange-700 hover:bg-orange-100'
             }`}
           >
-            <Icon size={15} strokeWidth={1.75} />
+            <Icon size={17} strokeWidth={1.75} />
             <span>{label}</span>
             {count !== undefined && (
               <span className={`ml-0.5 text-xs ${isActive ? 'text-orange-100' : 'text-orange-500'}`}>
