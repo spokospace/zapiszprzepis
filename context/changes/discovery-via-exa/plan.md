@@ -39,6 +39,12 @@ dla istniejącego flow, niewidoczna dla pipeline.
 - Nie dodajemy `includeDomains` — brak filtrowania domen, czysty Exa search.
 - Nie przekazujemy tytułu z Exa do LLM jako hint (pipeline i tak ekstrahuje tytuł z treści).
 - Nie debounce'ujemy wyszukiwania — szukanie wyłącznie na submit/Enter.
+
+> **Addendum (impl-review 2026-07-05):** `contents.highlights` zostało włączone celowo — bez
+> niego Exa zwraca surowy tekst strony nieczytelny jako podgląd przepisu; 3 zdania skupione
+> na składnikach dają użytkownikowi kontekst wystarczający do wyboru wyniku. Modyfikacje
+> `add-recipe-action.ts` (redirecty błędów) i przeniesienie formularza na stronę główną (`/`)
+> były kaskadową zmianą wynikającą z decyzji produktowej po zakończeniu implementacji.
 - Nie robimy paginacji ani "załaduj więcej" — stałe 5 wyników.
 
 ## Podejście do implementacji
@@ -125,6 +131,12 @@ Implementacja kolejno:
 ## Faza 2: UI — unified input i panel wyników
 
 ### Przegląd
+
+> **Addendum (impl-review 2026-07-05):** Zamiast unified input z auto-detekcją URL,
+> dostarczone zostały dwa taby (`'search'` | `'add'`). Decyzja celowa — explicit tabs są
+> czytelniejsze niż "magia" startsWith. `SearchState` ma dodatkowy stan `'loading'` (spinner
+> podczas submit URL). `AddRecipeForm` wyodrębniony do `src/app/components/add-recipe-form.tsx`
+> i osadzony na stronie głównej (`/`) zamiast `/recipes`.
 
 Modyfikujemy `AddRecipeForm` tak, żeby jeden input obsługiwał URL (stary flow) i tekst
 (nowy flow przez Exa). Dodajemy panel wyników z kartami wyników i przyciskami Zapisz.

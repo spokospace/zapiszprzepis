@@ -1,7 +1,7 @@
 ---
 change_id: discovery-via-exa
 title: Discovery via Exa search
-status: implementing
+status: impl_reviewed
 created: 2026-07-05
 updated: 2026-07-05
 archived_at: null
