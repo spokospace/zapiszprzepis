@@ -29,6 +29,8 @@ export function isPrivateUrl(url: string): boolean {
   // Strip IPv6 brackets: [::1] → ::1
   const h = hostname.replace(/^\[|\]$/g, '')
   if (h === '::1' || h === '0:0:0:0:0:0:0:1') return true
+  // IPv6 link-local (fe80::/10), unique-local (fc00::/7 → fc/fd prefixes)
+  if (h.startsWith('fe80') || h.startsWith('fc') || h.startsWith('fd')) return true
   // IPv4 private / loopback ranges
   if (
     h.startsWith('127.') ||

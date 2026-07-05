@@ -50,36 +50,36 @@ export async function runExtractRecipe(
   } = event
   const { fetch, supabase } = deps
 
+  async function firecrawlScrape(options: ReturnType<typeof buildFirecrawlOptions>) {
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(options),
+      signal: AbortSignal.timeout(45_000),
+    })
+    if (!response.ok) {
+      throw new Error(`Firecrawl failed: ${response.statusText}`)
+    }
+    const data = await response.json()
+    return data.data ?? {}
+  }
+
+  // Recipe text comes from the main-content scrape, retrying with
+  // fullContent when a blog template trips Firecrawl's main-content
+  // heuristic and leaves just a "Skip to main content" link.
+  async function scrapeWithRetry() {
+    let s = await firecrawlScrape(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent: false }))
+    if (!s.markdown || s.markdown.length < 200) {
+      console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
+      s = await firecrawlScrape(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent: true }))
+    }
+    return s
+  }
+
   try {
-    async function firecrawlScrape(options: ReturnType<typeof buildFirecrawlOptions>) {
-      const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(options),
-        signal: AbortSignal.timeout(45_000),
-      })
-      if (!response.ok) {
-        throw new Error(`Firecrawl failed: ${response.statusText}`)
-      }
-      const data = await response.json()
-      return data.data ?? {}
-    }
-
-    // Recipe text comes from the main-content scrape, retrying with
-    // fullContent when a blog template trips Firecrawl's main-content
-    // heuristic and leaves just a "Skip to main content" link.
-    async function scrapeWithRetry() {
-      let s = await firecrawlScrape(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent: false }))
-      if (!s.markdown || s.markdown.length < 200) {
-        console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
-        s = await firecrawlScrape(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent: true }))
-      }
-      return s
-    }
-
     let markdown = ''
     let html = ''
     let ogImage: string | undefined
@@ -99,7 +99,6 @@ export async function runExtractRecipe(
     if (bloggerPost) {
       console.log('[extract-recipe] using Blogger feed for', sharedUrl)
       html = bloggerPost.html
-      embedHtml = bloggerPost.html
       ogImage = bloggerPost.image ?? undefined
       // Give the LLM clean text, prefixed with the post title as a strong
       // title signal.
@@ -282,10 +281,6 @@ Rules:
         .select('id')
         .single()
 
-      if (!data) {
-        lastInsertError = error
-      }
-
       if (data) {
         recipe = data
         // Archive the external og:image into Supabase Storage. On failure
@@ -297,6 +292,8 @@ Rules:
           }
         }
         break
+      } else {
+        lastInsertError = error
       }
 
       // URL collision: a parallel share won the race, OR this is a refresh

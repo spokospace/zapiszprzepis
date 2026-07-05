@@ -57,6 +57,10 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
     })
   } catch (err) {
     console.error('Failed to trigger extraction:', err)
+    await supabase
+      .from('recipe_shares')
+      .update({ status: 'failed', error_message: 'Failed to queue extraction' })
+      .eq('id', share.id)
   }
 
   redirect('/recipes?shared=1')
