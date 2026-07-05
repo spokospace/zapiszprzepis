@@ -1,7 +1,7 @@
 ---
 change_id: uix-changes
 title: UI improvements — SVG logo in navbar, recent recipes on home, larger search text, optional font-size setting
-status: implementing
+status: implemented
 created: 2026-07-05
 updated: 2026-07-05
 archived_at: null

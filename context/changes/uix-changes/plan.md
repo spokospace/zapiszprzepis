@@ -243,10 +243,10 @@ Drobne podwyżki rozmiarów tekstu w dwóch komponentach: `ExaResultsPanel` (tyt
 
 #### Automatyczne
 
-- [ ] 3.1 TypeScript kompiluje się bez błędów (`npx tsc --noEmit`)
-- [ ] 3.2 Linting przechodzi (`npx next lint`)
+- [x] 3.1 TypeScript kompiluje się bez błędów (`npx tsc --noEmit`) — f01bd13
+- [x] 3.2 Linting przechodzi (`npx next lint`) — f01bd13
 
 #### Ręczne
 
-- [ ] 3.3 Wyniki Exa czytelne na 375px
-- [ ] 3.4 Chipy kategorii — większy tekst, proporcjonalne ikony, brak regresji na desktop
+- [x] 3.3 Wyniki Exa czytelne na 375px — f01bd13
+- [x] 3.4 Chipy kategorii — większy tekst, proporcjonalne ikony, brak regresji na desktop — f01bd13
