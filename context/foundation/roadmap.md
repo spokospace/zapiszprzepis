@@ -1,9 +1,9 @@
 ---
 project: ZapiszPrzepis
-version: 2
+version: 3
 status: active
 created: 2026-05-28
-updated: 2026-07-04
+updated: 2026-07-05
 prd_version: 1
 main_goal: market-feedback
 top_blocker: time
@@ -43,6 +43,7 @@ Rdzeń tej pętli jest już wdrożony (F-01..F-03, S-01..S-03). Ta wersja mapy s
 | S-06  | error-ux-and-author-alerts      | obsłużyć nieudane przepisy w **dzwoneczku powiadomień** (Ponów / Odrzuć / Wyczyść wszystkie) — autor dostaje email | S-01              | FR-012, NFR „żadne żądanie nie ginie cicho"             | ready  |
 | S-07  | invite-code-registration-gate   | zarejestrować się tylko z ważnym kodem zaproszenia (zamknięte rejestracje)                   | F-01              | Access Control (rozszerzenie — Otwarte Pytanie #5)      | ready  |
 | ~~S-08~~ | ~~fb-reel-link-reference~~   | ~~FB Reel/Video jako odnośnik~~ — **odłożone do V2** (poza scope MVP, patrz Zaparkowane)     | —                 | —                                                       | parked |
+| S-09  | discovery-via-exa               | wyszukać przepis z internetu wpisując lub mówiąc nazwę dania i zapisać jednym kliknięciem    | S-01              | prd-v2.md: FR-001–FR-006                                | done   |
 
 ## Strumienie
 
@@ -53,6 +54,7 @@ Pomoc nawigacyjna — grupuje elementy współdzielące łańcuch Wymagań wstę
 | A        | Rdzeń pipeline'u (wdrożony)        | `F-01` / `F-02` / `F-03` → `S-01` → `S-02` / `S-03`  | Cały strumień `done` — pętla „udostępnij → polskojęzyczny przepis" działa na 3 źródłach.     |
 | B        | Odnajdywanie (gwiazda północna)    | `S-04` / `S-05`                                      | Oba zależą tylko od `S-01` (wdrożone) → równoległe i `ready`. Cel: kolekcja użyteczna w czasie. |
 | C        | Niezawodność i kontrola dostępu    | `S-06` / `S-07`                                      | `S-06` naprawia aktywny błąd (baner „nie udało się" nie znika + zepsuty „Ponów"); `S-07` zamyka rejestracje. |
+| E        | Discovery (wyszukiwanie zewnętrzne) | `S-09`                                              | Nowy kanał wejścia URL — wyszukiwarka Exa in-app + głos. Zależy od `S-01`; niezależny od B–C. Wdrożony 2026-07-05. |
 
 ## Baza
 
@@ -209,6 +211,19 @@ Wdrożone increments złożone w powyższą bazę (bez własnych wierszy w Wycin
 - **Change ID:** fb-reel-link-reference
 - **Status:** **parked (V2).** Decyzja użytkownika (2026-07-04): każda praca nad źródłem Reels — nawet minimalna (sam odnośnik + og:image) — jest zbyt czasochłonna jak na MVP. Zakres MVP to przepisy z **linków, stron WWW i blogów**. Reels/Video z FB wraca dopiero w V2. Szczegóły w sekcji Zaparkowane; pełny opis wariantu „odnośnik" zachowany w historii mapy v2.
 
+### S-09: Discovery — wyszukiwarka przepisów z internetu (Exa + głos)
+
+- **Wynik:** Mama wpisuje lub mówi nazwę dania w aplikacji → dostaje listę wyników z internetu (tytuł, miniaturka, źródło, snippet) → klika wynik → widzi podgląd → klika „Zapisz" → przepis trafia do kolekcji tym samym pipeline'em co Web Share Target.
+- **Change ID:** discovery-via-exa
+- **Odnośniki PRD:** prd-v2.md (brownfield) — FR-001 (redesign home), FR-002 (search on submit), FR-003 (voice input), FR-004 (wyniki jako karty + dedup indicator), FR-005 (podgląd bez ekstrakcji), FR-006 (zapis przez addRecipeFromUrl)
+- **Wymagania wstępne:** S-01 (addRecipeFromUrl + pipeline)
+- **Równolegle z:** S-04, S-05, S-06, S-07, S-08
+- **Blokady:** —
+- **Niewiadome:**
+  - Co gdy Web Speech API niedostępne (nie-HTTPS lub inna przeglądarka niż Chrome)? — decyzja implementacyjna: przycisk mikrofonu ukryty. Właściciel: autor. Blokuje: nie.
+- **Ryzyko:** Nowy kanał wejścia URL, ale reużywa istniejącego `addRecipeFromUrl` bez modyfikacji. Główne ryzyko: limit Exa 1 000 req/mies. (free tier) — adresowany przez search-on-submit (nie debounce). Klucz API (`EXA_API_KEY`) wyłącznie server-side jako Cloudflare secret.
+- **Status:** done
+
 ## Przekazanie backlogu
 
 | ID mapy drogowej | Change ID                     | Sugerowany tytuł problemu                                                        | Gotowe do `/10x-plan` | Uwagi                                                       |
@@ -224,6 +239,7 @@ Wdrożone increments złożone w powyższą bazę (bez własnych wierszy w Wycin
 | S-06             | error-ux-and-author-alerts    | Zamykalne błędy + naprawa „Ponów" + email do autora                             | yes                   | Naprawia aktywny błąd na produkcji                         |
 | S-07             | invite-code-registration-gate | Brama rejestracji z kodem zaproszenia                                            | yes                   | Zaktualizuj PRD (FR-014) — nowa powierzchnia               |
 | ~~S-08~~         | ~~fb-reel-link-reference~~    | ~~FB Reel/Video jako odnośnik~~                                                  | no                    | **Parked → V2** (poza scope MVP, decyzja 2026-07-04)       |
+| S-09             | discovery-via-exa             | Wyszukiwarka Exa in-app + głos + podgląd + zapis                                | no                    | done — zarchiwizuj przez `/10x-archive`                    |
 
 ## Otwarte pytania dotyczące mapy drogowej
 
