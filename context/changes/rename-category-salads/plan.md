@@ -169,6 +169,6 @@ Mechaniczne zastąpienie stringa `wegetarianskie` na `salatki` (i etykiety `Wege
 
 #### Ręczne
 
-- [ ] 2.4 Chip "Sałatki" widoczny w filtrach na `/recipes`
-- [ ] 2.5 Filtrowanie po `?category=salatki` działa poprawnie
-- [ ] 2.6 Badge na stronie szczegółów pokazuje "Sałatki"
+- [x] 2.4 Chip "Sałatki" widoczny w filtrach na `/recipes` — 701aba4
+- [x] 2.5 Filtrowanie po `?category=salatki` działa poprawnie — 701aba4
+- [x] 2.6 Badge na stronie szczegółów pokazuje "Sałatki" — 701aba4
