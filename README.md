@@ -21,9 +21,13 @@ Test account credentials: see [`context/foundation/test-accounts.md`](context/fo
 ![Recipe detail — desktop](docs/screenshots/desktop-recipe.png)
 
 <p align="center">
-  <img src="docs/screenshots/mobile-home.png" width="46%" alt="Home — mobile">
+  <img src="docs/screenshots/mobile-login.png" width="22%" alt="Login — mobile">
   &nbsp;&nbsp;
-  <img src="docs/screenshots/mobile-recipe.png" width="46%" alt="Recipe detail — mobile">
+  <img src="docs/screenshots/mobile-home.png" width="22%" alt="Home — mobile">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-recipe.png" width="22%" alt="Recipe detail — mobile">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-recipe-full.png" width="22%" alt="Recipe — full view">
 </p>
 
 ---
