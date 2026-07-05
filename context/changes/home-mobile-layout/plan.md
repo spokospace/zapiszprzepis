@@ -113,13 +113,13 @@ after:  relative w-full aspect-[4/3] sm:aspect-video rounded-lg overflow-hidden 
 
 #### Automatyczne
 
-- [x] 1.1 TypeScript typecheck passes: `npm run typecheck`
-- [x] 1.2 No lint errors: `npm run lint`
+- [x] 1.1 TypeScript typecheck passes: `npm run typecheck` — c43f71a
+- [x] 1.2 No lint errors: `npm run lint` — c43f71a
 
 #### Ręczne
 
-- [x] 1.3 Home page top padding visually smaller on phone (< 640px)
-- [x] 1.4 Submit button full-width on mobile, inline on desktop
-- [x] 1.5 Mic button stays next to input on mobile
-- [x] 1.6 Recipe detail hero image is landscape with phone large-text setting
-- [x] 1.7 Recipe card thumbnails are 4:3 landscape ratio
+- [x] 1.3 Home page top padding visually smaller on phone (< 640px) — c43f71a
+- [x] 1.4 Submit button full-width on mobile, inline on desktop — c43f71a
+- [x] 1.5 Mic button stays next to input on mobile — c43f71a
+- [x] 1.6 Recipe detail hero image is landscape with phone large-text setting — c43f71a
+- [x] 1.7 Recipe card thumbnails are 4:3 landscape ratio — c43f71a

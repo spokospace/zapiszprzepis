@@ -1,7 +1,7 @@
 ---
 change_id: home-mobile-layout
 title: Home page mobile layout — smaller top spacing and full-width CTA buttons
-status: implementing
+status: implemented
 created: 2026-07-05
 updated: 2026-07-05
 
