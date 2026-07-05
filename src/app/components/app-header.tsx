@@ -29,10 +29,10 @@ export function AppHeader({ failedShares }: { failedShares: FailedShare[] }) {
           )}
           <Link href="/">
             <Image
-              src="/logo.svg"
+              src="/logo-lettering.svg"
               alt="ZapiszPrzepis"
               width={120}
-              height={41}
+              height={30}
               unoptimized
               priority
             />
