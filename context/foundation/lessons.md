@@ -87,3 +87,10 @@ const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
 - **Problem**: Niezwiązane commity mieszają się w jednym PR — np. zmiany test-plan.md lądują razem z feature commitami w branchu worktree, zaciemniając historię i utrudniając review
 - **Rule**: Każda zmiana (change-id) dostaje własny krótko-żyjący branch; nigdy nie commituj do współdzielonego brancha worktree
 - **Applies to**: all
+
+## Check and push all worktree commits before cleanup
+
+- **Context**: Every agent session running in an isolated git worktree — especially when multiple parallel sessions are active.
+- **Problem**: Commits made in a worktree session do NOT reach master automatically. The user assumes the repo is up to date, but changes exist only in the abandoned worktree branch and are effectively lost when the worktree is removed.
+- **Rule**: Before closing a worktree session or running cleanup, always run `git worktree list` and `git log --oneline origin/master..HEAD` in every active worktree. Commit and push all pending changes before removing any worktree.
+- **Applies to**: implement, impl-review
