@@ -16,6 +16,16 @@ To create a new account, enter the invite code at registration: `10XDEV`
 
 Test account credentials: see [`context/foundation/test-accounts.md`](context/foundation/test-accounts.md)
 
+![Recipe collection — desktop](docs/screenshots/desktop-grid.png)
+
+![Recipe detail — desktop](docs/screenshots/desktop-recipe.png)
+
+<p align="center">
+  <img src="docs/screenshots/mobile-home.png" width="46%" alt="Home — mobile">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-recipe.png" width="46%" alt="Recipe detail — mobile">
+</p>
+
 ---
 
 ## Setup
