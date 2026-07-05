@@ -6,6 +6,7 @@ import { getExaApiKey } from '@/lib/env'
 export type ExaResult = {
   url: string
   title: string
+  text?: string
   alreadySaved: boolean
 }
 
@@ -16,6 +17,7 @@ export type ExaSearchResponse =
 type ExaApiResult = {
   url: string
   title: string
+  text?: string
 }
 
 type ExaApiResponse = {
@@ -33,7 +35,7 @@ export async function searchViaExa(query: string): Promise<ExaSearchResponse> {
         'Content-Type': 'application/json',
         'x-api-key': getExaApiKey(),
       },
-      body: JSON.stringify({ query, numResults: 5, type: 'auto' }),
+      body: JSON.stringify({ query, numResults: 5, type: 'auto', contents: { text: { maxCharacters: 1500 } } }),
       signal: AbortSignal.timeout(10000),
     })
 
@@ -59,11 +61,15 @@ export async function searchViaExa(query: string): Promise<ExaSearchResponse> {
     const results: ExaResult[] = rawResults.map((r) => ({
       url: r.url,
       title: r.title,
+      text: r.text,
       alreadySaved: savedUrls.has(r.url),
     }))
 
     return { results }
   } catch (err) {
+    // Re-throw Next.js redirect/notFound signals — must not be swallowed.
+    if (err && typeof err === 'object' && 'digest' in err) throw err
+    console.error('[searchViaExa]', err)
     const message = err instanceof Error ? err.message : 'Unknown error'
     return { error: message }
   }
