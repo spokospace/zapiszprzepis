@@ -73,8 +73,12 @@ function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: 
                 </button>
                 {expanded && (
                   <div className="px-4 pb-3 border-t border-gray-50 space-y-2">
-                    {result.text && (
-                      <p className="text-xs text-gray-600 leading-relaxed line-clamp-6 pt-2">{result.text}</p>
+                    {result.highlights && result.highlights.length > 0 && (
+                      <ul className="pt-2 space-y-1">
+                        {result.highlights.map((h, i) => (
+                          <li key={i} className="text-xs text-gray-600 leading-relaxed line-clamp-3">{h}</li>
+                        ))}
+                      </ul>
                     )}
                     <div className="flex items-center gap-3">
                       <a
