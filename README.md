@@ -2,7 +2,7 @@
 
 An *archive-first* PWA for saving recipes shared from social media. Every URL arrives via the system Share gesture and is transformed into a permanent, Polish-language copy of the recipe — independent of the original source.
 
-![Next.js](https://github.spoko.space/icon?name=nextjs&size=28) ![TypeScript](https://github.spoko.space/icon?name=typescript&size=28) ![Tailwind CSS](https://github.spoko.space/icon?name=tailwindcss&size=28) ![Supabase](https://github.spoko.space/icon?name=supabase&size=28) ![Cloudflare](https://github.spoko.space/icon?name=cloudflare&size=28) ![Inngest](https://github.spoko.space/icon?name=bolt&size=28)
+<img src="https://github.spoko.space/icon?name=nextjs&size=40" height="40" alt="Next.js" /> <img src="https://github.spoko.space/icon?name=typescript&size=40" height="40" alt="TypeScript" /> <img src="https://github.spoko.space/icon?name=tailwindcss&size=40" height="40" alt="Tailwind CSS" /> <img src="https://github.spoko.space/icon?name=supabase&size=40" height="40" alt="Supabase" /> <img src="https://github.spoko.space/icon?name=cloudflare&size=40" height="40" alt="Cloudflare" /> <img src="https://github.spoko.space/icon?name=bolt&size=40" height="40" alt="Inngest" />
 
 **Stack:** Next.js 15 (App Router) · TypeScript · Tailwind v4 · Supabase (auth + Postgres + storage) · Inngest (async jobs) · PWA (offline + Web Share Target) · Cloudflare Workers
 
