@@ -33,6 +33,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
           <p className="mb-6 text-sm text-gray-500">Znajdź przepis i zapisz go jednym kliknięciem.</p>
           <AddRecipeForm addError={add_error} />
+          <Link
+            href="/recipes"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 px-6 py-4 text-base font-semibold text-orange-700 shadow-sm hover:bg-orange-100 hover:border-orange-300 transition-colors"
+          >
+            Zapisane przepisy →
+          </Link>
           {recentRecipes && recentRecipes.length > 0 && (
             <div className="mt-8">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
@@ -51,12 +57,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
               </div>
             </div>
           )}
-          <Link
-            href="/recipes"
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 px-6 py-4 text-base font-semibold text-orange-700 shadow-sm hover:bg-orange-100 hover:border-orange-300 transition-colors"
-          >
-            Zapisane przepisy →
-          </Link>
         </div>
       </main>
     </>
