@@ -12,7 +12,6 @@ const VALID_CATEGORIES = Constants.public.Enums.recipe_category
 type SearchParams = Promise<{
   shared?: string
   category?: string
-  add_error?: string
   duplicate?: string
   q?: string
 }>
@@ -49,7 +48,7 @@ export default async function RecipesPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { shared, category, add_error, duplicate, q } = await searchParams
+  const { shared, category, duplicate, q } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   const searchQuery = (q ?? '').trim()
@@ -116,7 +115,6 @@ export default async function RecipesPage({
       recipes={filteredRecipes}
       showSharedToast={shared === '1'}
       showPendingDuplicateToast={duplicate === 'pending'}
-      addError={add_error}
       activeCategory={activeCategory}
       categoryCounts={counts}
       searchQuery={searchQuery}

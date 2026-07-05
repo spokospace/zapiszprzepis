@@ -52,7 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!sharedUrl) {
       console.warn('[share] No URL found in url/text/title')
       // Visible feedback instead of a silent bounce to home.
-      return NextResponse.redirect(new URL('/recipes?add_error=invalid_url', request.url), { status: 303 })
+      return NextResponse.redirect(new URL('/?add_error=invalid_url', request.url), { status: 303 })
     }
 
     // Trigger recipe extraction (server action handles auth check)
@@ -84,6 +84,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // On other errors, surface a recoverable error on the recipes page.
-    return NextResponse.redirect(new URL('/recipes?add_error=server', request.url), { status: 303 })
+    return NextResponse.redirect(new URL('/?add_error=server', request.url), { status: 303 })
   }
 }

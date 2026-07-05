@@ -9,12 +9,12 @@ import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   const url = String(formData.get('url') ?? '').trim()
 
-  if (!url) redirect('/recipes?add_error=empty')
+  if (!url) redirect('/?add_error=empty')
 
   try {
     new URL(url)
   } catch {
-    redirect('/recipes?add_error=invalid_url')
+    redirect('/?add_error=invalid_url')
   }
 
   const supabase = await createSupabaseServerClient()
@@ -42,7 +42,7 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
 
   if (shareError || !share) {
     console.error('Failed to create share record:', shareError?.message)
-    redirect('/recipes?add_error=server')
+    redirect('/?add_error=server')
   }
 
   try {
