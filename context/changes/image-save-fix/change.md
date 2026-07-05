@@ -1,7 +1,7 @@
 ---
 change_id: image-save-fix
 title: Fix image saving bug
-status: preparing
+status: planned
 created: 2026-07-05
 updated: 2026-07-05
 archived_at: null
