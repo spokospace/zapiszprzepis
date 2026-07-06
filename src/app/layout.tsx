@@ -49,7 +49,7 @@ export default function RootLayout({
       lang="pl"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col mx-auto w-full max-w-screen-2xl">
         {children}
         <PWARegister />
       </body>

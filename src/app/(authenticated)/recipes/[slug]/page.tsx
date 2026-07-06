@@ -5,6 +5,7 @@ import { Clock, Flame, Timer, type LucideIcon } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { Toast } from '@/app/components/toast'
+import { PageContainer } from '@/app/components/page-container'
 import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
@@ -92,7 +93,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {refresh_error === '1' && (
         <Toast message="Nie można odświeżyć — przepis nie ma źródłowego adresu." type="error" duration={5000} clearParam="refresh_error" />
       )}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <PageContainer narrow>
         {typedRecipe.image_url && (
           <div className="relative w-full aspect-[4/3] sm:aspect-video rounded-lg overflow-hidden mb-8">
             <Image
@@ -227,7 +228,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             </button>
           </form>
         </div>
-      </div>
+      </PageContainer>
     </div>
   )
 }
