@@ -94,3 +94,10 @@ const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) })
 - **Problem**: Commits made in a worktree session do NOT reach master automatically. The user assumes the repo is up to date, but changes exist only in the abandoned worktree branch and are effectively lost when the worktree is removed.
 - **Rule**: Before closing a worktree session or running cleanup, always run `git worktree list` and `git log --oneline origin/master..HEAD` in every active worktree. Commit and push all pending changes before removing any worktree.
 - **Applies to**: implement, impl-review
+
+## All .md files in this open-source project must be written in English
+
+- **Context**: All .md files in the zapiszprzepis project — prioritize new files; translate existing Polish ones opportunistically when touching them, not in bulk.
+- **Problem**: Polish .md files alongside English code identifiers and git history create mixed-language inconsistency that hinders external contributors and tooling.
+- **Rule**: All .md files must be written in English. Create new .md files in English from the start; when editing an existing Polish .md file, translate it in the same PR.
+- **Applies to**: all

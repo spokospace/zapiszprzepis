@@ -1,74 +1,74 @@
-# Future feature — wyszukiwarka przepisów w sieci (discovery)
+# Future feature — recipe web search (discovery)
 
-**Status:** poza zakresem MVP. Notatka kierunkowa, nie plan wdrożeniowy.
-**Data:** 2026-07-04
+**Status:** out of MVP scope. A directional note, not an implementation plan.
+**Date:** 2026-07-04
 
-## Cel
+## Goal
 
-User wpisuje hasło (np. „tortilla") i dostaje **listę przepisów z internetu** — prosta
-lista z preview (tytuł, zdjęcie, źródło). Przy każdym preview przycisk **Zapisz**.
+The user types a keyword (e.g. "tortilla") and gets **a list of recipes from the web** — a simple
+list with previews (title, image, source). Each preview has a **Save** button.
 
-To jest **odkrywanie nowych** przepisów, a nie przeszukiwanie własnej kolekcji.
-Przeszukiwanie zapisanych przepisów już istnieje (`RecipeSearch`, `?q=`, po własnej bazie).
+This is **discovering new** recipes, not searching the personal collection.
+Searching saved recipes already exists (`RecipeSearch`, `?q=`, against the user's own database).
 
-## Kluczowe rozstrzygnięcie: „Zapisz" = istniejący pipeline
+## Key decision: "Save" = the existing pipeline
 
-Przycisk **Zapisz** przy preview **nie robi nic nowego** — wywołuje istniejący
+The **Save** button on a preview **does nothing new** — it calls the existing
 `addRecipeFromUrl(url)`:
 
 ```
-Zapisz (URL z wyniku)
+Save (URL from result)
   → addRecipeFromUrl        (dedup: findExistingRecipeForUrl)
   → recipe_shares (Supabase)
   → event recipe/extract    (Inngest)
-  → ekstrakcja: redakcja składników osobno, tekstu, kroków, zdjęcia
+  → extraction: ingredients edited separately, text, steps, image
 ```
 
-Czyli redagowanie składników / tekstu / kroków dzieje się dokładnie tak jak przy
-dzisiejszym zapisie z URL. Nowa funkcja dokłada tylko **źródło URL-i** przed ten pipeline.
+So ingredients / text / steps editing happens exactly as in the current save-from-URL flow.
+The new feature only adds a **URL source** upstream of this pipeline.
 
-## Ścieżka bliska (rekomendowana) — Exa REST API
+## Near path (recommended) — Exa REST API
 
-- Źródło wyników: **Exa REST API** (`POST https://api.exa.ai/search`, nagłówek `x-api-key`).
-  NIE Exa MCP — MCP to narzędzie deweloperskie Claude Code, nie działa w aplikacji.
-- Wołane z **server action** (klucz `EXA_API_KEY` po stronie serwera, nigdy w kliencie).
-  Wzorzec jak istniejące wywołania Firecrawl/OpenAI w `inngest/functions.ts`.
-- Cloudflare Workers: zwykły `fetch`, bez API Node — działa bez zmian.
-- Limit darmowy Exa: 1000 req/mies. → wystarcza dla 1 usera.
+- Results source: **Exa REST API** (`POST https://api.exa.ai/search`, header `x-api-key`).
+  NOT Exa MCP — MCP is a Claude Code developer tool, it doesn't work inside the app.
+- Called from a **server action** (`EXA_API_KEY` server-side, never in the client).
+  Same pattern as existing Firecrawl/OpenAI calls in `inngest/functions.ts`.
+- Cloudflare Workers: plain `fetch`, no Node API — works without changes.
+- Exa free tier: 1000 req/month → enough for 1 user.
 
-### Trzy pułapki
-1. **Nie debounce'ować** wyszukiwania webowego (jak `RecipeSearch` co 300 ms) —
-   każdy znak = 1 request = spalony limit. Szukanie na **submit/Enter**.
-2. **Dedup w wynikach** — oznaczyć `findExistingRecipeForUrl` te, które już są w bazie.
-3. **`type: 'auto'`, bez `contents`** — treść wyciąga i tak własny pipeline po zapisie.
-4. **Filtrowanie jakości** — Exa nie ma kategorii „recipe"; zawęzić `includeDomains`
-   do serwisów, które ekstraktor już parsuje (blogi, YouTube), inaczej wpadną sklepy/fora.
+### Three pitfalls
+1. **Don't debounce** web search (like `RecipeSearch` every 300 ms) —
+   every keystroke = 1 request = burned quota. Search on **submit/Enter**.
+2. **Dedup results** — use `findExistingRecipeForUrl` to mark those already in the database.
+3. **`type: 'auto'`, without `contents`** — content is extracted anyway by the pipeline after saving.
+4. **Quality filtering** — Exa has no "recipe" category; narrow with `includeDomains`
+   to sites the extractor already parses (blogs, YouTube), otherwise shops/forums will slip in.
 
-## Ścieżka daleka (opcjonalna) — własny crawler-silnik
+## Far path (optional) — custom crawler engine
 
-Gdyby to miał być prawdziwy silnik wyszukiwania nad korpusem (odpowiednik
-`plan_wyszukiwarki_przepisy.md` z Downloads): zrealizować **cel** tamtego planu,
-ale **odrzucić jego stack**. Tamten zakłada Python/FastAPI/Redis/Dramatiq/Meilisearch/
-Docker Compose — obcy temu projektowi i niehostowalny na Cloudflare Workers.
+If this were to become a real search engine over a corpus (equivalent to
+`plan_wyszukiwarki_przepisy.md` from Downloads): achieve **the goal** of that plan
+but **discard its stack**. That plan assumes Python/FastAPI/Redis/Dramatiq/Meilisearch/
+Docker Compose — foreign to this project and not hostable on Cloudflare Workers.
 
-Mapowanie na obecny stack (Inngest + Supabase + Next.js/Cloudflare):
+Mapping to the current stack (Inngest + Supabase + Next.js/Cloudflare):
 
-| Plan z Downloads | U nas |
+| Plan from Downloads | Here |
 | --- | --- |
 | Redis + Dramatiq | **Inngest** (fanout + `{ cron }` functions) |
-| httpx + selectolax | `fetch` + parser JSON-LD w TS |
+| httpx + selectolax | `fetch` + JSON-LD parser in TS |
 | PostgreSQL | **Supabase Postgres** |
-| Meilisearch | **Postgres FTS / pg_trgm**; Meilisearch dopiero gdy korpus tego wymaga |
+| Meilisearch | **Postgres FTS / pg_trgm**; Meilisearch only when the corpus demands it |
 | FastAPI `/search` | Next.js route handler |
 
-- Korpus = **osobna tabela** (np. `recipe_index`, url-keyed, bez `user_id`).
-  Istniejąca `recipes` (per-user, RLS) zostaje kolekcją prywatną.
-- Długie crawle muszą lecieć w krokach Inngest, nie w request-handlerze Workers.
-- **Ryzyko prawne** (do świadomej decyzji): przechowywanie i serwowanie pełnej treści
-  cudzych przepisów (opis/kroki/zdjęcia) to nie to samo co enumeracja URL-i z sitemap.
-  Podejście Exa (import tylko wybranych, pojedynczo) jest tu bezpieczniejsze.
+- Corpus = **separate table** (e.g. `recipe_index`, url-keyed, no `user_id`).
+  Existing `recipes` (per-user, RLS) stays as the private collection.
+- Long crawls must run in Inngest steps, not in a Workers request handler.
+- **Legal risk** (conscious decision required): storing and serving full content of others'
+  recipes (description/steps/images) is not the same as enumerating URLs from a sitemap.
+  The Exa approach (import only selected items, one at a time) is safer here.
 
-## Rekomendacja
+## Recommendation
 
-Zacząć od ścieżki Exa gdy funkcja wejdzie do zakresu. Crawler-silnik tylko jeśli
-zapiszprzepis ma stać się realnym produktem wyszukiwania, i wtedy na własnym stacku.
+Start with the Exa path when the feature enters scope. The crawler engine only if
+zapiszprzepis is to become a real search product, and then on its own stack.
