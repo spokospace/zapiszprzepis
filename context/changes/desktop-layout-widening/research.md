@@ -85,8 +85,23 @@ Brak pliku `tailwind.config.ts/js`. Projekt używa Tailwind v4 (CSS-first config
 - `context/changes/uix-changes/` — ogólne UI fixes. Brak zmian szerokości kontenerów.
 - Brak precedensu dla desktop layout widening w archiwum.
 
-## Open Questions
+## Implementation (2026-07-06)
 
-1. **Recipe detail**: `max-w-4xl` (896px) czy `max-w-5xl` (1024px) czy `max-w-6xl` (1152px)? Szerszy kontener może sprawić, że 2-kolumnowy grid składniki/instrukcje będzie za szeroki — wymaga weryfikacji wizualnej.
-2. **Strona główna**: Czy przy `max-w-6xl` grid kategorii (`grid-cols-2 sm:grid-cols-3`) wymaga dodatkowego breakpointa (np. `lg:grid-cols-4`)?
-3. **Shared container**: Czy warto przy okazji wyodrębnić `<PageContainer>` komponent żeby uniknąć przyszłych rozbieżności?
+Wszystkie pytania rozstrzygnięte i zaimplementowane w tym samym commicie (`c0586ae`).
+
+### Rozstrzygnięcia
+
+1. **Recipe detail width**: wybrano `max-w-5xl` (1024px) — weryfikacja wizualna przy 1440px potwierdziła, że 2-kolumnowy grid składniki/przygotowanie wygląda proporcjonalnie, obraz hero jest duży i czytelny.
+2. **Strona główna grid**: `grid-cols-2 sm:grid-cols-3` przy `max-w-6xl` wygląda dobrze — karty w sekcji "Ostatnio dodane" są wystarczająco duże, dodatkowy breakpoint `lg:grid-cols-4+` nie był potrzebny.
+3. **Shared container**: zaimplementowany jako `PageContainer` z prop `narrow` (max-w-5xl) i domyślnym (max-w-6xl). Podczas simplify review AppHeader również został przepisany na `PageContainer`, eliminując jedyne miejsce gdzie `max-w-6xl` było zdublowane.
+
+### Zmiany
+
+| Plik | Zmiana |
+|---|---|
+| `src/app/components/page-container.tsx` | nowy komponent |
+| `src/app/layout.tsx` | `max-w-screen-2xl` na `<body>` (cap ultrawide) |
+| `src/app/page.tsx` | `max-w-2xl` → `PageContainer` |
+| `src/app/(authenticated)/recipes/recipes-content.tsx` | `max-w-6xl` → `PageContainer` |
+| `src/app/(authenticated)/recipes/[slug]/page.tsx` | `max-w-3xl` → `PageContainer narrow` |
+| `src/app/components/app-header.tsx` | inline div → `PageContainer` (simplify finding) |

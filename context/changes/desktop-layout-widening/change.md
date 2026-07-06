@@ -1,7 +1,7 @@
 ---
 id: desktop-layout-widening
 title: Desktop layout widening
-status: preparing
+status: complete
 created: 2026-07-06
 updated: 2026-07-06
 ---
