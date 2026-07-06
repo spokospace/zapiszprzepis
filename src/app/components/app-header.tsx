@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { NotificationBell } from './notification-bell'
+import { PageContainer } from './page-container'
 import type { FailedShare } from '@/lib/failed-shares'
 
 const RECIPE_DETAIL_RE = /^\/recipes\/[^/]+$/
@@ -16,7 +17,7 @@ export function AppHeader({ failedShares }: { failedShares: FailedShare[] }) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+      <PageContainer className="flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
           {isRecipeDetail && (
             <Link
@@ -49,7 +50,7 @@ export function AppHeader({ failedShares }: { failedShares: FailedShare[] }) {
             </button>
           </form>
         </div>
-      </div>
+      </PageContainer>
     </header>
   )
 }

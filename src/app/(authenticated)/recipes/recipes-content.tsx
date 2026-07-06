@@ -5,6 +5,7 @@ import { RecipeCard } from '@/app/components/recipe-card'
 import { CategoryFilter } from '@/app/components/category-filter'
 import { RecipeSearch } from '@/app/components/recipe-search'
 import { Toast } from '@/app/components/toast'
+import { PageContainer } from '@/app/components/page-container'
 import type { Database } from '@/lib/supabase.types'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
@@ -47,7 +48,7 @@ export function RecipesContent({
         />
       )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <PageContainer>
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Moje przepisy</h1>
           <p className="mt-2 text-gray-600">
@@ -113,7 +114,7 @@ export function RecipesContent({
             ))}
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   )
 }
