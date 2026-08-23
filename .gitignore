@@ -51,3 +51,6 @@ next-env.d.ts
 .dev.vars
 cloudflare-env.d.ts
 .wrangler/
+
+# credentials / local-only docs — never commit account details
+context/foundation/test-accounts.md
