@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { categoryLabel } from '@/lib/recipe-categories'
 
 interface RecipeCardProps {
   slug: string
@@ -47,8 +48,8 @@ export function RecipeCard({ slug, title, imageUrl, category }: RecipeCardProps)
             {title}
           </h3>
           <div className="mt-3 flex items-center justify-between">
-            <span className="inline-block px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full capitalize">
-              {category}
+            <span className="inline-block px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+              {categoryLabel(category)}
             </span>
           </div>
         </div>
