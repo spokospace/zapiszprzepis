@@ -12,9 +12,9 @@ An *archive-first* PWA for saving recipes shared from social media. Every URL ar
 
 Live app: **https://zapiszprzepis.pl**
 
-To create a new account, enter the invite code at registration: `10XDEV`
-
-Test account credentials: see [`context/foundation/test-accounts.md`](context/foundation/test-accounts.md)
+Registration is gated by an invite code. The code is a runtime secret (`INVITE_CODE`),
+never committed — [open an issue](https://github.com/spokospace/zapiszprzepis/issues)
+if you would like one to try the app.
 
 ![Recipe collection — desktop](docs/screenshots/desktop-grid.png)
 
