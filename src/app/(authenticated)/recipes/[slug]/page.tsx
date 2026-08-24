@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Clock, Flame, Timer, type LucideIcon } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { categoryLabel } from '@/lib/recipe-categories'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
 import { refreshRecipe } from './refresh-action'
@@ -80,8 +80,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     ? typedRecipe.steps
     : JSON.parse(typedRecipe.steps as string)) as string[]
 
-  const cat = RECIPE_CATEGORIES.find((c) => c.value === typedRecipe.category)
-
   return (
     <div className="min-h-screen bg-white py-8">
       {duplicate === '1' && (
@@ -113,7 +111,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               href={`/recipes?category=${typedRecipe.category}`}
               className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded-full hover:bg-orange-200 transition"
             >
-              <span>{cat ? cat.label : typedRecipe.category}</span>
+              <span>{categoryLabel(typedRecipe.category)}</span>
             </Link>
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
               {SOURCE_LABELS[typedRecipe.source_type] ?? 'Inny'}
