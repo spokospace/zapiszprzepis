@@ -96,7 +96,8 @@ INNGEST_SIGNING_KEY=...   # Inngest Dashboard → Signing Keys
 
 **Deployment**:
 ```bash
-pnpm deploy   # deploys the Worker to Cloudflare (Inngest connects via /api/inngest)
+pnpm run deploy   # deploys the Worker to Cloudflare (Inngest connects via /api/inngest)
+# `run` is required: bare `pnpm deploy` is pnpm's own workspace-deploy command, not this script
 ```
 
 ---
