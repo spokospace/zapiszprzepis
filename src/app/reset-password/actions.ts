@@ -28,6 +28,8 @@ export async function resetPassword(formData: FormData): Promise<void> {
 
   // Sign out so the user must log in with their new password.
   // Without this, the proxy would redirect /login → / (user already has session).
-  await supabase.auth.signOut()
+  // scope:'global' is deliberate here and the opposite of the sign-out action:
+  // a password change should invalidate every other device's session too.
+  await supabase.auth.signOut({ scope: 'global' })
   redirect('/login?success=password_reset')
 }
