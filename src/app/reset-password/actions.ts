@@ -27,7 +27,7 @@ export async function resetPassword(formData: FormData): Promise<void> {
   }
 
   // Sign out so the user must log in with their new password.
-  // Without this, middleware would redirect /login → / (user already has session).
+  // Without this, the proxy would redirect /login → / (user already has session).
   await supabase.auth.signOut()
   redirect('/login?success=password_reset')
 }
