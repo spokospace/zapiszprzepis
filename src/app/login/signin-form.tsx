@@ -6,7 +6,7 @@ import { signInWithEmail, signInWithPassword } from './actions'
 type TabType = 'link' | 'password'
 
 const ERROR_MESSAGES: Record<string, string> = {
-  expired: 'Link wygasł. Wyślij sobie nowy.',
+  expired: 'Link wygasł lub został już użyty. Wyślij sobie nowy.',
   used: 'Ten link został już użyty. Wyślij sobie nowy.',
   invalid: 'Link jest nieprawidłowy. Wyślij sobie nowy.',
   invalid_email: 'Wpisz prawidłowy adres email.',

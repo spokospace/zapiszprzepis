@@ -35,6 +35,22 @@ export function safeNext(rawNext: string | null, origin: string): string {
   }
 }
 
+/**
+ * Classify the error Supabase itself puts on the callback URL.
+ *
+ * When the one-time token is rejected, /auth/v1/verify redirects to our callback
+ * with `?error=access_denied&error_code=otp_expired&error_description=Email+link+
+ * is+invalid+or+has+expired` and **no** `code`. Read this before the missing-code
+ * branch, otherwise every such failure falls through to the generic "invalid"
+ * message and hides the reason. Verified against the deployed verify endpoint.
+ *
+ * Returns null when the URL carries no error at all.
+ */
+export function inboundAuthError(errorCode: string | null, error: string | null): string | null {
+  if (!errorCode && !error) return null
+  return mapAuthError(errorCode ?? undefined)
+}
+
 export function mapAuthError(code: string | undefined): string {
   if (!code) return 'unknown'
   if (EXPIRED_CODES.has(code)) return 'expired'
