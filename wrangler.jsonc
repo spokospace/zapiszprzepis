@@ -4,11 +4,19 @@
   "name": "zapiszprzepis",
   "compatibility_date": "2025-05-05",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  // Daily keep-alive ping so Supabase does not pause the free-tier project
-  // after a week of inactivity. Handler: custom-worker.ts -> scheduled().
+  // Both handled by custom-worker.ts -> scheduled(), dispatched on which fired:
+  //   30 3 — dump the recipe tables to R2 (the free Supabase plan has no backups)
+  //   0  4 — keep-alive ping, so the project is not paused after a week idle
   "triggers": {
-    "crons": ["0 4 * * *"]
+    "crons": ["30 3 * * *", "0 4 * * *"]
   },
+  // Create with: wrangler r2 bucket create zapiszprzepis-backups
+  "r2_buckets": [
+    {
+      "binding": "BACKUPS",
+      "bucket_name": "zapiszprzepis-backups"
+    }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
