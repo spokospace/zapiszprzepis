@@ -1,9 +1,14 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "main": ".open-next/worker.js",
+  "main": "./custom-worker.ts",
   "name": "zapiszprzepis",
   "compatibility_date": "2025-05-05",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Daily keep-alive ping so Supabase does not pause the free-tier project
+  // after a week of inactivity. Handler: custom-worker.ts -> scheduled().
+  "triggers": {
+    "crons": ["0 4 * * *"]
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

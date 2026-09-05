@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { safeNext, mapAuthError } from '@/lib/safe-redirect'
+import { safeNext, mapAuthError, inboundAuthError } from '@/lib/safe-redirect'
 
 const ORIGIN = 'https://zapiszprzepis.pl'
 
@@ -55,5 +55,28 @@ describe('mapAuthError — exact code matching', () => {
     expect(mapAuthError('validation_paused')).toBe('unknown')
     expect(mapAuthError('unused_factor')).toBe('unknown')
     expect(mapAuthError(undefined)).toBe('unknown')
+  })
+})
+
+// Regression lock for the misleading "Link jest nieprawidłowy" on every rejected
+// magic link. Supabase's verify endpoint answers a spent or expired token with
+// error params and NO code, so the callback fell straight into its missing-code
+// branch. Shape confirmed against the deployed endpoint:
+// ?error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired
+describe('inboundAuthError — errors Supabase puts on the callback URL', () => {
+  it('reports a rejected one-time token as expired, not invalid', () => {
+    expect(inboundAuthError('otp_expired', 'access_denied')).toBe('expired')
+  })
+
+  it('still reports an error when only the coarse `error` param is present', () => {
+    expect(inboundAuthError(null, 'server_error')).toBe('unknown')
+  })
+
+  it('does not classify unknown codes', () => {
+    expect(inboundAuthError('some_new_code', 'access_denied')).toBe('unknown')
+  })
+
+  it('returns null for a clean callback so the code exchange proceeds', () => {
+    expect(inboundAuthError(null, null)).toBeNull()
   })
 })
