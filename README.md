@@ -102,6 +102,37 @@ pnpm run deploy   # deploys the Worker to Cloudflare (Inngest connects via /api/
 
 ---
 
+## Scheduled jobs
+
+Two cron triggers run in the deployed Worker, declared in `wrangler.jsonc` and
+dispatched by `custom-worker.ts`.
+
+| Cron (UTC) | Job | Why |
+| --- | --- | --- |
+| `30 3 * * *` | Dump `recipes` + `recipe_shares` to R2 as `recipes/<YYYY-MM-DD>.json` | The free Supabase plan includes no backups |
+| `0 4 * * *` | `SELECT` one row through PostgREST | The free plan pauses a project after a week without database activity |
+
+**One-time setup** — the backup silently logs `backup: skipped` until both exist:
+```bash
+npx wrangler r2 bucket create zapiszprzepis-backups
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY   # paste the key when prompted
+```
+
+The dump needs the service role because RLS would otherwise hand it an empty
+array. It covers table rows only — archived images live in Supabase Storage and
+are **not** copied.
+
+**Restore** is manual: fetch the object, then feed the arrays back through
+PostgREST or the SQL editor.
+```bash
+npx wrangler r2 object get zapiszprzepis-backups/recipes/2026-09-05.json --file backup.json
+```
+
+Nothing prunes old objects. At a few hundred kB a day that stays far inside R2's
+free tier for years, but it does grow without bound.
+
+---
+
 ## Progressive Web App (PWA)
 
 Installable on Android (Chrome/Edge), Windows, and macOS. Offline-capable with Web Share Target API.
