@@ -16,7 +16,7 @@ import { triggerRecipeExtraction } from './actions'
  * So we fall back to extracting the first http(s) URL from `text`, then `title`.
  *
  * Store share intent in DB, trigger extraction, redirect to /recipes.
- * POST /share is allowed through middleware without auth; triggerRecipeExtraction
+ * POST /share is allowed through the proxy without auth; triggerRecipeExtraction
  * does the real auth check and throws 'Not authenticated' if there's no session.
  *
  * @see https://web.dev/web-share-target/

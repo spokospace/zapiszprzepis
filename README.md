@@ -138,7 +138,7 @@ pnpm check:auth       # smoke test: ping Supabase auth/v1/health
 
 ## Auth architecture
 
-- **`src/middleware.ts`** — refreshes the session via `supabase.auth.getUser()` on every request; redirects unauthenticated users to `/login`.
+- **`src/proxy.ts`** — refreshes the session via `supabase.auth.getUser()` on every request; redirects unauthenticated users to `/login`.
 - **`src/lib/supabase/{server,client,proxy}.ts`** — three Supabase client helpers with `getAll`/`setAll` cookie adapter.
 - **`src/app/login/`** — Server Component + Server Action (`signInWithEmail` — magic-link OTP).
 - **`src/app/signup/`** — invite-code gated registration.
