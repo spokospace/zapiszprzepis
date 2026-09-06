@@ -15,7 +15,6 @@
     --bg-a: #fff1e3;
     --bg-b: #ffd3ad;
     --blob-a: color-mix(in srgb, var(--orange) 55%, transparent);
-    --blob-b: color-mix(in srgb, #ffb347 70%, transparent);
     --card: #ffffff;
     --card-border: rgba(11, 37, 63, 0.10);
     --chip-bg: rgba(255, 255, 255, 0.75);
@@ -32,7 +31,6 @@
       --bg-a: #12345a;
       --bg-b: #061529;
       --blob-a: color-mix(in srgb, var(--orange) 70%, transparent);
-      --blob-b: color-mix(in srgb, #ff9a3c 45%, transparent);
       --card: #15304f;
       --card-border: rgba(255, 255, 255, 0.14);
       --chip-bg: rgba(255, 255, 255, 0.08);
@@ -53,7 +51,6 @@
   }
   .blob { position: absolute; border-radius: 50%; filter: blur(60px); }
   .blob.a { width: 640px; height: 640px; right: -140px; top: -260px; background: var(--blob-a); }
-  .blob.b { width: 520px; height: 520px; left: -200px; bottom: -340px; background: var(--blob-b); }
   .ring {
     position: absolute; right: 120px; top: 50%; width: 560px; height: 560px; margin-top: -280px;
     border-radius: 50%; border: 2px solid color-mix(in srgb, var(--orange) 35%, transparent);
@@ -135,7 +132,6 @@
   <symbol id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></symbol>
 </svg>
 <div class="blob a"></div>
-<div class="blob b"></div>
 <div class="ring"></div>
 <div class="wrap">
   <div class="left">
