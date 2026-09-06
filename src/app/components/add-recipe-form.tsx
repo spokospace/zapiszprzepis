@@ -93,6 +93,10 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
   const [isSpeechSupported, setIsSpeechSupported] = useState(false)
 
   useEffect(() => {
+    // A mount-only capability probe, not a render cascade: `window` cannot be
+    // read during render without breaking SSR and desyncing hydration, and the
+    // empty dep array means this runs once and settles.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsSpeechSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
   }, [])
 
