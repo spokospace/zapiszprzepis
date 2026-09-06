@@ -4,6 +4,7 @@ import { slugify } from '@/lib/slugify'
 import { archiveImage, extractFirstImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
+import { fetchFacebookPost } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 
@@ -96,7 +97,26 @@ export async function runExtractRecipe(
         })
       : null
 
-    if (bloggerPost) {
+    // Facebook reels/videos: a logged-out scrape of facebook.com/reel/<id>
+    // returns og tags only — the caption that holds the recipe never reaches
+    // Firecrawl. The embedded-video plugin renders it without a session, so we
+    // go there directly. Falls through to the Firecrawl path when the plugin
+    // gives us nothing (private post, text-only post, FB blocking the IP).
+    const facebookPost =
+      sourceType === 'facebook_text'
+        ? await fetchFacebookPost(sharedUrl, { fetch }).catch((err) => {
+            console.warn('[extract-recipe] Facebook fetch failed, falling back to Firecrawl:', err)
+            return null
+          })
+        : null
+
+    if (facebookPost?.caption) {
+      console.log('[extract-recipe] using Facebook caption for', facebookPost.canonicalUrl)
+      // The caption is already plain text and opens with the post's headline,
+      // so it needs no title prefix the way the Blogger feed does.
+      markdown = facebookPost.caption
+      ogImage = facebookPost.image ?? undefined
+    } else if (bloggerPost) {
       console.log('[extract-recipe] using Blogger feed for', sharedUrl)
       html = bloggerPost.html
       ogImage = bloggerPost.image ?? undefined
@@ -126,6 +146,12 @@ export async function runExtractRecipe(
       embedHtml = scrapedEmbedHtml
     }
 
+    // What to persist in image_url when archiving fails. A blog's og:image is
+    // a stable URL, so keeping it beats a placeholder. A Facebook thumbnail is
+    // a signed CDN link that expires within days (`oe=` is a unix expiry), so
+    // it must never be stored as-is — the placeholder beats a link that rots.
+    const durableImageUrl = facebookPost?.image != null ? null : ogImage ?? null
+
     // S-04: capture a YouTube video id for the detail-page embed. Either the
     // shared URL is itself a YouTube link (source_type 'youtube'), or a blog
     // page embeds a player (found in the Blogger feed html / the embed scan).
@@ -134,8 +160,18 @@ export async function runExtractRecipe(
     // Fail fast on junk (Google Translate interstitial, empty main content)
     // before spending an OpenAI call — throwing lets Inngest retry, since the
     // junk is usually transient, and yields a clear error if it persists.
-    if (looksUnextractable(markdown) && looksUnextractable(html)) {
-      throw new Error('Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)')
+    // A caption read straight off the post is author text, not a render
+    // artefact, so it is judged on emptiness alone (see ContentQualityOptions).
+    // The output-side isExtractedRecipeUsable gate below still rejects
+    // anything that isn't actually a recipe.
+    const quality = { trusted: facebookPost?.caption != null }
+
+    if (looksUnextractable(markdown, quality) && looksUnextractable(html, quality)) {
+      throw new Error(
+        sourceType === 'facebook_text'
+          ? 'Ten post na Facebooku nie ma opisu z przepisem (może być prywatny, usunięty albo przepis jest tylko w filmie)'
+          : 'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)',
+      )
     }
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -237,7 +273,7 @@ Rules:
 
       if (ogImage != null) {
         const archivedUrl = await archiveImage(supabase, userId, refreshed.id, ogImage)
-        await supabase.from('recipes').update({ image_url: archivedUrl ?? ogImage }).eq('id', refreshed.id)
+        await supabase.from('recipes').update({ image_url: archivedUrl ?? durableImageUrl }).eq('id', refreshed.id)
       }
 
       await supabase
@@ -266,7 +302,7 @@ Rules:
           title: recipeJSON.title,
           slug,
           description: null,
-          image_url: ogImage ?? null,
+          image_url: durableImageUrl,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
           source_type: sourceType,
@@ -284,7 +320,7 @@ Rules:
       if (data) {
         recipe = data
         // Archive the external og:image into Supabase Storage. On failure
-        // we keep the external URL already stored in image_url.
+        // image_url keeps whatever durableImageUrl put there.
         if (ogImage != null) {
           const archivedUrl = await archiveImage(supabase, userId, data.id, ogImage)
           if (archivedUrl != null) {
@@ -331,8 +367,8 @@ Rules:
             const archivedUrl = await archiveImage(supabase, userId, existing.id, ogImage)
             if (archivedUrl != null) {
               gapFill.image_url = archivedUrl
-            } else if (existing.image_url == null) {
-              gapFill.image_url = ogImage
+            } else if (existing.image_url == null && durableImageUrl != null) {
+              gapFill.image_url = durableImageUrl
             }
           }
 

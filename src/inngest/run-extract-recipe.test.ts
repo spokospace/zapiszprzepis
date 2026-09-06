@@ -1,5 +1,18 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { runExtractRecipe } from '@/inngest/run-extract-recipe'
+import { archiveImage } from '@/lib/recipe-image-archive'
+
+// archiveImage uses the global fetch, not the injected one, so it must be
+// stubbed or a test with an og:image goes out to the network. Default: the
+// archive fails, which is the branch where image_url persistence matters.
+vi.mock('@/lib/recipe-image-archive', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/recipe-image-archive')>()),
+  archiveImage: vi.fn().mockResolvedValue(null),
+}))
+
+beforeEach(() => {
+  vi.mocked(archiveImage).mockResolvedValue(null)
+})
 
 const BASE_EVENT = {
   shareId: 1,
@@ -187,5 +200,152 @@ describe('runExtractRecipe — happy path', () => {
     expect(result).toMatchObject({ recipeId: 42, status: 'completed' })
     expect(mock.didInsert('recipes')).toBe(true)
     expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
+  })
+})
+
+// Facebook reels/videos: the caption comes from the embedded-video plugin, not
+// from Firecrawl (a logged-out scrape of the reel page returns og tags only).
+const FB_EVENT = {
+  ...BASE_EVENT,
+  sharedUrl: 'https://www.facebook.com/share/r/1B4yZLSPVp/',
+  sourceType: 'facebook_text' as const,
+}
+
+const FB_CAPTION = 'Placki z twarogu\nSKŁADNIKI:\n250g twarogu, 3 łyżki mąki\nPRZYGOTOWANIE:\npiec 20 minut w 200 stopniach'
+
+function makeFacebookFetchMock({ caption = FB_CAPTION }: { caption?: string | null } = {}) {
+  const base = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '' })
+  return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    if (url.includes('/plugins/video.php')) {
+      const body = caption == null
+        ? '<html><body>Film niedostępny</body></html>'
+        : `<html><body><div data-testid="post_message"><p>${caption.replace(/\n/g, '<br />')}</p></div></body></html>`
+      return Promise.resolve({ ok: true, status: 200, url, text: async () => body })
+    }
+    if (url.includes('facebook.com')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        url: 'https://www.facebook.com/reel/943809852095733/?rdid=abc',
+        text: async () =>
+          '<meta property="og:image" content="https://scontent.xx.fbcdn.net/thumb.jpg" />',
+      })
+    }
+    return base(url, init)
+  })
+}
+
+describe('runExtractRecipe — Facebook reel caption', () => {
+  it('feeds the plugin caption to the LLM and skips Firecrawl entirely', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 7, status: 'completed' })
+
+    const urls = fetch.mock.calls.map((c) => String(c[0]))
+    expect(urls.some((u) => u.includes('firecrawl.dev'))).toBe(false)
+
+    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com'))
+    expect(JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content).toContain('250g twarogu')
+  })
+
+  it('sends the plugin the canonical reel URL, not the share link', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const pluginUrl = fetch.mock.calls.map((c) => String(c[0])).find((u) => u.includes('/plugins/video.php'))
+    expect(pluginUrl).toContain(encodeURIComponent('https://www.facebook.com/reel/943809852095733/'))
+  })
+
+  it('fails with a Polish, source-specific message when the post has no caption', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeFacebookFetchMock({ caption: null })
+
+    await expect(
+      runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+    ).rejects.toThrow('nie ma opisu z przepisem')
+
+    // Firecrawl still got its chance before we gave up.
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(true)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+})
+
+describe('runExtractRecipe — Facebook short caption', () => {
+  it('accepts a caption shorter than the junk-gate minimum', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 8 }, error: null })
+    // 68 chars — a real but terse recipe, well under MIN_CONTENT_CHARS (150).
+    const fetch = makeFacebookFetchMock({
+      caption: 'Ciasto: 3 jajka, szklanka cukru, szklanka mąki. Piec 40 min w 180°C.',
+    })
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 8, status: 'completed' })
+  })
+})
+
+describe('runExtractRecipe — Facebook thumbnail persistence', () => {
+  const FB_THUMB = 'https://scontent.xx.fbcdn.net/thumb.jpg'
+
+  function insertedImageUrl(mock: ReturnType<typeof makeSupabaseMock>) {
+    const insert = mock.supabase.from.mock.results
+      .map((r) => r.value.insert.mock.calls[0]?.[0])
+      .find((args) => args?.source_url)
+    return insert?.image_url
+  }
+
+  it('stores the archived copy when archiving succeeds', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    vi.mocked(archiveImage).mockResolvedValue('https://supabase.example/storage/v1/object/public/recipe-images/u/7.jpg')
+
+    await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(archiveImage).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, FB_THUMB)
+    expect(mock.didUpdate('recipes', { image_url: 'https://supabase.example/storage/v1/object/public/recipe-images/u/7.jpg' })).toBe(true)
+  })
+
+  it('never persists the signed fbcdn URL when archiving fails', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    // Inserted with a null image (placeholder), not the expiring link…
+    expect(insertedImageUrl(mock)).toBeNull()
+    // …and no later update wrote it either.
+    expect(mock.didUpdate('recipes', { image_url: FB_THUMB })).toBe(false)
+  })
+
+  it('keeps a stable blog og:image as the fallback when archiving fails', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('firecrawl.dev')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            data: {
+              markdown: 'Przepis na naleśniki. '.repeat(30),
+              html: '<p>Przepis</p>'.repeat(20),
+              metadata: { ogImage: 'https://blog.example/cover.jpg' },
+            },
+          }),
+        })
+      }
+      return makeFetchMock()(url)
+    })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(insertedImageUrl(mock)).toBe('https://blog.example/cover.jpg')
   })
 })
