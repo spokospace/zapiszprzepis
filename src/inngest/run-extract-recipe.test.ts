@@ -189,3 +189,92 @@ describe('runExtractRecipe — happy path', () => {
     expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
   })
 })
+
+// Facebook reels/videos: the caption comes from the embedded-video plugin, not
+// from Firecrawl (a logged-out scrape of the reel page returns og tags only).
+const FB_EVENT = {
+  ...BASE_EVENT,
+  sharedUrl: 'https://www.facebook.com/share/r/1B4yZLSPVp/',
+  sourceType: 'facebook_text' as const,
+}
+
+const FB_CAPTION = 'Placki z twarogu\nSKŁADNIKI:\n250g twarogu, 3 łyżki mąki\nPRZYGOTOWANIE:\npiec 20 minut w 200 stopniach'
+
+function makeFacebookFetchMock({ caption = FB_CAPTION }: { caption?: string | null } = {}) {
+  const base = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '' })
+  return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    if (url.includes('/plugins/video.php')) {
+      const body = caption == null
+        ? '<html><body>Film niedostępny</body></html>'
+        : `<html><body><div data-testid="post_message"><p>${caption.replace(/\n/g, '<br />')}</p></div></body></html>`
+      return Promise.resolve({ ok: true, status: 200, url, text: async () => body })
+    }
+    if (url.includes('facebook.com')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        url: 'https://www.facebook.com/reel/943809852095733/?rdid=abc',
+        text: async () =>
+          '<meta property="og:image" content="https://scontent.xx.fbcdn.net/thumb.jpg" />',
+      })
+    }
+    return base(url, init)
+  })
+}
+
+describe('runExtractRecipe — Facebook reel caption', () => {
+  it('feeds the plugin caption to the LLM and skips Firecrawl entirely', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 7, status: 'completed' })
+
+    const urls = fetch.mock.calls.map((c) => String(c[0]))
+    expect(urls.some((u) => u.includes('firecrawl.dev'))).toBe(false)
+
+    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com'))
+    expect(JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content).toContain('250g twarogu')
+  })
+
+  it('sends the plugin the canonical reel URL, not the share link', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const pluginUrl = fetch.mock.calls.map((c) => String(c[0])).find((u) => u.includes('/plugins/video.php'))
+    expect(pluginUrl).toContain(encodeURIComponent('https://www.facebook.com/reel/943809852095733/'))
+  })
+
+  it('fails with a Polish, source-specific message when the post has no caption', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeFacebookFetchMock({ caption: null })
+
+    await expect(
+      runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+    ).rejects.toThrow('nie ma opisu z przepisem')
+
+    // Firecrawl still got its chance before we gave up.
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(true)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+})
+
+describe('runExtractRecipe — Facebook short caption', () => {
+  it('accepts a caption shorter than the junk-gate minimum', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 8 }, error: null })
+    // 68 chars — a real but terse recipe, well under MIN_CONTENT_CHARS (150).
+    const fetch = makeFacebookFetchMock({
+      caption: 'Ciasto: 3 jajka, szklanka cukru, szklanka mąki. Piec 40 min w 180°C.',
+    })
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 8, status: 'completed' })
+  })
+})

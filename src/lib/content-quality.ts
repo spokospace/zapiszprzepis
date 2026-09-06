@@ -16,13 +16,32 @@ const JUNK_SIGNATURES = [
 // ingredients + steps and clear this easily; the junk cases are all well under.
 const MIN_CONTENT_CHARS = 150
 
+// Content we read verbatim from the author — a Facebook caption from the video
+// plugin, a Blogger feed body — is not a rendered page, so neither heuristic
+// above applies to it: there is no interstitial to mistake it for, and a terse
+// but perfectly real recipe ("3 jajka, szklanka cukru, piec 40 min w 180°C")
+// sits far under MIN_CONTENT_CHARS. It still has to carry something.
+const TRUSTED_MIN_CONTENT_CHARS = 20
+
+export interface ContentQualityOptions {
+  /**
+   * The content came verbatim from the author (a post caption, a feed body)
+   * rather than from scraping a rendered page. Only emptiness disqualifies it.
+   */
+  trusted?: boolean
+}
+
 /**
  * True when the content (markdown or HTML) carries no usable recipe text:
  * too short, or short-ish and dominated by a known junk signature.
  */
-export function looksUnextractable(content: string): boolean {
+export function looksUnextractable(
+  content: string,
+  { trusted = false }: ContentQualityOptions = {},
+): boolean {
   const clean = (content ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-  if (clean.length < MIN_CONTENT_CHARS) return true
+  if (clean.length < (trusted ? TRUSTED_MIN_CONTENT_CHARS : MIN_CONTENT_CHARS)) return true
+  if (trusted) return false
   const lower = clean.toLowerCase()
   return clean.length < 500 && JUNK_SIGNATURES.some((sig) => lower.includes(sig))
 }

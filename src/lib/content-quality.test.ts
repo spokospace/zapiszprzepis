@@ -83,3 +83,28 @@ describe('isExtractedRecipeUsable — output-side gate (Risk 2)', () => {
     expect(isExtractedRecipeUsable({ ...ok, steps: undefined })).toBe(false)
   })
 })
+
+describe('looksUnextractable — trusted content', () => {
+  const TERSE_RECIPE = 'Ciasto: 3 jajka, szklanka cukru, piec 40 min w 180°C.'
+
+  it('rejects a terse recipe when it came from a scraped page', () => {
+    expect(looksUnextractable(TERSE_RECIPE)).toBe(true)
+  })
+
+  it('accepts the same terse recipe when it came verbatim from the author', () => {
+    expect(looksUnextractable(TERSE_RECIPE, { trusted: true })).toBe(false)
+  })
+
+  it('still rejects empty or near-empty trusted content', () => {
+    expect(looksUnextractable('', { trusted: true })).toBe(true)
+    expect(looksUnextractable('  \n  ', { trusted: true })).toBe(true)
+    expect(looksUnextractable('Pyszne!', { trusted: true })).toBe(true)
+  })
+
+  it('does not apply scraper junk signatures to trusted content', () => {
+    // An author may legitimately write these words; they only signal a broken
+    // render when they come from a scrape.
+    const caption = `Skip to main content — ${TERSE_RECIPE}`
+    expect(looksUnextractable(caption, { trusted: true })).toBe(false)
+  })
+})
