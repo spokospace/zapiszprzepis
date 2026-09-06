@@ -4,7 +4,7 @@ An *archive-first* PWA for saving recipes shared from social media. Every URL ar
 
 <img src="https://github.spoko.space/icon?name=nextjs&size=40" height="40" alt="Next.js" /> <img src="https://github.spoko.space/icon?name=typescript&size=40" height="40" alt="TypeScript" /> <img src="https://github.spoko.space/icon?name=tailwindcss&size=40" height="40" alt="Tailwind CSS" /> <img src="https://github.spoko.space/icon?name=supabase&size=40" height="40" alt="Supabase" /> <img src="https://github.spoko.space/icon?name=cloudflare&size=40" height="40" alt="Cloudflare" /> <img src="https://github.spoko.space/icon?name=bolt&size=40" height="40" alt="Inngest" />
 
-**Stack:** Next.js 15 (App Router) · TypeScript · Tailwind v4 · Supabase (auth + Postgres + storage) · Inngest (async jobs) · PWA (offline + Web Share Target) · Cloudflare Workers
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind v4 · Supabase (auth + Postgres + storage) · Inngest (async jobs) · PWA (offline + Web Share Target) · Cloudflare Workers
 
 ---
 
@@ -29,6 +29,23 @@ if you would like one to try the app.
   &nbsp;&nbsp;
   <img src="docs/screenshots/mobile-recipe-full.png" width="22%" alt="Recipe — full view">
 </p>
+
+---
+
+## Supported sources
+
+Every shared link goes through the same pipeline — fetch the source, extract the
+recipe with an LLM into a Polish-language copy, archive the image — and only the
+fetch step differs per source.
+
+| Source | How the recipe text is obtained | Limits |
+| --- | --- | --- |
+| **Facebook Reels and videos** — `facebook.com/reel/…`, `…/videos/…`, app share links `facebook.com/share/r/…`, `fb.watch` | The post caption, read from Facebook's embedded-video plugin (`plugins/video.php?show_text=true`) — no Facebook session needed, and the part hidden behind "See more" is included. The cover frame becomes the recipe image and is archived right away, because Facebook's image links expire within days. | A recipe that exists only in the video, with no caption, cannot be extracted. Text and photo posts are not supported — Facebook's post plugin refuses them. |
+| **YouTube** — watch links, `youtu.be`, Shorts | The video description, scraped with Firecrawl. | The player is embedded on the recipe page. |
+| **Blogs and recipe sites** — any other URL | Firecrawl main-content scrape, retried on the full page for classic blog templates; Blogspot posts come straight from the Blogger JSON feed. | An embedded YouTube player on the post is detected and embedded on the recipe page. |
+
+A share that cannot be turned into a recipe lands in the header bell with the
+reason, and can be retried from there.
 
 ---
 
