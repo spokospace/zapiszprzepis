@@ -146,6 +146,12 @@ export async function runExtractRecipe(
       embedHtml = scrapedEmbedHtml
     }
 
+    // What to persist in image_url when archiving fails. A blog's og:image is
+    // a stable URL, so keeping it beats a placeholder. A Facebook thumbnail is
+    // a signed CDN link that expires within days (`oe=` is a unix expiry), so
+    // it must never be stored as-is — the placeholder beats a link that rots.
+    const durableImageUrl = facebookPost?.image != null ? null : ogImage ?? null
+
     // S-04: capture a YouTube video id for the detail-page embed. Either the
     // shared URL is itself a YouTube link (source_type 'youtube'), or a blog
     // page embeds a player (found in the Blogger feed html / the embed scan).
@@ -267,7 +273,7 @@ Rules:
 
       if (ogImage != null) {
         const archivedUrl = await archiveImage(supabase, userId, refreshed.id, ogImage)
-        await supabase.from('recipes').update({ image_url: archivedUrl ?? ogImage }).eq('id', refreshed.id)
+        await supabase.from('recipes').update({ image_url: archivedUrl ?? durableImageUrl }).eq('id', refreshed.id)
       }
 
       await supabase
@@ -296,7 +302,7 @@ Rules:
           title: recipeJSON.title,
           slug,
           description: null,
-          image_url: ogImage ?? null,
+          image_url: durableImageUrl,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
           source_type: sourceType,
@@ -314,7 +320,7 @@ Rules:
       if (data) {
         recipe = data
         // Archive the external og:image into Supabase Storage. On failure
-        // we keep the external URL already stored in image_url.
+        // image_url keeps whatever durableImageUrl put there.
         if (ogImage != null) {
           const archivedUrl = await archiveImage(supabase, userId, data.id, ogImage)
           if (archivedUrl != null) {
@@ -361,8 +367,8 @@ Rules:
             const archivedUrl = await archiveImage(supabase, userId, existing.id, ogImage)
             if (archivedUrl != null) {
               gapFill.image_url = archivedUrl
-            } else if (existing.image_url == null) {
-              gapFill.image_url = ogImage
+            } else if (existing.image_url == null && durableImageUrl != null) {
+              gapFill.image_url = durableImageUrl
             }
           }
 

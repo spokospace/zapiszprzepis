@@ -1,5 +1,18 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { runExtractRecipe } from '@/inngest/run-extract-recipe'
+import { archiveImage } from '@/lib/recipe-image-archive'
+
+// archiveImage uses the global fetch, not the injected one, so it must be
+// stubbed or a test with an og:image goes out to the network. Default: the
+// archive fails, which is the branch where image_url persistence matters.
+vi.mock('@/lib/recipe-image-archive', async (importActual) => ({
+  ...(await importActual<typeof import('@/lib/recipe-image-archive')>()),
+  archiveImage: vi.fn().mockResolvedValue(null),
+}))
+
+beforeEach(() => {
+  vi.mocked(archiveImage).mockResolvedValue(null)
+})
 
 const BASE_EVENT = {
   shareId: 1,
@@ -276,5 +289,63 @@ describe('runExtractRecipe — Facebook short caption', () => {
     const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
 
     expect(result).toMatchObject({ recipeId: 8, status: 'completed' })
+  })
+})
+
+describe('runExtractRecipe — Facebook thumbnail persistence', () => {
+  const FB_THUMB = 'https://scontent.xx.fbcdn.net/thumb.jpg'
+
+  function insertedImageUrl(mock: ReturnType<typeof makeSupabaseMock>) {
+    const insert = mock.supabase.from.mock.results
+      .map((r) => r.value.insert.mock.calls[0]?.[0])
+      .find((args) => args?.source_url)
+    return insert?.image_url
+  }
+
+  it('stores the archived copy when archiving succeeds', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    vi.mocked(archiveImage).mockResolvedValue('https://supabase.example/storage/v1/object/public/recipe-images/u/7.jpg')
+
+    await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(archiveImage).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, FB_THUMB)
+    expect(mock.didUpdate('recipes', { image_url: 'https://supabase.example/storage/v1/object/public/recipe-images/u/7.jpg' })).toBe(true)
+  })
+
+  it('never persists the signed fbcdn URL when archiving fails', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    // Inserted with a null image (placeholder), not the expiring link…
+    expect(insertedImageUrl(mock)).toBeNull()
+    // …and no later update wrote it either.
+    expect(mock.didUpdate('recipes', { image_url: FB_THUMB })).toBe(false)
+  })
+
+  it('keeps a stable blog og:image as the fallback when archiving fails', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('firecrawl.dev')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            data: {
+              markdown: 'Przepis na naleśniki. '.repeat(30),
+              html: '<p>Przepis</p>'.repeat(20),
+              metadata: { ogImage: 'https://blog.example/cover.jpg' },
+            },
+          }),
+        })
+      }
+      return makeFetchMock()(url)
+    })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(insertedImageUrl(mock)).toBe('https://blog.example/cover.jpg')
   })
 })

@@ -136,7 +136,11 @@ export interface FacebookPost {
   canonicalUrl: string
   /** Full post caption, or null when the plugin page exposed none. */
   caption: string | null
-  /** og:image — the reel/video thumbnail. */
+  /**
+   * og:image — the reel/video cover frame. A signed fbcdn.net URL whose `oe=`
+   * param is a unix expiry a few days out: archive it right away and never
+   * persist the link itself.
+   */
   image: string | null
 }
 
