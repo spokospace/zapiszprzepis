@@ -20,7 +20,7 @@ export async function createSupabaseServerClient() {
               cookieStore.set(name, value, options),
             )
           } catch (e) {
-            // Server Component renders cannot write cookies — proxy.ts
+            // Server Component renders cannot write cookies — middleware.ts
             // refreshes the session, so this path is safe to swallow.
             // Anything else (e.g. a real failure in a Route Handler)
             // must surface, not silently lose the session.
