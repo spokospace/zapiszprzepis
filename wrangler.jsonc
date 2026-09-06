@@ -10,13 +10,14 @@
   "triggers": {
     "crons": ["30 3 * * *", "0 4 * * *"]
   },
-  // Create with: wrangler r2 bucket create zapiszprzepis-backups
-  "r2_buckets": [
-    {
-      "binding": "BACKUPS",
-      "bucket_name": "zapiszprzepis-backups"
-    }
-  ],
+  // R2 backup binding — deliberately absent until R2 is activated on the
+  // Cloudflare account that hosts this Worker. wrangler refuses to deploy a
+  // Worker whose binding points at a bucket that does not exist, and that
+  // blocked every deploy after #121. Without the binding the 03:30 cron in
+  // src/lib/worker-cron.ts logs "backup: skipped" and exits. To turn backups
+  // on: activate R2, `wrangler r2 bucket create zapiszprzepis-backups`, set
+  // the SUPABASE_SERVICE_ROLE_KEY secret, then restore this block:
+  //   "r2_buckets": [{ "binding": "BACKUPS", "bucket_name": "zapiszprzepis-backups" }],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
