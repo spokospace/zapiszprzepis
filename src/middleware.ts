@@ -1,7 +1,16 @@
+// Deliberately the deprecated `middleware` convention, not Next 16's `proxy`.
+// Next compiles `proxy.ts` to the Node.js runtime only (the compiler rejects
+// an edge opt-in), and @opennextjs/cloudflare then bundles that Node
+// middleware into the Worker: ~356 KB of edge middleware becomes ~4.6 MB,
+// past the free-tier 3 MiB script limit. Every Workers Build after the rename
+// in #119 failed at upload while production stayed on #118. Stay on
+// `middleware.ts` until the adapter ships a lean Node-middleware path:
+//   https://github.com/opennextjs/opennextjs-cloudflare/issues/1373
+//   https://github.com/opennextjs/opennextjs-cloudflare/issues/1213
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 
-export async function proxy(request: NextRequest): Promise<NextResponse> {
+export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { response, user } = await updateSession(request)
   const { pathname } = request.nextUrl
 
