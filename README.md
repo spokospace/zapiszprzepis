@@ -118,10 +118,6 @@ npx wrangler r2 bucket create zapiszprzepis-backups
 npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY   # paste the key when prompted
 ```
 
-The `BACKUPS` R2 binding is commented out in `wrangler.jsonc` until the bucket
-exists — wrangler refuses to deploy a Worker bound to a missing bucket. After
-creating it, restore the `r2_buckets` block noted there.
-
 The dump needs the service role because RLS would otherwise hand it an empty
 array. It covers table rows only — archived images live in Supabase Storage and
 are **not** copied.
