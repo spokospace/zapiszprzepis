@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/banner/banner-dark.webp">
+    <img src="docs/banner/banner-light.webp" width="100%" alt="ZapiszPrzepis — share a link from social media, keep the recipe forever">
+  </picture>
+</p>
+
 # ZapiszPrzepis
 
 An *archive-first* PWA for saving recipes shared from social media. Every URL arrives via the system Share gesture and is transformed into a permanent, Polish-language copy of the recipe — independent of the original source.

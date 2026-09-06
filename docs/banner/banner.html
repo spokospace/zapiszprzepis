@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>ZapiszPrzepis banner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #fb6701;
+    --navy: #0b253f;
+    --bg: #fbfbf9;
+    --bg-2: #ffffff;
+    --fg: #0b253f;
+    --muted: #4b5a6b;
+    --card: #ffffff;
+    --card-border: rgba(11, 37, 63, 0.10);
+    --chip-bg: #ffffff;
+    --chip-border: rgba(11, 37, 63, 0.12);
+    --line: rgba(11, 37, 63, 0.14);
+    --glow: color-mix(in srgb, var(--orange) 18%, transparent);
+    --dot: rgba(11, 37, 63, 0.08);
+    --tag-muted-bg: rgba(11, 37, 63, 0.08);
+    --shadow: 0 24px 60px -24px rgba(11, 37, 63, 0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1a2b;
+      --bg-2: #0f2238;
+      --fg: #f4f6f8;
+      --muted: #a9b6c4;
+      --card: #132a44;
+      --card-border: rgba(255, 255, 255, 0.10);
+      --chip-bg: rgba(255, 255, 255, 0.05);
+      --chip-border: rgba(255, 255, 255, 0.14);
+      --line: rgba(255, 255, 255, 0.18);
+      --glow: color-mix(in srgb, var(--orange) 28%, transparent);
+      --dot: rgba(255, 255, 255, 0.06);
+      --tag-muted-bg: rgba(255, 255, 255, 0.08);
+      --shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.7);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    width: 1280px; height: 400px; overflow: hidden;
+    font-family: "Geist", "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--fg);
+    background:
+      radial-gradient(720px 420px at 88% 40%, var(--glow), transparent 70%),
+      radial-gradient(560px 360px at 8% 110%, var(--glow), transparent 70%),
+      linear-gradient(180deg, var(--bg-2), var(--bg));
+    position: relative;
+  }
+  body::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(var(--dot) 1.2px, transparent 1.3px);
+    background-size: 22px 22px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 75%, transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0%, #000 30%, #000 75%, transparent 100%);
+  }
+  .wrap {
+    position: relative; height: 100%;
+    display: grid; grid-template-columns: 1fr 560px; align-items: center;
+    padding: 0 72px 0 64px; gap: 24px;
+  }
+  .left { display: flex; flex-direction: column; gap: 20px; }
+  .logo { width: 400px; height: auto; display: block; margin-left: -8px; }
+  .tagline {
+    margin: 0; font-size: 26px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em;
+    max-width: 520px;
+  }
+  .tagline em { font-style: normal; color: var(--orange); }
+  .sub { margin: -6px 0 0; font-size: 16px; color: var(--muted); max-width: 520px; line-height: 1.45; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    background: var(--chip-bg); border: 1px solid var(--chip-border); color: var(--fg);
+  }
+  .chip svg { width: 14px; height: 14px; }
+
+  /* right: link -> recipe flow */
+  .flow { position: relative; display: grid; grid-template-columns: 200px 64px 1fr; align-items: center; }
+  .share {
+    display: flex; flex-direction: column; gap: 10px;
+    padding: 14px 16px; border-radius: 16px;
+    background: var(--card); border: 1px solid var(--card-border); box-shadow: var(--shadow);
+  }
+  .share .hd { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); font-weight: 500; }
+  .share .hd svg { width: 15px; height: 15px; }
+  .share .url {
+    font-family: "Geist Mono", ui-monospace, Consolas, monospace; font-size: 12.5px; line-height: 1.35;
+    padding: 9px 10px; border-radius: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: color-mix(in srgb, var(--orange) 8%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--orange) 45%, transparent); color: var(--fg);
+  }
+  .arrow { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--orange); }
+  .arrow svg { width: 40px; height: 40px; }
+  .arrow span { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .card {
+    overflow: hidden; border-radius: 20px;
+    background: var(--card); border: 1px solid var(--card-border); box-shadow: var(--shadow);
+  }
+  .card .img {
+    height: 118px;
+    background:
+      radial-gradient(90px 60px at 30% 60%, rgba(255, 232, 190, 0.95), transparent 70%),
+      radial-gradient(120px 70px at 75% 30%, rgba(255, 190, 120, 0.9), transparent 70%),
+      linear-gradient(135deg, #f7b267, #f4845f 55%, #c9573f);
+    position: relative;
+  }
+  .card .img::after {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(120deg, rgba(255,255,255,0.10) 0 6px, transparent 6px 18px);
+  }
+  .card .img .badge {
+    position: absolute; left: 12px; top: 12px; padding: 4px 9px; border-radius: 999px;
+    background: rgba(255,255,255,0.92); color: var(--navy); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .card .img .badge svg { width: 12px; height: 12px; }
+  .card .body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 9px; }
+  .card h3 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  .meta { display: flex; gap: 6px; }
+  .tag { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
+  .tag.gray { background: var(--tag-muted-bg); color: var(--muted); }
+  .lines { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+  .lines i { display: block; height: 7px; border-radius: 4px; background: var(--line); }
+  .lines i:nth-child(1) { width: 78%; } .lines i:nth-child(2) { width: 64%; } .lines i:nth-child(3) { width: 70%; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></symbol>
+</svg>
+<div class="wrap">
+  <div class="left">
+    <img class="logo" src="../../public/logo.svg" alt="ZapiszPrzepis">
+    <p class="tagline">Udostępnij link z social mediów.<br>Zachowaj przepis <em>na zawsze</em>.</p>
+    <p class="sub">Archive-first PWA: każdy przepis staje się trwałą, polskojęzyczną kopią, niezależną od oryginalnego źródła.</p>
+    <div class="chips">
+      <span class="chip"><svg><use href="#icon-share"/></svg>Web Share Target</span>
+      <span class="chip">Facebook Reels</span>
+      <span class="chip">YouTube</span>
+      <span class="chip">Blogi i strony z przepisami</span>
+      <span class="chip">Offline</span>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="share">
+      <div class="hd"><svg><use href="#icon-share"/></svg>Udostępnij do…</div>
+      <div class="url">facebook.com/reel/73910284…</div>
+    </div>
+    <div class="arrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></svg>
+      <span>LLM</span>
+    </div>
+    <div class="card">
+      <div class="img">
+        <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Zarchiwizowano</div>
+      </div>
+      <div class="body">
+        <h3>Bułki poznańskie jak dawniej</h3>
+        <div class="meta"><span class="tag">Pieczywo</span><span class="tag gray">8 składników</span><span class="tag gray">45 min</span></div>
+        <div class="lines"><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
