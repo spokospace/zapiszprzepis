@@ -4,7 +4,7 @@ import { slugify } from '@/lib/slugify'
 import { archiveImage, extractFirstImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
-import { fetchFacebookPost } from '@/lib/facebook'
+import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 
@@ -148,6 +148,12 @@ export async function runExtractRecipe(
       const text = bloggerPost.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
       markdown = bloggerPost.title ? `${bloggerPost.title}\n\n${text}` : text
       trustedContent = true
+    } else if (isFacebookUrl(sharedUrl)) {
+      // Nothing readable left, and Firecrawl is not a fallback here: its API
+      // refuses facebook.com outright with a 403, so calling it would only
+      // replace the real reason with a bare "Forbidden" in
+      // recipe_shares.error_message — which is what the user sees. Leave the
+      // content empty and let the gate below word the failure.
     } else {
       // For blog sources also run a dedicated full-page scrape in parallel to
       // find an embedded YouTube player — the recipe-text scrape strips
@@ -195,8 +201,8 @@ export async function runExtractRecipe(
 
     if (looksUnextractable(markdown, quality) && looksUnextractable(html, quality)) {
       throw new Error(
-        sourceType === 'facebook_text'
-          ? 'Ten post na Facebooku nie ma opisu z przepisem (może być prywatny, usunięty albo przepis jest tylko w filmie)'
+        isFacebookUrl(sharedUrl)
+          ? 'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)'
           : 'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)',
       )
     }

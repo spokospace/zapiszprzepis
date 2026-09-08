@@ -343,9 +343,19 @@ describe('runExtractRecipe — Facebook reel caption', () => {
       runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
     ).rejects.toThrow('nie ma opisu z przepisem')
 
-    // Firecrawl still got its chance before we gave up.
-    expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(true)
+    // Firecrawl is not tried on facebook.com — its API 403s on the domain, so
+    // the call would only mask the real reason with "Forbidden".
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(false)
     expect(mock.didInsert('recipes')).toBe(false)
+
+    // The share carries the reason a reader can act on, not Firecrawl's 403.
+    expect(
+      mock.didUpdate('recipe_shares', {
+        status: 'failed',
+        error_message:
+          'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)',
+      }),
+    ).toBe(true)
   })
 })
 
