@@ -8,6 +8,20 @@ import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 
+// Failure copy. These strings are stored verbatim in
+// recipe_shares.error_message and rendered raw in the notification bell, so
+// the Facebook ones are Polish and say what the reader can do next. Which one
+// applies turns on what we actually observed — never blame the author for a
+// post nobody could read.
+const FB_EMBED_REFUSED =
+  'Facebook nie udostępnia treści tego posta (autor wyłączył osadzanie albo post jest prywatny lub w grupie) — skopiuj przepis ręcznie albo podaj link do bloga'
+const FB_UNREACHABLE =
+  'Nie udało się pobrać tego posta z Facebooka — spróbuj ponownie za chwilę'
+const FB_NO_CAPTION =
+  'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)'
+const UNREADABLE_PAGE =
+  'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)'
+
 export interface ExtractRecipeEvent {
   shareId: number
   sharedUrl: string
@@ -200,10 +214,16 @@ export async function runExtractRecipe(
     const quality = { trusted: trustedContent }
 
     if (looksUnextractable(markdown, quality) && looksUnextractable(html, quality)) {
+      // Most specific first: what the embed plugin answered outranks the bare
+      // fact that this is a Facebook URL.
       throw new Error(
-        isFacebookUrl(sharedUrl)
-          ? 'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)'
-          : 'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)',
+        facebookPost?.embedStatus === 'refused'
+          ? FB_EMBED_REFUSED
+          : facebookPost?.embedStatus === 'unreachable'
+            ? FB_UNREACHABLE
+            : isFacebookUrl(sharedUrl)
+              ? FB_NO_CAPTION
+              : UNREADABLE_PAGE,
       )
     }
 

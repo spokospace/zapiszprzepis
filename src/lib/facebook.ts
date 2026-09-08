@@ -180,6 +180,16 @@ export function extractPluginCaption(html: string): string | null {
   return text.length > 0 ? text : null
 }
 
+/**
+ * True when the plugin page carries no player — it rendered its error card
+ * instead. The card's copy is localised and its class names are obfuscated,
+ * so the player markup is the signal; two markers, since either could be
+ * renamed. See `FacebookPost.embedStatus` for what that means.
+ */
+function pluginHasNoPlayer(html: string): boolean {
+  return !/<video\b/i.test(html) && !html.includes('videoID')
+}
+
 /** First og:<property> value in a page's head, or null. */
 export function extractOgTag(html: string, property: string): string | null {
   const re = new RegExp(
@@ -190,11 +200,23 @@ export function extractOgTag(html: string, property: string): string | null {
   return match ? decodeEntities(match[1]) : null
 }
 
+export type FacebookEmbedStatus = 'rendered' | 'refused' | 'unreachable'
+
 export interface FacebookPost {
   /** Canonical facebook.com URL the share link resolved to. */
   canonicalUrl: string
   /** Full post caption, or null when the plugin page exposed none. */
   caption: string | null
+  /**
+   * How the embed plugin answered, which is what a null `caption` means:
+   *   - `rendered`  — we saw the post; no caption means it carries no text.
+   *   - `refused`   — the plugin showed its error card (embedding disabled by
+   *                   the author, or a group / private / removed post). We
+   *                   never saw the post, so a null caption says nothing.
+   *   - `unreachable` — the plugin page did not come back (timeout, 5xx). Also
+   *                   no verdict, but transient rather than a policy.
+   */
+  embedStatus: FacebookEmbedStatus
   /**
    * Blog link the post points at instead of carrying the recipe, or null.
    * Read from the caption when there is one and from og:description otherwise
@@ -246,9 +268,15 @@ async function fetchPermalink(
   }
 }
 
+const UNREACHABLE = { caption: null, embedStatus: 'unreachable' as const }
+
 /** The embedded-video plugin page — the only logged-out surface that renders
- *  the caption. Never throws. */
-async function fetchCaption(url: string, fetch: typeof globalThis.fetch): Promise<string | null> {
+ *  the caption. Never throws; a page we could not load is `unreachable`, which
+ *  the caller must not read as "the post has no caption". */
+async function fetchCaption(
+  url: string,
+  fetch: typeof globalThis.fetch,
+): Promise<{ caption: string | null; embedStatus: FacebookEmbedStatus }> {
   try {
     const response = await fetch(buildFacebookPluginUrl(url), {
       headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
@@ -256,12 +284,19 @@ async function fetchCaption(url: string, fetch: typeof globalThis.fetch): Promis
     })
     if (!response.ok) {
       console.warn('[facebook] plugin page returned', response.status)
-      return null
+      return UNREACHABLE
     }
-    return extractPluginCaption(await response.text())
+    const html = await response.text()
+    const caption = extractPluginCaption(html)
+    // A caption settles it: the post rendered, whatever else the markup looks
+    // like. Only a page that gave us nothing can be the error card.
+    return {
+      caption,
+      embedStatus: caption == null && pluginHasNoPlayer(html) ? 'refused' : 'rendered',
+    }
   } catch (error) {
     console.warn('[facebook] plugin fetch failed:', error)
-    return null
+    return UNREACHABLE
   }
 }
 
@@ -279,21 +314,27 @@ export async function fetchFacebookPost(
 
   const permalink = fetchPermalink(url, fetch)
 
-  const caption = isFacebookShareUrl(url)
+  const pluginPage = isFacebookShareUrl(url)
     ? // A share link only reveals its target through the redirect, so the
       // plugin fetch has to wait for the permalink.
       permalink.then(({ canonicalUrl }) => fetchCaption(canonicalUrl, fetch))
     : // Already a permalink — both requests go out together.
       fetchCaption(url, fetch)
 
-  const [{ canonicalUrl, image, description }, captionText] = await Promise.all([permalink, caption])
+  const [{ canonicalUrl, image, description }, { caption, embedStatus }] = await Promise.all([
+    permalink,
+    pluginPage,
+  ])
 
-  if (captionText == null && image == null) return null
+  // Anything but `rendered` is a result too — it is what lets the caller word
+  // the failure without blaming the author for a post nobody could read.
+  if (caption == null && image == null && embedStatus === 'rendered') return null
 
   return {
     canonicalUrl,
-    caption: captionText,
-    recipeLink: findRecipeLinkInText(captionText ?? description ?? ''),
+    caption,
+    embedStatus,
+    recipeLink: findRecipeLinkInText(caption ?? description ?? ''),
     image,
   }
 }
