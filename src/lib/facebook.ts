@@ -15,6 +15,15 @@
 //
 // Two plain fetches replace the Firecrawl call for this source: one to resolve
 // the link and read og:image, one for the plugin page.
+//
+// The plugin covers Page videos and reels only. A post inside a group — even a
+// public one — renders as "niedostępny" there, so its only logged-out caption
+// text is the permalink's og:description, which Facebook truncates. That is
+// too lossy to feed an extractor, but it is enough to spot the blog link such
+// posts almost always carry (see `findRecipeLinkInText`); the caller follows
+// the link and reads the recipe from the blog instead.
+
+import { isYoutubeHost } from '@/lib/youtube'
 
 const CRAWLER_UA = 'facebookexternalhit/1.1'
 const BROWSER_UA =
@@ -50,6 +59,56 @@ export function isFacebookShareUrl(url: string): boolean {
   } catch {
     return false
   }
+}
+
+// Hosts that are never the recipe itself: Facebook's own links (the post, a
+// profile, an l.php wrapper) and platforms that need their own pipeline.
+// Facebook's own list is reused from above and YouTube's is matched through
+// youtube.ts, so neither table can drift out of sync with a second copy.
+const NON_RECIPE_LINK_HOSTS = [...FACEBOOK_HOSTS, 'fbcdn.net', 'instagram.com', 'tiktok.com']
+
+/** True when a link's host could plausibly host the recipe itself. */
+function isRecipeLinkHost(host: string): boolean {
+  if (isYoutubeHost(host)) return false
+  // Subdomains count: l.facebook.com wraps outbound links, scontent.*.fbcdn.net
+  // serves the media.
+  return !NON_RECIPE_LINK_HOSTS.some((bad) => host === bad || host.endsWith(`.${bad}`))
+}
+
+/**
+ * A caption long enough to be the recipe rather than a pointer to one. Group
+ * posts are typically a one-line teaser plus a blog link; a caption that
+ * actually carries ingredients and steps runs well past this. The bound also
+ * sits above Facebook's og:description truncation (~300 chars), so a
+ * truncated recipe caption is never mistaken for a teaser.
+ */
+const POINTER_PROSE_CHARS = 300
+
+const LINK_RE = /https?:\/\/[^\s<>"')\]]+/gi
+
+/**
+ * The recipe is often not in the post at all — an author posts a photo and a
+ * one-liner, and links their blog. Returns that link when the text reads as a
+ * pointer (an outbound link plus little prose), null when the text is long
+ * enough to hold the recipe itself or carries no usable link.
+ */
+export function findRecipeLinkInText(text: string): string | null {
+  const links = text.match(LINK_RE) ?? []
+  const prose = text.replace(LINK_RE, ' ').replace(/\s+/g, ' ').trim()
+  if (prose.length > POINTER_PROSE_CHARS) return null
+
+  for (const raw of links) {
+    // Captions close a link with sentence punctuation the URL doesn't own.
+    const url = raw.replace(/[.,;:!?)\]]+$/, '')
+    try {
+      if (isRecipeLinkHost(new URL(url).hostname.toLowerCase())) {
+        return url
+      }
+    } catch {
+      // Not a URL once the trailing punctuation is gone — skip it.
+    }
+  }
+  return null
 }
 
 export function buildFacebookPluginUrl(href: string): string {
@@ -137,6 +196,13 @@ export interface FacebookPost {
   /** Full post caption, or null when the plugin page exposed none. */
   caption: string | null
   /**
+   * Blog link the post points at instead of carrying the recipe, or null.
+   * Read from the caption when there is one and from og:description otherwise
+   * — the plugin refuses group posts, and og:description is the only caption
+   * text left for those.
+   */
+  recipeLink: string | null
+  /**
    * og:image — the reel/video cover frame. A signed fbcdn.net URL whose `oe=`
    * param is a unix expiry a few days out: archive it right away and never
    * persist the link itself.
@@ -156,23 +222,27 @@ export interface FetchFacebookPostDeps {
 async function fetchPermalink(
   url: string,
   fetch: typeof globalThis.fetch,
-): Promise<{ canonicalUrl: string; image: string | null }> {
+): Promise<{ canonicalUrl: string; image: string | null; description: string | null }> {
   try {
     const response = await fetch(url, {
       redirect: 'follow',
       headers: { 'User-Agent': CRAWLER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
       signal: AbortSignal.timeout(15_000),
     })
-    if (!response.ok) return { canonicalUrl: url, image: null }
+    if (!response.ok) return { canonicalUrl: url, image: null, description: null }
+    const html = await response.text()
     return {
       // Drop the ?rdid=/&share_url= tracking params the redirect appends —
       // the plugin wants a bare permalink.
       canonicalUrl: response.url.split('?')[0] || url,
-      image: extractOgTag(await response.text(), 'image'),
+      image: extractOgTag(html, 'image'),
+      // Facebook truncates this, so it is no substitute for the plugin
+      // caption as recipe text — but it is enough to spot a blog link.
+      description: extractOgTag(html, 'description'),
     }
   } catch (error) {
     console.warn('[facebook] canonical resolve failed:', error)
-    return { canonicalUrl: url, image: null }
+    return { canonicalUrl: url, image: null, description: null }
   }
 }
 
@@ -216,9 +286,14 @@ export async function fetchFacebookPost(
     : // Already a permalink — both requests go out together.
       fetchCaption(url, fetch)
 
-  const [{ canonicalUrl, image }, captionText] = await Promise.all([permalink, caption])
+  const [{ canonicalUrl, image, description }, captionText] = await Promise.all([permalink, caption])
 
   if (captionText == null && image == null) return null
 
-  return { canonicalUrl, caption: captionText, image }
+  return {
+    canonicalUrl,
+    caption: captionText,
+    recipeLink: findRecipeLinkInText(captionText ?? description ?? ''),
+    image,
+  }
 }
