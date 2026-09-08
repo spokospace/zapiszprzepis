@@ -211,24 +211,37 @@ const FB_EVENT = {
   sourceType: 'facebook_text' as const,
 }
 
+// The two shapes a caption-less plugin page comes in: the error card it shows
+// when it will not embed the post at all, and a player over a post whose
+// author simply wrote nothing.
+const PLUGIN_REFUSED_HTML =
+  '<html><body><div class="_3i0p">Nie można osadzić tego filmu</div></body></html>'
+const PLUGIN_NO_TEXT_HTML = '<html><body><video src="reel.mp4"></video></body></html>'
+
 const FB_CAPTION = 'Placki z twarogu\nSKŁADNIKI:\n250g twarogu, 3 łyżki mąki\nPRZYGOTOWANIE:\npiec 20 minut w 200 stopniach'
 
 function makeFacebookFetchMock({
   caption = FB_CAPTION,
   ogDescription = '',
+  embedRefused = false,
   ...base
 }: {
   caption?: string | null
   ogDescription?: string
+  /** With no caption: did the plugin show its error card, or a player over a
+   *  post that simply carries no text? Defaults to the latter. */
+  embedRefused?: boolean
   firecrawlMarkdown?: string
   firecrawlHtml?: string
 } = {}) {
   const fallback = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '', ...base })
   return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     if (url.includes('/plugins/video.php')) {
-      const body = caption == null
-        ? '<html><body>Film niedostępny</body></html>'
-        : `<html><body><div data-testid="post_message"><p>${caption.replace(/\n/g, '<br />')}</p></div></body></html>`
+      const body = caption != null
+        ? `<html><body><div data-testid="post_message"><p>${caption.replace(/\n/g, '<br />')}</p></div></body></html>`
+        : embedRefused
+          ? PLUGIN_REFUSED_HTML
+          : PLUGIN_NO_TEXT_HTML
       return Promise.resolve({ ok: true, status: 200, url, text: async () => body })
     }
     if (url.includes('facebook.com')) {
@@ -335,7 +348,7 @@ describe('runExtractRecipe — Facebook reel caption', () => {
     expect(pluginUrl).toContain(encodeURIComponent('https://www.facebook.com/reel/943809852095733/'))
   })
 
-  it('fails with a Polish, source-specific message when the post has no caption', async () => {
+  it('blames the post, not Facebook, when it embedded fine and carries no text', async () => {
     const mock = makeSupabaseMock()
     const fetch = makeFacebookFetchMock({ caption: null })
 
@@ -356,6 +369,33 @@ describe('runExtractRecipe — Facebook reel caption', () => {
           'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)',
       }),
     ).toBe(true)
+  })
+
+  it('blames Facebook when the plugin refused to show the post at all', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeFacebookFetchMock({ caption: null, embedRefused: true })
+
+    await expect(
+      runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+    ).rejects.toThrow('Facebook nie udostępnia treści tego posta')
+
+    // Never claims the post has no description — we never got to see it.
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(false)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+
+  it('asks the user to retry when the plugin page never came back', async () => {
+    const mock = makeSupabaseMock()
+    const base = makeFacebookFetchMock({ caption: null })
+    const fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) =>
+      String(url).includes('/plugins/video.php')
+        ? Promise.resolve({ ok: false, status: 503, url, text: async () => '' })
+        : base(url, init),
+    )
+
+    await expect(
+      runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+    ).rejects.toThrow('Nie udało się pobrać tego posta z Facebooka')
   })
 })
 

@@ -12,7 +12,9 @@ import {
 // Mirrors the real plugins/video.php markup: the caption lives in a
 // data-testid="post_message" div, emoji are <span>-wrapped images, lines are
 // <br />-separated, and the tail past "See more" sits in a text_exposed_show
-// sibling with a text_exposed_hide "..." placeholder in front of it.
+// sibling with a text_exposed_hide "..." placeholder in front of it. It
+// deliberately carries no player markup, so it also stands for "caption wins
+// over the refusal check" — do not add a <video> tag to it.
 const PLUGIN_HTML = `<html><head>
 <meta property="og:image" content="https://scontent.xx.fbcdn.net/v/t15/793139775_455.jpg?oh=00_AQ&amp;oe=6AA2F75A" />
 <meta property="og:url" content="https://www.facebook.com/100043061508341/videos/zrobisz-pyszny-obiad-czy-kolacj%C4%99-w-28-i-p%C3%B3%C5%82-minuty/943809852095733/" />
@@ -27,6 +29,14 @@ pieczemy w 200 stopniach przez 20 minut,<br />
 #obiad #przepis</span></p></div>
 </div><div class="_39k5">Komentarze</div></div>
 </body></html>`
+
+// What the plugin returns instead of a player when it will not show a post:
+// its error card. Only the missing player matters to pluginHasNoPlayer — the
+// obfuscated class names and the localised copy are not part of the signal.
+const REFUSED_HTML = '<html><body><div class="_3i0p">Nie można osadzić tego filmu</div></body></html>'
+
+// A post the plugin did embed, over which the author simply wrote nothing.
+const PLAYER_HTML = '<html><body><video src="reel.mp4"></video></body></html>'
 
 describe('isFacebookUrl', () => {
   it('accepts facebook hosts and their subdomains', () => {
@@ -206,19 +216,60 @@ describe('fetchFacebookPost', () => {
   })
 
   it('returns a caption-less result when the plugin page has no post text', async () => {
-    const fetch = fetchStub('<html><body>Film niedostępny</body></html>')
+    const fetch = fetchStub(PLAYER_HTML)
     const post = await fetchFacebookPost('https://www.facebook.com/reel/1/', { fetch })
 
     expect(post?.caption).toBeNull()
+    expect(post?.embedStatus).toBe('rendered')
     expect(post?.image).toContain('fbcdn.net')
   })
 
-  it('survives a network failure instead of throwing', async () => {
+  it('reads a player the plugin identified only by videoID', async () => {
+    const fetch = fetchStub('<html><script>{"videoID":"123"}</script></html>')
+    const post = await fetchFacebookPost('https://www.facebook.com/reel/1/', { fetch })
+
+    expect(post?.embedStatus).toBe('rendered')
+  })
+
+  it('reports a refusal when the plugin showed its error card instead', async () => {
+    const fetch = fetchStub(REFUSED_HTML)
+    const post = await fetchFacebookPost('https://www.facebook.com/reel/1/', { fetch })
+
+    expect(post?.caption).toBeNull()
+    expect(post?.embedStatus).toBe('refused')
+  })
+
+  it('reports a plugin page that never came back as unreachable, not a refusal', async () => {
+    const fetch = vi.fn(async (input: string) => {
+      if (input.includes('/plugins/video.php')) {
+        return { ok: false, status: 503, url: input, text: async () => '' } as Response
+      }
+      return { ok: true, status: 200, url: input, text: async () => PLUGIN_HTML } as Response
+    }) as unknown as typeof globalThis.fetch
+    const post = await fetchFacebookPost('https://www.facebook.com/reel/1/', { fetch })
+
+    expect(post?.caption).toBeNull()
+    expect(post?.embedStatus).toBe('unreachable')
+  })
+
+  it('never calls a post with a caption a refusal', async () => {
+    // The fixture carries no player markup, but a caption settles it.
+    const post = await fetchFacebookPost('https://www.facebook.com/reel/1/', { fetch: fetchStub(PLUGIN_HTML) })
+
+    expect(post?.caption).toContain('250g twarogu')
+    expect(post?.embedStatus).toBe('rendered')
+  })
+
+  it('survives a network failure instead of throwing, and says it never looked', async () => {
     const fetch = vi.fn(async () => {
       throw new Error('network down')
     }) as unknown as typeof globalThis.fetch
 
-    await expect(fetchFacebookPost('https://www.facebook.com/reel/1/', { fetch })).resolves.toBeNull()
+    const post = await fetchFacebookPost('https://www.facebook.com/reel/1/', { fetch })
+
+    // Not null: "we could not reach Facebook" is the one thing the caller has
+    // to know here, so it must not read as "the post has no caption".
+    expect(post).toMatchObject({ caption: null, image: null, embedStatus: 'unreachable' })
   })
 
   it('ignores non-Facebook URLs', async () => {
