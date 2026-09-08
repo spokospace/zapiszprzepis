@@ -45,6 +45,11 @@ next-env.d.ts
 
 # claude code — per-user permissions / local overrides
 .claude/settings.local.json
+.claude/launch.json
+.claude/worktrees/
+
+# playwright mcp session data
+.playwright-mcp/
 
 # cloudflare workers / opennext
 .open-next/
