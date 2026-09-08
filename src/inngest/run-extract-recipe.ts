@@ -4,7 +4,7 @@ import { slugify } from '@/lib/slugify'
 import { archiveImage, extractFirstImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
-import { fetchFacebookPost } from '@/lib/facebook'
+import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 
@@ -71,11 +71,11 @@ export async function runExtractRecipe(
   // Recipe text comes from the main-content scrape, retrying with
   // fullContent when a blog template trips Firecrawl's main-content
   // heuristic and leaves just a "Skip to main content" link.
-  async function scrapeWithRetry() {
-    let s = await firecrawlScrape(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent: false }))
+  async function scrapeWithRetry(url = sharedUrl, type = sourceType) {
+    let s = await firecrawlScrape(buildFirecrawlOptions(url, type, { fullContent: false }))
     if (!s.markdown || s.markdown.length < 200) {
       console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
-      s = await firecrawlScrape(buildFirecrawlOptions(sharedUrl, sourceType, { fullContent: true }))
+      s = await firecrawlScrape(buildFirecrawlOptions(url, type, { fullContent: true }))
     }
     return s
   }
@@ -85,6 +85,9 @@ export async function runExtractRecipe(
     let html = ''
     let ogImage: string | undefined
     let embedHtml = ''
+    // True while the content came verbatim from the author (a post caption, a
+    // feed body) rather than from a rendered page; drives the junk gate below.
+    let trustedContent = false
 
     // Blogspot: pull the post straight from the Blogger JSON feed instead of
     // rendering with Firecrawl — deterministic, no Google Translate / empty
@@ -110,12 +113,32 @@ export async function runExtractRecipe(
           })
         : null
 
-    if (facebookPost?.caption) {
+    // Many Facebook posts — group posts especially — are a teaser plus a link
+    // to the author's blog, and the recipe only lives on the other side of
+    // that link. Follow it: the blog is a page Firecrawl can actually read,
+    // unlike facebook.com itself, which its API refuses with a 403.
+    const linkedUrl = facebookPost?.recipeLink ?? null
+    const linkedPage = linkedUrl
+      ? await scrapeWithRetry(linkedUrl, 'web_blog').catch((err) => {
+          console.warn('[extract-recipe] linked page scrape failed:', err)
+          return null
+        })
+      : null
+
+    if (linkedPage?.markdown || linkedPage?.html) {
+      console.log('[extract-recipe] following Facebook caption link to', linkedUrl)
+      markdown = linkedPage.markdown ?? ''
+      html = linkedPage.html ?? ''
+      // The blog's own og:image is a stable URL; the post thumbnail is only a
+      // last resort, and it expires.
+      ogImage = linkedPage.metadata?.ogImage ?? extractFirstImage(html) ?? facebookPost?.image ?? undefined
+    } else if (facebookPost?.caption) {
       console.log('[extract-recipe] using Facebook caption for', facebookPost.canonicalUrl)
       // The caption is already plain text and opens with the post's headline,
       // so it needs no title prefix the way the Blogger feed does.
       markdown = facebookPost.caption
       ogImage = facebookPost.image ?? undefined
+      trustedContent = true
     } else if (bloggerPost) {
       console.log('[extract-recipe] using Blogger feed for', sharedUrl)
       html = bloggerPost.html
@@ -124,6 +147,13 @@ export async function runExtractRecipe(
       // title signal.
       const text = bloggerPost.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
       markdown = bloggerPost.title ? `${bloggerPost.title}\n\n${text}` : text
+      trustedContent = true
+    } else if (isFacebookUrl(sharedUrl)) {
+      // Nothing readable left, and Firecrawl is not a fallback here: its API
+      // refuses facebook.com outright with a 403, so calling it would only
+      // replace the real reason with a bare "Forbidden" in
+      // recipe_shares.error_message — which is what the user sees. Leave the
+      // content empty and let the gate below word the failure.
     } else {
       // For blog sources also run a dedicated full-page scrape in parallel to
       // find an embedded YouTube player — the recipe-text scrape strips
@@ -150,7 +180,10 @@ export async function runExtractRecipe(
     // a stable URL, so keeping it beats a placeholder. A Facebook thumbnail is
     // a signed CDN link that expires within days (`oe=` is a unix expiry), so
     // it must never be stored as-is — the placeholder beats a link that rots.
-    const durableImageUrl = facebookPost?.image != null ? null : ogImage ?? null
+    // Being the post thumbnail is what marks it: every other branch takes its
+    // image from a blog page.
+    const durableImageUrl =
+      ogImage != null && ogImage === facebookPost?.image ? null : ogImage ?? null
 
     // S-04: capture a YouTube video id for the detail-page embed. Either the
     // shared URL is itself a YouTube link (source_type 'youtube'), or a blog
@@ -164,12 +197,12 @@ export async function runExtractRecipe(
     // artefact, so it is judged on emptiness alone (see ContentQualityOptions).
     // The output-side isExtractedRecipeUsable gate below still rejects
     // anything that isn't actually a recipe.
-    const quality = { trusted: facebookPost?.caption != null }
+    const quality = { trusted: trustedContent }
 
     if (looksUnextractable(markdown, quality) && looksUnextractable(html, quality)) {
       throw new Error(
-        sourceType === 'facebook_text'
-          ? 'Ten post na Facebooku nie ma opisu z przepisem (może być prywatny, usunięty albo przepis jest tylko w filmie)'
+        isFacebookUrl(sharedUrl)
+          ? 'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)'
           : 'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)',
       )
     }

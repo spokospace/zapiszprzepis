@@ -213,8 +213,17 @@ const FB_EVENT = {
 
 const FB_CAPTION = 'Placki z twarogu\nSKŁADNIKI:\n250g twarogu, 3 łyżki mąki\nPRZYGOTOWANIE:\npiec 20 minut w 200 stopniach'
 
-function makeFacebookFetchMock({ caption = FB_CAPTION }: { caption?: string | null } = {}) {
-  const base = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '' })
+function makeFacebookFetchMock({
+  caption = FB_CAPTION,
+  ogDescription = '',
+  ...base
+}: {
+  caption?: string | null
+  ogDescription?: string
+  firecrawlMarkdown?: string
+  firecrawlHtml?: string
+} = {}) {
+  const fallback = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '', ...base })
   return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     if (url.includes('/plugins/video.php')) {
       const body = caption == null
@@ -228,12 +237,75 @@ function makeFacebookFetchMock({ caption = FB_CAPTION }: { caption?: string | nu
         status: 200,
         url: 'https://www.facebook.com/reel/943809852095733/?rdid=abc',
         text: async () =>
-          '<meta property="og:image" content="https://scontent.xx.fbcdn.net/thumb.jpg" />',
+          '<meta property="og:image" content="https://scontent.xx.fbcdn.net/thumb.jpg" />' +
+          `<meta property="og:description" content="${ogDescription}" />`,
       })
     }
-    return base(url, init)
+    return fallback(url, init)
   })
 }
+
+// A post inside a group: the video plugin refuses it, so the only caption text
+// is the permalink's og:description — a teaser plus the author's blog link.
+describe('runExtractRecipe — Facebook post linking out to a blog', () => {
+  const BLOG_URL = 'https://kulinarnecuda.pl/ciasto-kruche-ze-sliwkami/'
+  const TEASER = `Kruche ciasto ze śliwkami jest obłędne! Przepis: ${BLOG_URL}`
+
+  it('scrapes the linked blog instead of giving up on the post', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 9 }, error: null })
+    const fetch = makeFacebookFetchMock({
+      caption: null,
+      ogDescription: TEASER,
+      firecrawlMarkdown: 'Ciasto kruche ze śliwkami. Składniki: mąka, masło. '.repeat(10),
+    })
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 9, status: 'completed' })
+
+    const firecrawlBody = fetch.mock.calls
+      .filter((c) => String(c[0]).includes('firecrawl.dev'))
+      .map((c) => JSON.parse(String(c[1]?.body)))
+    expect(firecrawlBody.length).toBeGreaterThan(0)
+    expect(firecrawlBody.every((b) => b.url === BLOG_URL)).toBe(true)
+
+    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com'))
+    expect(JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content).toContain('Ciasto kruche')
+  })
+
+  it('still stores the share under the Facebook URL the user sent', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 9 }, error: null })
+    const fetch = makeFacebookFetchMock({
+      caption: null,
+      ogDescription: TEASER,
+      firecrawlMarkdown: 'Ciasto kruche ze śliwkami. Składniki: mąka, masło. '.repeat(10),
+    })
+
+    await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const inserted = mock.supabase.from.mock.results
+      .map((r) => r.value.insert.mock.calls[0]?.[0])
+      .find((args) => args?.source_url)
+    expect(inserted.source_url).toBe(FB_EVENT.sharedUrl)
+    expect(inserted.source_type).toBe('facebook_text')
+  })
+
+  it('leaves a caption that carries the recipe on the caption path', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 9 }, error: null })
+    // The plugin caption is a full recipe; the blog link at the end is a
+    // "more on my blog" pointer, not the source of truth.
+    const fetch = makeFacebookFetchMock({
+      caption: `${FB_CAPTION} `.repeat(4) + 'Więcej na https://blog.example/',
+    })
+
+    await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(false)
+  })
+})
 
 describe('runExtractRecipe — Facebook reel caption', () => {
   it('feeds the plugin caption to the LLM and skips Firecrawl entirely', async () => {
@@ -271,9 +343,19 @@ describe('runExtractRecipe — Facebook reel caption', () => {
       runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
     ).rejects.toThrow('nie ma opisu z przepisem')
 
-    // Firecrawl still got its chance before we gave up.
-    expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(true)
+    // Firecrawl is not tried on facebook.com — its API 403s on the domain, so
+    // the call would only mask the real reason with "Forbidden".
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(false)
     expect(mock.didInsert('recipes')).toBe(false)
+
+    // The share carries the reason a reader can act on, not Firecrawl's 403.
+    expect(
+      mock.didUpdate('recipe_shares', {
+        status: 'failed',
+        error_message:
+          'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)',
+      }),
+    ).toBe(true)
   })
 })
 

@@ -4,6 +4,7 @@ import {
   extractOgTag,
   extractPluginCaption,
   fetchFacebookPost,
+  findRecipeLinkInText,
   isFacebookShareUrl,
   isFacebookUrl,
 } from '@/lib/facebook'
@@ -101,6 +102,49 @@ describe('extractOgTag', () => {
 
   it('returns null for a missing property', () => {
     expect(extractOgTag(PLUGIN_HTML, 'description')).toBeNull()
+  })
+})
+
+describe('findRecipeLinkInText', () => {
+  const TEASER = `Kruche ciasto ze śliwkami jest obłędne!
+Przepis:
+
+https://kulinarnecuda.pl/ciasto-kruche-ze-sliwkami-i-beza/`
+
+  it('returns the blog link a teaser post points at', () => {
+    expect(findRecipeLinkInText(TEASER)).toBe(
+      'https://kulinarnecuda.pl/ciasto-kruche-ze-sliwkami-i-beza/',
+    )
+  })
+
+  it('drops the sentence punctuation that closes the link', () => {
+    expect(findRecipeLinkInText('Przepis tutaj: https://blog.example/ciasto.')).toBe(
+      'https://blog.example/ciasto',
+    )
+  })
+
+  it('ignores Facebook and other platform links', () => {
+    expect(
+      findRecipeLinkInText('Więcej: https://www.facebook.com/groups/obiadek/ oraz https://youtu.be/abc'),
+    ).toBeNull()
+  })
+
+  it('ignores subdomains of those platforms too', () => {
+    // l.facebook.com wraps outbound links; youtube-nocookie is the embed host.
+    expect(findRecipeLinkInText('Klik: https://l.facebook.com/l.php?u=x')).toBeNull()
+    expect(findRecipeLinkInText('Film: https://www.youtube-nocookie.com/embed/abc')).toBeNull()
+  })
+
+  it('keeps a caption that carries the recipe itself, link or not', () => {
+    const recipe = `SKŁADNIKI:
+${'250g twarogu, 3 łyżki mąki, 2 jajka, szczypta soli. '.repeat(8)}
+Więcej na https://blog.example/`
+    expect(recipe.length).toBeGreaterThan(300)
+    expect(findRecipeLinkInText(recipe)).toBeNull()
+  })
+
+  it('returns null for text with no link at all', () => {
+    expect(findRecipeLinkInText('Pyszne ciasto, polecam!')).toBeNull()
   })
 })
 
