@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
 import { archiveImage, extractFirstImage } from '@/lib/recipe-image-archive'
-import { youtubeIdFromUrl, findEmbeddedYoutubeId } from '@/lib/youtube'
+import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
@@ -212,8 +212,12 @@ export async function runExtractRecipe(
     // The output-side isExtractedRecipeUsable gate below still rejects
     // anything that isn't actually a recipe.
     const quality = { trusted: trustedContent }
-
-    if (looksUnextractable(markdown, quality) && looksUnextractable(html, quality)) {
+    const inputIsJunk =
+      looksUnextractable(markdown, quality) && looksUnextractable(html, quality)
+    // A YouTube link has one more source to try — the spoken video, via its
+    // captions — so an empty description is not the end there (see below).
+    const canTryTranscript = sourceType === 'youtube' && youtubeId != null
+    if (inputIsJunk && !canTryTranscript) {
       // Most specific first: what the embed plugin answered outranks the bare
       // fact that this is a Facebook URL.
       throw new Error(
@@ -227,23 +231,26 @@ export async function runExtractRecipe(
       )
     }
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a recipe extraction expert. Extract recipe information from user-provided content.
+    // One LLM pass over the content. `transcript`, when given, is the video's
+    // captions — the second-pass source for a YouTube link (below).
+    async function extractWithLlm(transcript?: string): Promise<RecipeData> {
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a recipe extraction expert. Extract recipe information from user-provided content.
 Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
 {
   "title": "Recipe title in Polish",
   "ingredients": [
-    {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "section": "section heading or empty string"}
+      {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "section": "section heading or empty string"}
   ],
   "steps": ["Step 1 description", "Step 2 description"],
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
@@ -259,31 +266,60 @@ Rules:
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
 - Return null for any field the source does not specify. Do not guess.
 - Best-effort if content incomplete.`,
-          },
-          {
-            role: 'user',
-            // Cap each field — Firecrawl with onlyMainContent: false on a
-            // classic blog template can return tens of KB once the
-            // sidebar, archive, popular-posts widget and labels are kept.
-            // gpt-4o-mini extracts the recipe from the first few KB; the
-            // tail is sidebar noise and inflates latency past the timeout.
-            content: `Extract recipe from this content:\nTitle hint: ${sharedTitle || 'unknown'}\nExtra text: ${sharedText || ''}\n\nPage markdown:\n${markdown.slice(0, 20_000)}\n\nPage HTML:\n${html.slice(0, 20_000)}`,
-          },
-        ],
-        temperature: 0.3,
-      }),
-      signal: AbortSignal.timeout(60_000),
-    })
+            },
+            {
+              role: 'user',
+              // Cap each field — Firecrawl with onlyMainContent: false on a
+              // classic blog template can return tens of KB once the
+              // sidebar, archive, popular-posts widget and labels are kept.
+              // gpt-4o-mini extracts the recipe from the first few KB; the
+              // tail is sidebar noise and inflates latency past the timeout.
+              // The transcript goes first: it is the recipe when it is there
+              // at all, and it must not be pushed out by a long description.
+              content:
+                `Extract recipe from this content:\nTitle hint: ${sharedTitle || 'unknown'}\nExtra text: ${sharedText || ''}\n\n` +
+                (transcript
+                  ? `Video transcript (auto-generated captions, spoken recipe — may contain speech-recognition errors in ingredient names):\n${transcript.slice(0, 20_000)}\n\n`
+                  : '') +
+                `Page markdown:\n${markdown.slice(0, 20_000)}\n\nPage HTML:\n${html.slice(0, 20_000)}`,
+            },
+          ],
+          temperature: 0.3,
+        }),
+        signal: AbortSignal.timeout(60_000),
+      })
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI failed: ${openaiResponse.statusText}`)
+      if (!openaiResponse.ok) {
+        throw new Error(`OpenAI failed: ${openaiResponse.statusText}`)
+      }
+
+      const openaiData = await openaiResponse.json()
+      const content = openaiData.choices?.[0]?.message?.content
+      if (!content) throw new Error('No response from OpenAI')
+
+      return JSON.parse(content) as RecipeData
     }
 
-    const openaiData = await openaiResponse.json()
-    const content = openaiData.choices?.[0]?.message?.content
-    if (!content) throw new Error('No response from OpenAI')
+    let recipeJSON = inputIsJunk ? null : await extractWithLlm()
 
-    const recipeJSON = JSON.parse(content) as RecipeData
+    // YouTube second pass: the description is where channels paste the
+    // recipe, so it is tried first and alone. Only when it yields no usable
+    // recipe — no ingredients, or no steps — fetch the captions and run the
+    // extraction again with the spoken video in front of the LLM. Costs two
+    // fetches and one more OpenAI call, and only for videos that need it.
+    if (canTryTranscript && (recipeJSON == null || !isExtractedRecipeUsable(recipeJSON))) {
+      const transcript = await fetchYoutubeTranscript(youtubeId, { fetch })
+      if (transcript) {
+        console.log('[extract-recipe] description had no recipe; retrying with transcript for', youtubeId)
+        recipeJSON = await extractWithLlm(transcript)
+      } else {
+        console.warn('[extract-recipe] no transcript available for', youtubeId)
+      }
+    }
+
+    // A YouTube link with an empty description and no captions: nothing was
+    // ever sent to the LLM, so word it like any other unreadable page.
+    if (recipeJSON == null) throw new Error(UNREADABLE_PAGE)
 
     if (!recipeJSON.title || typeof recipeJSON.title !== 'string') {
       throw new Error('No recipe title extracted — source page may not contain a recipe')

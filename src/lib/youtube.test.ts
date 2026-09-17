@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   normalizeHost,
   isYoutubeHost,
   youtubeIdFromUrl,
   findEmbeddedYoutubeId,
+  pickCaptionTrack,
+  timedTextToPlain,
+  fetchYoutubeTranscript,
 } from '@/lib/youtube'
 
 // Risk 5 — YouTube host detection and id extraction (S-04 stores youtube_id).
@@ -82,5 +85,111 @@ describe('findEmbeddedYoutubeId', () => {
     const vForm = `<iframe src="https://www.youtube.com/v/${ID}"></iframe>`
     expect(findEmbeddedYoutubeId(vForm)).toBe(ID)
     expect(youtubeIdFromUrl(`https://www.youtube.com/v/${ID}`)).toBeNull()
+  })
+})
+
+// Transcript fallback: captions read through the Innertube ANDROID player.
+describe('pickCaptionTrack', () => {
+  const pl = { baseUrl: 'pl', languageCode: 'pl' }
+  const plAuto = { baseUrl: 'pl-asr', languageCode: 'pl', kind: 'asr' }
+  const en = { baseUrl: 'en', languageCode: 'en' }
+  const enAuto = { baseUrl: 'en-asr', languageCode: 'en', kind: 'asr' }
+
+  it('prefers author-made Polish, then auto Polish, then any author-made, then anything', () => {
+    expect(pickCaptionTrack([enAuto, plAuto, pl, en])).toBe(pl)
+    expect(pickCaptionTrack([enAuto, en, plAuto])).toBe(plAuto)
+    expect(pickCaptionTrack([enAuto, en])).toBe(en)
+    expect(pickCaptionTrack([enAuto])).toBe(enAuto)
+  })
+
+  it('matches regional Polish codes', () => {
+    const plPL = { baseUrl: 'x', languageCode: 'pl-PL', kind: 'asr' }
+    expect(pickCaptionTrack([en, plPL])).toBe(plPL)
+  })
+
+  it('returns null with no tracks', () => {
+    expect(pickCaptionTrack([])).toBeNull()
+  })
+})
+
+describe('timedTextToPlain', () => {
+  it('joins paragraphs, strips word spans and decodes entities', () => {
+    const xml =
+      '<?xml version="1.0" encoding="utf-8" ?><timedtext format="3"><body>' +
+      '<p t="0" d="1000"><s>Witajcie</s><s> na</s> kanale</p>\n' +
+      '<p t="1000" d="1000">3 jajka &amp; &quot;pecorino&quot; &#39;romano&#39;</p>' +
+      '</body></timedtext>'
+    expect(timedTextToPlain(xml)).toBe('Witajcie na kanale 3 jajka & "pecorino" \'romano\'')
+  })
+
+  it('returns an empty string for XML without cues', () => {
+    expect(timedTextToPlain('<timedtext format="3"><body></body></timedtext>')).toBe('')
+  })
+})
+
+describe('fetchYoutubeTranscript', () => {
+  const CAPTION_XML =
+    '<timedtext format="3"><body><p t="0" d="1">Wrzucam guanciale</p><p t="1" d="1">na patelnię</p></body></timedtext>'
+
+  function makeFetch({
+    tracks = [{ baseUrl: 'https://www.youtube.com/api/timedtext?v=x&lang=pl', languageCode: 'pl', kind: 'asr' }],
+    playability = 'OK',
+    reason = '',
+    playerOk = true,
+    captionOk = true,
+    captionBody = CAPTION_XML,
+  }: {
+    tracks?: Array<{ baseUrl: string; languageCode: string; kind?: string }>
+    playability?: string
+    reason?: string
+    playerOk?: boolean
+    captionOk?: boolean
+    captionBody?: string
+  } = {}) {
+    return vi.fn().mockImplementation((url: string) => {
+      if (url.includes('/youtubei/v1/player')) {
+        return Promise.resolve({
+          ok: playerOk,
+          status: playerOk ? 200 : 500,
+          json: async () => ({
+            playabilityStatus: { status: playability, reason },
+            captions: { playerCaptionsTracklistRenderer: { captionTracks: tracks } },
+          }),
+        })
+      }
+      if (url.includes('/api/timedtext')) {
+        return Promise.resolve({ ok: captionOk, status: captionOk ? 200 : 403, text: async () => captionBody })
+      }
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`))
+    })
+  }
+
+  it('asks the ANDROID player for the video and returns the caption text', async () => {
+    const fetch = makeFetch()
+    await expect(fetchYoutubeTranscript(ID, { fetch })).resolves.toBe('Wrzucam guanciale na patelnię')
+
+    const [playerUrl, playerInit] = fetch.mock.calls[0]
+    expect(playerUrl).toContain('/youtubei/v1/player')
+    const body = JSON.parse(playerInit.body)
+    expect(body.videoId).toBe(ID)
+    expect(body.context.client.clientName).toBe('ANDROID')
+  })
+
+  it('returns null when the video has no caption tracks', async () => {
+    await expect(fetchYoutubeTranscript(ID, { fetch: makeFetch({ tracks: [] }) })).resolves.toBeNull()
+  })
+
+  it('returns null without fetching captions when the video is not playable (bot wall)', async () => {
+    const fetch = makeFetch({ playability: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' })
+    await expect(fetchYoutubeTranscript(ID, { fetch })).resolves.toBeNull()
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns null on a failed request or an empty caption body — never throws', async () => {
+    await expect(fetchYoutubeTranscript(ID, { fetch: makeFetch({ playerOk: false }) })).resolves.toBeNull()
+    await expect(fetchYoutubeTranscript(ID, { fetch: makeFetch({ captionOk: false }) })).resolves.toBeNull()
+    await expect(fetchYoutubeTranscript(ID, { fetch: makeFetch({ captionBody: '' }) })).resolves.toBeNull()
+    const throwing = vi.fn().mockRejectedValue(new Error('network down'))
+    await expect(fetchYoutubeTranscript(ID, { fetch: throwing })).resolves.toBeNull()
   })
 })

@@ -24,6 +24,7 @@
 // the link and reads the recipe from the blog instead.
 
 import { isYoutubeHost } from '@/lib/youtube'
+import { decodeEntities } from '@/lib/html-entities'
 
 const CRAWLER_UA = 'facebookexternalhit/1.1'
 const BROWSER_UA =
@@ -113,19 +114,6 @@ export function findRecipeLinkInText(text: string): string | null {
 
 export function buildFacebookPluginUrl(href: string): string {
   return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(href)}&show_text=true&width=500`
-}
-
-function decodeEntities(input: string): string {
-  return input
-    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number(dec)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&quot;/g, '"')
-    .replace(/&#0?39;|&apos;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    // Ampersand last, so "&amp;lt;" doesn't collapse into a tag.
-    .replace(/&amp;/g, '&')
 }
 
 /**
