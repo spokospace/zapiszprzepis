@@ -471,3 +471,134 @@ describe('runExtractRecipe — Facebook thumbnail persistence', () => {
     expect(insertedImageUrl(mock)).toBe('https://blog.example/cover.jpg')
   })
 })
+
+// YouTube: the description is tried first; captions only when it yields no
+// usable recipe. Firecrawl serves the watch page, Innertube the captions.
+const YT_ID = 'TtK8ZUfOC40'
+const YT_EVENT = {
+  ...BASE_EVENT,
+  sharedUrl: `https://www.youtube.com/watch?v=${YT_ID}`,
+  sourceType: 'youtube' as const,
+}
+const CAPTION_XML =
+  '<timedtext format="3"><body><p t="0" d="1">Trzy żółtka, pecorino, guanciale</p></body></timedtext>'
+
+function makeYoutubeFetchMock({
+  openaiContents,
+  hasCaptions = true,
+  ...base
+}: {
+  /** One OpenAI reply per call, in order. */
+  openaiContents: string[]
+  hasCaptions?: boolean
+  firecrawlMarkdown?: string
+  firecrawlHtml?: string
+}) {
+  const replies = [...openaiContents]
+  const fallback = makeFetchMock(base)
+  return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    if (url.includes('/youtubei/v1/player')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          playabilityStatus: { status: 'OK' },
+          captions: {
+            playerCaptionsTracklistRenderer: {
+              captionTracks: hasCaptions
+                ? [{ baseUrl: 'https://www.youtube.com/api/timedtext?v=x', languageCode: 'pl', kind: 'asr' }]
+                : [],
+            },
+          },
+        }),
+      })
+    }
+    if (url.includes('/api/timedtext')) {
+      return Promise.resolve({ ok: true, status: 200, text: async () => CAPTION_XML })
+    }
+    if (url.includes('openai.com')) {
+      const content = replies.shift()
+      if (content == null) return Promise.reject(new Error('OpenAI called more times than expected'))
+      return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content } }] }) })
+    }
+    return fallback(url, init)
+  })
+}
+
+const openaiCalls = (fetch: ReturnType<typeof vi.fn>) =>
+  fetch.mock.calls.filter(([url]) => String(url).includes('openai.com'))
+const transcriptCalls = (fetch: ReturnType<typeof vi.fn>) =>
+  fetch.mock.calls.filter(([url]) => String(url).includes('/youtubei/v1/player'))
+const promptOf = ([, init]: [string, RequestInit]) =>
+  JSON.parse(String(init.body)).messages[1].content as string
+
+describe('runExtractRecipe — YouTube transcript fallback', () => {
+  it('never fetches captions when the description already carries the recipe', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeYoutubeFetchMock({ openaiContents: [VALID_RECIPE_JSON] })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 7 })
+
+    expect(transcriptCalls(fetch)).toHaveLength(0)
+    expect(openaiCalls(fetch)).toHaveLength(1)
+    expect(promptOf(openaiCalls(fetch)[0] as any)).not.toContain('Video transcript')
+  })
+
+  it('retries with the captions when the description yields no ingredients', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 8 }, error: null })
+    const fetch = makeYoutubeFetchMock({ openaiContents: [JUNK_RECIPE_JSON, VALID_RECIPE_JSON] })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 8 })
+
+    expect(transcriptCalls(fetch)).toHaveLength(1)
+    const calls = openaiCalls(fetch)
+    expect(calls).toHaveLength(2)
+    expect(promptOf(calls[0] as any)).not.toContain('Video transcript')
+    expect(promptOf(calls[1] as any)).toContain('Video transcript')
+    expect(promptOf(calls[1] as any)).toContain('Trzy żółtka, pecorino, guanciale')
+    expect(mock.didInsert('recipes')).toBe(true)
+  })
+
+  it('goes straight to the captions when the description is empty', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 9 }, error: null })
+    const fetch = makeYoutubeFetchMock({
+      openaiContents: [VALID_RECIPE_JSON],
+      firecrawlMarkdown: '',
+      firecrawlHtml: '',
+    })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 9 })
+
+    const calls = openaiCalls(fetch)
+    expect(calls).toHaveLength(1)
+    expect(promptOf(calls[0] as any)).toContain('Video transcript')
+  })
+
+  it('keeps the output-gate failure when there are no captions to fall back on', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeYoutubeFetchMock({ openaiContents: [JUNK_RECIPE_JSON], hasCaptions: false })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow('no usable recipe')
+
+    expect(openaiCalls(fetch)).toHaveLength(1)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+
+  it('reports an unreadable page when both the description and the captions are missing', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeYoutubeFetchMock({
+      openaiContents: [],
+      hasCaptions: false,
+      firecrawlMarkdown: '',
+      firecrawlHtml: '',
+    })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow('no readable recipe content')
+
+    expect(openaiCalls(fetch)).toHaveLength(0)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+})
