@@ -388,23 +388,48 @@ export function extractGroupPostPhotoIds(html: string, postId: string): string[]
   return [...ids]
 }
 
-// The group post page carries its photos only as lookaside links that bounce
-// to a viewer behind the login wall. The photo's own page does hand its
-// og:image to link-preview bots — not to facebookexternalhit or Googlebot.
-const LINK_PREVIEW_UA = 'Twitterbot/1.0'
+/** The embedded-post plugin page for one photo of a group post. */
+export function buildFacebookPhotoPluginUrl(photoId: string, postId: string): string {
+  const photo = `https://www.facebook.com/photo.php?fbid=${photoId}&set=gm.${postId}&type=3`
+  return `https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(photo)}&show_text=false&width=500`
+}
 
-/** A group post photo's image URL, read off its viewer page. Never throws. */
+const IMG_TAG = /<img\b[^>]*>/gi
+const IMG_SRC = /\bsrc="([^"]+)"/
+const IMG_WIDTH = /\bwidth="(\d+)"/
+
+/**
+ * The photo in an embedded-post plugin page. The page also carries the
+ * author's avatar (no declared size) and the app badge (24px, on
+ * static.xx.fbcdn.net); the photo is the fbcdn image declaring a real width.
+ */
+export function extractPluginPhoto(html: string): string | null {
+  for (const tag of html.match(IMG_TAG) ?? []) {
+    const src = IMG_SRC.exec(tag)?.[1]
+    if (!src || !/^https:\/\/scontent[^/]*\.fbcdn\.net\//.test(src)) continue
+    if (Number(IMG_WIDTH.exec(tag)?.[1] ?? 0) >= 200) return decodeEntities(src)
+  }
+  return null
+}
+
+/**
+ * A group post photo's image URL. Its viewer page is behind the login wall
+ * from Cloudflare's addresses for every user-agent (it only answers
+ * link-preview bots from residential ones), but the embedded-post plugin
+ * renders the photo for a crawler from anywhere — at 394px, the plugin's only
+ * size. Never throws.
+ */
 async function fetchGroupPhoto(
   photoId: string,
   postId: string,
   fetch: typeof globalThis.fetch,
 ): Promise<string | null> {
   try {
-    const response = await fetch(`https://www.facebook.com/photo/?fbid=${photoId}&set=gm.${postId}`, {
-      headers: { 'User-Agent': LINK_PREVIEW_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
+    const response = await fetch(buildFacebookPhotoPluginUrl(photoId, postId), {
+      headers: { 'User-Agent': CRAWLER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
       signal: AbortSignal.timeout(15_000),
     })
-    return response.ok ? extractOgTag(await response.text(), 'image') : null
+    return response.ok ? extractPluginPhoto(await response.text()) : null
   } catch (error) {
     console.warn('[facebook] group photo fetch failed:', error)
     return null

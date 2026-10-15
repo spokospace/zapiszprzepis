@@ -1,10 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
+  buildFacebookPhotoPluginUrl,
   buildFacebookPluginUrl,
   extractGroupPostPhotoIds,
   extractGroupPostText,
   extractOgTag,
   extractPluginCaption,
+  extractPluginPhoto,
   fetchFacebookPost,
   findRecipeLinkInText,
   isFacebookShareUrl,
@@ -60,6 +62,14 @@ const GROUP_PHOTOS_HTML = String.raw`<script type="application/json">{"all_subat
 {"media":{"__typename":"Photo","id":"2534992403268499"},"url":"https:\/\/www.facebook.com\/photo.php?fbid=2534992403268499&set=gm.2685730571747766&type=3"}]},
 "url":"https:\/\/www.facebook.com\/photo.php?fbid=2534992233268516&set=gm.2685730571747766&type=3",
 "comment":{"attachments":[{"url":"https:\/\/www.facebook.com\/photo.php?fbid=999&set=p.999&type=3"}]}}</script>`
+
+// The embedded-post plugin page for one photo, trimmed from the real one: the
+// author's avatar (no size), the app badge (24px, static host), then the photo.
+function photoPluginHtml(file: string) {
+  return `<div><img class="_s0 _4ooo img" src="https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-1/120087111_n.jpg?stp=c0.0.1x1&amp;oh=a" alt="" role="img" />
+<img class="img" src="https://static.xx.fbcdn.net/rsrc.php/yy/r/Phqp6RSXdyI.webp" alt="app-facebook" width="24" height="24" />
+<img class="_1p6f _1p6g img" src="https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/${file}?stp=dst-jpg_p394x394_tt6&amp;oe=6AF8B613&amp;oh=1" alt="" width="373" height="498" /></div>`
+}
 
 // What a private group's permalink page carries for a logged-out visitor.
 const LOGIN_WALL_HTML = '<html><head><title>Facebook</title></head><body>Zaloguj się</body></html>'
@@ -147,6 +157,26 @@ describe('extractGroupPostPhotoIds', () => {
   it('finds nothing for another post or a post without photos', () => {
     expect(extractGroupPostPhotoIds(GROUP_PHOTOS_HTML, '1')).toEqual([])
     expect(extractGroupPostPhotoIds(GROUP_POST_HTML, '2685730571747766')).toEqual([])
+  })
+})
+
+describe('extractPluginPhoto', () => {
+  it('takes the photo, not the avatar or the app badge, and decodes its query', () => {
+    expect(extractPluginPhoto(photoPluginHtml('100961545_n.jpg'))).toBe(
+      'https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/100961545_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1',
+    )
+  })
+
+  it('returns null for a plugin page without a photo', () => {
+    expect(extractPluginPhoto(LOGIN_WALL_HTML)).toBeNull()
+  })
+})
+
+describe('buildFacebookPhotoPluginUrl', () => {
+  it("embeds the photo's group-post viewer link", () => {
+    const url = new URL(buildFacebookPhotoPluginUrl('25', '26'))
+    expect(url.pathname).toBe('/plugins/post.php')
+    expect(url.searchParams.get('href')).toBe('https://www.facebook.com/photo.php?fbid=25&set=gm.26&type=3')
   })
 })
 
@@ -379,15 +409,12 @@ describe('fetchFacebookPost', () => {
     expect(post?.caption).toContain('300 g mąki pszennej')
   })
 
-  it("collects every photo of a group post from each photo's own page", async () => {
-    const photoPage = (id: string) =>
-      `<meta property="og:image" content="https://scontent.xx.fbcdn.net/v/t1/${id}_n.jpg?oe=6AF8B613&amp;oh=1" />`
+  it('collects every photo of a group post through the embedded-post plugin', async () => {
     const fetch = vi.fn(async (input: string, init?: RequestInit) => {
       const ua = new Headers(init?.headers).get('User-Agent') ?? ''
-      const photo = /fbid=(\d+)/.exec(input)?.[1]
-      // Only a link-preview bot gets a photo page's og:image.
-      const html = photo
-        ? ua.includes('Twitterbot') ? photoPage(photo) : LOGIN_WALL_HTML
+      const photo = /fbid=(\d+)/.exec(decodeURIComponent(input))?.[1]
+      const html = input.includes('/plugins/post.php')
+        ? photoPluginHtml(`${photo}_n.jpg`)
         : ua.includes('Googlebot') ? GROUP_POST_HTML + GROUP_PHOTOS_HTML : PLUGIN_HTML
       return { ok: true, status: 200, url: input, text: async () => html } as Response
     }) as unknown as typeof globalThis.fetch
@@ -397,13 +424,13 @@ describe('fetchFacebookPost', () => {
     })
 
     expect(post?.images).toEqual([
-      'https://scontent.xx.fbcdn.net/v/t1/2534992233268516_n.jpg?oe=6AF8B613&oh=1',
-      'https://scontent.xx.fbcdn.net/v/t1/2534992403268499_n.jpg?oe=6AF8B613&oh=1',
+      'https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/2534992233268516_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1',
+      'https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/2534992403268499_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1',
     ])
-    const photoUrls = vi.mocked(fetch).mock.calls.map((c) => String(c[0])).filter((u) => u.includes('fbid='))
-    expect(photoUrls).toEqual([
-      'https://www.facebook.com/photo/?fbid=2534992233268516&set=gm.2685730571747766',
-      'https://www.facebook.com/photo/?fbid=2534992403268499&set=gm.2685730571747766',
+    const pluginUrls = vi.mocked(fetch).mock.calls.map((c) => String(c[0])).filter((u) => u.includes('/plugins/post.php'))
+    expect(pluginUrls).toEqual([
+      buildFacebookPhotoPluginUrl('2534992233268516', '2685730571747766'),
+      buildFacebookPhotoPluginUrl('2534992403268499', '2685730571747766'),
     ])
   })
 
