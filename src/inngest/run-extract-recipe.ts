@@ -397,10 +397,14 @@ Rules:
       const archived = await archiveRecipeImages(supabase, userId, refreshed.id, ogImage, gallery, {
         clearStale: true,
       })
+      // Never downgrade the cover: a failed re-archive of a Facebook thumbnail
+      // has no durable fallback, and writing null would drop the image the
+      // recipe already had archived.
+      const nextImageUrl = archived.cover ?? durableImageUrl
       await supabase
         .from('recipes')
         .update({
-          ...(ogImage != null ? { image_url: archived.cover ?? durableImageUrl } : {}),
+          ...(nextImageUrl != null ? { image_url: nextImageUrl } : {}),
           image_urls: archived.gallery,
         })
         .eq('id', refreshed.id)
