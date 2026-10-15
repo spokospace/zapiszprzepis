@@ -11,8 +11,25 @@ import {
   findRecipeLinkInText,
   isFacebookShareUrl,
   isFacebookUrl,
+  stripFacebookTracking,
   toGroupPostUrl,
 } from '@/lib/facebook'
+
+describe('stripFacebookTracking', () => {
+  it('keeps the params that name the post and drops the tracking ones', () => {
+    expect(
+      stripFacebookTracking(
+        'https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702&__cft__[0]=AZh&__tn__=%2CO%2CP-R',
+      ),
+    ).toBe('https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702')
+  })
+
+  it('leaves a path-only permalink bare', () => {
+    expect(stripFacebookTracking('https://www.facebook.com/reel/1/?rdid=x&share_url=y')).toBe(
+      'https://www.facebook.com/reel/1/',
+    )
+  })
+})
 
 // Mirrors the real plugins/video.php markup: the caption lives in a
 // data-testid="post_message" div, emoji are <span>-wrapped images, lines are
@@ -432,6 +449,33 @@ describe('fetchFacebookPost', () => {
       buildFacebookPhotoPluginUrl('2534992233268516', '2685730571747766'),
       buildFacebookPhotoPluginUrl('2534992403268499', '2685730571747766'),
     ])
+  })
+
+  it("reads a Page photo post the video plugin refuses off its permalink page", async () => {
+    // Trimmed from a real Page photo post served to a search-engine user-agent.
+    const pagePostHtml = String.raw`<script type="application/json">{"actors":[{"__typename":"User","name":"Kulinarna Wiola","id":"100069645633702"}],
+"message":{"text":"Ciasteczka z maszynki\n\n3 pełne szkl mąki"}}</script>`
+    const fetch = vi.fn(async (input: string, init?: RequestInit) => {
+      const ua = new Headers(init?.headers).get('User-Agent') ?? ''
+      const html = input.includes('/plugins/video.php')
+        ? REFUSED_HTML
+        : ua.includes('Googlebot') ? pagePostHtml : PLUGIN_HTML
+      return { ok: true, status: 200, url: input, text: async () => html } as Response
+    }) as unknown as typeof globalThis.fetch
+
+    const post = await fetchFacebookPost(
+      'https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702&__cft__[0]=AZh&__tn__=%2CO%2CP-R',
+      { fetch },
+    )
+
+    expect(post).toMatchObject({
+      canonicalUrl: 'https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702',
+      embedStatus: 'rendered',
+      images: [],
+    })
+    expect(post?.caption).toContain('3 pełne szkl mąki')
+    const urls = vi.mocked(fetch).mock.calls.map((c) => String(c[0]))
+    expect(urls.some((u) => u.includes('__cft__'))).toBe(false)
   })
 
   it('reports a private group post as refused', async () => {
