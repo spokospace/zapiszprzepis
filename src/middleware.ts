@@ -14,9 +14,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { response, user } = await updateSession(request)
   const { pathname } = request.nextUrl
 
-  // /auth/callback always passes through — the route handler manages its own
-  // auth state by exchanging the PKCE code.
-  if (pathname.startsWith('/auth/callback')) {
+  // /auth/callback and /auth/confirm always pass through — they open the
+  // session themselves from the email link, whatever state the visitor is in.
+  if (pathname.startsWith('/auth/')) {
     return response
   }
 
@@ -35,8 +35,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // Auth pages are accessible to all users
-  // /reset-password is intentionally excluded: after /auth/callback exchanges the
-  // PKCE code the user is authenticated, so it must be reachable while logged in.
+  // /reset-password is intentionally excluded: after /auth/confirm verifies the
+  // email link the user is authenticated, so it must be reachable while logged in.
   const isAuthPage = pathname === '/login' || pathname.startsWith('/login/')
     || pathname === '/signup' || pathname.startsWith('/signup/')
     || pathname === '/forgot-password' || pathname.startsWith('/forgot-password/')
