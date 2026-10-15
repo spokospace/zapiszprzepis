@@ -129,7 +129,7 @@ const ATTR_RE = /\bdata-lazy-src=["']([^"']+)["']|\bdata-src=["']([^"']+)["']|\b
 // would still store its URL as the cover (mniammniam's `pbook_ctr.php`), so it
 // has to be dropped before it is picked.
 const NOT_A_PHOTO_RE =
-  /gravatar|avatar|\/logo|favicon|[/_-]icons?[/_.-]|emoji|sprite|spacer|placeholder|doubleclick|quantserve|google-analytics|googletagmanager|facebook\.com\/tr|pinterest\.com\/images|pixel|\/ads?\/|banner|\.(php|gif|svg)(\?|$)|^data:/i
+  /gravatar|avatar|\/logo|favicon|[/_-]icons?[/_.-]|[/_-]buttons?[/_.-]|emoji|sprite|spacer|placeholder|doubleclick|quantserve|google-analytics|googletagmanager|facebook\.com\/tr|pinterest\.com\/images|pixel|\/ads?\/|banner|\.(php|gif|svg)(\?|$)|^data:/i
 const AD_CLASS_RE = /\bclass=["'][^"']*(reklama|advert|\bads?\b|banner|sponsor)/i
 const ITEMPROP_IMAGE_RE = /\bitemprop=["']image["']/i
 const WIDTH_RE = /\bwidth=["']?(\d+)/i
@@ -269,6 +269,7 @@ const NOISE_SECTION_WORDS = new Set([
   'ad', 'ads', 'advert', 'advertisement', 'reklama', 'banner', 'sponsor', 'sponsored',
   'related', 'similar', 'recommended', 'popular',
   'comment', 'comments', 'author', 'sidebar', 'widget', 'newsletter',
+  'share', 'social', 'printfriendly',
 ])
 const SECTION_OPEN_RE = /<(div|section|aside|nav|footer|ul|ol|li|figure|a|ins|span)\b[^>]*>/gi
 const CLASS_OR_ID_RE = /\b(?:class|id)=["']([^"']*)["']/gi
