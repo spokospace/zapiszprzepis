@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { isPrivateUrl, archiveImage, pickRecipeImage } from '@/lib/recipe-image-archive'
+import {
+  isPrivateUrl,
+  archiveImage,
+  pickRecipeImage,
+  pickGalleryImages,
+  buildGallery,
+  GALLERY_LIMIT,
+} from '@/lib/recipe-image-archive'
 
 describe('isPrivateUrl — SSRF guard (Risk 6)', () => {
   it.each([
@@ -103,5 +110,79 @@ describe('pickRecipeImage — cover fallback for pages without og:image', () => 
   it('reads lazy-loaded sources before the placeholder src', () => {
     const html = `<img data-lazy-src="https://example.com/real.jpg" src="https://example.com/placeholder.png">`
     expect(pickRecipeImage(html)).toBe('https://example.com/real.jpg')
+  })
+})
+
+describe('pickGalleryImages — the recipe photos for the gallery', () => {
+  const PAGE = 'https://aniagotuje.pl/przepis/ciastka-maslane-z-marmolada'
+  const CDN = 'https://cdn.aniagotuje.com'
+
+  it("keeps the post's photos and drops badges, other recipes and readers' photos (aniagotuje)", () => {
+    // Trimmed from Firecrawl's main-content html of the page: the author badge,
+    // the hero (declared 1×1, though the file is 1000px), step photos, cards
+    // linking to other recipes, an avatar in the comments and a reader's photo.
+    const html = `
+      <img src="${CDN}/app/client/static/imgs/ania/ania_kolo_216.jpg" width="216" height="216" alt="Ania Gotuje">
+      <img src="${CDN}/pictures/articles/2019/01/193306-v-1000x1000.jpg" alt="Ciasteczka maślane" class="img-fluid" width="1" height="1">
+      <img style="position: absolute" src="${CDN}/pictures/articles/2019/01/193312-v-1080x1506.jpg" alt="Upieczone ciasteczka">
+      <img style="position: absolute" src="${CDN}/pictures/articles/2019/01/193322-v-1080x1440.jpg" alt="Masło w misie">
+      <img loading="lazy" src="${CDN}/pictures/articles/2015/11/644752-v-360x360.jpg" alt="Ciasteczka do kawy" class="post-picture">
+      <img src="${CDN}/app/client/static/imgs/ania/profile/ania-24x24.jpg">
+      <img loading="lazy" src="${CDN}/pictures/comments/84/1548328698884.jpg" alt="zdjecie uzytkownika" class="img-fluid comment-img">`
+    expect(pickGalleryImages(html, PAGE)).toEqual([
+      `${CDN}/pictures/articles/2019/01/193306-v-1000x1000.jpg`,
+      `${CDN}/pictures/articles/2019/01/193312-v-1080x1506.jpg`,
+      `${CDN}/pictures/articles/2019/01/193322-v-1080x1440.jpg`,
+    ])
+  })
+
+  it('drops WordPress thumbnails and related-post cards, keeps photos that declare no size', () => {
+    const html = `
+      <img src="/wp-content/uploads/2024/05/sernik-150x150.jpg">
+      <img src="/wp-content/uploads/2024/05/sernik-1024x768.jpg" width="1024" height="768">
+      <img src="/wp-content/uploads/2024/05/sernik-krok.jpg">
+      <div class="related-posts"><img src="/wp-content/uploads/2023/01/inny.jpg" class="related-thumb"></div>`
+    expect(pickGalleryImages(html, 'https://blog.example/sernik/')).toEqual([
+      'https://blog.example/wp-content/uploads/2024/05/sernik-1024x768.jpg',
+      'https://blog.example/wp-content/uploads/2024/05/sernik-krok.jpg',
+    ])
+  })
+
+  it('asks Blogger for the full-size rendition instead of the in-post thumbnail', () => {
+    const html = `
+      <a href="https://blogger.googleusercontent.com/img/b/R29v/AVvX/s1600/ciasto.jpg">
+        <img src="https://blogger.googleusercontent.com/img/b/R29v/AVvX/s320/ciasto.jpg" width="320" height="240"></a>
+      <img src="https://1.bp.blogspot.com/-abc/X/AAA/def/w400-h300/krok.jpg" width="400" height="300">`
+    expect(pickGalleryImages(html)).toEqual([
+      'https://blogger.googleusercontent.com/img/b/R29v/AVvX/s1600/ciasto.jpg',
+      'https://1.bp.blogspot.com/-abc/X/AAA/def/s1600/krok.jpg',
+    ])
+  })
+})
+
+describe('buildGallery', () => {
+  it('puts the cover first and keeps each photo once across sizes and CDN edges', () => {
+    const cover = 'https://scontent-waw2-1.xx.fbcdn.net/v/t1/82207020_n.jpg?ctp=p600x600&oe=1'
+    const photos = [
+      'https://scontent-waw2-2.xx.fbcdn.net/v/t1/82207020_n.jpg?ctp=s720x960&oe=2',
+      'https://scontent-waw2-2.xx.fbcdn.net/v/t1/100961545_n.jpg?oe=2',
+    ]
+    expect(buildGallery(cover, photos)).toEqual([cover, photos[1]])
+    expect(
+      buildGallery('https://blog.example/a/sernik.jpg', [
+        'https://blog.example/a/sernik-1024x768.jpg',
+        'https://blog.example/a/krok.jpg',
+      ]),
+    ).toEqual(['https://blog.example/a/sernik.jpg', 'https://blog.example/a/krok.jpg'])
+  })
+
+  it(`stops at ${GALLERY_LIMIT} photos`, () => {
+    const photos = Array.from({ length: 20 }, (_, i) => `https://cdn.example/p${i}.jpg`)
+    expect(buildGallery(undefined, photos)).toEqual(photos.slice(0, GALLERY_LIMIT))
+  })
+
+  it('is empty when there is nothing beyond the cover', () => {
+    expect(buildGallery('https://cdn.example/a.jpg', ['https://cdn.example/a.jpg'])).toEqual([])
+    expect(buildGallery(undefined, [])).toEqual([])
   })
 })

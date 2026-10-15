@@ -1,17 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { runExtractRecipe } from '@/inngest/run-extract-recipe'
-import { archiveImage } from '@/lib/recipe-image-archive'
+import { archiveImage, archiveRecipeImages } from '@/lib/recipe-image-archive'
 
 // archiveImage uses the global fetch, not the injected one, so it must be
 // stubbed or a test with an og:image goes out to the network. Default: the
 // archive fails, which is the branch where image_url persistence matters.
-vi.mock('@/lib/recipe-image-archive', async (importActual) => ({
-  ...(await importActual<typeof import('@/lib/recipe-image-archive')>()),
-  archiveImage: vi.fn().mockResolvedValue(null),
-}))
+vi.mock('@/lib/recipe-image-archive', async (importActual) => {
+  const archiveImage = vi.fn().mockResolvedValue(null)
+  return {
+    ...(await importActual<typeof import('@/lib/recipe-image-archive')>()),
+    archiveImage,
+    // Routes the cover through the archiveImage stub and hands back one
+    // Storage URL per gallery photo, so tests see what would be stored.
+    archiveRecipeImages: vi.fn(
+      async (supabase: unknown, userId: string, recipeId: number, cover: string | undefined, gallery: string[]) => ({
+        cover: cover != null ? await archiveImage(supabase, userId, recipeId, cover) : null,
+        gallery: gallery.map((_, i) => `https://storage.example/u/${recipeId}/${i}.jpg`),
+      }),
+    ),
+  }
+})
 
 beforeEach(() => {
   vi.mocked(archiveImage).mockResolvedValue(null)
+  vi.mocked(archiveRecipeImages).mockClear()
 })
 
 const BASE_EVENT = {
@@ -411,6 +423,60 @@ describe('runExtractRecipe — Facebook short caption', () => {
     const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
 
     expect(result).toMatchObject({ recipeId: 8, status: 'completed' })
+  })
+})
+
+describe('runExtractRecipe — recipe gallery', () => {
+  const STEP_PHOTOS =
+    '<img src="https://blog.example/a/ciasto-1080x1440.jpg"><img src="https://blog.example/a/krok-1080x1440.jpg">'
+
+  function recipeUpdates(mock: ReturnType<typeof makeSupabaseMock>) {
+    return mock.supabase.from.mock.results
+      .flatMap((r) => r.value.update.mock.calls.map((c: unknown[]) => c[0]))
+      .filter((args: Record<string, unknown>) => 'image_urls' in args)
+  }
+
+  it("archives the page's photos, cover first, and stores them", async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ firecrawlHtml: '<p>Przepis na ciasto.</p>'.repeat(20) + STEP_PHOTOS })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(archiveRecipeImages).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      7,
+      'https://blog.example/a/ciasto-1080x1440.jpg',
+      ['https://blog.example/a/ciasto-1080x1440.jpg', 'https://blog.example/a/krok-1080x1440.jpg'],
+    )
+    expect(recipeUpdates(mock)).toEqual([
+      { image_urls: ['https://storage.example/u/7/0.jpg', 'https://storage.example/u/7/1.jpg'] },
+    ])
+  })
+
+  it('leaves the gallery empty for a single photo', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({
+      firecrawlHtml: '<p>Przepis na ciasto.</p>'.repeat(20) + '<img src="https://blog.example/a/ciasto.jpg">',
+    })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(archiveRecipeImages).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, 'https://blog.example/a/ciasto.jpg', [])
+    expect(recipeUpdates(mock)).toEqual([])
+  })
+
+  it('replaces the gallery on a refresh, emptying it when the photos are gone', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    // Called with no photos and clearStale, so the old files are cleared from Storage.
+    expect(archiveRecipeImages).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, undefined, [], { clearStale: true })
+    expect(recipeUpdates(mock)).toEqual([{ image_urls: [] }])
   })
 })
 
