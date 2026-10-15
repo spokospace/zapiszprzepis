@@ -49,6 +49,10 @@ export type RecipeTag = (typeof RECIPE_TAGS)[number]['value']
 
 const TAG_VALUES = new Set<string>(RECIPE_TAGS.map((t) => t.value))
 
+export function isRecipeTag(value: string): value is RecipeTag {
+  return TAG_VALUES.has(value)
+}
+
 export function tagLabel(value: string): string {
   return RECIPE_TAGS.find((t) => t.value === value)?.label ?? value
 }

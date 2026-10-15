@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { RecipesContent } from './recipes-content'
 import { Constants, type Database } from '@/lib/supabase.types'
+import { isRecipeTag } from '@/lib/recipe-tags'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
 type RecipeCategory = Database['public']['Enums']['recipe_category']
@@ -12,6 +13,7 @@ const VALID_CATEGORIES = Constants.public.Enums.recipe_category
 type SearchParams = Promise<{
   shared?: string
   category?: string
+  tag?: string
   duplicate?: string
   q?: string
 }>
@@ -48,7 +50,7 @@ export default async function RecipesPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { shared, category, duplicate, q } = await searchParams
+  const { shared, category, tag, duplicate, q } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   const searchQuery = (q ?? '').trim()
@@ -67,6 +69,8 @@ export default async function RecipesPage({
       ? (category as RecipeCategory)
       : null
 
+  const activeTag = tag && isRecipeTag(tag) ? tag : null
+
   // When searching we also need `ingredients` (jsonb) so we can match ingredient
   // names in JS — see matchesQuery for why this can't run in the DB query.
   // Two literal `.select(...)` branches keep Supabase's typed query parser happy
@@ -83,6 +87,10 @@ export default async function RecipesPage({
 
   if (activeCategory) {
     filteredQuery = filteredQuery.eq('category', activeCategory)
+  }
+
+  if (activeTag) {
+    filteredQuery = filteredQuery.contains('tags', [activeTag])
   }
 
   const [{ data: recipes, error }, { data: allRecipes }] = await Promise.all([
@@ -116,6 +124,7 @@ export default async function RecipesPage({
       showSharedToast={shared === '1'}
       showPendingDuplicateToast={duplicate === 'pending'}
       activeCategory={activeCategory}
+      activeTag={activeTag}
       categoryCounts={counts}
       searchQuery={searchQuery}
     />

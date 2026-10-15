@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { CategoryFilter } from '@/app/components/category-filter'
 import { RecipeSearch } from '@/app/components/recipe-search'
+import { ActiveTagFilter } from '@/app/components/active-tag-filter'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
 import type { Database } from '@/lib/supabase.types'
@@ -16,6 +17,7 @@ interface RecipesContentProps {
   showSharedToast: boolean
   showPendingDuplicateToast?: boolean
   activeCategory?: RecipeCategory | null
+  activeTag?: string | null
   categoryCounts?: Partial<Record<RecipeCategory, number>>
   searchQuery?: string
 }
@@ -25,6 +27,7 @@ export function RecipesContent({
   showSharedToast,
   showPendingDuplicateToast,
   activeCategory,
+  activeTag,
   categoryCounts,
   searchQuery,
 }: RecipesContentProps) {
@@ -55,8 +58,8 @@ export function RecipesContent({
             {recipes.length === 0
               ? hasSearch
                 ? `Brak wyników dla „${searchQuery}".`
-                : activeCategory
-                  ? 'Brak przepisów w tej kategorii.'
+                : activeCategory || activeTag
+                  ? 'Brak przepisów pasujących do filtrów.'
                   : 'Brak przepisów. Dodaj pierwszy przepis!'
               : `${recipes.length} przepis${recipes.length === 1 ? '' : 'ów'}`}
           </p>
@@ -72,6 +75,13 @@ export function RecipesContent({
           <Suspense>
             <CategoryFilter activeCategory={activeCategory} counts={categoryCounts} />
           </Suspense>
+          {activeTag && (
+            <div className="mt-3">
+              <Suspense>
+                <ActiveTagFilter tag={activeTag} />
+              </Suspense>
+            </div>
+          )}
         </div>
 
         {recipes.length === 0 ? (
@@ -96,8 +106,8 @@ export function RecipesContent({
             <p className="mt-2 text-gray-600">
               {hasSearch
                 ? `Żaden przepis nie pasuje do „${searchQuery}". Spróbuj innej nazwy lub składnika.`
-                : activeCategory
-                  ? 'Nie masz jeszcze przepisów w tej kategorii.'
+                : activeCategory || activeTag
+                  ? 'Nie masz jeszcze przepisów pasujących do filtrów.'
                   : 'Wróć na stronę główną, aby wyszukać lub dodać przepis.'}
             </p>
           </div>
