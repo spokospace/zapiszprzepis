@@ -374,8 +374,16 @@ function galleryFolder(userId: string, recipeId: number): string {
   return `${userId}/${recipeId}`
 }
 
-/** Deletes every file in a recipe's gallery folder. Never throws. */
-export async function removeGallery(supabase: SupabaseClient, userId: string, recipeId: number): Promise<void> {
+/**
+ * Deletes the files in a recipe's gallery folder, except the storage paths in
+ * `keep`. Never throws.
+ */
+export async function removeGallery(
+  supabase: SupabaseClient,
+  userId: string,
+  recipeId: number,
+  keep: ReadonlySet<string> = new Set(),
+): Promise<void> {
   const folder = galleryFolder(userId, recipeId)
   const bucket = supabase.storage.from('recipe-images')
   const { data, error } = await bucket.list(folder)
@@ -383,17 +391,23 @@ export async function removeGallery(supabase: SupabaseClient, userId: string, re
     console.warn(`[removeGallery] list failed: ${error.message}`)
     return
   }
-  if (!data?.length) return
-  const { error: removeError } = await bucket.remove(data.map((file) => `${folder}/${file.name}`))
+  const stale = (data ?? []).map((file) => `${folder}/${file.name}`).filter((path) => !keep.has(path))
+  if (stale.length === 0) return
+  const { error: removeError } = await bucket.remove(stale)
   if (removeError) console.warn(`[removeGallery] remove failed: ${removeError.message}`)
 }
 
 /**
- * Archives the gallery as `<user>/<recipe>/<n>.<ext>` and returns the Storage
- * URLs of the photos that made it, in order. Photos that fail to download are
- * left out rather than kept as external links: Facebook's expire within days.
- * `archivedCover` stands in for `sources[0]`, which buildGallery makes the
- * cover, so it is not downloaded twice.
+ * Archives the gallery as `<user>/<recipe>/<run>-<n>.<ext>` and returns the
+ * Storage URLs of the photos that made it, in order. Photos that fail to
+ * download are left out rather than kept as external links: Facebook's expire
+ * within days. `archivedCover` stands in for `sources[0]`, which buildGallery
+ * makes the cover, so it is not downloaded twice.
+ *
+ * Returns null when there were photos but none of them archived: the caller
+ * keeps the gallery it has, and its files are left alone. The old files are
+ * removed only once a new set exists; `<run>` keeps the new names from
+ * overwriting them (and a cached old photo from showing under a new URL).
  */
 export async function archiveGallery(
   supabase: SupabaseClient,
@@ -401,22 +415,30 @@ export async function archiveGallery(
   recipeId: number,
   sources: string[],
   archivedCover: string | null,
-): Promise<string[]> {
-  // A refresh may find fewer photos than last time; stale files must not linger.
-  await removeGallery(supabase, userId, recipeId)
+): Promise<string[] | null> {
   const folder = galleryFolder(userId, recipeId)
+  const run = Date.now().toString(36)
   const archived = await Promise.all(
     sources.map((source, i) =>
-      i === 0 && archivedCover ? archivedCover : archiveImageAt(supabase, `${folder}/${i}`, source),
+      i === 0 && archivedCover ? archivedCover : archiveImageAt(supabase, `${folder}/${run}-${i}`, source),
     ),
   )
-  return archived.filter((url): url is string => url != null)
+  const gallery = archived.filter((url): url is string => url != null)
+  const kept = new Set(
+    gallery.map((url) => extractStoragePath(url)).filter((path): path is string => path?.startsWith(`${folder}/`) ?? false),
+  )
+  if (sources.length > 0 && kept.size === 0) return null
+
+  // A refresh may find fewer photos than last time; stale files must not linger.
+  await removeGallery(supabase, userId, recipeId, kept)
+  return gallery
 }
 
 /**
  * Archives a recipe's cover and gallery. The gallery is only touched when
  * there is one, or when `clearStale` asks for an old one to be emptied (a
- * refresh replaces the gallery outright).
+ * refresh replaces the gallery outright). `gallery` is null when the photos
+ * failed to archive, and the stored gallery must be kept.
  */
 export async function archiveRecipeImages(
   supabase: SupabaseClient,
@@ -425,7 +447,7 @@ export async function archiveRecipeImages(
   cover: string | undefined,
   gallery: string[],
   { clearStale = false }: { clearStale?: boolean } = {},
-): Promise<{ cover: string | null; gallery: string[] }> {
+): Promise<{ cover: string | null; gallery: string[] | null }> {
   const archivedCover = cover != null ? await archiveImage(supabase, userId, recipeId, cover) : null
   const archivedGallery =
     gallery.length > 0 || clearStale

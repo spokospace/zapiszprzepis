@@ -5,8 +5,85 @@ import {
   pickRecipeImage,
   pickGalleryImages,
   buildGallery,
+  archiveGallery,
   GALLERY_LIMIT,
 } from '@/lib/recipe-image-archive'
+
+describe('archiveGallery — a failed re-archive never loses the stored gallery', () => {
+  const PUBLIC = 'https://x.supabase.co/storage/v1/object/public/recipe-images/'
+  const COVER = `${PUBLIC}user-1/7.jpg`
+
+  /** A Storage bucket already holding `existing` in the recipe's gallery folder. */
+  function makeStorage(existing: string[]) {
+    const files = new Set(existing.map((name) => `user-1/7/${name}`))
+    const bucket = {
+      upload: vi.fn(async (path: string) => {
+        files.add(path)
+        return { error: null }
+      }),
+      getPublicUrl: (path: string) => ({ data: { publicUrl: `${PUBLIC}${path}` } }),
+      list: vi.fn(async (folder: string) => ({
+        data: [...files].filter((p) => p.startsWith(`${folder}/`)).map((p) => ({ name: p.slice(folder.length + 1) })),
+        error: null,
+      })),
+      remove: vi.fn(async (paths: string[]) => {
+        paths.forEach((p) => files.delete(p))
+        return { error: null }
+      }),
+    }
+    return { supabase: { storage: { from: () => bucket } } as any, bucket, files }
+  }
+
+  /** fetch answering a JPEG for the URLs in `ok` and a 404 for the rest. */
+  function stubFetch(ok: string[]) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        ok.includes(url)
+          ? { ok: true, headers: new Headers({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => new ArrayBuffer(10) }
+          : { ok: false, status: 404, headers: new Headers() },
+      ),
+    )
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('keeps the old files and returns null when no photo archives', async () => {
+    const { supabase, bucket, files } = makeStorage(['0.jpg', '1.jpg'])
+    stubFetch([])
+
+    const result = await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], COVER)
+
+    expect(result).toBeNull()
+    expect(bucket.remove).not.toHaveBeenCalled()
+    expect([...files]).toEqual(['user-1/7/0.jpg', 'user-1/7/1.jpg'])
+  })
+
+  it('stores the new photos under fresh names, then removes the old ones', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(36 * 36) // run id "100"
+    const { supabase, bucket, files } = makeStorage(['0.jpg', '1.jpg'])
+    stubFetch(['https://cdn.example/b.jpg'])
+
+    const result = await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], COVER)
+
+    expect(result).toEqual([COVER, `${PUBLIC}user-1/7/100-1.jpg`])
+    expect(bucket.remove).toHaveBeenCalledWith(['user-1/7/0.jpg', 'user-1/7/1.jpg'])
+    expect([...files]).toEqual(['user-1/7/100-1.jpg'])
+  })
+
+  it('clears the folder when the source has no gallery', async () => {
+    const { supabase, files } = makeStorage(['0.jpg', '1.jpg'])
+    stubFetch([])
+
+    const result = await archiveGallery(supabase, 'user-1', 7, [], null)
+
+    expect(result).toEqual([])
+    expect(files.size).toBe(0)
+  })
+})
 
 describe('isPrivateUrl — SSRF guard (Risk 6)', () => {
   it.each([
