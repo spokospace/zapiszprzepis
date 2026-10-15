@@ -128,8 +128,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           {typedRecipe.tags.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Tagi">
               {typedRecipe.tags.map((tag) => (
-                <li key={tag} className="px-2.5 py-0.5 border border-orange-200 text-orange-700 text-xs rounded-full">
-                  #{tagLabel(tag)}
+                // Slanted (parallelogram) badge; the inner span skews back so the text stays upright.
+                <li key={tag} className="-skew-x-12 px-3 py-0.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium">
+                  <span className="inline-block skew-x-12">{tagLabel(tag)}</span>
                 </li>
               ))}
             </ul>
