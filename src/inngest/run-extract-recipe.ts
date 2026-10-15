@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
-import { archiveImage, pickRecipeImage } from '@/lib/recipe-image-archive'
+import { archiveRecipeImages, buildGallery, pickGalleryImages, pickRecipeImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
@@ -100,6 +100,8 @@ export async function runExtractRecipe(
     let markdown = ''
     let html = ''
     let ogImage: string | undefined
+    // The recipe's other photos, for the gallery under it; see buildGallery.
+    let photos: string[] = []
     let embedHtml = ''
     // True while the content came verbatim from the author (a post caption, a
     // feed body) rather than from a rendered page; drives the junk gate below.
@@ -148,17 +150,20 @@ export async function runExtractRecipe(
       // The blog's own og:image is a stable URL; the post thumbnail is only a
       // last resort, and it expires.
       ogImage = linkedPage.metadata?.ogImage ?? pickRecipeImage(html, linkedUrl ?? undefined) ?? facebookPost?.image ?? undefined
+      photos = pickGalleryImages(html, linkedUrl ?? undefined)
     } else if (facebookPost?.caption) {
       console.log('[extract-recipe] using Facebook caption for', facebookPost.canonicalUrl)
       // The caption is already plain text and opens with the post's headline,
       // so it needs no title prefix the way the Blogger feed does.
       markdown = facebookPost.caption
       ogImage = facebookPost.image ?? undefined
+      photos = facebookPost.images
       trustedContent = true
     } else if (bloggerPost) {
       console.log('[extract-recipe] using Blogger feed for', sharedUrl)
       html = bloggerPost.html
       ogImage = bloggerPost.image ?? undefined
+      photos = pickGalleryImages(bloggerPost.html, sharedUrl)
       // Give the LLM clean text, prefixed with the post title as a strong
       // title signal.
       const text = bloggerPost.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -189,6 +194,8 @@ export async function runExtractRecipe(
       markdown = scraped.markdown ?? ''
       html = scraped.html ?? ''
       ogImage = scraped.metadata?.ogImage ?? pickRecipeImage(html, sharedUrl)
+      // A YouTube page's images are other videos' thumbnails, not the dish.
+      if (sourceType === 'web_blog') photos = pickGalleryImages(html, sharedUrl)
       embedHtml = scrapedEmbedHtml
     }
 
@@ -200,6 +207,7 @@ export async function runExtractRecipe(
     // image from a blog page.
     const durableImageUrl =
       ogImage != null && ogImage === facebookPost?.image ? null : ogImage ?? null
+    const gallery = buildGallery(ogImage, photos)
 
     // S-04: capture a YouTube video id for the detail-page embed. Either the
     // shared URL is itself a YouTube link (source_type 'youtube'), or a blog
@@ -384,10 +392,18 @@ Rules:
         throw new Error(`Refresh update failed: ${refreshError?.message ?? 'recipe not found'}`)
       }
 
-      if (ogImage != null) {
-        const archivedUrl = await archiveImage(supabase, userId, refreshed.id, ogImage)
-        await supabase.from('recipes').update({ image_url: archivedUrl ?? durableImageUrl }).eq('id', refreshed.id)
-      }
+      // A refresh replaces the gallery outright, emptying it when the source
+      // no longer has several photos.
+      const archived = await archiveRecipeImages(supabase, userId, refreshed.id, ogImage, gallery, {
+        clearStale: true,
+      })
+      await supabase
+        .from('recipes')
+        .update({
+          ...(ogImage != null ? { image_url: archived.cover ?? durableImageUrl } : {}),
+          image_urls: archived.gallery,
+        })
+        .eq('id', refreshed.id)
 
       await supabase
         .from('recipe_shares')
@@ -435,11 +451,15 @@ Rules:
         recipe = data
         // Archive the external og:image into Supabase Storage. On failure
         // image_url keeps whatever durableImageUrl put there.
-        if (ogImage != null) {
-          const archivedUrl = await archiveImage(supabase, userId, data.id, ogImage)
-          if (archivedUrl != null) {
-            await supabase.from('recipes').update({ image_url: archivedUrl }).eq('id', data.id)
-          }
+        const archived = await archiveRecipeImages(supabase, userId, data.id, ogImage, gallery)
+        if (archived.cover != null || archived.gallery.length > 0) {
+          await supabase
+            .from('recipes')
+            .update({
+              ...(archived.cover != null ? { image_url: archived.cover } : {}),
+              ...(archived.gallery.length > 0 ? { image_urls: archived.gallery } : {}),
+            })
+            .eq('id', data.id)
         }
         break
       } else {
@@ -483,14 +503,15 @@ Rules:
           // external link. That's how scripts/archive-recipe-images.ts
           // backfills existing recipes to be archive-first. External URL
           // is only kept when there was no prior value AND archive failed.
-          if (ogImage != null) {
-            const archivedUrl = await archiveImage(supabase, userId, existing.id, ogImage)
-            if (archivedUrl != null) {
-              gapFill.image_url = archivedUrl
-            } else if (existing.image_url == null && durableImageUrl != null) {
-              gapFill.image_url = durableImageUrl
-            }
+          // The gallery follows the same rule: archived photos replace whatever
+          // is there, which is how the backfill gives old recipes a gallery.
+          const archived = await archiveRecipeImages(supabase, userId, existing.id, ogImage, gallery)
+          if (archived.cover != null) {
+            gapFill.image_url = archived.cover
+          } else if (ogImage != null && existing.image_url == null && durableImageUrl != null) {
+            gapFill.image_url = durableImageUrl
           }
+          if (archived.gallery.length > 0) gapFill.image_urls = archived.gallery
 
           if (Object.keys(gapFill).length > 0) {
             await supabase.from('recipes').update(gapFill).eq('id', existing.id)

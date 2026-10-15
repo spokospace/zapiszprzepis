@@ -8,6 +8,7 @@ import { sourceLabel } from '@/lib/recipe-source'
 import { tagLabel } from '@/lib/recipe-tags'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
+import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
@@ -211,6 +212,11 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               />
             </div>
           </section>
+        )}
+
+        {/* A gallery of one would only repeat the cover. */}
+        {typedRecipe.image_urls.length > 1 && (
+          <RecipeGallery images={typedRecipe.image_urls} title={typedRecipe.title} />
         )}
 
         <div className="border-t pt-8 flex items-center justify-between gap-3">

@@ -95,6 +95,7 @@ export type Database = {
           extracted_at: string | null
           id: number
           image_url: string | null
+          image_urls: string[]
           ingredients: Json
           prep_time_minutes: number | null
           slug: string
@@ -116,6 +117,7 @@ export type Database = {
           extracted_at?: string | null
           id?: number
           image_url?: string | null
+          image_urls?: string[]
           ingredients?: Json
           prep_time_minutes?: number | null
           slug: string
@@ -137,6 +139,7 @@ export type Database = {
           extracted_at?: string | null
           id?: number
           image_url?: string | null
+          image_urls?: string[]
           ingredients?: Json
           prep_time_minutes?: number | null
           slug?: string

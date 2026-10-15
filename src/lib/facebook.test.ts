@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   buildFacebookPluginUrl,
+  extractGroupPostPhotoIds,
   extractGroupPostText,
   extractOgTag,
   extractPluginCaption,
@@ -50,6 +51,15 @@ const GROUP_POST_HTML = String.raw`<html><script type="application/json">{"story
 "comment":{"legacy_fbid":"1","depth":0,"body":{"text":"Sk\u0142adniki:\n\n300 g m\u0105ki pszennej\n\nWykonanie: piecz \"na z\u0142oto\""},"attachments":[],"author":{"__typename":"User","id":"pfbidAUTHOR","name":"Fefe Deni"}},
 "comment":{"legacy_fbid":"1","depth":0,"body":{"text":"Sk\u0142adniki:\n\n300 g m\u0105ki pszennej\n\nWykonanie: piecz \"na z\u0142oto\""},"attachments":[],"author":{"__typename":"User","id":"pfbidAUTHOR","name":"Fefe Deni"}},
 "comment":{"legacy_fbid":"2","depth":0,"body":{"text":"Mniam, zrobi\u0119!"},"author":{"__typename":"User","id":"pfbidMEMBER"}}}}</script></html>`
+
+// A two-photo group post's attachments as the Relay data lists them (each
+// photo several times), plus a member's photo under the comments, which sits in
+// another set and is not part of the post.
+const GROUP_PHOTOS_HTML = String.raw`<script type="application/json">{"all_subattachments":{"count":2,"nodes":[
+{"media":{"__typename":"Photo","id":"2534992233268516"},"url":"https:\/\/www.facebook.com\/photo.php?fbid=2534992233268516&set=gm.2685730571747766&type=3"},
+{"media":{"__typename":"Photo","id":"2534992403268499"},"url":"https:\/\/www.facebook.com\/photo.php?fbid=2534992403268499&set=gm.2685730571747766&type=3"}]},
+"url":"https:\/\/www.facebook.com\/photo.php?fbid=2534992233268516&set=gm.2685730571747766&type=3",
+"comment":{"attachments":[{"url":"https:\/\/www.facebook.com\/photo.php?fbid=999&set=p.999&type=3"}]}}</script>`
 
 // What a private group's permalink page carries for a logged-out visitor.
 const LOGIN_WALL_HTML = '<html><head><title>Facebook</title></head><body>Zaloguj się</body></html>'
@@ -123,6 +133,20 @@ describe('extractGroupPostText', () => {
 
   it('returns null for a page without the post', () => {
     expect(extractGroupPostText(LOGIN_WALL_HTML)).toBeNull()
+  })
+})
+
+describe('extractGroupPostPhotoIds', () => {
+  it("lists the post's own photos in order, each once, without comment photos", () => {
+    expect(extractGroupPostPhotoIds(GROUP_PHOTOS_HTML, '2685730571747766')).toEqual([
+      '2534992233268516',
+      '2534992403268499',
+    ])
+  })
+
+  it('finds nothing for another post or a post without photos', () => {
+    expect(extractGroupPostPhotoIds(GROUP_PHOTOS_HTML, '1')).toEqual([])
+    expect(extractGroupPostPhotoIds(GROUP_POST_HTML, '2685730571747766')).toEqual([])
   })
 })
 
@@ -353,6 +377,34 @@ describe('fetchFacebookPost', () => {
       recipeLink: null,
     })
     expect(post?.caption).toContain('300 g mąki pszennej')
+  })
+
+  it("collects every photo of a group post from each photo's own page", async () => {
+    const photoPage = (id: string) =>
+      `<meta property="og:image" content="https://scontent.xx.fbcdn.net/v/t1/${id}_n.jpg?oe=6AF8B613&amp;oh=1" />`
+    const fetch = vi.fn(async (input: string, init?: RequestInit) => {
+      const ua = new Headers(init?.headers).get('User-Agent') ?? ''
+      const photo = /fbid=(\d+)/.exec(input)?.[1]
+      // Only a link-preview bot gets a photo page's og:image.
+      const html = photo
+        ? ua.includes('Twitterbot') ? photoPage(photo) : LOGIN_WALL_HTML
+        : ua.includes('Googlebot') ? GROUP_POST_HTML + GROUP_PHOTOS_HTML : PLUGIN_HTML
+      return { ok: true, status: 200, url: input, text: async () => html } as Response
+    }) as unknown as typeof globalThis.fetch
+
+    const post = await fetchFacebookPost('https://www.facebook.com/groups/1539133879740780/posts/2685730571747766/', {
+      fetch,
+    })
+
+    expect(post?.images).toEqual([
+      'https://scontent.xx.fbcdn.net/v/t1/2534992233268516_n.jpg?oe=6AF8B613&oh=1',
+      'https://scontent.xx.fbcdn.net/v/t1/2534992403268499_n.jpg?oe=6AF8B613&oh=1',
+    ])
+    const photoUrls = vi.mocked(fetch).mock.calls.map((c) => String(c[0])).filter((u) => u.includes('fbid='))
+    expect(photoUrls).toEqual([
+      'https://www.facebook.com/photo/?fbid=2534992233268516&set=gm.2685730571747766',
+      'https://www.facebook.com/photo/?fbid=2534992403268499&set=gm.2685730571747766',
+    ])
   })
 
   it('reports a private group post as refused', async () => {

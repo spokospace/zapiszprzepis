@@ -26,6 +26,7 @@
 
 import { isYoutubeHost } from '@/lib/youtube'
 import { decodeEntities } from '@/lib/html-entities'
+import { GALLERY_LIMIT } from '@/lib/recipe-image-archive'
 
 const CRAWLER_UA = 'facebookexternalhit/1.1'
 // The only logged-out user-agent Facebook serves a group post's text and
@@ -74,6 +75,12 @@ export function isFacebookShareUrl(url: string): boolean {
  * before any fetch, and before the query string is dropped with the post id.
  */
 export function toGroupPostUrl(url: string): string | null {
+  const groupPost = parseGroupPost(url)
+  return groupPost ? `https://www.facebook.com/groups/${groupPost.group}/posts/${groupPost.post}/` : null
+}
+
+/** The group and post ids of a group post link, in any of the shapes toGroupPostUrl reads. */
+function parseGroupPost(url: string): { group: string; post: string } | null {
   try {
     const parsed = new URL(url)
     if (normalizeFacebookHost(parsed.hostname) !== 'facebook.com') return null
@@ -82,7 +89,7 @@ export function toGroupPostUrl(url: string): string | null {
     // multi_permalinks may list several ids; the first is the one clicked.
     const post = permalink?.[2] ?? parsed.searchParams.get('multi_permalinks')?.split(',')[0]
     if (!group || !post || !/^\d+$/.test(post)) return null
-    return `https://www.facebook.com/groups/${group}/posts/${post}/`
+    return { group, post }
   } catch {
     return null
   }
@@ -245,6 +252,11 @@ export interface FacebookPost {
    * persist the link itself.
    */
   image: string | null
+  /**
+   * Every photo of a multi-photo group post, in post order — signed fbcdn.net
+   * URLs that expire like `image`. Empty for other posts.
+   */
+  images: string[]
 }
 
 export interface FetchFacebookPostDeps {
@@ -283,15 +295,18 @@ async function fetchPermalink(
   }
 }
 
-const UNREACHABLE = { caption: null, embedStatus: 'unreachable' as const }
+interface PostText {
+  caption: string | null
+  embedStatus: FacebookEmbedStatus
+  images: string[]
+}
+
+const UNREACHABLE: PostText = { caption: null, embedStatus: 'unreachable', images: [] }
 
 /** The embedded-video plugin page — the only logged-out surface that renders
  *  the caption. Never throws; a page we could not load is `unreachable`, which
  *  the caller must not read as "the post has no caption". */
-async function fetchCaption(
-  url: string,
-  fetch: typeof globalThis.fetch,
-): Promise<{ caption: string | null; embedStatus: FacebookEmbedStatus }> {
+async function fetchCaption(url: string, fetch: typeof globalThis.fetch): Promise<PostText> {
   try {
     const response = await fetch(buildFacebookPluginUrl(url), {
       headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
@@ -308,6 +323,7 @@ async function fetchCaption(
     return {
       caption,
       embedStatus: caption == null && pluginHasNoPlayer(html) ? 'refused' : 'rendered',
+      images: [],
     }
   } catch (error) {
     console.warn('[facebook] plugin fetch failed:', error)
@@ -359,12 +375,50 @@ export function extractGroupPostText(html: string): string | null {
   return parts.size > 0 ? [...parts].join('\n\n') : null
 }
 
-/** A public group post's message and its author's comments; the video plugin
- *  refuses group posts outright. Never throws — same contract as `fetchCaption`. */
+// A photo of the post links to its viewer as photo.php?fbid=<photo>&set=gm.<post>.
+// Photos in members' comments sit in other sets, so the set pins the post's own.
+const POST_PHOTO_LINK = /fbid=(\d+)(?:&|&amp;|\\u0026)set=gm\.(\d+)/g
+
+/** Ids of a group post's own photos, in post order, each once. */
+export function extractGroupPostPhotoIds(html: string, postId: string): string[] {
+  const ids = new Set<string>()
+  for (const [, photoId, setId] of html.matchAll(POST_PHOTO_LINK)) {
+    if (setId === postId) ids.add(photoId)
+  }
+  return [...ids]
+}
+
+// The group post page carries its photos only as lookaside links that bounce
+// to a viewer behind the login wall. The photo's own page does hand its
+// og:image to link-preview bots — not to facebookexternalhit or Googlebot.
+const LINK_PREVIEW_UA = 'Twitterbot/1.0'
+
+/** A group post photo's image URL, read off its viewer page. Never throws. */
+async function fetchGroupPhoto(
+  photoId: string,
+  postId: string,
+  fetch: typeof globalThis.fetch,
+): Promise<string | null> {
+  try {
+    const response = await fetch(`https://www.facebook.com/photo/?fbid=${photoId}&set=gm.${postId}`, {
+      headers: { 'User-Agent': LINK_PREVIEW_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
+      signal: AbortSignal.timeout(15_000),
+    })
+    return response.ok ? extractOgTag(await response.text(), 'image') : null
+  } catch (error) {
+    console.warn('[facebook] group photo fetch failed:', error)
+    return null
+  }
+}
+
+/** A public group post's message, its author's comments and its photos; the
+ *  video plugin refuses group posts outright. Never throws — same contract as
+ *  `fetchCaption`. */
 async function fetchGroupPostCaption(
   url: string,
+  postId: string,
   fetch: typeof globalThis.fetch,
-): Promise<{ caption: string | null; embedStatus: FacebookEmbedStatus }> {
+): Promise<PostText> {
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': SEARCH_BOT_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
@@ -374,9 +428,21 @@ async function fetchGroupPostCaption(
       console.warn('[facebook] group post page returned', response.status)
       return UNREACHABLE
     }
-    const caption = extractGroupPostText(await response.text())
+    const html = await response.text()
+    const caption = extractGroupPostText(html)
+    // A login wall carries no photos worth fetching.
+    const photoIds = caption == null ? [] : extractGroupPostPhotoIds(html, postId)
+    const images = await Promise.all(
+      photoIds
+        .slice(0, GALLERY_LIMIT)
+        .map((photoId) => fetchGroupPhoto(photoId, postId, fetch)),
+    )
     // No text at all means Facebook served the login wall: a private group.
-    return { caption, embedStatus: caption == null ? 'refused' : 'rendered' }
+    return {
+      caption,
+      embedStatus: caption == null ? 'refused' : 'rendered',
+      images: images.filter((image): image is string => image != null),
+    }
   } catch (error) {
     console.warn('[facebook] group post fetch failed:', error)
     return UNREACHABLE
@@ -386,7 +452,8 @@ async function fetchGroupPostCaption(
 /** The caption for a post, from whichever logged-out surface renders its kind. */
 function fetchPostText(url: string, fetch: typeof globalThis.fetch) {
   const groupPost = toGroupPostUrl(url)
-  return groupPost ? fetchGroupPostCaption(groupPost, fetch) : fetchCaption(url, fetch)
+  const postId = parseGroupPost(url)?.post
+  return groupPost && postId ? fetchGroupPostCaption(groupPost, postId, fetch) : fetchCaption(url, fetch)
 }
 
 /**
@@ -411,7 +478,7 @@ export async function fetchFacebookPost(
     : // Already a permalink — both requests go out together.
       fetchPostText(target, fetch)
 
-  const [{ canonicalUrl, image, description }, { caption, embedStatus }] = await Promise.all([
+  const [{ canonicalUrl, image, description }, { caption, embedStatus, images }] = await Promise.all([
     permalink,
     pluginPage,
   ])
@@ -426,5 +493,6 @@ export async function fetchFacebookPost(
     embedStatus,
     recipeLink: findRecipeLinkInText(caption ?? description ?? ''),
     image,
+    images,
   }
 }

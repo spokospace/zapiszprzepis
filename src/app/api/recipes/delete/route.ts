@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { extractStoragePath } from '@/lib/recipe-image-archive'
+import { extractStoragePath, removeGallery } from '@/lib/recipe-image-archive'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { data: recipe, error: getError } = await supabase
       .from('recipes')
-      .select('id, image_url')
+      .select('id, user_id, image_url')
       .eq('slug', slug)
       .single()
 
@@ -47,6 +47,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
       }
     }
+
+    await removeGallery(supabase, recipe.user_id, recipe.id)
 
     const { error: deleteError } = await supabase.from('recipes').delete().eq('id', recipe.id)
 
