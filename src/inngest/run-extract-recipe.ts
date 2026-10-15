@@ -264,6 +264,7 @@ Rules:
 - Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml).
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
+- Category: cookies, biscuits, gingerbread cookies and macarons ("ciasteczka", "herbatniki", "pierniczki", "makaroniki") are "ciasteczka", not "desery". Cakes, muffins and other sweets stay "desery".
 - Return null for any field the source does not specify. Do not guess.
 - Best-effort if content incomplete.`,
             },
