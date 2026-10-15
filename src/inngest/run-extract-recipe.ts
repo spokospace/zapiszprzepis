@@ -393,7 +393,8 @@ Rules:
       }
 
       // A refresh replaces the gallery outright, emptying it when the source
-      // no longer has several photos.
+      // no longer has several photos — but keeps it when none of the new
+      // photos could be archived (gallery is null).
       const archived = await archiveRecipeImages(supabase, userId, refreshed.id, ogImage, gallery, {
         clearStale: true,
       })
@@ -405,7 +406,7 @@ Rules:
         .from('recipes')
         .update({
           ...(nextImageUrl != null ? { image_url: nextImageUrl } : {}),
-          image_urls: archived.gallery,
+          ...(archived.gallery != null ? { image_urls: archived.gallery } : {}),
         })
         .eq('id', refreshed.id)
 
@@ -456,12 +457,12 @@ Rules:
         // Archive the external og:image into Supabase Storage. On failure
         // image_url keeps whatever durableImageUrl put there.
         const archived = await archiveRecipeImages(supabase, userId, data.id, ogImage, gallery)
-        if (archived.cover != null || archived.gallery.length > 0) {
+        if (archived.cover != null || archived.gallery?.length) {
           await supabase
             .from('recipes')
             .update({
               ...(archived.cover != null ? { image_url: archived.cover } : {}),
-              ...(archived.gallery.length > 0 ? { image_urls: archived.gallery } : {}),
+              ...(archived.gallery?.length ? { image_urls: archived.gallery } : {}),
             })
             .eq('id', data.id)
         }
@@ -515,7 +516,7 @@ Rules:
           } else if (ogImage != null && existing.image_url == null && durableImageUrl != null) {
             gapFill.image_url = durableImageUrl
           }
-          if (archived.gallery.length > 0) gapFill.image_urls = archived.gallery
+          if (archived.gallery?.length) gapFill.image_urls = archived.gallery
 
           if (Object.keys(gapFill).length > 0) {
             await supabase.from('recipes').update(gapFill).eq('id', existing.id)

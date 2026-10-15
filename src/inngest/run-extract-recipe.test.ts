@@ -521,6 +521,17 @@ describe('runExtractRecipe — recipe gallery', () => {
     expect(archiveRecipeImages).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, undefined, [], { clearStale: true })
     expect(recipeUpdates(mock)).toEqual([{ image_urls: [] }])
   })
+
+  it('keeps the stored gallery on a refresh when no photo archives', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    vi.mocked(archiveRecipeImages).mockResolvedValueOnce({ cover: null, gallery: null })
+    const fetch = makeFetchMock({ firecrawlHtml: '<p>Przepis na ciasto.</p>'.repeat(20) + STEP_PHOTOS })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch, supabase: mock.supabase as any })
+
+    expect(recipeUpdates(mock)).toEqual([])
+  })
 })
 
 describe('runExtractRecipe — Facebook thumbnail persistence', () => {
