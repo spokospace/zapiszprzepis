@@ -1,0 +1,32 @@
+// Pure parse helper for the `recipes.steps` jsonb column on the detail view.
+//
+// The column is written by the extraction LLM, the gap-fill / refresh paths and
+// maintenance scripts, with no schema validation, so the stored value can be a
+// non-array (object, number, malformed string) or an array holding non-strings.
+// Like parseIngredients, this is the tolerant boundary between whatever is
+// stored and what the RSC renders.
+
+/**
+ * Coerce a stored jsonb value into a list of step strings. Never throws (the
+ * detail page is an RSC; an exception there is a full page crash). Array →
+ * its non-empty string entries, trimmed; JSON-array string → parsed, then the
+ * same; anything else → []. Non-string entries are dropped, because rendering
+ * an object as a React child throws.
+ */
+export function parseSteps(raw: unknown): string[] {
+  let value = raw
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value)
+    } catch {
+      return []
+    }
+  }
+  if (!Array.isArray(value)) return []
+  return value.filter(isStepText).map((step) => step.trim())
+}
+
+/** A step the detail page can render: a string with visible text. */
+export function isStepText(step: unknown): step is string {
+  return typeof step === 'string' && step.trim().length > 0
+}

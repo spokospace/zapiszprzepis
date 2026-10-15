@@ -12,6 +12,7 @@ import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
+import { parseSteps } from '@/lib/steps'
 import type { Database } from '@/lib/supabase.types'
 
 function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: string; minutes: number }) {
@@ -68,13 +69,11 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
   const typedRecipe = recipe as Recipe
 
-  // Parse + group the jsonb ingredients. parseIngredients is crash-safe (an RSC
-  // exception is a full page crash); groupBySection splits by optional `section`.
+  // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
+  // exception is a full page crash, which would also hide the delete button);
+  // groupBySection splits ingredients by optional `section`.
   const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
-
-  const steps = (Array.isArray(typedRecipe.steps)
-    ? typedRecipe.steps
-    : JSON.parse(typedRecipe.steps as string)) as string[]
+  const steps = parseSteps(typedRecipe.steps)
 
   return (
     <div className="min-h-screen bg-white py-8">
@@ -190,16 +189,20 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
           <section>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Przygotowanie</h2>
-            <ol className="space-y-4">
-              {steps.map((step: string, idx: number) => (
-                <li key={idx} className="flex gap-4">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold flex-shrink-0">
-                    {idx + 1}
-                  </span>
-                  <p className="text-gray-700 pt-1">{step}</p>
-                </li>
-              ))}
-            </ol>
+            {steps.length === 0 ? (
+              <p className="text-gray-500">Brak kroków przygotowania.</p>
+            ) : (
+              <ol className="space-y-4">
+                {steps.map((step, idx) => (
+                  <li key={idx} className="flex gap-4">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold flex-shrink-0">
+                      {idx + 1}
+                    </span>
+                    <p className="text-gray-700 pt-1">{step}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
           </section>
         </div>
 
