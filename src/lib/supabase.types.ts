@@ -164,6 +164,7 @@ export type Database = {
         | "obiady"
         | "zupy"
         | "desery"
+        | "ciasteczka"
         | "sniadania"
         | "przekaski"
         | "salatki"
@@ -310,6 +311,7 @@ export const Constants = {
         "obiady",
         "zupy",
         "desery",
+        "ciasteczka",
         "sniadania",
         "przekaski",
         "salatki",
