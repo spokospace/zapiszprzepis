@@ -7,11 +7,11 @@ import { ChevronLeft, Link as LinkIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
-import type { FailedShare } from '@/lib/failed-shares'
+import type { FailedSharesResult } from '@/lib/failed-shares'
 
 const RECIPE_DETAIL_RE = /^\/recipes\/[^/]+$/
 
-export function AppHeader({ failedShares }: { failedShares: FailedShare[] }) {
+export function AppHeader({ failedShares }: { failedShares: FailedSharesResult }) {
   const pathname = usePathname()
   const isRecipeDetail = RECIPE_DETAIL_RE.test(pathname)
 
