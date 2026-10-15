@@ -148,6 +148,30 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
     ])
   })
 
+  it('drops photos inside ad banners and other-recipe sections, keeps a pasted Facebook post (kuron)', () => {
+    // Trimmed from kuron.com.pl: the post's photos sit in a pasted Facebook
+    // post (`UFICommentBody`), then a book banner and a "see also" grid whose
+    // images carry no telltale class of their own.
+    const html = `
+      <img class="jku-recipe-featured-image" src="https://kuron.com.pl/wp-content/uploads/2016/12/rogaliki.jpg">
+      <span class="UFICommentBody _1n4g"><img width="1280" height="960" src="https://kuron.com.pl/wp-content/uploads/2018/11/PA301095.jpg" class="attachment-full size-full"></span>
+      <div class="empik-banner" style="margin-bottom:20px;"><a href="https://www.empik.com/to-mi-smakuje"><div><img src="https://kuron.com.pl/wp-content/uploads/2025/10/To-mi-smakuje-social_2128x788_v2.png" width="2128" height="788"></div></a></div>
+      <p><img src="https://kuron.com.pl/wp-content/uploads/2016/12/rogaliki-w-piekarniku.jpg"></p>
+      <section class="jku-post-grid-wrapper jku-similar-posts-wrapper"><div class="jku-post-grid-item">
+        <a class="jku-post-grid-image" href="https://kuron.com.pl/artykuly/przepisy/wolowina/"><img width="429" height="550" src="https://kuron.com.pl/wp-content/uploads/2016/11/wolowina-po-b.jpg" class="wp-post-image"></a>
+      </div></section>`
+    expect(pickGalleryImages(html, 'https://kuron.com.pl/artykuly/przepisy/ciasta-i-ciastka/rogaliki-z-konfitura-rozana/')).toEqual([
+      'https://kuron.com.pl/wp-content/uploads/2016/12/rogaliki.jpg',
+      'https://kuron.com.pl/wp-content/uploads/2018/11/PA301095.jpg',
+      'https://kuron.com.pl/wp-content/uploads/2016/12/rogaliki-w-piekarniku.jpg',
+    ])
+  })
+
+  it('leaves a noise section in when its closing tag is missing', () => {
+    const html = `<div class="sidebar"><img src="https://blog.example/a.jpg"><img src="https://blog.example/b.jpg">`
+    expect(pickGalleryImages(html)).toEqual(['https://blog.example/a.jpg', 'https://blog.example/b.jpg'])
+  })
+
   it('asks Blogger for the full-size rendition instead of the in-post thumbnail', () => {
     const html = `
       <a href="https://blogger.googleusercontent.com/img/b/R29v/AVvX/s1600/ciasto.jpg">

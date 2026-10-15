@@ -259,15 +259,70 @@ function photoKey(url: string): string {
   }
 }
 
+// Words in a container's class or id that mark a page section holding no photo
+// of this recipe: ads and banners, cards linking to other recipes, comments,
+// sidebars. Matched against whole `-`/`_`-separated words, so kuron's
+// `jku-similar-posts-wrapper` and `empik-banner` match, while its
+// `UFICommentBody` — a Facebook post pasted into the recipe, the dish's photos
+// included — does not.
+const NOISE_SECTION_WORDS = new Set([
+  'ad', 'ads', 'advert', 'advertisement', 'reklama', 'banner', 'sponsor', 'sponsored',
+  'related', 'similar', 'recommended', 'popular',
+  'comment', 'comments', 'author', 'sidebar', 'widget', 'newsletter',
+])
+const SECTION_OPEN_RE = /<(div|section|aside|nav|footer|ul|ol|li|figure|a|ins|span)\b[^>]*>/gi
+const CLASS_OR_ID_RE = /\b(?:class|id)=["']([^"']*)["']/gi
+// One open-or-close matcher per section tag name, built on first use.
+const SAME_TAG_RES = new Map<string, RegExp>()
+
+function isNoiseSection(openTag: string): boolean {
+  for (const [, value] of openTag.matchAll(CLASS_OR_ID_RE)) {
+    if (value.split(/[\s_-]+/).some((w) => NOISE_SECTION_WORDS.has(w.toLowerCase()))) return true
+  }
+  return false
+}
+
+/**
+ * The html with every noise section cut out, each up to its own closing tag.
+ * A section whose closing tag is missing is left in — cutting to the end of
+ * the page on broken markup could drop the recipe's own photos.
+ */
+function withoutNoiseSections(html: string): string {
+  let out = ''
+  let from = 0
+  SECTION_OPEN_RE.lastIndex = 0
+  for (let m = SECTION_OPEN_RE.exec(html); m; m = SECTION_OPEN_RE.exec(html)) {
+    if (!isNoiseSection(m[0])) continue
+    const name = m[1].toLowerCase()
+    let sameTag = SAME_TAG_RES.get(name)
+    if (!sameTag) SAME_TAG_RES.set(name, (sameTag = new RegExp(`<(/?)${name}\\b[^>]*>`, 'gi')))
+    sameTag.lastIndex = SECTION_OPEN_RE.lastIndex
+    let depth = 1
+    let end = -1
+    for (let t = sameTag.exec(html); t; t = sameTag.exec(html)) {
+      depth += t[1] ? -1 : 1
+      if (depth === 0) {
+        end = sameTag.lastIndex
+        break
+      }
+    }
+    if (end < 0) continue
+    out += html.slice(from, m.index)
+    from = end
+    SECTION_OPEN_RE.lastIndex = end
+  }
+  return out + html.slice(from)
+}
+
 /**
  * The photos of the recipe itself, in page order, for the gallery under the
  * recipe: everything `photoTags` keeps, minus thumbnails, readers' comment
- * photos and links to other recipes.
+ * photos, ads and links to other recipes.
  */
 export function pickGalleryImages(html: string, pageUrl?: string): string[] {
   const base = parseBase(pageUrl)
   const urls: string[] = []
-  for (const { url, tag, width, height } of photoTags(html, base)) {
+  for (const { url, tag, width, height } of photoTags(withoutNoiseSections(html), base)) {
     if (NOT_GALLERY_RE.test(tag) || NOT_GALLERY_URL_RE.test(url)) continue
 
     let parsed: URL
