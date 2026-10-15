@@ -34,7 +34,7 @@ export async function signUp(formData: FormData): Promise<void> {
     email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: `${siteUrl}/auth/callback`,
+      emailRedirectTo: `${siteUrl}/auth/confirm?next=/`,
     },
   })
 

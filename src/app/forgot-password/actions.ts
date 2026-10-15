@@ -17,11 +17,11 @@ export async function forgotPassword(formData: FormData): Promise<void> {
   const supabase = await createSupabaseServerClient()
   const siteUrl = await getSiteUrl()
 
-  // Route through /auth/callback so the PKCE code is exchanged there (server-side,
-  // with the code_verifier cookie in scope). After exchange the callback redirects
-  // to /reset-password where the user only needs updateUser() — no code needed.
+  // The email template appends token_hash and type to this URL, and
+  // /auth/confirm verifies them without the PKCE code_verifier cookie — so the
+  // link works on any device, not only in the browser that sent this form.
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+    redirectTo: `${siteUrl}/auth/confirm?next=/reset-password`,
   })
 
   if (error) {

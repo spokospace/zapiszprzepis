@@ -17,7 +17,7 @@ export async function resetPassword(formData: FormData): Promise<void> {
 
   const supabase = await createSupabaseServerClient()
 
-  // Session was already established by /auth/callback (PKCE exchange happened there).
+  // Session was already established by /auth/confirm (or /auth/callback for old links).
   // We only need to update the password on the active recovery session.
   const { error: updateError } = await supabase.auth.updateUser({ password })
 

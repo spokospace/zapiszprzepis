@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { isPrivateUrl, archiveImage } from '@/lib/recipe-image-archive'
+import { isPrivateUrl, archiveImage, pickRecipeImage } from '@/lib/recipe-image-archive'
 
 describe('isPrivateUrl — SSRF guard (Risk 6)', () => {
   it.each([
@@ -62,5 +62,46 @@ describe('archiveImage — fetch not called for private URLs (Risk 6)', () => {
 
     expect(fetchSpy).toHaveBeenCalledOnce()
     expect(result).toBe('https://supabase.co/storage/photo.jpg')
+  })
+})
+
+describe('pickRecipeImage — cover fallback for pages without og:image', () => {
+  const PAGE = 'https://www.mniammniam.com/ptysie-z-bita-smietana-2'
+
+  it('skips the ad counter pixel and takes the schema.org image (mniammniam)', () => {
+    const html = `
+      <img src="/pbook_ctr.php?id=427" class="reklama-eb-ctr" alt="">
+      <img src="/img/book_adv/dieta1.jpg" style="max-width:250px" alt="">
+      <img src="/obrazki/ptysie_bitasmietana6.jpg" alt="Ptysie z bitą śmietaną" itemprop="image">
+      <img src="//assets.pinterest.com/images/pidgets/pin_it_button.png">
+      <img src="obrazki/ptysie_bitasmietana2.jpg" width="650" height="950" alt="Ptysie z bitą śmietaną - etap 1">`
+    expect(pickRecipeImage(html, PAGE)).toBe('https://www.mniammniam.com/obrazki/ptysie_bitasmietana6.jpg')
+  })
+
+  it('without itemprop, prefers the image whose name matches the page slug over an earlier ad', () => {
+    const html = `
+      <img src="/img/book_adv/dieta1.jpg" alt="">
+      <img src="obrazki/ptysie_bitasmietana2.jpg" width="650" height="950" alt="etap 1">`
+    expect(pickRecipeImage(html, PAGE)).toBe('https://www.mniammniam.com/obrazki/ptysie_bitasmietana2.jpg')
+  })
+
+  it('drops tracking pixels, tiny images, gifs and icons entirely', () => {
+    const html = `
+      <img height="1" width="1" src="//googleads.g.doubleclick.net/pagead/viewthroughconversion/1/">
+      <img src="//pixel.quantserve.com/pixel/p-x.gif" height="1" width="1">
+      <img src="/counter.php?id=1">
+      <img src="/thumb.jpg" width="70" height="70">
+      <img src="/wp-content/themes/x/icons/search.png">`
+    expect(pickRecipeImage(html, PAGE)).toBeUndefined()
+  })
+
+  it('falls back to the first surviving image when nothing stands out', () => {
+    const html = `<img src="https://cdn.example.com/a.jpg"><img src="https://cdn.example.com/b.jpg">`
+    expect(pickRecipeImage(html)).toBe('https://cdn.example.com/a.jpg')
+  })
+
+  it('reads lazy-loaded sources before the placeholder src', () => {
+    const html = `<img data-lazy-src="https://example.com/real.jpg" src="https://example.com/placeholder.png">`
+    expect(pickRecipeImage(html)).toBe('https://example.com/real.jpg')
   })
 })

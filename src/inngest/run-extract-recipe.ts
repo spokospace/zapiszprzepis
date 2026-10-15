@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
-import { archiveImage, extractFirstImage } from '@/lib/recipe-image-archive'
+import { archiveImage, pickRecipeImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
@@ -145,7 +145,7 @@ export async function runExtractRecipe(
       html = linkedPage.html ?? ''
       // The blog's own og:image is a stable URL; the post thumbnail is only a
       // last resort, and it expires.
-      ogImage = linkedPage.metadata?.ogImage ?? extractFirstImage(html) ?? facebookPost?.image ?? undefined
+      ogImage = linkedPage.metadata?.ogImage ?? pickRecipeImage(html, linkedUrl ?? undefined) ?? facebookPost?.image ?? undefined
     } else if (facebookPost?.caption) {
       console.log('[extract-recipe] using Facebook caption for', facebookPost.canonicalUrl)
       // The caption is already plain text and opens with the post's headline,
@@ -186,7 +186,7 @@ export async function runExtractRecipe(
       ])
       markdown = scraped.markdown ?? ''
       html = scraped.html ?? ''
-      ogImage = scraped.metadata?.ogImage ?? extractFirstImage(html)
+      ogImage = scraped.metadata?.ogImage ?? pickRecipeImage(html, sharedUrl)
       embedHtml = scrapedEmbedHtml
     }
 

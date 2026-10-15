@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { safeNext, mapAuthError, inboundAuthError } from '@/lib/safe-redirect'
+import { safeNext, mapAuthError, inboundAuthError, parseEmailOtpType } from '@/lib/safe-redirect'
 
 const ORIGIN = 'https://zapiszprzepis.pl'
 
@@ -78,5 +78,19 @@ describe('inboundAuthError — errors Supabase puts on the callback URL', () => 
 
   it('returns null for a clean callback so the code exchange proceeds', () => {
     expect(inboundAuthError(null, null)).toBeNull()
+  })
+})
+
+describe('parseEmailOtpType — /auth/confirm link type', () => {
+  it('accepts the types our email templates send', () => {
+    expect(parseEmailOtpType('recovery')).toBe('recovery')
+    expect(parseEmailOtpType('email')).toBe('email')
+  })
+
+  it('rejects anything else, including a missing param', () => {
+    expect(parseEmailOtpType('sms')).toBeNull()
+    expect(parseEmailOtpType('')).toBeNull()
+    expect(parseEmailOtpType(null)).toBeNull()
+    expect(parseEmailOtpType(undefined)).toBeNull()
   })
 })

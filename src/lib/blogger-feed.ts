@@ -4,7 +4,7 @@
 // hand the scraper a Google Translate widget or an empty "main content" block
 // and produce junk extractions. The feed is deterministic, fast and free.
 
-import { extractFirstImage } from './recipe-image-archive'
+import { pickRecipeImage } from './recipe-image-archive'
 
 export function isBlogspotUrl(url: string): boolean {
   try {
@@ -56,6 +56,6 @@ export async function fetchBloggerPost(url: string): Promise<BloggerPost | null>
   return {
     title: entry?.title?.$t ?? '',
     html,
-    image: extractFirstImage(html) ?? null,
+    image: pickRecipeImage(html, url) ?? null,
   }
 }

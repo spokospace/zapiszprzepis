@@ -57,3 +57,13 @@ export function mapAuthError(code: string | undefined): string {
   if (USED_CODES.has(code)) return 'used'
   return 'unknown'
 }
+
+// The email link types /auth/confirm accepts — exactly what supabase/templates
+// send. `email` covers both the magic link and the signup confirmation.
+const EMAIL_OTP_TYPES = ['email', 'recovery'] as const
+export type ConfirmOtpType = (typeof EMAIL_OTP_TYPES)[number]
+
+/** Narrow the `type` param of an email link; null for anything we do not verify. */
+export function parseEmailOtpType(raw: string | null | undefined): ConfirmOtpType | null {
+  return (EMAIL_OTP_TYPES as readonly string[]).includes(raw ?? '') ? (raw as ConfirmOtpType) : null
+}
