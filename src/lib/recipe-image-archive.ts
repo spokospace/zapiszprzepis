@@ -222,7 +222,9 @@ export const GALLERY_LIMIT = 12
 // Images inside a post that are still not the recipe's own photos: readers'
 // photos under the comments, cards linking to other recipes, author badges.
 const NOT_GALLERY_RE = /\bclass=["'][^"']*(comment|related|similar|recommend|popular|author|profile|avatar|widget)/i
-const NOT_GALLERY_URL_RE = /\/comments?\//i
+// Readers' comment photos, and YouTube's video stills — a video is embedded
+// on its own, and a still is no photo of the dish.
+const NOT_GALLERY_URL_RE = /\/comments?\/|(^|\/\/)i\d?\.ytimg\.com\//i
 // A thumbnail size baked into the file name: WordPress `-150x150.jpg`,
 // aniagotuje `-v-360x360.jpg`.
 const FILE_SIZE_RE = /[-_](\d{2,4})x(\d{2,4})(?=\.\w+$)/
@@ -276,7 +278,17 @@ const CLASS_OR_ID_RE = /\b(?:class|id)=["']([^"']*)["']/gi
 // One open-or-close matcher per section tag name, built on first use.
 const SAME_TAG_RES = new Map<string, RegExp>()
 
+// A link a recipe photo may sit in: the photo's own file (lightbox, Blogger's
+// full size) or its WordPress attachment page. An image linking anywhere else
+// — a shop product, another recipe, a channel, the home page — is a promo.
+const PHOTO_LINK_RE = /\.(jpe?g|png|webp|avif|gif)([?#]|$)|attachment|googleusercontent\.com|bp\.blogspot\.com/i
+const HREF_RE = /\bhref=["']([^"']*)["']/i
+
 function isNoiseSection(openTag: string): boolean {
+  if (/^<a\b/i.test(openTag)) {
+    const href = HREF_RE.exec(openTag)?.[1]
+    if (href !== undefined && !PHOTO_LINK_RE.test(href)) return true
+  }
   for (const [, value] of openTag.matchAll(CLASS_OR_ID_RE)) {
     if (value.split(/[\s_-]+/).some((w) => NOISE_SECTION_WORDS.has(w.toLowerCase()))) return true
   }

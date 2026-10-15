@@ -259,6 +259,25 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
     expect(pickGalleryImages(html)).toEqual(['https://blog.example/ciasto.jpg'])
   })
 
+  it('drops images linking to another page and video stills, keeps lightbox links (ciastkozercy)', () => {
+    // Trimmed from Firecrawl's render of ciastkozercy.pl: step photos link to
+    // their own files; a shop banner, shop product cards and a channel promo
+    // link elsewhere; a YouTube facade shows the video's still.
+    const html = `
+      <a class="td_spot_img_all" href="https://sklep.ciastkozercy.pl/"><img width="2200" height="360" src="https://ciastkozercy.pl/wp-content/uploads/2023/04/blaszki.jpg"></a>
+      <div class="epyt-video-wrapper"><img class="epyt-facade-poster skip-lazy" src="https://i.ytimg.com/vi/pTQCgs8MpX8/maxresdefault.jpg"></div>
+      <a href="https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-4.jpg"><img src="https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-4.jpg" width="800" height="534"></a>
+      <a class="czb-rz" href="https://sklep.ciastkozercy.pl/produkt/kratka/?blok=przepis"><img src="https://sklep.ciastkozercy.pl/wp-content/uploads/2019/02/KRATKA-600x600.jpg?wsr" width="350" height="350"><span>35,90 zł</span></a>
+      <a href="https://www.youtube.com/channel/UCEAfsPXNHh7MNyiEWwaBU9Q"><img src="https://ciastkozercy.pl/wp-content/uploads/2017/05/Ciastkozercy-YouTube.jpg" width="800" height="520"></a>
+      <img src="https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-2.jpg" width="800" height="534">
+      <a href="https://ciastkozercy.pl/magdalenki/magdalenki-8/?attachment_id=15339"><img src="https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-8.jpg"></a>`
+    expect(pickGalleryImages(html, 'https://ciastkozercy.pl/magdalenki')).toEqual([
+      'https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-4.jpg',
+      'https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-2.jpg',
+      'https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-8.jpg',
+    ])
+  })
+
   it('leaves a noise section in when its closing tag is missing', () => {
     const html = `<div class="sidebar"><img src="https://blog.example/a.jpg"><img src="https://blog.example/b.jpg">`
     expect(pickGalleryImages(html)).toEqual(['https://blog.example/a.jpg', 'https://blog.example/b.jpg'])
