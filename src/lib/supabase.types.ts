@@ -101,6 +101,7 @@ export type Database = {
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url: string | null
           steps: Json
+          tags: string[]
           title: string
           total_time_minutes: number | null
           updated_at: string
@@ -121,6 +122,7 @@ export type Database = {
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
           steps?: Json
+          tags?: string[]
           title: string
           total_time_minutes?: number | null
           updated_at?: string
@@ -141,6 +143,7 @@ export type Database = {
           source_type?: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
           steps?: Json
+          tags?: string[]
           title?: string
           total_time_minutes?: number | null
           updated_at?: string

@@ -7,6 +7,8 @@ import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { labelRecipe } from '@/lib/recipe-labeling'
+import type { Database } from '@/lib/supabase.types'
 
 // Failure copy. These strings are stored verbatim in
 // recipe_shares.error_message and rendered raw in the notification bell, so
@@ -301,6 +303,15 @@ Rules:
       return JSON.parse(content) as RecipeData
     }
 
+    // The user's other recipes, for the labelling pass below; read while the
+    // LLM extracts. A failed read only costs the note its comparison.
+    const existingRecipesQuery = supabase
+      .from('recipes')
+      .select('title, description, source_url')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
     let recipeJSON = inputIsJunk ? null : await extractWithLlm()
 
     // YouTube second pass: the description is where channels paste the
@@ -333,6 +344,16 @@ Rules:
       throw new Error('Extracted content has no usable recipe (title present but no ingredients or steps)')
     }
 
+    // Title casing, the distinguishing note and the tags, judged against the
+    // user's own recipes (minus this one, on a refresh) so the note tells
+    // same-titled ones apart.
+    const { data: existingRecipes } = await existingRecipesQuery
+    const { title, description, tags } = await labelRecipe(
+      recipeJSON,
+      (existingRecipes ?? []).filter((r) => r.source_url !== sharedUrl),
+      { fetch, apiKey: process.env.OPENAI_API_KEY },
+    )
+
     // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
     // this (user, source_url) in place. The normal path below dedups and
     // gap-fills, so it can never replace already-populated fields. We keep
@@ -341,10 +362,12 @@ Rules:
       const { data: refreshed, error: refreshError } = await supabase
         .from('recipes')
         .update({
-          title: recipeJSON.title,
+          title,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
           category: recipeJSON.category,
+          description,
+          tags,
           source_type: sourceType,
           youtube_id: youtubeId,
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
@@ -371,10 +394,10 @@ Rules:
         .update({ recipe_id: refreshed.id, status: 'completed' })
         .eq('id', shareId)
 
-      return { recipeId: refreshed.id, title: recipeJSON.title, category: recipeJSON.category, status: 'refreshed' }
+      return { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' }
     }
 
-    const baseSlug = slugify(recipeJSON.title)
+    const baseSlug = slugify(title)
     const SLUG_KEY = 'recipes_user_id_slug_key'
     const URL_KEY = 'recipes_user_source_url_uniq'
     const MAX_ATTEMPTS = 10
@@ -389,9 +412,10 @@ Rules:
         .from('recipes')
         .insert({
           user_id: userId,
-          title: recipeJSON.title,
+          title,
           slug,
-          description: null,
+          description,
+          tags,
           image_url: durableImageUrl,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
@@ -429,13 +453,13 @@ Rules:
       if (error?.message.includes(URL_KEY)) {
         const { data: existing } = await supabase
           .from('recipes')
-          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id')
+          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, description, tags')
           .eq('user_id', userId)
           .eq('source_url', sharedUrl)
           .single()
 
         if (existing) {
-          const gapFill: Record<string, number | string> = {}
+          const gapFill: Database['public']['Tables']['recipes']['Update'] = {}
           if (existing.prep_time_minutes == null && recipeJSON.prepTimeMinutes != null) {
             gapFill.prep_time_minutes = recipeJSON.prepTimeMinutes
           }
@@ -447,6 +471,12 @@ Rules:
           }
           if (existing.youtube_id == null && youtubeId != null) {
             gapFill.youtube_id = youtubeId
+          }
+          if (existing.description == null && description != null) {
+            gapFill.description = description
+          }
+          if (!existing.tags?.length && tags.length > 0) {
+            gapFill.tags = tags
           }
           // Archive flow: when archiveImage returns a Storage URL, always
           // overwrite image_url — even if it's already populated with an
@@ -488,7 +518,7 @@ Rules:
       .update({ recipe_id: recipe.id, status: 'completed' })
       .eq('id', shareId)
 
-    return { recipeId: recipe.id, title: recipeJSON.title, category: recipeJSON.category, status: 'completed' }
+    return { recipeId: recipe.id, title, category: recipeJSON.category, status: 'completed' }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
 
