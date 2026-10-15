@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { Bell, X } from 'lucide-react'
 import { retryShare } from '@/app/(authenticated)/recipes/retry-action'
 import { dismissShare, dismissAllFailedShares } from '@/app/(authenticated)/recipes/dismiss-action'
-import type { FailedShare } from '@/lib/failed-shares'
+import type { FailedSharesResult } from '@/lib/failed-shares'
 
 /**
  * Header notification bell — the home for failed extractions (S-06). Replaces
@@ -12,11 +12,16 @@ import type { FailedShare } from '@/lib/failed-shares'
  * `useTransition` (not via `<form action={serverAction}>`), which sidesteps the
  * `action="javascript:throw…"` progressive-enhancement placeholder that broke
  * the old "Ponów" button.
+ *
+ * When the failed shares could not be loaded, the bell says so instead of
+ * claiming there is nothing to show.
  */
-export function NotificationBell({ failedShares }: { failedShares: FailedShare[] }) {
+export function NotificationBell({ failedShares: result }: { failedShares: FailedSharesResult }) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const ref = useRef<HTMLDivElement>(null)
+  const loadFailed = result.status === 'error'
+  const failedShares = result.status === 'ok' ? result.shares : []
   const count = failedShares.length
 
   useEffect(() => {
@@ -42,7 +47,13 @@ export function NotificationBell({ failedShares }: { failedShares: FailedShare[]
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label={count > 0 ? `Powiadomienia (${count})` : 'Powiadomienia'}
+        aria-label={
+          loadFailed
+            ? 'Powiadomienia (nie udało się sprawdzić)'
+            : count > 0
+              ? `Powiadomienia (${count})`
+              : 'Powiadomienia'
+        }
         aria-expanded={open}
         aria-controls={open ? 'notifications-panel' : undefined}
         aria-haspopup="menu"
@@ -53,6 +64,9 @@ export function NotificationBell({ failedShares }: { failedShares: FailedShare[]
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-none text-white">
             {count}
           </span>
+        )}
+        {loadFailed && (
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
         )}
       </button>
 
@@ -77,7 +91,11 @@ export function NotificationBell({ failedShares }: { failedShares: FailedShare[]
             )}
           </div>
 
-          {count === 0 ? (
+          {loadFailed ? (
+            <p className="px-4 py-6 text-center text-sm text-amber-700">
+              Nie udało się sprawdzić powiadomień. Odśwież stronę.
+            </p>
+          ) : count === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-gray-500">
               Wszystko gotowe — nic nie wymaga uwagi.
             </p>
