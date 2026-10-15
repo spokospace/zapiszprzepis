@@ -167,6 +167,21 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
     ])
   })
 
+  it('drops a print button whose rendered tag lost its size (slodkisentyment)', () => {
+    // Firecrawl's render of slodkisentyment.pl: the lazy loader strips the
+    // button's width/height, so only its file name and wrapper give it away.
+    const html = `
+      <img src="https://www.slodkisentyment.pl/wp-content/uploads/2019/11/drugi.jpg" class="wp-image-1412" width="553" height="349">
+      <div class="printfriendly pf-button pf-button-content pf-alignleft"><a href="#"><img src="https://www.slodkisentyment.pl/wp-content/uploads/2024/12/printfriendly-button.png" class="pf-button-img" style=""></a><img src="https://www.slodkisentyment.pl/wp-content/uploads/2024/12/pf-pdf-email.png"></div>
+      <img src="https://blog.example/wp-content/uploads/share-button.png">`
+    expect(pickGalleryImages(html)).toEqual(['https://www.slodkisentyment.pl/wp-content/uploads/2019/11/drugi.jpg'])
+  })
+
+  it('keeps the post when its wrapper merely mentions sharing', () => {
+    const html = `<div class="entry-content has-share-buttons"><img src="https://blog.example/ciasto.jpg"></div>`
+    expect(pickGalleryImages(html)).toEqual(['https://blog.example/ciasto.jpg'])
+  })
+
   it('leaves a noise section in when its closing tag is missing', () => {
     const html = `<div class="sidebar"><img src="https://blog.example/a.jpg"><img src="https://blog.example/b.jpg">`
     expect(pickGalleryImages(html)).toEqual(['https://blog.example/a.jpg', 'https://blog.example/b.jpg'])
