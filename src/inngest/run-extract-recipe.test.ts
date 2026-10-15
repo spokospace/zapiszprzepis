@@ -556,6 +556,27 @@ describe('runExtractRecipe — Facebook thumbnail persistence', () => {
     expect(mock.didUpdate('recipes', { image_url: FB_THUMB })).toBe(false)
   })
 
+  it('keeps the existing cover when a refresh fails to re-archive it', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe({ ...FB_EVENT, force: true }, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(archiveImage).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, FB_THUMB)
+    expect(mock.didUpdate('recipes', { image_url: null })).toBe(false)
+    expect(mock.didUpdate('recipes', { image_url: FB_THUMB })).toBe(false)
+  })
+
+  it('replaces the cover when a refresh re-archives it', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    vi.mocked(archiveImage).mockResolvedValue('https://supabase.example/storage/v1/object/public/recipe-images/u/7.jpg')
+
+    await runExtractRecipe({ ...FB_EVENT, force: true }, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.didUpdate('recipes', { image_url: 'https://supabase.example/storage/v1/object/public/recipe-images/u/7.jpg' })).toBe(true)
+  })
+
   it('keeps a stable blog og:image as the fallback when archiving fails', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 7 }, error: null })
