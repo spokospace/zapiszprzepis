@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Link as LinkIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
@@ -40,6 +40,14 @@ export function AppHeader({ failedShares }: { failedShares: FailedShare[] }) {
           </Link>
         </div>
         <div className="flex items-center gap-1">
+          <Link
+            href="/?tab=add"
+            aria-label="Dodaj przepis z linku"
+            className="mr-1 inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+          >
+            <LinkIcon aria-hidden="true" className="h-4 w-4" />
+            Dodaj
+          </Link>
           <NotificationBell failedShares={failedShares} />
           <form action={signOut}>
             <button

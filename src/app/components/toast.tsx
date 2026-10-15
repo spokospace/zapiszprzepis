@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { stripSearchParam } from '@/lib/strip-search-param'
 
 export interface ToastProps {
   message: string
@@ -15,11 +16,7 @@ export function Toast({ message, type = 'success', duration = 3000, clearParam }
   const [isVisible, setIsVisible] = useState(true)
 
   useEffect(() => {
-    if (clearParam) {
-      const url = new URL(window.location.href)
-      url.searchParams.delete(clearParam)
-      window.history.replaceState({}, '', url.toString())
-    }
+    if (clearParam) stripSearchParam(clearParam)
   }, [clearParam])
 
   useEffect(() => {
