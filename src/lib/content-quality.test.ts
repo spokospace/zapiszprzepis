@@ -82,6 +82,19 @@ describe('isExtractedRecipeUsable — output-side gate (Risk 2)', () => {
     expect(isExtractedRecipeUsable({ ...ok, steps: [] })).toBe(false)
     expect(isExtractedRecipeUsable({ ...ok, steps: undefined })).toBe(false)
   })
+
+  it('rejects steps holding non-strings or blank strings (#135)', () => {
+    expect(isExtractedRecipeUsable({ ...ok, steps: [{}] })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, steps: ['  '] })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, steps: ['Wymieszaj', { text: 'Piecz' }] })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, steps: { 1: 'Wymieszaj' } })).toBe(false)
+  })
+
+  it('rejects ingredients that are not objects (#135)', () => {
+    expect(isExtractedRecipeUsable({ ...ok, ingredients: ['Mąka'] })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, ingredients: [null] })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, ingredients: [[{ name: 'Mąka' }]] })).toBe(false)
+  })
 })
 
 describe('looksUnextractable — trusted content', () => {
