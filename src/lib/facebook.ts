@@ -17,16 +17,20 @@
 // the link and read og:image, one for the plugin page.
 //
 // The plugin covers Page videos and reels only. A post inside a group — even a
-// public one — renders as "niedostępny" there, so its only logged-out caption
-// text is the permalink's og:description, which Facebook truncates. That is
-// too lossy to feed an extractor, but it is enough to spot the blog link such
-// posts almost always carry (see `findRecipeLinkInText`); the caller follows
-// the link and reads the recipe from the blog instead.
+// public one — renders as "niedostępny" there. Public group posts are read
+// from the permalink page instead, which Facebook server-renders, comments
+// included, for a search-engine user-agent (see `fetchGroupPostCaption`):
+// group authors often post a photo and a title, and put the recipe itself in
+// the first comment. When the text is only a teaser, the blog link it carries
+// (see `findRecipeLinkInText`) is followed by the caller instead.
 
 import { isYoutubeHost } from '@/lib/youtube'
 import { decodeEntities } from '@/lib/html-entities'
 
 const CRAWLER_UA = 'facebookexternalhit/1.1'
+// The only logged-out user-agent Facebook serves a group post's text and
+// comments to; facebookexternalhit gets og: tags only, a browser a login wall.
+const SEARCH_BOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
@@ -59,6 +63,28 @@ export function isFacebookShareUrl(url: string): boolean {
     return host === 'facebook.com' && /^\/share\//.test(parsed.pathname)
   } catch {
     return false
+  }
+}
+
+/**
+ * The canonical /groups/<group>/posts/<post>/ permalink of a group post, or
+ * null for anything else. Group feeds link a post as
+ * /groups/<group>/?multi_permalinks=<post>, which loads the whole group — its
+ * og: tags describe the group, not the post — so it has to be rewritten
+ * before any fetch, and before the query string is dropped with the post id.
+ */
+export function toGroupPostUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    if (normalizeFacebookHost(parsed.hostname) !== 'facebook.com') return null
+    const permalink = /^\/groups\/([^/]+)\/(?:posts|permalink)\/(\d+)/.exec(parsed.pathname)
+    const group = permalink?.[1] ?? /^\/groups\/([^/]+)\/?$/.exec(parsed.pathname)?.[1]
+    // multi_permalinks may list several ids; the first is the one clicked.
+    const post = permalink?.[2] ?? parsed.searchParams.get('multi_permalinks')?.split(',')[0]
+    if (!group || !post || !/^\d+$/.test(post)) return null
+    return `https://www.facebook.com/groups/${group}/posts/${post}/`
+  } catch {
+    return null
   }
 }
 
@@ -199,8 +225,9 @@ export interface FacebookPost {
    * How the embed plugin answered, which is what a null `caption` means:
    *   - `rendered`  — we saw the post; no caption means it carries no text.
    *   - `refused`   — the plugin showed its error card (embedding disabled by
-   *                   the author, or a group / private / removed post). We
-   *                   never saw the post, so a null caption says nothing.
+   *                   the author, or a private / removed post), or a group
+   *                   post page came back without the post (a private group).
+   *                   We never saw the post, so a null caption says nothing.
    *   - `unreachable` — the plugin page did not come back (timeout, 5xx). Also
    *                   no verdict, but transient rather than a policy.
    */
@@ -288,6 +315,80 @@ async function fetchCaption(
   }
 }
 
+// A JSON string literal's body, escapes included, for JSON.parse to decode.
+const JSON_STRING = String.raw`"((?:[^"\\]|\\.)*)"`
+const POST_MESSAGE = new RegExp(`"message":\\{"text":${JSON_STRING}`)
+// The story's first actor is the post author.
+const POST_AUTHOR = /"actors":\[\{[^\]]*?"id":"([^"]+)"/
+const TOP_LEVEL_COMMENT = new RegExp(
+  `"depth":0,"body":\\{"text":${JSON_STRING}[\\s\\S]{0,3000}?"author":\\{"__typename":"\\w+","id":"([^"]+)"`,
+  'g',
+)
+
+function decodeJsonString(body: string): string | null {
+  try {
+    return JSON.parse(`"${body}"`) as string
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The text of a group post as its permalink page embeds it in the Relay data:
+ * the post message, followed by every top-level comment its author wrote —
+ * which is where group authors tend to put the recipe. Other members'
+ * comments are left out; they are reactions, not the recipe. Returns null
+ * when the page carries neither (a private group, or the login wall).
+ */
+export function extractGroupPostText(html: string): string | null {
+  const message = POST_MESSAGE.exec(html)
+  const authorId = POST_AUTHOR.exec(html)?.[1]
+
+  const parts = new Set<string>()
+  const messageText = message ? decodeJsonString(message[1]) : null
+  if (messageText) parts.add(messageText.trim())
+
+  if (authorId) {
+    // Each comment sits in the data more than once; the Set keeps one copy.
+    for (const [, body, commentAuthor] of html.matchAll(TOP_LEVEL_COMMENT)) {
+      const text = commentAuthor === authorId ? decodeJsonString(body)?.trim() : null
+      if (text) parts.add(text)
+    }
+  }
+
+  return parts.size > 0 ? [...parts].join('\n\n') : null
+}
+
+/** A public group post's message and its author's comments; the video plugin
+ *  refuses group posts outright. Never throws — same contract as `fetchCaption`. */
+async function fetchGroupPostCaption(
+  url: string,
+  fetch: typeof globalThis.fetch,
+): Promise<{ caption: string | null; embedStatus: FacebookEmbedStatus }> {
+  try {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': SEARCH_BOT_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
+      signal: AbortSignal.timeout(20_000),
+    })
+    if (!response.ok) {
+      console.warn('[facebook] group post page returned', response.status)
+      return UNREACHABLE
+    }
+    const caption = extractGroupPostText(await response.text())
+    // No text at all means Facebook served the login wall: a private group.
+    return { caption, embedStatus: caption == null ? 'refused' : 'rendered' }
+  } catch (error) {
+    console.warn('[facebook] group post fetch failed:', error)
+    return UNREACHABLE
+  }
+}
+
+/** The caption for a post, from whichever logged-out surface renders its kind. */
+function fetchPostText(url: string, fetch: typeof globalThis.fetch) {
+  const groupPost = toGroupPostUrl(url)
+  return groupPost ? fetchGroupPostCaption(groupPost, fetch) : fetchCaption(url, fetch)
+}
+
 /**
  * Fetch a Facebook reel/video post's caption and thumbnail without a session.
  *
@@ -300,14 +401,15 @@ export async function fetchFacebookPost(
 ): Promise<FacebookPost | null> {
   if (!isFacebookUrl(url)) return null
 
-  const permalink = fetchPermalink(url, fetch)
+  const target = toGroupPostUrl(url) ?? url
+  const permalink = fetchPermalink(target, fetch)
 
   const pluginPage = isFacebookShareUrl(url)
     ? // A share link only reveals its target through the redirect, so the
       // plugin fetch has to wait for the permalink.
-      permalink.then(({ canonicalUrl }) => fetchCaption(canonicalUrl, fetch))
+      permalink.then(({ canonicalUrl }) => fetchPostText(canonicalUrl, fetch))
     : // Already a permalink — both requests go out together.
-      fetchCaption(url, fetch)
+      fetchPostText(target, fetch)
 
   const [{ canonicalUrl, image, description }, { caption, embedStatus }] = await Promise.all([
     permalink,

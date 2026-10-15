@@ -1,12 +1,14 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   buildFacebookPluginUrl,
+  extractGroupPostText,
   extractOgTag,
   extractPluginCaption,
   fetchFacebookPost,
   findRecipeLinkInText,
   isFacebookShareUrl,
   isFacebookUrl,
+  toGroupPostUrl,
 } from '@/lib/facebook'
 
 // Mirrors the real plugins/video.php markup: the caption lives in a
@@ -38,6 +40,20 @@ const REFUSED_HTML = '<html><body><div class="_3i0p">Nie można osadzić tego fi
 // A post the plugin did embed, over which the author simply wrote nothing.
 const PLAYER_HTML = '<html><body><video src="reel.mp4"></video></body></html>'
 
+// Trimmed from the Relay data of a real public group post as Facebook serves
+// it to a search-engine user-agent: the story with its actors and message,
+// then each comment twice (Facebook repeats it), its body before its author.
+// The post author put the recipe in the first comment; a member's reaction
+// follows and must be left out.
+const GROUP_POST_HTML = String.raw`<html><script type="application/json">{"story":{"actors":[{"__typename":"User","name":"Fefe Deni","id":"pfbidAUTHOR"}],
+"message":{"text":"Ciasteczka ma\u015blane z rowkami"},
+"comment":{"legacy_fbid":"1","depth":0,"body":{"text":"Sk\u0142adniki:\n\n300 g m\u0105ki pszennej\n\nWykonanie: piecz \"na z\u0142oto\""},"attachments":[],"author":{"__typename":"User","id":"pfbidAUTHOR","name":"Fefe Deni"}},
+"comment":{"legacy_fbid":"1","depth":0,"body":{"text":"Sk\u0142adniki:\n\n300 g m\u0105ki pszennej\n\nWykonanie: piecz \"na z\u0142oto\""},"attachments":[],"author":{"__typename":"User","id":"pfbidAUTHOR","name":"Fefe Deni"}},
+"comment":{"legacy_fbid":"2","depth":0,"body":{"text":"Mniam, zrobi\u0119!"},"author":{"__typename":"User","id":"pfbidMEMBER"}}}}</script></html>`
+
+// What a private group's permalink page carries for a logged-out visitor.
+const LOGIN_WALL_HTML = '<html><head><title>Facebook</title></head><body>Zaloguj się</body></html>'
+
 describe('isFacebookUrl', () => {
   it('accepts facebook hosts and their subdomains', () => {
     expect(isFacebookUrl('https://www.facebook.com/reel/943809852095733/')).toBe(true)
@@ -64,6 +80,49 @@ describe('isFacebookShareUrl', () => {
   it('leaves canonical permalinks alone', () => {
     expect(isFacebookShareUrl('https://www.facebook.com/reel/943809852095733/')).toBe(false)
     expect(isFacebookShareUrl('https://www.mecooks.com/share/r/x/')).toBe(false)
+  })
+})
+
+describe('toGroupPostUrl', () => {
+  const POST = 'https://www.facebook.com/groups/1467531384889794/posts/1667590364883894/'
+
+  it('rewrites a group feed link to the post it highlights', () => {
+    expect(
+      toGroupPostUrl(
+        'https://www.facebook.com/groups/1467531384889794/?multi_permalinks=1667590364883894&hoisted_section_header_type=recently_seen&__tn__=%2CO%2CP-R',
+      ),
+    ).toBe(POST)
+    expect(toGroupPostUrl('https://m.facebook.com/groups/1467531384889794?multi_permalinks=1667590364883894,123')).toBe(POST)
+  })
+
+  it('normalises the posts and permalink shapes and drops their query', () => {
+    expect(toGroupPostUrl(`${POST}?comment_id=1`)).toBe(POST)
+    expect(toGroupPostUrl('https://www.facebook.com/groups/1467531384889794/permalink/1667590364883894/')).toBe(POST)
+    expect(toGroupPostUrl('https://www.facebook.com/groups/przepisy/posts/42')).toBe(
+      'https://www.facebook.com/groups/przepisy/posts/42/',
+    )
+  })
+
+  it('returns null for a group feed with no post, and for non-group URLs', () => {
+    expect(toGroupPostUrl('https://www.facebook.com/groups/1467531384889794/')).toBeNull()
+    expect(toGroupPostUrl('https://www.facebook.com/reel/943809852095733/')).toBeNull()
+    expect(toGroupPostUrl('https://example.com/groups/1/posts/2/')).toBeNull()
+  })
+})
+
+describe('extractGroupPostText', () => {
+  it("joins the post message with its author's comments, decoded, each once", () => {
+    expect(extractGroupPostText(GROUP_POST_HTML)).toBe(
+      'Ciasteczka maślane z rowkami\n\nSkładniki:\n\n300 g mąki pszennej\n\nWykonanie: piecz "na złoto"',
+    )
+  })
+
+  it("leaves other members' comments out", () => {
+    expect(extractGroupPostText(GROUP_POST_HTML)).not.toContain('Mniam')
+  })
+
+  it('returns null for a page without the post', () => {
+    expect(extractGroupPostText(LOGIN_WALL_HTML)).toBeNull()
   })
 })
 
@@ -270,6 +329,39 @@ describe('fetchFacebookPost', () => {
     // Not null: "we could not reach Facebook" is the one thing the caller has
     // to know here, so it must not read as "the post has no caption".
     expect(post).toMatchObject({ caption: null, image: null, embedStatus: 'unreachable' })
+  })
+
+  it("reads a group post's text and comments from its permalink, not the plugin", async () => {
+    const fetch = vi.fn(async (input: string, init?: RequestInit) => {
+      const ua = new Headers(init?.headers).get('User-Agent') ?? ''
+      // The crawler request reads og:image; only the search-bot one gets the post.
+      const html = ua.includes('Googlebot') ? GROUP_POST_HTML : PLUGIN_HTML
+      return { ok: true, status: 200, url: input, text: async () => html } as Response
+    }) as unknown as typeof globalThis.fetch
+
+    const post = await fetchFacebookPost(
+      'https://www.facebook.com/groups/1467531384889794/?multi_permalinks=1667590364883894&__tn__=%2CO%2CP-R',
+      { fetch },
+    )
+
+    const urls = vi.mocked(fetch).mock.calls.map((c) => String(c[0]))
+    expect(urls.some((u) => u.includes('/plugins/'))).toBe(false)
+    expect(urls.every((u) => u === 'https://www.facebook.com/groups/1467531384889794/posts/1667590364883894/')).toBe(true)
+    expect(post).toMatchObject({
+      canonicalUrl: 'https://www.facebook.com/groups/1467531384889794/posts/1667590364883894/',
+      embedStatus: 'rendered',
+      recipeLink: null,
+    })
+    expect(post?.caption).toContain('300 g mąki pszennej')
+  })
+
+  it('reports a private group post as refused', async () => {
+    const fetch = vi.fn(
+      async (input: string) => ({ ok: true, status: 200, url: input, text: async () => LOGIN_WALL_HTML }) as Response,
+    ) as unknown as typeof globalThis.fetch
+    const post = await fetchFacebookPost('https://www.facebook.com/groups/1/posts/2/', { fetch })
+
+    expect(post).toMatchObject({ caption: null, embedStatus: 'refused' })
   })
 
   it('ignores non-Facebook URLs', async () => {
