@@ -96,6 +96,28 @@ function parseGroupPost(url: string): { group: string; post: string } | null {
   }
 }
 
+/**
+ * The /<page>/posts/<story>/ form of a Page post shared as
+ * permalink.php?story_fbid=<story>&id=<page> (or story.php), or null for
+ * anything else. From Cloudflare's addresses Facebook answers permalink.php
+ * and story.php with its login page for every user-agent, while the /posts/
+ * page still carries the post text for a search-engine one and the og: tags
+ * for a crawler — so the link has to be rewritten before any fetch.
+ */
+export function toPagePostUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    if (normalizeFacebookHost(parsed.hostname) !== 'facebook.com') return null
+    if (!/^\/(?:permalink|story)\.php$/.test(parsed.pathname)) return null
+    const story = parsed.searchParams.get('story_fbid')
+    const page = parsed.searchParams.get('id')
+    if (!story || !page || !/^[\w-]+$/.test(story) || !/^\d+$/.test(page)) return null
+    return `https://www.facebook.com/${page}/posts/${story}/`
+  } catch {
+    return null
+  }
+}
+
 // Hosts that are never the recipe itself: Facebook's own links (the post, a
 // profile, an l.php wrapper) and platforms that need their own pipeline.
 // Facebook's own list is reused from above and YouTube's is matched through
@@ -525,13 +547,14 @@ export async function fetchFacebookPost(
 ): Promise<FacebookPost | null> {
   if (!isFacebookUrl(url)) return null
 
-  const target = toGroupPostUrl(url) ?? stripFacebookTracking(url)
+  const target = toGroupPostUrl(url) ?? toPagePostUrl(url) ?? stripFacebookTracking(url)
   const permalink = fetchPermalink(target, fetch)
 
   const pluginPage = isFacebookShareUrl(url)
     ? // A share link only reveals its target through the redirect, so the
-      // plugin fetch has to wait for the permalink.
-      permalink.then(({ canonicalUrl }) => fetchPostText(canonicalUrl, fetch))
+      // plugin fetch has to wait for the permalink — which may itself be a
+      // permalink.php link that needs the /posts/ form.
+      permalink.then(({ canonicalUrl }) => fetchPostText(toPagePostUrl(canonicalUrl) ?? canonicalUrl, fetch))
     : // Already a permalink — both requests go out together.
       fetchPostText(target, fetch)
 

@@ -13,7 +13,32 @@ import {
   isFacebookUrl,
   stripFacebookTracking,
   toGroupPostUrl,
+  toPagePostUrl,
 } from '@/lib/facebook'
+
+describe('toPagePostUrl', () => {
+  const POST = 'https://www.facebook.com/100069645633702/posts/pfbid0Fm/'
+
+  it('rewrites a Page permalink.php or story.php link to its /posts/ page', () => {
+    expect(
+      toPagePostUrl(
+        'https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702&__cft__[0]=AZh&__tn__=%2CO%2CP-R',
+      ),
+    ).toBe(POST)
+    expect(toPagePostUrl('https://m.facebook.com/story.php?story_fbid=pfbid0Fm&id=100069645633702')).toBe(POST)
+    expect(toPagePostUrl('https://www.facebook.com/permalink.php?story_fbid=123456&id=987')).toBe(
+      'https://www.facebook.com/987/posts/123456/',
+    )
+  })
+
+  it('leaves every other link alone', () => {
+    expect(toPagePostUrl('https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm')).toBeNull()
+    expect(toPagePostUrl('https://www.facebook.com/permalink.php?id=100069645633702')).toBeNull()
+    expect(toPagePostUrl('https://www.facebook.com/reel/943809852095733/')).toBeNull()
+    expect(toPagePostUrl('https://www.facebook.com/groups/1/posts/2/')).toBeNull()
+    expect(toPagePostUrl('https://example.com/permalink.php?story_fbid=1&id=2')).toBeNull()
+  })
+})
 
 describe('stripFacebookTracking', () => {
   it('keeps the params that name the post and drops the tracking ones', () => {
@@ -455,11 +480,15 @@ describe('fetchFacebookPost', () => {
     // Trimmed from a real Page photo post served to a search-engine user-agent.
     const pagePostHtml = String.raw`<script type="application/json">{"actors":[{"__typename":"User","name":"Kulinarna Wiola","id":"100069645633702"}],
 "message":{"text":"Ciasteczka z maszynki\n\n3 pełne szkl mąki"}}</script>`
+    // As Facebook answers from Cloudflare: permalink.php is the login page for
+    // every user-agent; only the /posts/ page carries the post.
     const fetch = vi.fn(async (input: string, init?: RequestInit) => {
       const ua = new Headers(init?.headers).get('User-Agent') ?? ''
       const html = input.includes('/plugins/video.php')
         ? REFUSED_HTML
-        : ua.includes('Googlebot') ? pagePostHtml : PLUGIN_HTML
+        : !input.includes('/posts/')
+          ? LOGIN_WALL_HTML
+          : ua.includes('Googlebot') ? pagePostHtml : PLUGIN_HTML
       return { ok: true, status: 200, url: input, text: async () => html } as Response
     }) as unknown as typeof globalThis.fetch
 
@@ -469,13 +498,14 @@ describe('fetchFacebookPost', () => {
     )
 
     expect(post).toMatchObject({
-      canonicalUrl: 'https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702',
+      canonicalUrl: 'https://www.facebook.com/100069645633702/posts/pfbid0Fm/',
       embedStatus: 'rendered',
       images: [],
     })
     expect(post?.caption).toContain('3 pełne szkl mąki')
     const urls = vi.mocked(fetch).mock.calls.map((c) => String(c[0]))
     expect(urls.some((u) => u.includes('__cft__'))).toBe(false)
+    expect(urls.some((u) => u.startsWith('https://www.facebook.com/permalink.php'))).toBe(false)
   })
 
   it('reports a private group post as refused', async () => {
