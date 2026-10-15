@@ -61,16 +61,18 @@ export function isExtractedRecipeUsable(recipe: {
   steps?: unknown
 }): boolean {
   const titleOk = typeof recipe.title === 'string' && recipe.title.trim().length > 0
-  // Element shapes are checked too: a step that is not a non-empty string (or an
-  // ingredient that is not an object) passes a length check but breaks the
-  // detail page render (#135), so it is rejected before it is persisted.
+  // Element shapes are checked too: a non-string step (or an ingredient that is
+  // not an object) passes a length check but breaks the detail page render
+  // (#135), so it is rejected before it is persisted. A blank step among real
+  // ones is tolerated — parseSteps drops it on read — but at least one step
+  // must carry text.
   const ingredientsOk =
     Array.isArray(recipe.ingredients) &&
     recipe.ingredients.length > 0 &&
     recipe.ingredients.every((i) => typeof i === 'object' && i !== null && !Array.isArray(i))
   const stepsOk =
     Array.isArray(recipe.steps) &&
-    recipe.steps.length > 0 &&
-    recipe.steps.every(isStepText)
+    recipe.steps.every((s) => typeof s === 'string') &&
+    recipe.steps.some(isStepText)
   return titleOk && ingredientsOk && stepsOk
 }

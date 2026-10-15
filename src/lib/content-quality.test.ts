@@ -90,6 +90,10 @@ describe('isExtractedRecipeUsable — output-side gate (Risk 2)', () => {
     expect(isExtractedRecipeUsable({ ...ok, steps: { 1: 'Wymieszaj' } })).toBe(false)
   })
 
+  it('tolerates a blank step among real ones (dropped on read)', () => {
+    expect(isExtractedRecipeUsable({ ...ok, steps: ['Wymieszaj', '', 'Piecz'] })).toBe(true)
+  })
+
   it('rejects ingredients that are not objects (#135)', () => {
     expect(isExtractedRecipeUsable({ ...ok, ingredients: ['Mąka'] })).toBe(false)
     expect(isExtractedRecipeUsable({ ...ok, ingredients: [null] })).toBe(false)
