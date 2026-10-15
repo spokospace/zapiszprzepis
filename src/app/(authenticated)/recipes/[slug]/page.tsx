@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { Clock, Flame, Timer, type LucideIcon } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
+import { sourceLabel } from '@/lib/recipe-source'
+import { tagLabel } from '@/lib/recipe-tags'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
 import { refreshRecipe } from './refresh-action'
@@ -22,13 +24,6 @@ function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: st
 }
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
-
-const SOURCE_LABELS: Partial<Record<Recipe['source_type'], string>> = {
-  facebook_text: 'Facebook',
-  facebook_reel: 'Facebook',
-  web_blog: 'Blog',
-  youtube: 'YouTube',
-}
 
 export const metadata = {
   title: 'Przepis',
@@ -106,6 +101,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{typedRecipe.title}</h1>
+          {typedRecipe.description && (
+            <p className="-mt-2 mb-4 text-lg text-gray-500">{typedRecipe.description}</p>
+          )}
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/recipes?category=${typedRecipe.category}`}
@@ -114,7 +112,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               <span>{categoryLabel(typedRecipe.category)}</span>
             </Link>
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
-              {SOURCE_LABELS[typedRecipe.source_type] ?? 'Inny'}
+              {sourceLabel(typedRecipe.source_type, typedRecipe.source_url)}
             </span>
             {typedRecipe.source_url && (
               <a
@@ -127,6 +125,15 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               </a>
             )}
           </div>
+          {typedRecipe.tags.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-2" aria-label="Tagi">
+              {typedRecipe.tags.map((tag) => (
+                <li key={tag} className="px-2.5 py-0.5 border border-orange-200 text-orange-700 text-xs rounded-full">
+                  #{tagLabel(tag)}
+                </li>
+              ))}
+            </ul>
+          )}
           {(typedRecipe.prep_time_minutes != null
             || typedRecipe.cook_time_minutes != null
             || typedRecipe.total_time_minutes != null) && (

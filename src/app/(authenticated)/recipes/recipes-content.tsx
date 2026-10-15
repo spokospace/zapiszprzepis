@@ -110,6 +110,9 @@ export function RecipesContent({
                 title={recipe.title}
                 imageUrl={recipe.image_url}
                 category={recipe.category}
+                description={recipe.description}
+                sourceType={recipe.source_type}
+                sourceUrl={recipe.source_url}
               />
             ))}
           </div>

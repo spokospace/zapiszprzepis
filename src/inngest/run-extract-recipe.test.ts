@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { runExtractRecipe } from '@/inngest/run-extract-recipe'
 import { archiveImage } from '@/lib/recipe-image-archive'
+import { LABEL_MODEL } from '@/lib/recipe-labeling'
 
 // archiveImage uses the global fetch, not the injected one, so it must be
 // stubbed or a test with an og:image goes out to the network. Default: the
@@ -38,6 +39,11 @@ const JUNK_RECIPE_JSON = JSON.stringify({
   category: 'sniadania',
 })
 
+// The labelling pass (title casing, note, tags) is a second OpenAI call on its
+// own model; extraction tests count and inspect only the extraction calls.
+const isLabelingCall = (init?: RequestInit) =>
+  init?.body != null && JSON.parse(String(init.body)).model === LABEL_MODEL
+
 // Creates a chainable Supabase mock. Each call to from(table) returns a fresh chain.
 // Results for .single() are served from a per-table FIFO queue.
 function makeSupabaseMock() {
@@ -56,6 +62,9 @@ function makeSupabaseMock() {
     })
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
+    chain.neq = vi.fn().mockReturnValue(chain)
+    chain.order = vi.fn().mockReturnValue(chain)
+    chain.limit = vi.fn().mockReturnValue(chain)
     chain.single = vi.fn().mockImplementation(() => {
       const val = queues[table]?.shift() ?? { data: null, error: null }
       return Promise.resolve(val)
@@ -79,6 +88,7 @@ function makeSupabaseMock() {
       queues[table].push(result)
     },
     didInsert: (table: string) => calls.some(c => c.table === table && c.op === 'insert'),
+    insertArgs: (table: string) => calls.find(c => c.table === table && c.op === 'insert')?.args,
     didUpdate: (table: string, partial?: Record<string, any>) =>
       calls.some(c => {
         if (c.table !== table || c.op !== 'update') return false
@@ -201,6 +211,39 @@ describe('runExtractRecipe — happy path', () => {
     expect(mock.didInsert('recipes')).toBe(true)
     expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
   })
+
+  it('stores the note and the tags, keeping only allowed ones and the title-named one', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    const openaiContent = JSON.stringify({
+      ...JSON.parse(VALID_RECIPE_JSON),
+      title: 'Kruche ciastka',
+      description: 'z rowkami, na żółtkach.',
+      tags: ['czekoladowe', 'wymyślony-tag', 'szybkie'],
+      totalTimeMinutes: 90,
+    })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock({ openaiContent }), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({
+      title: 'Kruche ciastka',
+      description: 'z rowkami, na żółtkach',
+      tags: ['kruche', 'czekoladowe'],
+    })
+  })
+
+  it("shows the LLM the user's existing recipes so the note can tell them apart", async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    const fetch = makeFetchMock()
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const labelingCall = vi.mocked(fetch).mock.calls.find(([url, init]) => String(url).includes('openai.com') && isLabelingCall(init))
+    const body = JSON.parse(String((labelingCall?.[1] as RequestInit).body))
+    expect(body.messages[0].content).toContain("The user's existing recipes")
+    expect(body.messages[0].content).toContain('sentence case')
+  })
 })
 
 // Facebook reels/videos: the caption comes from the embedded-video plugin, not
@@ -283,7 +326,7 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     expect(firecrawlBody.length).toBeGreaterThan(0)
     expect(firecrawlBody.every((b) => b.url === BLOG_URL)).toBe(true)
 
-    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com'))
+    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
     expect(JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content).toContain('Ciasto kruche')
   })
 
@@ -333,7 +376,7 @@ describe('runExtractRecipe — Facebook reel caption', () => {
     const urls = fetch.mock.calls.map((c) => String(c[0]))
     expect(urls.some((u) => u.includes('firecrawl.dev'))).toBe(false)
 
-    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com'))
+    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
     expect(JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content).toContain('250g twarogu')
   })
 
@@ -516,6 +559,9 @@ function makeYoutubeFetchMock({
     if (url.includes('/api/timedtext')) {
       return Promise.resolve({ ok: true, status: 200, text: async () => CAPTION_XML })
     }
+    if (url.includes('openai.com') && isLabelingCall(init)) {
+      return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: '{}' } }] }) })
+    }
     if (url.includes('openai.com')) {
       const content = replies.shift()
       if (content == null) return Promise.reject(new Error('OpenAI called more times than expected'))
@@ -526,7 +572,7 @@ function makeYoutubeFetchMock({
 }
 
 const openaiCalls = (fetch: ReturnType<typeof vi.fn>) =>
-  fetch.mock.calls.filter(([url]) => String(url).includes('openai.com'))
+  fetch.mock.calls.filter(([url, init]) => String(url).includes('openai.com') && !isLabelingCall(init))
 const transcriptCalls = (fetch: ReturnType<typeof vi.fn>) =>
   fetch.mock.calls.filter(([url]) => String(url).includes('/youtubei/v1/player'))
 const promptOf = ([, init]: [string, RequestInit]) =>
