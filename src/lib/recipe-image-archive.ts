@@ -269,7 +269,7 @@ const NOISE_SECTION_WORDS = new Set([
   'ad', 'ads', 'advert', 'advertisement', 'reklama', 'banner', 'sponsor', 'sponsored',
   'related', 'similar', 'recommended', 'popular',
   'comment', 'comments', 'author', 'sidebar', 'widget', 'newsletter',
-  'share', 'social', 'printfriendly',
+  'printfriendly',
 ])
 const SECTION_OPEN_RE = /<(div|section|aside|nav|footer|ul|ol|li|figure|a|ins|span)\b[^>]*>/gi
 const CLASS_OR_ID_RE = /\b(?:class|id)=["']([^"']*)["']/gi

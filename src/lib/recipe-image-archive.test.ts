@@ -177,6 +177,11 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
     expect(pickGalleryImages(html)).toEqual(['https://www.slodkisentyment.pl/wp-content/uploads/2019/11/drugi.jpg'])
   })
 
+  it('keeps the post when its wrapper merely mentions sharing', () => {
+    const html = `<div class="entry-content has-share-buttons"><img src="https://blog.example/ciasto.jpg"></div>`
+    expect(pickGalleryImages(html)).toEqual(['https://blog.example/ciasto.jpg'])
+  })
+
   it('leaves a noise section in when its closing tag is missing', () => {
     const html = `<div class="sidebar"><img src="https://blog.example/a.jpg"><img src="https://blog.example/b.jpg">`
     expect(pickGalleryImages(html)).toEqual(['https://blog.example/a.jpg', 'https://blog.example/b.jpg'])
