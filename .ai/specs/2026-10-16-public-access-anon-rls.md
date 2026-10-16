@@ -116,3 +116,18 @@ No new endpoints. Server Components call the Supabase client as today; the chang
 - **Sensitive data:** gallery + private profile attrs kept off the anon surface; column-safety noted. ✅
 - **Testability:** every step has a test or a working-app checkpoint; denied-path + wrong-scope tests are mandatory. ✅
 - **Open risk to confirm in review:** exact OR-semantics of a permissive SELECT policy alongside the existing `FOR ALL` isolation policy — prove with the isolation test before trusting it.
+
+## 🛠 Implementation notes (2026-10-16, `feat/e01-s02-public-access` @ 99bb673)
+Changes found while implementing. Where they contradict the sections above, they win.
+- **Gallery (Q3) is a UI boundary, not RLS.** The gallery is the `recipes.image_urls` *column*, not a table, so "no anon policy → zero rows" above was wrong: a public-read row carries the column. Implemented: the gallery isn't rendered for guests, so its URLs never reach the browser, but they stay readable through the raw API. That fits the handoff's purpose (a login incentive; the photos come from public posts). A data-level hide needs a column list, i.e. the `public_recipes` view below.
+- **Route scope narrowed.** Public: `/` and `/recipes/[slug]`. `/recipes` is "Moje przepisy" and stays owner-only, because a guest has no list of their own.
+- **Query audit (new, required in the same change).** With `using (true)`, SELECTs no longer mean "my recipes". These now filter by `user_id` explicitly: the `/recipes` list and its counts, the `/settings` count, the `getFailedShares` auto-resolve (regression test added), and the delete route. Public on purpose: home "Ostatnio dodane" and the recipe page by slug. Without this, the delete route could resolve another user's recipe, then report success while deleting nothing (RLS matched 0 rows).
+- **Slug collisions (interim).** The recipe page picks the visitor's own row, otherwise the oldest. The feed is keyed by `id`. E01-S03's global slug replaces this.
+- **Author line**: "Dodane przez {display_name}". It stays gender-neutral until S12 and plain text until S14.
+- **Not done in S02:** return-to-page after login (`/login` has no `next` support; belongs to S06/S12). No RLS isolation tests could be run: the repo has no database test harness and Docker isn't available here.
+
+### Follow-ups
+1. **Make public reads fail closed:** restore owner-only RLS on `recipes` and serve public reads through a `public_recipes` view with an explicit column list (no `image_urls`, no `user_id`). Today a new `from('recipes').select()` without a `user_id` filter quietly leaks across users. Only two readers are public right now, so it's a small change. Do it before S03/S14 add more.
+2. **`slug` index.** The slug-only lookup can't use `(user_id, slug)`. Either a global unique slug arrives in S03, or a one-line index goes in now.
+3. **Move `recipes/[slug]` out of the `(authenticated)` group** (with S03's `/przepis` rename).
+4. **DB test harness** for the risk-high RLS gates: denied path and wrong-scope reads.
