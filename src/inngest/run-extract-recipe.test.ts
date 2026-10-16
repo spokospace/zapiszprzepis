@@ -131,17 +131,20 @@ function makeFetchMock({
   firecrawlMarkdown = 'Przepis na naleśniki. '.repeat(30),
   firecrawlHtml = '<p>Przepis na naleśniki.</p>'.repeat(20),
   openaiContent = VALID_RECIPE_JSON,
+  firecrawlStatusCode,
 }: {
   firecrawlMarkdown?: string
   firecrawlHtml?: string
   openaiContent?: string
+  /** The scraped page's own HTTP status, as Firecrawl reports it. */
+  firecrawlStatusCode?: number
 } = {}) {
   return vi.fn().mockImplementation((url: string) => {
     if (url.includes('firecrawl.dev')) {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          data: { markdown: firecrawlMarkdown, html: firecrawlHtml, metadata: {} },
+          data: { markdown: firecrawlMarkdown, html: firecrawlHtml, metadata: { statusCode: firecrawlStatusCode } },
         }),
       })
     }
@@ -337,6 +340,37 @@ describe('runExtractRecipe — Risk 2: output gate', () => {
     // The force-refresh recipes.update must not have been called
     expect(mock.didUpdate('recipes')).toBe(false)
   })
+
+  it('still rejects a scraped page whose recipe has ingredients but no steps', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeFetchMock({ openaiContent: JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), steps: [] }) })
+
+    await expect(runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow(
+      'no usable recipe',
+    )
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+})
+
+describe('runExtractRecipe — OpenAI error', () => {
+  it('names the HTTP status and OpenAI\'s reason, even with an empty statusText', async () => {
+    const mock = makeSupabaseMock()
+    const base = makeFetchMock()
+    const fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) =>
+      String(url).includes('openai.com')
+        ? Promise.resolve({
+            ok: false,
+            status: 429,
+            statusText: '',
+            json: async () => ({ error: { message: 'Rate limit reached for gpt-4o-mini' } }),
+          })
+        : base(url, init),
+    )
+
+    await expect(runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow(
+      'OpenAI failed: HTTP 429 — Rate limit reached for gpt-4o-mini',
+    )
+  })
 })
 
 describe('runExtractRecipe — URL collision gap-fill', () => {
@@ -449,6 +483,8 @@ function makeFacebookFetchMock({
   embedRefused?: boolean
   firecrawlMarkdown?: string
   firecrawlHtml?: string
+  firecrawlStatusCode?: number
+  openaiContent?: string
 } = {}) {
   const fallback = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '', ...base })
   return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
@@ -534,6 +570,27 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
 
     expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(false)
+  })
+
+  it('falls back to the caption when the linked blog is gone', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 9 }, error: null })
+    // The blog's host answers with its own "Website Unavailable" page — long
+    // enough to pass for content, but a 404.
+    const fetch = makeFacebookFetchMock({
+      caption: `Makaroniki kokosowe\nSkładniki: 2 szklanki wiórków, 2 białka\nPełny przepis 👇 ${BLOG_URL}`,
+      firecrawlMarkdown: '# Website Unavailable\nThe website you are trying to reach is unavailable. '.repeat(10),
+      firecrawlStatusCode: 404,
+    })
+
+    await expect(runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({
+      recipeId: 9,
+    })
+
+    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const prompt = JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content
+    expect(prompt).toContain('2 szklanki wiórków')
+    expect(prompt).not.toContain('Website Unavailable')
   })
 })
 
@@ -674,6 +731,24 @@ describe('runExtractRecipe — Facebook short caption', () => {
     const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
 
     expect(result).toMatchObject({ recipeId: 8, status: 'completed' })
+  })
+
+  it('saves an ingredient-only caption — the method is in the video', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 8 }, error: null })
+    const fetch = makeFacebookFetchMock({
+      caption: 'Deska wędlin 🧀\nIngredients\n- salami\n- mozzarella\n- olives',
+      openaiContent: JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), steps: null }),
+    })
+
+    await expect(runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({
+      recipeId: 8,
+    })
+
+    const inserted = mock.supabase.from.mock.results
+      .map((r) => r.value.insert.mock.calls[0]?.[0])
+      .find((args) => args?.source_url)
+    expect(inserted.steps).toEqual([])
   })
 })
 

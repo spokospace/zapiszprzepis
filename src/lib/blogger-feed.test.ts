@@ -1,5 +1,42 @@
 import { describe, it, expect } from 'vitest'
-import { isBlogspotUrl, mayBeBloggerPost } from '@/lib/blogger-feed'
+import { isBlogspotUrl, mayBeBloggerPost, isCutAtJumpBreak, extractPostBody } from '@/lib/blogger-feed'
+
+// A blog whose feed stops at the jump break serves only the teaser (seen on
+// obzarciuch.pl); the recipe has to come from the post page.
+describe('isCutAtJumpBreak', () => {
+  it('detects a feed entry that ends in the "Read more" link', () => {
+    const teaser =
+      '<div><b>Rewelacyjna zupa</b></div>\n<a href="https://www.obzarciuch.pl/2013/10/barszcz-ukrainski.html#more">Read more »</a>'
+    expect(isCutAtJumpBreak(teaser)).toBe(true)
+  })
+
+  it('leaves a full entry alone, even one linking to another post\'s #more', () => {
+    expect(isCutAtJumpBreak('<p>Składniki: mąka</p><p>Przygotowanie: wymieszaj.</p>')).toBe(false)
+    expect(isCutAtJumpBreak('<p>Zobacz <a href="https://x.pl/a.html#more">też</a> ten przepis. Składniki: …</p>')).toBe(false)
+  })
+})
+
+describe('extractPostBody', () => {
+  it('returns the whole post body, nested divs included, without scripts and styles', () => {
+    const page =
+      "<div class='sidebar'>Popularne</div>" +
+      "<div class='post-body entry-content' id='post-body-2227990610720500505'>" +
+      '<div>Rewelacyjna zupa</div>Składniki:<ul><li>5 buraków</li></ul>' +
+      '<div><script>(adsbygoogle = window.adsbygoogle || []).push({});</script></div>' +
+      '<style>.star { color: #ccc; }</style>Przygotowanie: gotujemy.' +
+      '</div><div class="comments">Komentarz</div>'
+    const body = extractPostBody(page)
+    expect(body).toContain('5 buraków')
+    expect(body).toContain('Przygotowanie: gotujemy.')
+    expect(body).not.toContain('adsbygoogle')
+    expect(body).not.toContain('.star')
+    expect(body).not.toContain('Komentarz')
+  })
+
+  it('returns null for a page with no post body', () => {
+    expect(extractPostBody('<html><body>Not Blogger</body></html>')).toBeNull()
+  })
+})
 
 // Risk 5 — blogspot must be detected so it takes the deterministic Blogger-feed
 // path instead of the Firecrawl path (which returns Google-Translate junk).
