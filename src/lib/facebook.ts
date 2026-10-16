@@ -633,12 +633,20 @@ export async function fetchFacebookPost(
   // the failure without blaming the author for a post nobody could read.
   if (caption == null && image == null && embedStatus === 'rendered') return null
 
+  // A group post's permalink og:image is the GROUP's representative image, not
+  // this post's photo: Facebook serves the same one for every text or
+  // link-only post in the group (seen as one blog's "Kulinarna Maniusia"
+  // meatballs photo branded onto an orzechowiec and a tort alike). Only the
+  // post's own photos (set=gm, in `images`) are the dish — with none, the
+  // recipe is better left with no cover than the group's unrelated image.
+  const cover = toGroupPostUrl(canonicalUrl) ? (images[0] ?? null) : image
+
   return {
     canonicalUrl,
     caption,
     embedStatus,
     recipeLink: findRecipeLinkInText(caption ?? description ?? ''),
-    image,
+    image: cover,
     images,
     author,
   }

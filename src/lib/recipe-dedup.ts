@@ -82,22 +82,52 @@ export async function findExistingRecipeForUrl(
   return { status: 'new', normalizedUrl }
 }
 
+/** Unique, trimmed, lower-cased ingredient names — the set two extractions are compared on. */
+export function ingredientNames(list: { name: string }[]): Set<string> {
+  return new Set(list.map((i) => i.name.trim().toLowerCase()).filter((n) => n.length > 0))
+}
+
 /**
  * Same ingredients, in any order, judged by name alone: two extractions of
  * one recipe read amounts and units differently ("1 szkl." vs "250 ml"), but
  * a variant swaps or adds an ingredient.
  */
 export function sameIngredients(a: { name: string }[], b: { name: string }[]): boolean {
-  const names = (list: { name: string }[]) => [...new Set(list.map((i) => i.name.trim().toLowerCase()))].sort().join('\n')
-  return names(a) === names(b)
+  const [x, y] = [ingredientNames(a), ingredientNames(b)]
+  return x.size === y.size && [...x].every((n) => y.has(n))
+}
+
+// A shorter list than this is too generic to call two same-titled posts one
+// recipe on a strict-subset overlap alone — "mąka, cukier, jajka" is half the
+// desserts on the site. Equal lists are exempt: they are already one recipe.
+const MIN_SUBSUME_NAMES = 3
+
+/**
+ * One recipe, extracted twice at different completeness: the shorter
+ * ingredient list's names are all present in the longer. A Facebook caption
+ * that truncated the cream's ingredients and the full blog version of the same
+ * cake read as two recipes under `sameIngredients` (exact set equality) — the
+ * duplicate the global URL/fingerprint rules can't catch, because the two
+ * posts carry different links and different caption text. Equal lists match at
+ * any size (this subsumes `sameIngredients`); a STRICT subset must have at
+ * least MIN_SUBSUME_NAMES names behind it, so a stub recipe does not subsume
+ * every longer one that happens to share its title.
+ */
+export function ingredientsSubsume(a: { name: string }[], b: { name: string }[]): boolean {
+  const [x, y] = [ingredientNames(a), ingredientNames(b)]
+  const [small, big] = x.size <= y.size ? [x, y] : [y, x]
+  if (small.size === 0) return false
+  if (small.size < big.size && small.size < MIN_SUBSUME_NAMES) return false
+  return [...small].every((n) => big.has(n))
 }
 
 /**
- * The recipe that `recipe` repeats — same title, any casing, and the same
- * ingredients — or null; the user's own when `userId` is given, else anyone's,
- * preferring `preferUserId`'s. Catches a recipe saved from two different posts
- * when its author published it twice (a Page reposting its own post), which
- * no URL rule can tell apart.
+ * The recipe that `recipe` repeats — same title, any casing, and ingredients
+ * that subsume one another (one extraction a subset of the other) — or null;
+ * the user's own when `userId` is given, else anyone's, preferring
+ * `preferUserId`'s. Catches a recipe saved from two different posts when its
+ * author published it twice (a Page reposting its own post), which no URL rule
+ * can tell apart.
  */
 export async function findSameRecipe(
   supabase: SupabaseClient,
@@ -109,7 +139,7 @@ export async function findSameRecipe(
   const title = recipe.title.trim().replace(/[\\%_]/g, (c) => '\\' + c)
   const query = supabase.from('recipes').select('id, slug, title, category, user_id, ingredients')
   const { data } = await (userId ? query.eq('user_id', userId) : query).ilike('title', title).limit(50)
-  const same = (data ?? []).filter((r) => Array.isArray(r.ingredients) && sameIngredients(r.ingredients, recipe.ingredients))
+  const same = (data ?? []).filter((r) => Array.isArray(r.ingredients) && ingredientsSubsume(r.ingredients, recipe.ingredients))
   const match = same.find((r) => r.user_id === preferUserId) ?? same[0]
   return match
     ? { id: match.id, slug: match.slug, title: match.title, category: match.category, user_id: match.user_id }

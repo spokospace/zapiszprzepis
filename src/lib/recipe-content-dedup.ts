@@ -1,0 +1,60 @@
+import { ingredientNames, ingredientsSubsume } from './recipe-dedup'
+import { groupDuplicates, type CollapseGroup } from './recipe-collapse'
+
+/** A recipe as the content-duplicate scan reads it: enough to judge "same
+ *  recipe" (title + ingredients) and to rank which copy to keep. */
+export type ContentRow = {
+  id: number
+  user_id: string
+  title: string
+  ingredients: { name: string }[]
+  created_at: string
+}
+
+/**
+ * Groups of recipes that are one recipe extracted more than once — same title
+ * and ingredient lists that subsume one another (one a subset of the other,
+ * see ingredientsSubsume) — which the global URL and fingerprint rules miss
+ * because each copy came from a different link with different caption text
+ * (the "miodownik z kaszą manną" pair). Recipes without such a twin are left
+ * out.
+ *
+ * The kept (canonical) copy is the most complete — the most ingredient names —
+ * so a partial extraction never wins over the full one; ties go to
+ * `preferredOwnerId`'s copy, then the oldest, then the lowest id. Every other
+ * copy in the group is a loser, folded into the canonical by
+ * collapse_recipe_groups.
+ */
+export function buildContentDuplicateGroups(rows: ContentRow[], preferredOwnerId: string | null): CollapseGroup[] {
+  // Lower sorts first = canonical: most ingredients, then preferred owner, then oldest, then lowest id.
+  const nameCount = new Map(rows.map((r) => [r.id, ingredientNames(r.ingredients).size]))
+  const rank = (r: ContentRow): [number, number, number, number] => [
+    -(nameCount.get(r.id) ?? 0),
+    r.user_id === preferredOwnerId ? 0 : 1,
+    Date.parse(r.created_at),
+    r.id,
+  ]
+  const before = (a: ContentRow, b: ContentRow) => {
+    const [x, y] = [rank(a), rank(b)]
+    return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || x[3] - y[3]
+  }
+
+  return groupDuplicates(rows, (link) => {
+    // Compare only within a title bucket: the ingredient check is O(n²) per
+    // bucket, and two differently-titled recipes are never one recipe here.
+    const byTitle = new Map<string, ContentRow[]>()
+    for (const row of rows) {
+      const key = row.title.trim().toLowerCase()
+      const bucket = byTitle.get(key)
+      if (bucket) bucket.push(row)
+      else byTitle.set(key, [row])
+    }
+    for (const bucket of byTitle.values()) {
+      for (let i = 0; i < bucket.length; i++) {
+        for (let j = i + 1; j < bucket.length; j++) {
+          if (ingredientsSubsume(bucket[i].ingredients, bucket[j].ingredients)) link(bucket[i].id, bucket[j].id)
+        }
+      }
+    }
+  }, before)
+}
