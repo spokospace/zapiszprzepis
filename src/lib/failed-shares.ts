@@ -32,9 +32,9 @@ type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
  *  - Dedupe by URL: retries can leave several failed rows for one URL.
  *
  * RLS scopes the recipe_shares query to the current user. The recipes lookup is
- * scoped by `userId` explicitly: since recipes became public-read (E01-S02), RLS
- * would otherwise let ANOTHER user's recipe for the same URL auto-resolve (hide)
- * this user's failed share. The common case (no failures) costs a single small
+ * also scoped by `userId` explicitly, as defense in depth: if recipes ever became
+ * readable across users again, ANOTHER user's recipe for the same URL would
+ * auto-resolve (hide) this user's failed share. The common case (no failures) costs a single small
  * indexed query — the recipes lookup runs only when there are failed rows, and
  * is bounded to their URLs.
  */

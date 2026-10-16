@@ -72,6 +72,11 @@ function MaybeLink({
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
 
+/** A row of the guest-safe public_recipes view: no user_id, no gallery, plus the author. */
+type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_fingerprint' | 'extracted_at' | 'updated_at'> & {
+  author_name: string | null
+}
+
 export const metadata = {
   title: 'Przepis',
   description: 'Szczegóły przepisu',
@@ -95,19 +100,26 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
   const user = await getCurrentUser()
 
-  // Public since E01-S02 (recipes_public_read). Slugs are unique per user only, so
-  // one slug can exist for several users: prefer the visitor's own recipe, else the
-  // oldest. (A globally unique slug arrives with E01-S03.)
-  const { data: candidates, error } = await supabase
-    .from('recipes')
-    .select('*')
-    .eq('slug', slug)
-    .order('created_at', { ascending: true })
-    // A guest always takes the first row; only a signed-in visitor looks for their own.
-    .limit(user ? 10 : 1)
+  // Everyone reads through the guest-safe public_recipes view (recipes itself is
+  // owner-only RLS). Slugs are unique per user only, so one slug can exist for
+  // several users: prefer the visitor's own recipe, else the oldest. The visitor's
+  // own id comes from `recipes`, where RLS already limits rows to them. (A globally
+  // unique slug arrives with E01-S03.)
+  const [{ data: candidates, error }, { data: own }] = await Promise.all([
+    supabase
+      .from('public_recipes')
+      .select('*')
+      .eq('slug', slug)
+      .order('created_at', { ascending: true })
+      // A guest always takes the first row; only a signed-in visitor looks for their own.
+      .limit(user ? 10 : 1),
+    user
+      ? supabase.from('recipes').select('id').eq('slug', slug).eq('user_id', user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
 
-  const rows = (candidates ?? []) as Recipe[]
-  const typedRecipe = rows.find((r) => r.user_id === user?.id) ?? rows[0]
+  const rows = (candidates ?? []) as PublicRecipe[]
+  const typedRecipe = rows.find((r) => r.id === own?.id) ?? rows[0]
 
   if (error || !typedRecipe) {
     if (error) console.error('[recipe] Query error:', error)
@@ -115,14 +127,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   }
 
   // Refresh/delete are the owner's; a guest or another user only reads.
-  const isOwner = typedRecipe.user_id === user?.id
+  const isOwner = own?.id === typedRecipe.id
 
-  // Author line (E01-S18 identity) — profiles is anon-readable by design.
-  const { data: author } = await supabase
-    .from('profiles')
-    .select('display_name')
-    .eq('id', typedRecipe.user_id)
-    .maybeSingle()
+  // The gallery is a login perk (decision Q3). recipe_gallery_images is granted to
+  // signed-in users only, so a guest cannot read it through the API either.
+  const { data: gallery } = user
+    ? await supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle()
+    : { data: null }
+  const galleryImages: string[] = gallery?.image_urls ?? []
 
   // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
   // exception is a full page crash, which would also hide the delete button);
@@ -184,9 +196,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           </div>
           {/* Gender-neutral until E01-S12 supplies gender ("Dodała/Dodał"); plain text
               until E01-S14 builds /u/{username}, so the line never links to a 404. */}
-          {author?.display_name && (
+          {typedRecipe.author_name && (
             <p className="mt-3 text-base text-gray-600">
-              Dodane przez <span className="font-medium text-gray-900">{author.display_name}</span>
+              Dodane przez <span className="font-medium text-gray-900">{typedRecipe.author_name}</span>
             </p>
           )}
           {typedRecipe.tags.length > 0 && (
@@ -291,12 +303,10 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           </section>
         )}
 
-        {/* A gallery of one would only repeat the cover. The gallery is a login perk
-            (E01-S02, Q3): not rendered — so its URLs never reach the browser — for a
-            guest. Note image_urls is a recipes COLUMN, so this is a UI boundary, not
-            an RLS one; a data-level hide would need column privileges or a view. */}
-        {user && typedRecipe.image_urls.length > 1 && (
-          <RecipeGallery images={typedRecipe.image_urls} title={typedRecipe.title} />
+        {/* A gallery of one would only repeat the cover. galleryImages is empty for a
+            guest: the gallery view is not granted to anon (decision Q3). */}
+        {galleryImages.length > 1 && (
+          <RecipeGallery images={galleryImages} title={typedRecipe.title} />
         )}
 
         {isOwner && (

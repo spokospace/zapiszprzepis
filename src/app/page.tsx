@@ -14,11 +14,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const user = await getCurrentUser()
 
   // Public since E01-S02: a guest sees the home too. "Ostatnio dodane" is the
-  // public feed (recipes are public-read), not the visitor's own list.
+  // public feed across all users, read through the guest-safe public_recipes view
+  // (recipes itself is owner-only), not the visitor's own list.
   const [failedShares, { data: recentRecipes }] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : Promise.resolve(NO_FAILED_SHARES),
     supabase
-      .from('recipes')
+      .from('public_recipes')
       .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
       .order('created_at', { ascending: false })
       .limit(3),

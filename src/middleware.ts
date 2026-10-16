@@ -49,7 +49,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // E01-S02 public routes: a guest may read the home and a single recipe. Data
-  // visibility is decided by RLS (recipes_public_read), not by this allowlist.
+  // visibility is decided by the database (owner-only RLS on recipes, guest reads via
+  // the public_recipes view), not by this allowlist.
   // "/recipes" itself is "Moje przepisy" — owner-only — so it stays gated below.
   if (isPublicRoute(pathname)) {
     return response

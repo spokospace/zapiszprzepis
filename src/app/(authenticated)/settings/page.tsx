@@ -26,7 +26,7 @@ export default async function SettingsPage() {
 
   // Both reads are scoped to the signed-in user explicitly.
   const [{ count: recipeCount }, { data: profile }] = await Promise.all([
-    // recipes_public_read (S02) widens SELECT to all users, so scope the count to the owner.
+    // Explicit owner scope (defense in depth on top of owner-only RLS).
     supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
     supabase.from('profiles').select('display_name, username').eq('id', user.id).maybeSingle(),
   ])
