@@ -53,9 +53,9 @@ describe('getFailedShares — the bell never shows a silent zero', () => {
     expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [] })
   })
 
-  // E01-S02 regression: recipes are public-read, so the auto-resolve lookup must be
-  // scoped to the current user — otherwise another user saving the same URL would
-  // hide this user's failed share.
+  // E01-S02 regression: the auto-resolve lookup must be scoped to the current user
+  // (not left to RLS) — otherwise, whenever recipes are readable across users,
+  // another user saving the same URL would hide this user's failed share.
   it("scopes the auto-resolve lookup to the current user's own recipes", async () => {
     const supabase = makeSupabase({ data: [share(1, 'https://a.example')], error: null })
     // from() hands back the same query object every call, so the spy sees the lookup.

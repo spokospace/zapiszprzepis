@@ -85,8 +85,8 @@ export default async function RecipesPage({
         .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
         .order('created_at', { ascending: false })
 
-  // recipes_public_read (S02) makes SELECT return every user's recipes, so
-  // "Moje przepisy" must scope to the owner explicitly — RLS no longer does it.
+  // "Moje przepisy" scopes to the owner explicitly — defense in depth on top of
+  // owner-only RLS, so the list stays correct if recipes are ever readable more widely.
   filteredQuery = filteredQuery.eq('user_id', user.id)
 
   if (activeCategory) {
