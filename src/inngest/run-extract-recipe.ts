@@ -29,7 +29,7 @@ import type { Database } from '@/lib/supabase.types'
 // applies turns on what we actually observed — never blame the author for a
 // post nobody could read.
 const FB_EMBED_REFUSED =
-  'Facebook nie udostępnia treści tego posta (autor wyłączył osadzanie albo post jest prywatny lub w zamkniętej grupie) — skopiuj przepis ręcznie albo podaj link do bloga'
+  'Facebook nie udostępnia treści tego posta (autor wyłączył osadzanie, post jest widoczny tylko po zalogowaniu, prywatny albo w zamkniętej grupie) — skopiuj przepis ręcznie albo podaj link do bloga'
 const FB_UNREACHABLE =
   'Nie udało się pobrać tego posta z Facebooka — spróbuj ponownie za chwilę'
 const FB_NO_CAPTION =
