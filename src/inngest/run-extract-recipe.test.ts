@@ -1061,6 +1061,43 @@ describe('runExtractRecipe — YouTube transcript fallback', () => {
     expect(mock.didInsert('recipes')).toBe(false)
   })
 
+  // A channel often lists only the ingredients and shows the method on
+  // screen; with no usable captions (music only, or auto captions in another
+  // language) the ingredient list is all there is, and the page embeds the video.
+  const INGREDIENTS_ONLY_JSON = JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), steps: [] })
+
+  it('saves the description ingredients when the video has no captions', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 10 }, error: null })
+    const fetch = makeYoutubeFetchMock({ openaiContents: [INGREDIENTS_ONLY_JSON], hasCaptions: false })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 10 })
+
+    expect(transcriptCalls(fetch)).toHaveLength(1)
+    expect(mock.insertArgs('recipes')).toMatchObject({ steps: [] })
+  })
+
+  it('keeps the description ingredients when the captions yield nothing', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 11 }, error: null })
+    const fetch = makeYoutubeFetchMock({ openaiContents: [INGREDIENTS_ONLY_JSON, JUNK_RECIPE_JSON] })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 11 })
+
+    expect(openaiCalls(fetch)).toHaveLength(2)
+    expect(mock.insertArgs('recipes')?.ingredients).toHaveLength(1)
+  })
+
+  it('prefers the captions when they add the steps the description lacks', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 12 }, error: null })
+    const fetch = makeYoutubeFetchMock({ openaiContents: [INGREDIENTS_ONLY_JSON, VALID_RECIPE_JSON] })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 12 })
+
+    expect(mock.insertArgs('recipes')?.steps).toHaveLength(2)
+  })
+
   it('reports an unreadable page when both the description and the captions are missing', async () => {
     const mock = makeSupabaseMock()
     const fetch = makeYoutubeFetchMock({

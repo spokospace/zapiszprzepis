@@ -454,9 +454,12 @@ async function fetchGroupPhoto(
   }
 }
 
-/** True for the Watch feed itself (og:url https://www.facebook.com/watch/,
- *  no video id) — where Facebook sends a removed or private video. */
+/** True for the Watch feed itself — where Facebook sends a removed or private
+ *  video. It used to redirect there (og:url https://www.facebook.com/watch/, no
+ *  video id); now it also serves the feed at the video's own URL, with no og
+ *  tags at all, recognisable only by the feed's Relay sections. */
 export function isWatchLanding(html: string): boolean {
+  if (html.includes('CometVideoHomeSection')) return true
   const ogUrl = extractOgTag(html, 'url')
   if (!ogUrl) return false
   try {
