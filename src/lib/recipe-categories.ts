@@ -15,6 +15,25 @@ export function categoryLabel(value: string): string {
   return RECIPE_CATEGORIES.find((c) => c.value === value)?.label ?? value
 }
 
+/** Lowercase ASCII form: `Sałatki ` → `salatki`. `ł` has no NFD decomposition. */
+function foldCategory(text: string): string {
+  return text.trim().toLowerCase().replace(/ł/g, 'l').normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+/**
+ * The enum value for a category the LLM returned. The model is told the
+ * values but still answers with a label (`Sałatki`), a diacritic slug
+ * (`sałatki`) or an off-list guess (`kolacje`) — and Postgres rejects anything
+ * outside the enum, throwing the whole extraction away. A label or slug in any
+ * casing maps to its value; anything else becomes `inne`, which the user can
+ * re-categorise. Returns `coerced: true` for that fallback so it can be logged.
+ */
+export function toRecipeCategory(raw: unknown): { category: RecipeCategory; coerced: boolean } {
+  const folded = typeof raw === 'string' ? foldCategory(raw) : ''
+  const match = RECIPE_CATEGORIES.find((c) => c.value === folded || foldCategory(c.label) === folded)
+  return match ? { category: match.value, coerced: false } : { category: 'inne', coerced: true }
+}
+
 export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'obiady', label: 'Obiady' },
   { value: 'zupy', label: 'Zupy' },

@@ -153,6 +153,64 @@ describe('runExtractRecipe — Risk 2: junk input gate', () => {
   })
 })
 
+describe('runExtractRecipe — LLM output the database would reject (#134)', () => {
+  const withCategory = (category: unknown) => JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), category })
+
+  it.each([
+    ['sałatki', 'salatki'],
+    ['Sałatki', 'salatki'],
+    ['kolacje', 'inne'],
+  ])('stores category %j as the enum value %s', async (raw, value) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withCategory(raw) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgs('recipes')?.category).toBe(value)
+  })
+
+  it('coerces the category on a refresh too', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(
+      { ...BASE_EVENT, force: true },
+      { fetch: makeFetchMock({ openaiContent: withCategory('kolacje') }), supabase: mock.supabase as any },
+    )
+
+    expect(mock.didUpdate('recipes', { category: 'inne' })).toBe(true)
+  })
+
+  it('asks for JSON mode and reads a fenced answer', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: '```json\n' + VALID_RECIPE_JSON + '\n```' })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    expect(JSON.parse(String(extraction?.[1]?.body)).response_format).toEqual({ type: 'json_object' })
+    expect(mock.insertArgs('recipes')?.title).toBe('Naleśniki')
+  })
+
+  it('fails with a Polish message, not a SyntaxError, when the answer is not JSON', async () => {
+    const mock = makeSupabaseMock()
+
+    await expect(
+      runExtractRecipe(BASE_EVENT, {
+        fetch: makeFetchMock({ openaiContent: 'Oto przepis: naleśniki' }),
+        supabase: mock.supabase as any,
+      }),
+    ).rejects.toThrow('Nie udało się odczytać przepisu z odpowiedzi modelu')
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+})
+
 describe('runExtractRecipe — Risk 2: output gate', () => {
   it('throws before recipe insert when LLM returns empty ingredients and steps', async () => {
     const mock = makeSupabaseMock()

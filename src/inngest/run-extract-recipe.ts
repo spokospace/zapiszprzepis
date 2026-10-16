@@ -6,7 +6,7 @@ import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from 
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
-import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
 import type { Database } from '@/lib/supabase.types'
 
@@ -21,6 +21,8 @@ const FB_UNREACHABLE =
   'Nie udało się pobrać tego posta z Facebooka — spróbuj ponownie za chwilę'
 const FB_NO_CAPTION =
   'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)'
+const LLM_UNREADABLE =
+  'Nie udało się odczytać przepisu z odpowiedzi modelu — spróbuj ponownie'
 const UNREADABLE_PAGE =
   'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)'
 
@@ -296,6 +298,7 @@ Rules:
             },
           ],
           temperature: 0.3,
+          response_format: { type: 'json_object' },
         }),
         signal: AbortSignal.timeout(60_000),
       })
@@ -308,7 +311,20 @@ Rules:
       const content = openaiData.choices?.[0]?.message?.content
       if (!content) throw new Error('No response from OpenAI')
 
-      return JSON.parse(content) as RecipeData
+      // JSON mode should rule out a ```json fence, but strip one anyway: a
+      // parser error is not something to show in the bell.
+      let parsed: RecipeData
+      try {
+        parsed = JSON.parse(content.trim().replace(/^```(?:json)?\s*|\s*```$/g, '')) as RecipeData
+      } catch {
+        throw new Error(LLM_UNREADABLE)
+      }
+
+      // recipes.category is a strict enum: one off-list value fails the insert
+      // and throws the whole extraction away.
+      const { category, coerced } = toRecipeCategory(parsed.category)
+      if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
+      return { ...parsed, category }
     }
 
     // The user's other recipes, for the labelling pass below; read while the

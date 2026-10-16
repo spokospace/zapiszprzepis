@@ -1,5 +1,24 @@
 import { describe, it, expect } from 'vitest'
-import { categoryLabel, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { categoryLabel, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
+
+// recipes.category is a strict enum: whatever the LLM returns must be mapped
+// onto it, or the insert fails and the extraction is lost (#134).
+describe('toRecipeCategory', () => {
+  it.each([
+    ['salatki', 'salatki'],
+    ['sałatki', 'salatki'],
+    ['Sałatki', 'salatki'],
+    [' SAŁATKI ', 'salatki'],
+    ['Przekąski', 'przekaski'],
+    ['Śniadania', 'sniadania'],
+  ])('maps %j to %s', (raw, value) => {
+    expect(toRecipeCategory(raw)).toEqual({ category: value, coerced: false })
+  })
+
+  it.each([['kolacje'], ['wypieki'], [''], [null], [undefined], [42]])('falls back to inne for %j', (raw) => {
+    expect(toRecipeCategory(raw)).toEqual({ category: 'inne', coerced: true })
+  })
+})
 
 // The enum values are ASCII slugs while the labels carry Polish diacritics.
 // Rendering the raw value shipped "Salatki"/"Przekaski" to the recipe cards —
