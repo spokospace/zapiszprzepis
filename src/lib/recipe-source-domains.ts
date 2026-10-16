@@ -1,4 +1,5 @@
 import recipeBlogDomains from './recipe-blog-domains.json'
+import { KNOWN_FACEBOOK_AUTHORS } from './facebook-authors'
 
 // Large Polish recipe portals. aDupaRośnie aggregates independent blogs only,
 // so these are picked by hand.
@@ -23,13 +24,10 @@ const RECIPE_PORTAL_DOMAINS = [
   'wszystkiegoslodkiego.pl',
 ]
 
-// Recipe authors who publish on a personal Facebook profile rather than a
-// blog. Exa matches includeDomains entries as a URL prefix, so the profile id
-// path keeps the rest of facebook.com out. Exa indexes their posts as
+// Exa matches includeDomains entries as a URL prefix, so the profile id path
+// keeps the rest of facebook.com out. Exa indexes their posts as
 // /<id>/posts/… and /<id>/videos/…, which the Facebook import handles.
-const RECIPE_FACEBOOK_PROFILES = [
-  'facebook.com/100069645633702', // Kulinarna Wiola
-]
+const RECIPE_FACEBOOK_PROFILES = Object.keys(KNOWN_FACEBOOK_AUTHORS).map((id) => `facebook.com/${id}`)
 
 // Recipe web search only returns pages from these sites, so a query like
 // "sernik" lands on recipe blogs rather than government nutrition pages or
