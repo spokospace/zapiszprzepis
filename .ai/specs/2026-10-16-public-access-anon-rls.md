@@ -131,3 +131,5 @@ Changes found while implementing. Where they contradict the sections above, they
 2. **`slug` index.** The slug-only lookup can't use `(user_id, slug)`. Either a global unique slug arrives in S03, or a one-line index goes in now.
 3. **Move `recipes/[slug]` out of the `(authenticated)` group** (with S03's `/przepis` rename).
 4. **DB test harness** for the risk-high RLS gates: denied path and wrong-scope reads.
+
+**Status (2026-10-16):** follow-ups 1 and 2 are done on `feat/e01-public-recipes-view` @ 0e8c36d. `recipes_public_read` is dropped, so `recipes` is owner-only again. Guests read through `public_recipes` (explicit column list plus `author_name`). The gallery comes from `recipe_gallery_images`, which only signed-in users can read, so decision Q3 is now enforced in the database. Both views allow SELECT only. `idx_recipes_slug` is added. Follow-ups 3–4 remain open.
