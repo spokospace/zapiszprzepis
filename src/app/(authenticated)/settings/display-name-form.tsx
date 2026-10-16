@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { updateDisplayName, type DisplayNameFormState } from './actions'
 
 const initialState: DisplayNameFormState = { status: 'idle' }
@@ -8,6 +8,9 @@ const initialState: DisplayNameFormState = { status: 'idle' }
 /** Minimal editor for "nazwa wyświetlana" (E01-S18). Full profile screen is S13. */
 export function DisplayNameForm({ initialDisplayName }: { initialDisplayName: string }) {
   const [state, formAction, pending] = useActionState(updateDisplayName, initialState)
+  // Controlled on purpose: React 19 resets uncontrolled fields after a form action,
+  // which would wipe what the user typed whenever validation rejects it.
+  const [value, setValue] = useState(initialDisplayName)
 
   return (
     <form action={formAction} className="flex flex-col gap-3 px-5 py-4">
@@ -22,7 +25,8 @@ export function DisplayNameForm({ initialDisplayName }: { initialDisplayName: st
           id="displayName"
           name="displayName"
           type="text"
-          defaultValue={initialDisplayName}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
           maxLength={60}
           required
           aria-describedby={state.status !== 'idle' ? 'displayName-help displayName-status' : 'displayName-help'}
