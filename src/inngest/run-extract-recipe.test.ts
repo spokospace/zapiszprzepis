@@ -211,6 +211,69 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
   })
 })
 
+describe('runExtractRecipe — article split over pages (#168)', () => {
+  const ARTICLE = 'https://obiady.foodmeld.com/babcine-ciasteczka/2819/2026/'
+  const NAV = (n: number) => `<nav class="post-page-nav"><a href="${ARTICLE}${n}/">Dalej »</a></nav>`
+
+  /** A short link redirecting to a two-page article; Firecrawl drops the nav. */
+  function makePagedFetch(pages: Record<string, { markdown: string; raw: string }>) {
+    return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('firecrawl.dev')) {
+        const target = JSON.parse(String(init?.body)).url as string
+        const page = pages[target] ?? pages['https://beltoc.com/s/x']
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            data: { markdown: page.markdown, html: `<p>${page.markdown}</p>`, metadata: { url: ARTICLE } },
+          }),
+        })
+      }
+      if (url.includes('openai.com')) {
+        return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: VALID_RECIPE_JSON } }] }) })
+      }
+      const page = pages[url]
+      return page
+        ? Promise.resolve({ ok: true, text: async () => page.raw })
+        : Promise.reject(new Error(`Unexpected fetch URL: ${url}`))
+    })
+  }
+
+  it('reads the following pages and extracts from all of them', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const page1 = { markdown: 'Babcine ciasteczka. Składniki: 350 g mąki, 150 g masła. '.repeat(5), raw: NAV(2) }
+    const page2 = { markdown: 'Sposób przygotowania: wymieszaj i piecz 12 minut.', raw: `<nav><a href="${ARTICLE}">Wstecz</a></nav>` }
+    const fetch = makePagedFetch({ 'https://beltoc.com/s/x': page1, [ARTICLE]: page1, [`${ARTICLE}2/`]: page2 })
+
+    await runExtractRecipe({ ...BASE_EVENT, sharedUrl: 'https://beltoc.com/s/x' }, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const prompt = JSON.parse(String(extraction?.[1]?.body)).messages[1].content as string
+    expect(prompt).toContain('350 g mąki')
+    expect(prompt).toContain('piecz 12 minut')
+    expect(mock.didInsert('recipes')).toBe(true)
+  })
+
+  it('stops after the cap of extra pages', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const pages: Record<string, { markdown: string; raw: string }> = {
+      [ARTICLE]: { markdown: 'Strona 1 przepisu. '.repeat(20), raw: NAV(2) },
+    }
+    // Every page links to the next one, forever.
+    for (let n = 2; n <= 20; n++) pages[`${ARTICLE}${n}/`] = { markdown: `Strona ${n}.`, raw: NAV(n + 1) }
+    const fetch = makePagedFetch({ ...pages, 'https://beltoc.com/s/x': pages[ARTICLE] })
+
+    await runExtractRecipe({ ...BASE_EVENT, sharedUrl: ARTICLE }, { fetch, supabase: mock.supabase as any })
+
+    const scrapedPages = fetch.mock.calls
+      .filter((c) => String(c[0]).includes('firecrawl.dev'))
+      .map((c) => JSON.parse(String(c[1]?.body)).url as string)
+      .filter((u) => u.startsWith(ARTICLE) && /^\d+\/$/.test(u.slice(ARTICLE.length)))
+    expect(scrapedPages).toEqual([2, 3, 4, 5].map((n) => `${ARTICLE}${n}/`))
+  })
+})
+
 describe('runExtractRecipe — Risk 2: output gate', () => {
   it('throws before recipe insert when LLM returns empty ingredients and steps', async () => {
     const mock = makeSupabaseMock()
