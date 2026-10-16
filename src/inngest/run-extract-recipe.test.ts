@@ -489,8 +489,9 @@ function makeFacebookFetchMock({
   const fallback = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '', ...base })
   return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     if (url.includes('/plugins/video.php')) {
+      // The plugin's header names the poster, linked to their Watch page.
       const body = caption != null
-        ? `<html><body><div data-testid="post_message"><p>${caption.replace(/\n/g, '<br />')}</p></div></body></html>`
+        ? `<html><body><a title="Kulinarna Wiola" target="_blank" href="/watch/100069645633702/?ref=embed_video">Kulinarna Wiola</a><div data-testid="post_message"><p>${caption.replace(/\n/g, '<br />')}</p></div></body></html>`
         : embedRefused
           ? PLUGIN_REFUSED_HTML
           : PLUGIN_NO_TEXT_HTML
@@ -625,6 +626,26 @@ describe('runExtractRecipe — the same post text saved before', () => {
     await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
 
     expect(mock.insertArgs('recipes').source_fingerprint).toBeNull()
+  })
+})
+
+describe('runExtractRecipe — source author', () => {
+  it('stores the Facebook poster named in the plugin header', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_author).toBe('Kulinarna Wiola')
+  })
+
+  it('stores no author for a blog, which is named by its domain', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_author).toBeNull()
   })
 })
 
@@ -987,6 +1008,9 @@ function makeYoutubeFetchMock({
     if (url.includes('/api/timedtext')) {
       return Promise.resolve({ ok: true, status: 200, text: async () => CAPTION_XML })
     }
+    if (url.startsWith('https://www.youtube.com/oembed')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ author_name: 'PALCE LIZAĆ' }) })
+    }
     if (url.includes('openai.com') && isLabelingCall(init)) {
       return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: '{}' } }] }) })
     }
@@ -1013,6 +1037,7 @@ describe('runExtractRecipe — YouTube transcript fallback', () => {
     const fetch = makeYoutubeFetchMock({ openaiContents: [VALID_RECIPE_JSON] })
 
     await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 7 })
+    expect(mock.insertArgs('recipes').source_author).toBe('PALCE LIZAĆ')
 
     expect(transcriptCalls(fetch)).toHaveLength(0)
     expect(openaiCalls(fetch)).toHaveLength(1)
