@@ -34,6 +34,9 @@ const FB_UNREACHABLE =
   'Nie udało się pobrać tego posta z Facebooka — spróbuj ponownie za chwilę'
 const FB_NO_CAPTION =
   'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)'
+// The caption was read fine — it just holds no recipe (a teaser for a video).
+const FB_CAPTION_NO_RECIPE =
+  'Opis tego posta na Facebooku nie zawiera przepisu (przepis jest pewnie tylko w filmie) — skopiuj składniki ręcznie albo podaj link do bloga'
 const LLM_UNREADABLE =
   'Nie udało się odczytać przepisu z odpowiedzi modelu — spróbuj ponownie'
 const UNREADABLE_PAGE =
@@ -486,14 +489,20 @@ Rules:
     if (recipeJSON == null) throw new Error(UNREADABLE_PAGE)
 
     if (!recipeJSON.title || typeof recipeJSON.title !== 'string') {
-      throw new Error('No recipe title extracted — source page may not contain a recipe')
+      throw new Error(
+        fromPostCaption ? FB_CAPTION_NO_RECIPE : 'No recipe title extracted — source page may not contain a recipe',
+      )
     }
 
     // Output-side gate (Risk 2): reject body-less recipes before any DB write.
     // Catches the case where the LLM returns a valid title but empty ingredients
     // or steps — the title-only check above doesn't catch this.
     if (!isExtractedRecipeUsable(recipeJSON, { stepsOptional: fromPostCaption })) {
-      throw new Error('Extracted content has no usable recipe (title present but no ingredients or steps)')
+      throw new Error(
+        fromPostCaption
+          ? FB_CAPTION_NO_RECIPE
+          : 'Extracted content has no usable recipe (title present but no ingredients or steps)',
+      )
     }
 
     // The same recipe saved before from another post — its author published

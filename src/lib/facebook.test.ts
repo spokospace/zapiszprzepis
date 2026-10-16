@@ -11,10 +11,27 @@ import {
   findRecipeLinkInText,
   isFacebookShareUrl,
   isFacebookUrl,
+  isWatchLanding,
   stripFacebookTracking,
   toGroupPostUrl,
   toPagePostUrl,
 } from '@/lib/facebook'
+
+// A removed or private video redirects to the Watch feed, whose Relay data
+// carries "Popularne filmy" in the same shape as a post message.
+describe('isWatchLanding', () => {
+  it('detects the Watch feed a removed video redirects to', () => {
+    expect(isWatchLanding('<meta property="og:url" content="https://www.facebook.com/watch/" />')).toBe(true)
+  })
+
+  it('leaves a real video or post page alone', () => {
+    expect(isWatchLanding('<meta property="og:url" content="https://www.facebook.com/watch/?v=891090724827098" />')).toBe(false)
+    expect(
+      isWatchLanding('<meta property="og:url" content="https://www.facebook.com/SavoryDailyRecipes/posts/board/122164684886930465/" />'),
+    ).toBe(false)
+    expect(isWatchLanding('<html>no og tags</html>')).toBe(false)
+  })
+})
 
 describe('toPagePostUrl', () => {
   const POST = 'https://www.facebook.com/100069645633702/posts/pfbid0Fm/'

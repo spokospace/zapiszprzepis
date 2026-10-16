@@ -784,6 +784,19 @@ describe('runExtractRecipe — Facebook short caption', () => {
       .find((args) => args?.source_url)
     expect(inserted.steps).toEqual([])
   })
+
+  it('says in Polish that the caption holds no recipe when it is only a video teaser', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeFacebookFetchMock({
+      caption: 'Puff it up! 9 folds to make impressive puff pastry treats!',
+      openaiContent: JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), ingredients: [], steps: [] }),
+    })
+
+    await expect(runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow(
+      'Opis tego posta na Facebooku nie zawiera przepisu',
+    )
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
 })
 
 describe('runExtractRecipe — recipe gallery', () => {
