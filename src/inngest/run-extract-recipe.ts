@@ -1,7 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
-import { archiveRecipeImages, buildGallery, pickGalleryImages, pickRecipeImage } from '@/lib/recipe-image-archive'
+import {
+  archiveRecipeImages,
+  buildGallery,
+  isPrivateUrl,
+  pickGalleryImages,
+  pickRecipeImage,
+} from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
@@ -102,11 +108,17 @@ export async function runExtractRecipe(
     return type === 'web_blog' ? withFollowingPages(s, url) : s
   }
 
-  /** A page's raw HTML, or null on any failure. */
+  /** A page's raw HTML, or null on any failure. The URL comes from the user's
+   *  share, so the same SSRF guard as image archiving applies. */
   async function fetchRawHtml(url: string): Promise<string | null> {
+    if (isPrivateUrl(url)) return null
     try {
+      // No redirects: a public URL must not bounce the request to a private
+      // one. The article URL is Firecrawl's final URL already, and a page
+      // that redirects (one past the last) simply ends the walk.
       const response = await fetch(url, {
         headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
+        redirect: 'manual',
         signal: AbortSignal.timeout(15_000),
       })
       return response.ok ? await response.text() : null

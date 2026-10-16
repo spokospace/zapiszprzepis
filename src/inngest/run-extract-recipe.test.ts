@@ -224,7 +224,12 @@ describe('runExtractRecipe — article split over pages (#168)', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({
-            data: { markdown: page.markdown, html: `<p>${page.markdown}</p>`, metadata: { url: ARTICLE } },
+            data: {
+              markdown: page.markdown,
+              html: `<p>${page.markdown}</p>`,
+              // A private address resolves to itself, so the guard is what stops it.
+              metadata: { url: target.startsWith('http://169.254') ? undefined : ARTICLE },
+            },
           }),
         })
       }
@@ -252,6 +257,25 @@ describe('runExtractRecipe — article split over pages (#168)', () => {
     expect(prompt).toContain('350 g mąki')
     expect(prompt).toContain('piecz 12 minut')
     expect(mock.didInsert('recipes')).toBe(true)
+  })
+
+  it('never fetches a private address for page detection, and never follows redirects', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const page1 = { markdown: 'Strona 1 przepisu. '.repeat(20), raw: NAV(2) }
+    const fetch = makePagedFetch({ 'https://beltoc.com/s/x': page1, [ARTICLE]: page1 })
+
+    await runExtractRecipe({ ...BASE_EVENT, sharedUrl: 'http://169.254.169.254/latest/' }, { fetch, supabase: mock.supabase as any })
+    const raw = fetch.mock.calls.filter((c) => !/firecrawl\.dev|openai\.com/.test(String(c[0])))
+    expect(raw).toEqual([])
+
+    // A public article is fetched, but without following redirects.
+    const mock2 = makeSupabaseMock()
+    mock2.queue('recipes', { data: { id: 8 }, error: null })
+    await runExtractRecipe({ ...BASE_EVENT, sharedUrl: 'https://beltoc.com/s/x' }, { fetch, supabase: mock2.supabase as any })
+    const publicRaw = fetch.mock.calls.filter((c) => !/firecrawl\.dev|openai\.com/.test(String(c[0])))
+    expect(publicRaw.length).toBeGreaterThan(0)
+    expect(publicRaw.every((c) => (c[1] as RequestInit | undefined)?.redirect === 'manual')).toBe(true)
   })
 
   it('stops after the cap of extra pages', async () => {
