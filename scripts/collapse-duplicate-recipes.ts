@@ -57,9 +57,11 @@ begin
 
   perform public.restore_recipe_merge(merge);
 
-  checks := checks || format(' restored_recipes=%s', snap_recipes = ${snapRecipes});
-  checks := checks || format(' restored_favorites=%s', snap_favorites = ${snapFavorites});
-  checks := checks || format(' restored_shares=%s', snap_shares = ${snapShares});
+  -- "is not distinct from": an empty table hashes to NULL, before and after.
+  checks := checks || format(' restored_recipes=%s', snap_recipes is not distinct from ${snapRecipes});
+  checks := checks || format(' restored_favorites=%s', snap_favorites is not distinct from ${snapFavorites});
+  checks := checks || format(' restored_shares=%s', snap_shares is not distinct from ${snapShares});
+  checks := checks || format(' favorites_after_restore=%s', (select count(*) from public.favorites));
 
   raise exception 'REHEARSAL_RESULT groups=% losers=%:%', jsonb_array_length(groups), cardinality(losers), checks;
 end;
@@ -75,7 +77,9 @@ rollback;
 // transaction (collapse_recipe_groups) and re-checks that no duplicate is
 // left. Undo: restore_recipe_merge('<merge id>') after migration B's down.
 
-const MAIN_ACCOUNT = 'uzytkownik-5'
+// The main recipe account whose copy wins (Q2), by username: the spec's
+// "@uzytkownik-5", whose username may since have been regenerated (E01-S18).
+const MAIN_ACCOUNT = process.argv.find((a) => a.startsWith('--main-account='))?.split('=')[1] ?? 'uzytkownik-5'
 const PAGE = 1000
 
 type Recipe = CollapseRow & { title: string }
