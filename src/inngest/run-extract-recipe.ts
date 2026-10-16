@@ -11,7 +11,8 @@ import {
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
-import { findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
+import { findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
+import { fingerprintText } from '@/lib/source-fingerprint'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
@@ -325,6 +326,18 @@ export async function runExtractRecipe(
       )
     }
 
+    // The author's own text identifies the recipe across posts: a Page that
+    // publishes it twice gives two URLs but one text. Checked before any LLM
+    // call. A rendered page differs between scrapes, so it gets no fingerprint.
+    const sourceFingerprint = trustedContent ? await fingerprintText(markdown) : null
+    if (!forceRefresh && sourceFingerprint) {
+      const sameText = await findRecipeBySourceFingerprint(supabase, userId, sourceFingerprint)
+      if (sameText) {
+        console.log('[extract-recipe] same post text already saved:', sameText.slug)
+        return linkToSaved(sameText)
+      }
+    }
+
     // One LLM pass over the content. `transcript`, when given, is the video's
     // captions — the second-pass source for a YouTube link (below).
     async function extractWithLlm(transcript?: string): Promise<RecipeData> {
@@ -530,6 +543,7 @@ Rules:
     const baseSlug = slugify(title)
     const SLUG_KEY = 'recipes_user_id_slug_key'
     const URL_KEY = 'recipes_user_source_url_uniq'
+    const FINGERPRINT_KEY = 'recipes_user_source_fingerprint_uniq'
     const MAX_ATTEMPTS = 10
 
     let recipe: { id: number } | null = null
@@ -551,6 +565,7 @@ Rules:
           steps: recipeJSON.steps,
           source_type: sourceType,
           source_url: sourceUrl,
+          source_fingerprint: sourceFingerprint,
           youtube_id: youtubeId,
           category: recipeJSON.category,
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
@@ -578,6 +593,16 @@ Rules:
         break
       } else {
         lastInsertError = error
+      }
+
+      // Fingerprint collision: a share of the same text from another post
+      // won the race. Link this share to that recipe.
+      if (error?.message.includes(FINGERPRINT_KEY) && sourceFingerprint) {
+        const existing = await findRecipeBySourceFingerprint(supabase, userId, sourceFingerprint)
+        if (existing) {
+          recipe = { id: existing.id }
+          break
+        }
       }
 
       // URL collision: a parallel share won the race, OR this is a refresh
