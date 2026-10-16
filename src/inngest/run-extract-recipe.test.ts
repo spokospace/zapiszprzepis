@@ -630,13 +630,24 @@ describe('runExtractRecipe — the same post text saved before', () => {
 })
 
 describe('runExtractRecipe — source author', () => {
-  it('stores the Facebook poster named in the plugin header', async () => {
+  it('stores a known author named in the plugin header in full', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const event = { ...FB_EVENT, sharedUrl: 'https://www.facebook.com/100069645633702/videos/1784278505620096/' }
+
+    await runExtractRecipe(event, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_author).toBe('Kulinarna Wiola')
+  })
+
+  it("never stores an unknown poster's full name", async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 7 }, error: null })
 
+    // The share link resolves to no known profile, so the name is a person's.
     await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
 
-    expect(mock.insertArgs('recipes').source_author).toBe('Kulinarna Wiola')
+    expect(mock.insertArgs('recipes').source_author).toBe('Kulinarna W.')
   })
 
   it('stores no author for a blog, which is named by its domain', async () => {
