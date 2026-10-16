@@ -1,13 +1,23 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
-import { archiveRecipeImages, buildGallery, pickGalleryImages, pickRecipeImage } from '@/lib/recipe-image-archive'
+import {
+  archiveRecipeImages,
+  buildGallery,
+  isPrivateUrl,
+  pickGalleryImages,
+  pickRecipeImage,
+} from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
+import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
+
+const BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 import type { Database } from '@/lib/supabase.types'
 
 // Failure copy. These strings are stored verbatim in
@@ -95,7 +105,56 @@ export async function runExtractRecipe(
       console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
       s = await firecrawlScrape(buildFirecrawlOptions(url, type, { fullContent: true }))
     }
-    return s
+    return type === 'web_blog' ? withFollowingPages(s, url) : s
+  }
+
+  /** A page's raw HTML, or null on any failure. The URL comes from the user's
+   *  share, so the same SSRF guard as image archiving applies. */
+  async function fetchRawHtml(url: string): Promise<string | null> {
+    if (isPrivateUrl(url)) return null
+    try {
+      // No redirects: a public URL must not bounce the request to a private
+      // one. The article URL is Firecrawl's final URL already, and a page
+      // that redirects (one past the last) simply ends the walk.
+      const response = await fetch(url, {
+        headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(15_000),
+      })
+      return response.ok ? await response.text() : null
+    } catch {
+      return null
+    }
+  }
+
+  // An article split over pages ("Dalej »", <article>/2/, /3/ …) holds the
+  // recipe across all of them. Firecrawl's main-content output drops that
+  // navigation, so each page's raw HTML is checked for a link to the next one,
+  // and the pages found are appended. A failure keeps what was gathered.
+  async function withFollowingPages<T extends { markdown?: string; html?: string; metadata?: { url?: string; ogUrl?: string } }>(
+    first: T,
+    url: string,
+  ): Promise<T> {
+    const articleUrl = first.metadata?.url ?? first.metadata?.ogUrl ?? url
+    let { markdown = '', html = '' } = first
+    let pageUrl = articleUrl
+    for (let page = 1; page <= MAX_EXTRA_PAGES; page++) {
+      const raw = await fetchRawHtml(pageUrl)
+      const next = raw ? findNextPageUrl(raw, articleUrl, page) : null
+      if (!next) break
+      const scraped = await firecrawlScrape(buildFirecrawlOptions(next, 'web_blog', { fullContent: false })).catch(
+        (err) => {
+          console.warn('[extract-recipe] next page scrape failed:', err)
+          return null
+        },
+      )
+      if (!scraped?.markdown) break
+      console.log('[extract-recipe] appending article page', page + 1, next)
+      markdown += `\n\n${scraped.markdown}`
+      html += scraped.html ?? ''
+      pageUrl = next
+    }
+    return { ...first, markdown, html }
   }
 
   try {
