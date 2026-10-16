@@ -537,6 +537,40 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
   })
 })
 
+describe('runExtractRecipe — the same post text saved before', () => {
+  it('links the share to the saved recipe before any LLM call', async () => {
+    const mock = makeSupabaseMock()
+    // First lookup: the resolved post URL (not saved); second: the caption's fingerprint.
+    mock.queueMaybe('recipes', { data: null, error: null })
+    mock.queueMaybe('recipes', { data: { id: 70, slug: 'placki', title: 'Placki', category: 'sniadania' }, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 70, status: 'duplicate' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('openai.com'))).toBe(false)
+  })
+
+  it('stores the caption fingerprint with a new recipe', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_fingerprint).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('gives a rendered web page no fingerprint', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_fingerprint).toBeNull()
+  })
+})
+
 describe('runExtractRecipe — the same recipe from another post', () => {
   const SAVED = { id: 70, slug: 'nalesniki', title: 'Naleśniki', category: 'sniadania' }
 

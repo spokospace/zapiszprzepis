@@ -81,3 +81,18 @@ export async function findSameRecipe(
   const same = (data ?? []).find((r) => Array.isArray(r.ingredients) && sameIngredients(r.ingredients, recipe.ingredients))
   return same ? { id: same.id, slug: same.slug, title: same.title, category: same.category } : null
 }
+
+/** The user's recipe saved from the same author text (see fingerprintText), or null. */
+export async function findRecipeBySourceFingerprint(
+  supabase: SupabaseClient,
+  userId: string,
+  fingerprint: string,
+): Promise<{ id: number; slug: string; title: string; category: string } | null> {
+  const { data } = await supabase
+    .from('recipes')
+    .select('id, slug, title, category')
+    .eq('user_id', userId)
+    .eq('source_fingerprint', fingerprint)
+    .maybeSingle()
+  return data
+}
