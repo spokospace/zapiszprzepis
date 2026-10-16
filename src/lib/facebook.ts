@@ -273,6 +273,9 @@ export interface FacebookPost {
    * URLs that expire like `image`. Empty for other posts.
    */
   images: string[]
+  /** The name of the profile or Page that posted it, or null when the
+   *  surface that rendered the post did not show one. */
+  author: string | null
 }
 
 export interface FetchFacebookPostDeps {
@@ -315,9 +318,19 @@ interface PostText {
   caption: string | null
   embedStatus: FacebookEmbedStatus
   images: string[]
+  author: string | null
 }
 
-const UNREACHABLE: PostText = { caption: null, embedStatus: 'unreachable', images: [] }
+const UNREACHABLE: PostText = { caption: null, embedStatus: 'unreachable', images: [], author: null }
+
+// The plugin's header links the poster's name to their Watch page.
+const PLUGIN_AUTHOR = /<a title="([^"]+)"[^>]*?href="\/watch\/\d+\/\?ref=embed_video"/
+
+/** The poster's name in the plugin page's header, or null. */
+export function extractPluginAuthor(html: string): string | null {
+  const match = PLUGIN_AUTHOR.exec(html)
+  return match ? decodeEntities(match[1]).trim() || null : null
+}
 
 /** The embedded-video plugin page — the only logged-out surface that renders
  *  the caption. Never throws; a page we could not load is `unreachable`, which
@@ -340,6 +353,7 @@ async function fetchCaption(url: string, fetch: typeof globalThis.fetch): Promis
       caption,
       embedStatus: caption == null && pluginHasNoPlayer(html) ? 'refused' : 'rendered',
       images: [],
+      author: extractPluginAuthor(html),
     }
   } catch (error) {
     console.warn('[facebook] plugin fetch failed:', error)
@@ -391,6 +405,20 @@ export function extractGroupPostText(html: string): string | null {
   }
 
   return parts.size > 0 ? [...parts].join('\n\n') : null
+}
+
+/**
+ * The post author's name from a permalink page's Relay data, or null. The
+ * first actor names the author by id, but carries the name only on some
+ * pages; the same id sits next to the name wherever the data lists it.
+ */
+export function extractPostAuthor(html: string): string | null {
+  const authorId = POST_AUTHOR.exec(html)?.[1]
+  if (!authorId) return null
+  const id = authorId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`"name":${JSON_STRING},"id":"${id}"|"id":"${id}","name":${JSON_STRING}`).exec(html)
+  const body = match?.[1] ?? match?.[2]
+  return body ? decodeJsonString(body)?.trim() || null : null
 }
 
 // A photo of the post links to its viewer as photo.php?fbid=<photo>&set=gm.<post>.
@@ -491,7 +519,7 @@ async function fetchPostPageCaption(
     const html = await response.text()
     // A video nobody may see redirects to the Watch feed, whose own Relay data
     // ("Popularne filmy") would pass for the post's caption.
-    if (isWatchLanding(html)) return { caption: null, embedStatus: 'refused', images: [] }
+    if (isWatchLanding(html)) return { caption: null, embedStatus: 'refused', images: [], author: null }
     const caption = extractGroupPostText(html)
     // A login wall carries no photos worth fetching.
     const images =
@@ -507,6 +535,7 @@ async function fetchPostPageCaption(
       caption,
       embedStatus: caption == null ? 'refused' : 'rendered',
       images: images.filter((image): image is string => image != null),
+      author: caption == null ? null : extractPostAuthor(html),
     }
   } catch (error) {
     console.warn('[facebook] post page fetch failed:', error)
@@ -595,7 +624,7 @@ export async function fetchFacebookPost(
     : // Already a permalink — both requests go out together.
       fetchPostText(target, fetch)
 
-  const [{ canonicalUrl, image, description }, { caption, embedStatus, images }] = await Promise.all([
+  const [{ canonicalUrl, image, description }, { caption, embedStatus, images, author }] = await Promise.all([
     permalink,
     pluginPage,
   ])
@@ -611,5 +640,6 @@ export async function fetchFacebookPost(
     recipeLink: findRecipeLinkInText(caption ?? description ?? ''),
     image,
     images,
+    author,
   }
 }

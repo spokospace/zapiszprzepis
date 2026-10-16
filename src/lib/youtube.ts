@@ -221,3 +221,26 @@ export async function fetchYoutubeTranscript(
     return null
   }
 }
+
+/**
+ * The channel name of a video, from YouTube's oEmbed endpoint — one small
+ * JSON request with no bot wall, unlike the player. Returns null when the
+ * request fails or the video is private or removed; never throws.
+ */
+export async function fetchYoutubeAuthor(
+  videoId: string,
+  { fetch }: FetchYoutubeTranscriptDeps = { fetch: globalThis.fetch },
+): Promise<string | null> {
+  try {
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`
+    const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`, {
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!response.ok) return null
+    const { author_name: author } = (await response.json()) as { author_name?: unknown }
+    return typeof author === 'string' && author.trim() ? author.trim() : null
+  } catch (error) {
+    console.warn('[youtube] oEmbed fetch failed:', error)
+    return null
+  }
+}

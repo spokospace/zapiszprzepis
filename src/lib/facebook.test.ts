@@ -5,8 +5,10 @@ import {
   extractGroupPostPhotoIds,
   extractGroupPostText,
   extractOgTag,
+  extractPluginAuthor,
   extractPluginCaption,
   extractPluginPhoto,
+  extractPostAuthor,
   fetchFacebookPost,
   findRecipeLinkInText,
   isFacebookShareUrl,
@@ -215,6 +217,51 @@ describe('extractGroupPostText', () => {
 
   it('returns null for a page without the post', () => {
     expect(extractGroupPostText(LOGIN_WALL_HTML)).toBeNull()
+  })
+})
+
+describe('extractPostAuthor', () => {
+  it("reads the first actor's name in a group post", () => {
+    expect(extractPostAuthor(GROUP_POST_HTML)).toBe('Fefe Deni')
+  })
+
+  it('finds the name wherever the data lists it next to the actor id', () => {
+    // Trimmed from a real profile post served to Googlebot: the actor object
+    // opens with a nested profile_picture, the name follows the id.
+    const html = String.raw`{"actors":[{"profile_picture":{"uri":"https:\/\/lookaside.fbsbx.com\/x"},"__typename":"User","id":"100069645633702","name":"Kulinarna Wiola","url":"https:\/\/www.facebook.com\/people\/Kulinarna-Wiola\/100069645633702\/"}]}`
+    expect(extractPostAuthor(html)).toBe('Kulinarna Wiola')
+  })
+
+  it('decodes escaped characters in the name', () => {
+    expect(extractPostAuthor(String.raw`{"actors":[{"name":"Małgosia Gotuje","id":"42"}]}`)).toBe('Małgosia Gotuje')
+  })
+
+  it("never takes another person's name", () => {
+    // A video page: the actor carries no name, and a commenter's sits nearby.
+    const html = String.raw`{"actors":[{"__typename":"User","id":"100069645633702","url":"x"}]},{"author":{"name":"Fefe Deni","id":"pfbidMEMBER"}}`
+    expect(extractPostAuthor(html)).toBeNull()
+  })
+
+  it('returns null without actors (the login wall)', () => {
+    expect(extractPostAuthor('<html><body>Zaloguj się</body></html>')).toBeNull()
+  })
+})
+
+describe('extractPluginAuthor', () => {
+  it("reads the poster from the plugin header's Watch link", () => {
+    const html =
+      '<div class="_90h_"><a title="Kulinarna Wiola" target="_blank" href="/watch/100069645633702/?ref=embed_video" id="u_0_l_v9">Kulinarna Wiola</a></div>'
+    expect(extractPluginAuthor(html)).toBe('Kulinarna Wiola')
+  })
+
+  it('decodes HTML entities', () => {
+    expect(
+      extractPluginAuthor('<a title="Kuchnia &amp; Pasja" href="/watch/1/?ref=embed_video">Kuchnia</a>'),
+    ).toBe('Kuchnia & Pasja')
+  })
+
+  it('returns null for the error card', () => {
+    expect(extractPluginAuthor(REFUSED_HTML)).toBeNull()
   })
 })
 

@@ -8,7 +8,7 @@ import {
   pickGalleryImages,
   pickRecipeImage,
 } from '@/lib/recipe-image-archive'
-import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
+import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutubeTranscript } from '@/lib/youtube'
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
@@ -365,6 +365,14 @@ export async function runExtractRecipe(
       }
     }
 
+    // Who published the recipe, for the source label ("Kulinarna Wiola ·
+    // Facebook"): the Facebook poster, or the YouTube channel — fetched while
+    // the LLM extracts. A blog is named by its domain, so it needs none.
+    const sourceAuthorPromise: Promise<string | null> =
+      sourceType === 'youtube' && youtubeId != null
+        ? fetchYoutubeAuthor(youtubeId, { fetch })
+        : Promise.resolve(facebookPost?.author ?? null)
+
     // One LLM pass over the content. `transcript`, when given, is the video's
     // captions — the second-pass source for a YouTube link (below).
     async function extractWithLlm(transcript?: string): Promise<RecipeData> {
@@ -541,6 +549,7 @@ Rules:
       (existingRecipes ?? []).filter((r) => r.source_url !== sourceUrl && r.source_url !== sharedUrl),
       { fetch, apiKey: process.env.OPENAI_API_KEY },
     )
+    const sourceAuthor = await sourceAuthorPromise
 
     // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
     // this (user, source_url) in place. The normal path below dedups and
@@ -558,6 +567,8 @@ Rules:
           tags,
           source_type: sourceType,
           youtube_id: youtubeId,
+          // Keep the author a previous run found when this one saw none.
+          ...(sourceAuthor != null ? { source_author: sourceAuthor } : {}),
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
           total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
@@ -624,6 +635,7 @@ Rules:
           source_type: sourceType,
           source_url: sourceUrl,
           source_fingerprint: sourceFingerprint,
+          source_author: sourceAuthor,
           youtube_id: youtubeId,
           category: recipeJSON.category,
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
@@ -670,7 +682,7 @@ Rules:
       if (error?.message.includes(URL_KEY)) {
         const { data: existing } = await supabase
           .from('recipes')
-          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, description, tags')
+          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, source_author, description, tags')
           .eq('user_id', userId)
           .eq('source_url', sourceUrl)
           .single()
@@ -688,6 +700,9 @@ Rules:
           }
           if (existing.youtube_id == null && youtubeId != null) {
             gapFill.youtube_id = youtubeId
+          }
+          if (existing.source_author == null && sourceAuthor != null) {
+            gapFill.source_author = sourceAuthor
           }
           if (existing.description == null && description != null) {
             gapFill.description = description

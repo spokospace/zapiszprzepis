@@ -115,7 +115,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               <span>{categoryLabel(typedRecipe.category)}</span>
             </Link>
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
-              {sourceLabel(typedRecipe.source_type, typedRecipe.source_url)}
+              {sourceLabel(typedRecipe.source_type, typedRecipe.source_url, typedRecipe.source_author)}
             </span>
             {typedRecipe.source_url && (
               <a

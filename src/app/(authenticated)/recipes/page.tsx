@@ -78,11 +78,11 @@ export default async function RecipesPage({
   let filteredQuery = normalizedQuery
     ? supabase
         .from('recipes')
-        .select('id, slug, title, image_url, category, description, source_type, source_url, ingredients')
+        .select('id, slug, title, image_url, category, description, source_type, source_url, source_author, ingredients')
         .order('created_at', { ascending: false })
     : supabase
         .from('recipes')
-        .select('id, slug, title, image_url, category, description, source_type, source_url')
+        .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
         .order('created_at', { ascending: false })
 
   if (activeCategory) {

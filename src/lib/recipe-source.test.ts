@@ -17,6 +17,12 @@ describe('sourceLabel', () => {
     ).toBe(wiola)
   })
 
+  it('names the author stored at import, ahead of the known-profile map', () => {
+    expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Fefe Deni')).toBe('Fefe Deni · Facebook')
+    expect(sourceLabel('youtube', 'https://youtu.be/abc', 'PALCE LIZAĆ')).toBe('PALCE LIZAĆ · YouTube')
+    expect(sourceLabel('web_blog', 'https://www.polskiekulinaria.pl/tiramisu', 'Ania')).toBe('polskiekulinaria.pl')
+  })
+
   it('keeps the bare platform for unknown profiles, groups and reels', () => {
     expect(sourceLabel('facebook_text', 'https://www.facebook.com/123456/posts/789/')).toBe('Facebook')
     expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/100069645633702/posts/2/')).toBe('Facebook')
