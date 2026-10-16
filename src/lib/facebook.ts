@@ -452,6 +452,19 @@ async function fetchGroupPhoto(
   }
 }
 
+/** True for the Watch feed itself (og:url https://www.facebook.com/watch/,
+ *  no video id) — where Facebook sends a removed or private video. */
+export function isWatchLanding(html: string): boolean {
+  const ogUrl = extractOgTag(html, 'url')
+  if (!ogUrl) return false
+  try {
+    const parsed = new URL(ogUrl)
+    return /^\/watch\/?$/.test(parsed.pathname) && !parsed.searchParams.has('v')
+  } catch {
+    return false
+  }
+}
+
 /** A public post's message and its author's comments, read off its permalink
  *  page — the video plugin refuses group posts and every post that is not a
  *  video. A group post's photos come along when `groupPostId` is given. Never
@@ -471,6 +484,9 @@ async function fetchPostPageCaption(
       return UNREACHABLE
     }
     const html = await response.text()
+    // A video nobody may see redirects to the Watch feed, whose own Relay data
+    // ("Popularne filmy") would pass for the post's caption.
+    if (isWatchLanding(html)) return { caption: null, embedStatus: 'refused', images: [] }
     const caption = extractGroupPostText(html)
     // A login wall carries no photos worth fetching.
     const images =
