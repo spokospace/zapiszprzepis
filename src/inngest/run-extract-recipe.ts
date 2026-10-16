@@ -11,6 +11,8 @@ import {
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
+import { findRecipeBySourceUrl } from '@/lib/recipe-dedup'
+import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
@@ -191,6 +193,20 @@ export async function runExtractRecipe(
             return null
           })
         : null
+
+    // A share shortlink names its post only now, after the redirect. Store the
+    // recipe under that post, and when it is already saved — shared earlier by
+    // its permalink or by another shortlink — link this share to it instead of
+    // extracting it a second time.
+    const sourceUrl = resolvedSourceUrl(sharedUrl, facebookPost?.canonicalUrl)
+    if (!forceRefresh && sourceUrl !== sharedUrl) {
+      const saved = await findRecipeBySourceUrl(supabase, userId, sourceUrl)
+      if (saved) {
+        console.log('[extract-recipe] share link resolves to saved recipe', saved.slug)
+        await supabase.from('recipe_shares').update({ recipe_id: saved.id, status: 'completed' }).eq('id', shareId)
+        return { recipeId: saved.id, title: saved.title, category: saved.category, status: 'duplicate' }
+      }
+    }
 
     // Many Facebook posts — group posts especially — are a teaser plus a link
     // to the author's blog, and the recipe only lives on the other side of
@@ -433,7 +449,7 @@ Rules:
     const { data: existingRecipes } = await existingRecipesQuery
     const { title, description, tags } = await labelRecipe(
       recipeJSON,
-      (existingRecipes ?? []).filter((r) => r.source_url !== sharedUrl),
+      (existingRecipes ?? []).filter((r) => r.source_url !== sourceUrl && r.source_url !== sharedUrl),
       { fetch, apiKey: process.env.OPENAI_API_KEY },
     )
 
@@ -516,7 +532,7 @@ Rules:
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
           source_type: sourceType,
-          source_url: sharedUrl,
+          source_url: sourceUrl,
           youtube_id: youtubeId,
           category: recipeJSON.category,
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
@@ -555,7 +571,7 @@ Rules:
           .from('recipes')
           .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, description, tags')
           .eq('user_id', userId)
-          .eq('source_url', sharedUrl)
+          .eq('source_url', sourceUrl)
           .single()
 
         if (existing) {

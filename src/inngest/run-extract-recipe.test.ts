@@ -60,6 +60,7 @@ const isLabelingCall = (init?: RequestInit) =>
 // Results for .single() are served from a per-table FIFO queue.
 function makeSupabaseMock() {
   const queues: Record<string, Array<{ data: any; error: any }>> = {}
+  const maybeQueues: Record<string, Array<{ data: any; error: any }>> = {}
   const calls: Array<{ table: string; op: string; args?: any }> = []
 
   function makeChain(table: string) {
@@ -77,11 +78,14 @@ function makeSupabaseMock() {
     chain.neq = vi.fn().mockReturnValue(chain)
     chain.order = vi.fn().mockReturnValue(chain)
     chain.limit = vi.fn().mockReturnValue(chain)
+    chain.like = vi.fn().mockReturnValue(chain)
     chain.single = vi.fn().mockImplementation(() => {
       const val = queues[table]?.shift() ?? { data: null, error: null }
       return Promise.resolve(val)
     })
-    chain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null })
+    chain.maybeSingle = vi.fn().mockImplementation(() =>
+      Promise.resolve(maybeQueues[table]?.shift() ?? { data: null, error: null }),
+    )
     // Make chain awaitable for update().eq() calls without .single()
     chain.then = (resolve: any, reject: any) =>
       Promise.resolve({ data: null, error: null }).then(resolve, reject)
@@ -98,6 +102,11 @@ function makeSupabaseMock() {
     queue(table: string, result: { data: any; error: any }) {
       if (!queues[table]) queues[table] = []
       queues[table].push(result)
+    },
+    /** Queue a .maybeSingle() result for the next lookup on this table */
+    queueMaybe(table: string, result: { data: any; error: any }) {
+      if (!maybeQueues[table]) maybeQueues[table] = []
+      maybeQueues[table].push(result)
     },
     didInsert: (table: string) => calls.some(c => c.table === table && c.op === 'insert'),
     insertArgs: (table: string) => calls.find(c => c.table === table && c.op === 'insert')?.args,
@@ -487,7 +496,7 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     expect(JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content).toContain('Ciasto kruche')
   })
 
-  it('still stores the share under the Facebook URL the user sent', async () => {
+  it('stores the recipe under the Facebook post, not the blog it links to', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 9 }, error: null })
     const fetch = makeFacebookFetchMock({
@@ -501,7 +510,8 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     const inserted = mock.supabase.from.mock.results
       .map((r) => r.value.insert.mock.calls[0]?.[0])
       .find((args) => args?.source_url)
-    expect(inserted.source_url).toBe(FB_EVENT.sharedUrl)
+    // The share link resolved to the reel, so the recipe is keyed by the reel.
+    expect(inserted.source_url).toBe('https://www.facebook.com/reel/943809852095733')
     expect(inserted.source_type).toBe('facebook_text')
   })
 
@@ -517,6 +527,21 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
 
     expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(false)
+  })
+})
+
+describe('runExtractRecipe — Facebook share link to a saved post', () => {
+  it('links the share to the saved recipe without extracting it again', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { id: 5, slug: 'placki', title: 'Placki', category: 'sniadania' }, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 5, status: 'duplicate' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(mock.didUpdate('recipe_shares', { recipe_id: 5, status: 'completed' })).toBe(true)
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('openai.com'))).toBe(false)
   })
 })
 

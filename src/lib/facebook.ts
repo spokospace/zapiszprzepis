@@ -80,6 +80,17 @@ export function toGroupPostUrl(url: string): string | null {
   return groupPost ? `https://www.facebook.com/groups/${groupPost.group}/posts/${groupPost.post}/` : null
 }
 
+/**
+ * A SQL LIKE pattern matching the dedup key (toGroupPostUrl's permalink,
+ * trailing slash dropped) of this post under any group, or null for anything
+ * else. Group post ids are global, so one post reached through the group's
+ * name and through its number is one post.
+ */
+export function groupPostKeyPattern(url: string): string | null {
+  const groupPost = parseGroupPost(url)
+  return groupPost ? `https://www.facebook.com/groups/%/posts/${groupPost.post}` : null
+}
+
 /** The group and post ids of a group post link, in any of the shapes toGroupPostUrl reads. */
 function parseGroupPost(url: string): { group: string; post: string } | null {
   try {
@@ -532,6 +543,22 @@ export function stripFacebookTracking(url: string): string {
     return parsed.toString()
   } catch {
     return url
+  }
+}
+
+/** True for a link to one post — a group or Page post, a reel, a video or a
+ *  photo — and false for anything a redirect may land on instead (the login
+ *  wall, a profile, a feed). Only such a link may stand in for a share link
+ *  as the post's identity. */
+export function isFacebookPostUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    if (normalizeFacebookHost(parsed.hostname) !== 'facebook.com') return false
+    if (toGroupPostUrl(url) || toPagePostUrl(url)) return true
+    if (/^\/(?:[^/]+\/(?:posts|videos)\/[\w-]+|reel\/\d+)\/?$/.test(parsed.pathname)) return true
+    return /^\/(?:watch|photo(?:\.php)?)\/?$/.test(parsed.pathname) && (parsed.searchParams.has('v') || parsed.searchParams.has('fbid'))
+  } catch {
+    return false
   }
 }
 
