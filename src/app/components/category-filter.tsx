@@ -7,9 +7,11 @@ import {
   CakeSlice,
   Cookie,
   Coffee,
+  Croissant,
   Sandwich,
   Salad,
   GlassWater,
+  FlaskRound,
   UtensilsCrossed,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -21,9 +23,11 @@ const CATEGORY_ICONS: Record<RecipeCategory, LucideIcon> = {
   desery: CakeSlice,
   ciasteczka: Cookie,
   sniadania: Coffee,
+  pieczywo: Croissant,
   przekaski: Sandwich,
   salatki: Salad,
   napoje: GlassWater,
+  syropy: FlaskRound,
   inne: UtensilsCrossed,
 }
 
