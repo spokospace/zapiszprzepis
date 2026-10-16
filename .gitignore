@@ -59,3 +59,8 @@ cloudflare-env.d.ts
 
 # credentials / local-only docs — never commit account details
 context/foundation/test-accounts.md
+
+# Agent pipeline QA state (generated per run)
+.ai/qa/artifacts_*/
+.ai/qa/test-env.json
+.ai/qa/test-env.env

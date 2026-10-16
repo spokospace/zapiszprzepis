@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Link, Mic, Search, X } from 'lucide-react'
 import { addRecipeFromUrl } from '@/app/(authenticated)/recipes/add-recipe-action'
 import { searchViaExa, type ExaResult } from '@/app/(authenticated)/recipes/search-via-exa-action'
+import { stripSearchParam } from '@/lib/strip-search-param'
 
 type SearchState = 'idle' | 'loading' | 'searching' | 'results' | 'error' | 'recording' | 'mic_error'
 
@@ -87,10 +89,33 @@ function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: 
 }
 
 export function AddRecipeForm({ addError }: { addError?: string | null }) {
-  const [activeTab, setActiveTab] = useState<'search' | 'add'>('search')
+  // `?tab=add` comes from the header's quick-add button.
+  const wantsAddTab = useSearchParams().get('tab') === 'add'
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [activeTab, setActiveTab] = useState<'search' | 'add'>(
+    addError || wantsAddTab ? 'add' : 'search',
+  )
   const [searchState, setSearchState] = useState<SearchState>('idle')
   const [exaResults, setExaResults] = useState<ExaResult[]>([])
   const [isSpeechSupported, setIsSpeechSupported] = useState(false)
+
+  // The header button can be clicked while this form is already mounted (on
+  // the home page), so switch tabs whenever the param shows up, not just on mount.
+  const [prevWantsAddTab, setPrevWantsAddTab] = useState(wantsAddTab)
+  if (wantsAddTab !== prevWantsAddTab) {
+    setPrevWantsAddTab(wantsAddTab)
+    if (wantsAddTab) {
+      setActiveTab('add')
+      setSearchState('idle')
+    }
+  }
+
+  useEffect(() => {
+    if (!wantsAddTab) return
+    inputRef.current?.focus()
+    // Drop the param so the next header click is a fresh navigation again.
+    stripSearchParam('tab')
+  }, [wantsAddTab])
 
   useEffect(() => {
     // A mount-only capability probe, not a render cascade: `window` cannot be
@@ -101,11 +126,7 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
   }, [])
 
   useEffect(() => {
-    if (addError) {
-      const url = new URL(window.location.href)
-      url.searchParams.delete('add_error')
-      window.history.replaceState({}, '', url.toString())
-    }
+    if (addError) stripSearchParam('add_error')
   }, [addError])
 
   const handleSubmit = async (formData: FormData) => {
@@ -200,6 +221,7 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
               : <Link aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             }
             <input
+              ref={inputRef}
               name="url"
               type="text"
               aria-label={activeTab === 'search' ? 'Szukaj przepisu' : 'URL przepisu'}

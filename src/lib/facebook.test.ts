@@ -1,13 +1,60 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
+  buildFacebookPhotoPluginUrl,
   buildFacebookPluginUrl,
+  extractGroupPostPhotoIds,
+  extractGroupPostText,
   extractOgTag,
   extractPluginCaption,
+  extractPluginPhoto,
   fetchFacebookPost,
   findRecipeLinkInText,
   isFacebookShareUrl,
   isFacebookUrl,
+  stripFacebookTracking,
+  toGroupPostUrl,
+  toPagePostUrl,
 } from '@/lib/facebook'
+
+describe('toPagePostUrl', () => {
+  const POST = 'https://www.facebook.com/100069645633702/posts/pfbid0Fm/'
+
+  it('rewrites a Page permalink.php or story.php link to its /posts/ page', () => {
+    expect(
+      toPagePostUrl(
+        'https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702&__cft__[0]=AZh&__tn__=%2CO%2CP-R',
+      ),
+    ).toBe(POST)
+    expect(toPagePostUrl('https://m.facebook.com/story.php?story_fbid=pfbid0Fm&id=100069645633702')).toBe(POST)
+    expect(toPagePostUrl('https://www.facebook.com/permalink.php?story_fbid=123456&id=987')).toBe(
+      'https://www.facebook.com/987/posts/123456/',
+    )
+  })
+
+  it('leaves every other link alone', () => {
+    expect(toPagePostUrl('https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm')).toBeNull()
+    expect(toPagePostUrl('https://www.facebook.com/permalink.php?id=100069645633702')).toBeNull()
+    expect(toPagePostUrl('https://www.facebook.com/reel/943809852095733/')).toBeNull()
+    expect(toPagePostUrl('https://www.facebook.com/groups/1/posts/2/')).toBeNull()
+    expect(toPagePostUrl('https://example.com/permalink.php?story_fbid=1&id=2')).toBeNull()
+  })
+})
+
+describe('stripFacebookTracking', () => {
+  it('keeps the params that name the post and drops the tracking ones', () => {
+    expect(
+      stripFacebookTracking(
+        'https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702&__cft__[0]=AZh&__tn__=%2CO%2CP-R',
+      ),
+    ).toBe('https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702')
+  })
+
+  it('leaves a path-only permalink bare', () => {
+    expect(stripFacebookTracking('https://www.facebook.com/reel/1/?rdid=x&share_url=y')).toBe(
+      'https://www.facebook.com/reel/1/',
+    )
+  })
+})
 
 // Mirrors the real plugins/video.php markup: the caption lives in a
 // data-testid="post_message" div, emoji are <span>-wrapped images, lines are
@@ -38,6 +85,37 @@ const REFUSED_HTML = '<html><body><div class="_3i0p">Nie można osadzić tego fi
 // A post the plugin did embed, over which the author simply wrote nothing.
 const PLAYER_HTML = '<html><body><video src="reel.mp4"></video></body></html>'
 
+// Trimmed from the Relay data of a real public group post as Facebook serves
+// it to a search-engine user-agent: the story with its actors and message,
+// then each comment twice (Facebook repeats it), its body before its author.
+// The post author put the recipe in the first comment; a member's reaction
+// follows and must be left out.
+const GROUP_POST_HTML = String.raw`<html><script type="application/json">{"story":{"actors":[{"__typename":"User","name":"Fefe Deni","id":"pfbidAUTHOR"}],
+"message":{"text":"Ciasteczka ma\u015blane z rowkami"},
+"comment":{"legacy_fbid":"1","depth":0,"body":{"text":"Sk\u0142adniki:\n\n300 g m\u0105ki pszennej\n\nWykonanie: piecz \"na z\u0142oto\""},"attachments":[],"author":{"__typename":"User","id":"pfbidAUTHOR","name":"Fefe Deni"}},
+"comment":{"legacy_fbid":"1","depth":0,"body":{"text":"Sk\u0142adniki:\n\n300 g m\u0105ki pszennej\n\nWykonanie: piecz \"na z\u0142oto\""},"attachments":[],"author":{"__typename":"User","id":"pfbidAUTHOR","name":"Fefe Deni"}},
+"comment":{"legacy_fbid":"2","depth":0,"body":{"text":"Mniam, zrobi\u0119!"},"author":{"__typename":"User","id":"pfbidMEMBER"}}}}</script></html>`
+
+// A two-photo group post's attachments as the Relay data lists them (each
+// photo several times), plus a member's photo under the comments, which sits in
+// another set and is not part of the post.
+const GROUP_PHOTOS_HTML = String.raw`<script type="application/json">{"all_subattachments":{"count":2,"nodes":[
+{"media":{"__typename":"Photo","id":"2534992233268516"},"url":"https:\/\/www.facebook.com\/photo.php?fbid=2534992233268516&set=gm.2685730571747766&type=3"},
+{"media":{"__typename":"Photo","id":"2534992403268499"},"url":"https:\/\/www.facebook.com\/photo.php?fbid=2534992403268499&set=gm.2685730571747766&type=3"}]},
+"url":"https:\/\/www.facebook.com\/photo.php?fbid=2534992233268516&set=gm.2685730571747766&type=3",
+"comment":{"attachments":[{"url":"https:\/\/www.facebook.com\/photo.php?fbid=999&set=p.999&type=3"}]}}</script>`
+
+// The embedded-post plugin page for one photo, trimmed from the real one: the
+// author's avatar (no size), the app badge (24px, static host), then the photo.
+function photoPluginHtml(file: string) {
+  return `<div><img class="_s0 _4ooo img" src="https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-1/120087111_n.jpg?stp=c0.0.1x1&amp;oh=a" alt="" role="img" />
+<img class="img" src="https://static.xx.fbcdn.net/rsrc.php/yy/r/Phqp6RSXdyI.webp" alt="app-facebook" width="24" height="24" />
+<img class="_1p6f _1p6g img" src="https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/${file}?stp=dst-jpg_p394x394_tt6&amp;oe=6AF8B613&amp;oh=1" alt="" width="373" height="498" /></div>`
+}
+
+// What a private group's permalink page carries for a logged-out visitor.
+const LOGIN_WALL_HTML = '<html><head><title>Facebook</title></head><body>Zaloguj się</body></html>'
+
 describe('isFacebookUrl', () => {
   it('accepts facebook hosts and their subdomains', () => {
     expect(isFacebookUrl('https://www.facebook.com/reel/943809852095733/')).toBe(true)
@@ -64,6 +142,83 @@ describe('isFacebookShareUrl', () => {
   it('leaves canonical permalinks alone', () => {
     expect(isFacebookShareUrl('https://www.facebook.com/reel/943809852095733/')).toBe(false)
     expect(isFacebookShareUrl('https://www.mecooks.com/share/r/x/')).toBe(false)
+  })
+})
+
+describe('toGroupPostUrl', () => {
+  const POST = 'https://www.facebook.com/groups/1467531384889794/posts/1667590364883894/'
+
+  it('rewrites a group feed link to the post it highlights', () => {
+    expect(
+      toGroupPostUrl(
+        'https://www.facebook.com/groups/1467531384889794/?multi_permalinks=1667590364883894&hoisted_section_header_type=recently_seen&__tn__=%2CO%2CP-R',
+      ),
+    ).toBe(POST)
+    expect(toGroupPostUrl('https://m.facebook.com/groups/1467531384889794?multi_permalinks=1667590364883894,123')).toBe(POST)
+  })
+
+  it('normalises the posts and permalink shapes and drops their query', () => {
+    expect(toGroupPostUrl(`${POST}?comment_id=1`)).toBe(POST)
+    expect(toGroupPostUrl('https://www.facebook.com/groups/1467531384889794/permalink/1667590364883894/')).toBe(POST)
+    expect(toGroupPostUrl('https://www.facebook.com/groups/przepisy/posts/42')).toBe(
+      'https://www.facebook.com/groups/przepisy/posts/42/',
+    )
+  })
+
+  it('returns null for a group feed with no post, and for non-group URLs', () => {
+    expect(toGroupPostUrl('https://www.facebook.com/groups/1467531384889794/')).toBeNull()
+    expect(toGroupPostUrl('https://www.facebook.com/reel/943809852095733/')).toBeNull()
+    expect(toGroupPostUrl('https://example.com/groups/1/posts/2/')).toBeNull()
+  })
+})
+
+describe('extractGroupPostText', () => {
+  it("joins the post message with its author's comments, decoded, each once", () => {
+    expect(extractGroupPostText(GROUP_POST_HTML)).toBe(
+      'Ciasteczka maślane z rowkami\n\nSkładniki:\n\n300 g mąki pszennej\n\nWykonanie: piecz "na złoto"',
+    )
+  })
+
+  it("leaves other members' comments out", () => {
+    expect(extractGroupPostText(GROUP_POST_HTML)).not.toContain('Mniam')
+  })
+
+  it('returns null for a page without the post', () => {
+    expect(extractGroupPostText(LOGIN_WALL_HTML)).toBeNull()
+  })
+})
+
+describe('extractGroupPostPhotoIds', () => {
+  it("lists the post's own photos in order, each once, without comment photos", () => {
+    expect(extractGroupPostPhotoIds(GROUP_PHOTOS_HTML, '2685730571747766')).toEqual([
+      '2534992233268516',
+      '2534992403268499',
+    ])
+  })
+
+  it('finds nothing for another post or a post without photos', () => {
+    expect(extractGroupPostPhotoIds(GROUP_PHOTOS_HTML, '1')).toEqual([])
+    expect(extractGroupPostPhotoIds(GROUP_POST_HTML, '2685730571747766')).toEqual([])
+  })
+})
+
+describe('extractPluginPhoto', () => {
+  it('takes the photo, not the avatar or the app badge, and decodes its query', () => {
+    expect(extractPluginPhoto(photoPluginHtml('100961545_n.jpg'))).toBe(
+      'https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/100961545_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1',
+    )
+  })
+
+  it('returns null for a plugin page without a photo', () => {
+    expect(extractPluginPhoto(LOGIN_WALL_HTML)).toBeNull()
+  })
+})
+
+describe('buildFacebookPhotoPluginUrl', () => {
+  it("embeds the photo's group-post viewer link", () => {
+    const url = new URL(buildFacebookPhotoPluginUrl('25', '26'))
+    expect(url.pathname).toBe('/plugins/post.php')
+    expect(url.searchParams.get('href')).toBe('https://www.facebook.com/photo.php?fbid=25&set=gm.26&type=3')
   })
 })
 
@@ -270,6 +425,96 @@ describe('fetchFacebookPost', () => {
     // Not null: "we could not reach Facebook" is the one thing the caller has
     // to know here, so it must not read as "the post has no caption".
     expect(post).toMatchObject({ caption: null, image: null, embedStatus: 'unreachable' })
+  })
+
+  it("reads a group post's text and comments from its permalink, not the plugin", async () => {
+    const fetch = vi.fn(async (input: string, init?: RequestInit) => {
+      const ua = new Headers(init?.headers).get('User-Agent') ?? ''
+      // The crawler request reads og:image; only the search-bot one gets the post.
+      const html = ua.includes('Googlebot') ? GROUP_POST_HTML : PLUGIN_HTML
+      return { ok: true, status: 200, url: input, text: async () => html } as Response
+    }) as unknown as typeof globalThis.fetch
+
+    const post = await fetchFacebookPost(
+      'https://www.facebook.com/groups/1467531384889794/?multi_permalinks=1667590364883894&__tn__=%2CO%2CP-R',
+      { fetch },
+    )
+
+    const urls = vi.mocked(fetch).mock.calls.map((c) => String(c[0]))
+    expect(urls.some((u) => u.includes('/plugins/'))).toBe(false)
+    expect(urls.every((u) => u === 'https://www.facebook.com/groups/1467531384889794/posts/1667590364883894/')).toBe(true)
+    expect(post).toMatchObject({
+      canonicalUrl: 'https://www.facebook.com/groups/1467531384889794/posts/1667590364883894/',
+      embedStatus: 'rendered',
+      recipeLink: null,
+    })
+    expect(post?.caption).toContain('300 g mąki pszennej')
+  })
+
+  it('collects every photo of a group post through the embedded-post plugin', async () => {
+    const fetch = vi.fn(async (input: string, init?: RequestInit) => {
+      const ua = new Headers(init?.headers).get('User-Agent') ?? ''
+      const photo = /fbid=(\d+)/.exec(decodeURIComponent(input))?.[1]
+      const html = input.includes('/plugins/post.php')
+        ? photoPluginHtml(`${photo}_n.jpg`)
+        : ua.includes('Googlebot') ? GROUP_POST_HTML + GROUP_PHOTOS_HTML : PLUGIN_HTML
+      return { ok: true, status: 200, url: input, text: async () => html } as Response
+    }) as unknown as typeof globalThis.fetch
+
+    const post = await fetchFacebookPost('https://www.facebook.com/groups/1539133879740780/posts/2685730571747766/', {
+      fetch,
+    })
+
+    expect(post?.images).toEqual([
+      'https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/2534992233268516_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1',
+      'https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/2534992403268499_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1',
+    ])
+    const pluginUrls = vi.mocked(fetch).mock.calls.map((c) => String(c[0])).filter((u) => u.includes('/plugins/post.php'))
+    expect(pluginUrls).toEqual([
+      buildFacebookPhotoPluginUrl('2534992233268516', '2685730571747766'),
+      buildFacebookPhotoPluginUrl('2534992403268499', '2685730571747766'),
+    ])
+  })
+
+  it("reads a Page photo post the video plugin refuses off its permalink page", async () => {
+    // Trimmed from a real Page photo post served to a search-engine user-agent.
+    const pagePostHtml = String.raw`<script type="application/json">{"actors":[{"__typename":"User","name":"Kulinarna Wiola","id":"100069645633702"}],
+"message":{"text":"Ciasteczka z maszynki\n\n3 pełne szkl mąki"}}</script>`
+    // As Facebook answers from Cloudflare: permalink.php is the login page for
+    // every user-agent; only the /posts/ page carries the post.
+    const fetch = vi.fn(async (input: string, init?: RequestInit) => {
+      const ua = new Headers(init?.headers).get('User-Agent') ?? ''
+      const html = input.includes('/plugins/video.php')
+        ? REFUSED_HTML
+        : !input.includes('/posts/')
+          ? LOGIN_WALL_HTML
+          : ua.includes('Googlebot') ? pagePostHtml : PLUGIN_HTML
+      return { ok: true, status: 200, url: input, text: async () => html } as Response
+    }) as unknown as typeof globalThis.fetch
+
+    const post = await fetchFacebookPost(
+      'https://www.facebook.com/permalink.php?story_fbid=pfbid0Fm&id=100069645633702&__cft__[0]=AZh&__tn__=%2CO%2CP-R',
+      { fetch },
+    )
+
+    expect(post).toMatchObject({
+      canonicalUrl: 'https://www.facebook.com/100069645633702/posts/pfbid0Fm/',
+      embedStatus: 'rendered',
+      images: [],
+    })
+    expect(post?.caption).toContain('3 pełne szkl mąki')
+    const urls = vi.mocked(fetch).mock.calls.map((c) => String(c[0]))
+    expect(urls.some((u) => u.includes('__cft__'))).toBe(false)
+    expect(urls.some((u) => u.startsWith('https://www.facebook.com/permalink.php'))).toBe(false)
+  })
+
+  it('reports a private group post as refused', async () => {
+    const fetch = vi.fn(
+      async (input: string) => ({ ok: true, status: 200, url: input, text: async () => LOGIN_WALL_HTML }) as Response,
+    ) as unknown as typeof globalThis.fetch
+    const post = await fetchFacebookPost('https://www.facebook.com/groups/1/posts/2/', { fetch })
+
+    expect(post).toMatchObject({ caption: null, embedStatus: 'refused' })
   })
 
   it('ignores non-Facebook URLs', async () => {

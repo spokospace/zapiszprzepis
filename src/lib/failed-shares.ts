@@ -7,6 +7,12 @@ export type FailedShare = {
   error_message: string | null
 }
 
+/**
+ * `error` means the bell could not check: it must say so rather than show a
+ * confident zero, which would hide failed shares exactly when it matters.
+ */
+export type FailedSharesResult = { status: 'ok'; shares: FailedShare[] } | { status: 'error' }
+
 type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
 
 /**
@@ -26,7 +32,7 @@ type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
  * costs a single small indexed query — the recipes lookup runs only when there
  * are failed rows, and is bounded to their URLs.
  */
-export async function getFailedShares(supabase: ServerClient): Promise<FailedShare[]> {
+export async function getFailedShares(supabase: ServerClient): Promise<FailedSharesResult> {
   const { data: failed, error: failedError } = await supabase
     .from('recipe_shares')
     .select('id, shared_url, error_message')
@@ -38,24 +44,32 @@ export async function getFailedShares(supabase: ServerClient): Promise<FailedSha
     // Don't let a query failure render an empty bell — that would silently hide
     // failed shares, the exact NFR this feature upholds.
     console.error('[failed-shares] Failed to load failed shares:', failedError)
+    return { status: 'error' }
   }
-  if (!failed || failed.length === 0) return []
+  if (!failed || failed.length === 0) return { status: 'ok', shares: [] }
 
   const failedUrls = [...new Set(failed.map((s) => s.shared_url))]
-  const { data: recipes } = await supabase
+  const { data: recipes, error: recipesError } = await supabase
     .from('recipes')
     .select('source_url')
     .in('source_url', failedUrls)
+
+  // Without the lookup nothing can be auto-resolved: list every failed share
+  // (over-reporting is the safe direction) instead of guessing.
+  if (recipesError) {
+    console.error('[failed-shares] Failed to auto-resolve failed shares:', recipesError)
+  }
 
   const savedUrls = new Set(
     (recipes ?? []).map((r) => r.source_url).filter((u): u is string => Boolean(u)),
   )
 
   const seen = new Set<string>()
-  return failed.filter((s) => {
+  const shares = failed.filter((s) => {
     if (savedUrls.has(s.shared_url)) return false
     if (seen.has(s.shared_url)) return false
     seen.add(s.shared_url)
     return true
   })
+  return { status: 'ok', shares }
 }

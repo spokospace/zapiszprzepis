@@ -17,16 +17,22 @@
 // the link and read og:image, one for the plugin page.
 //
 // The plugin covers Page videos and reels only. A post inside a group — even a
-// public one — renders as "niedostępny" there, so its only logged-out caption
-// text is the permalink's og:description, which Facebook truncates. That is
-// too lossy to feed an extractor, but it is enough to spot the blog link such
-// posts almost always carry (see `findRecipeLinkInText`); the caller follows
-// the link and reads the recipe from the blog instead.
+// public one — renders as "niedostępny" there, and so does a photo or text
+// post on a Page. Those are read from the permalink page instead, which
+// Facebook server-renders, comments included, for a search-engine user-agent
+// (see `fetchPostPageCaption`):
+// group authors often post a photo and a title, and put the recipe itself in
+// the first comment. When the text is only a teaser, the blog link it carries
+// (see `findRecipeLinkInText`) is followed by the caller instead.
 
 import { isYoutubeHost } from '@/lib/youtube'
 import { decodeEntities } from '@/lib/html-entities'
+import { GALLERY_LIMIT } from '@/lib/recipe-image-archive'
 
 const CRAWLER_UA = 'facebookexternalhit/1.1'
+// The only logged-out user-agent Facebook serves a group post's text and
+// comments to; facebookexternalhit gets og: tags only, a browser a login wall.
+const SEARCH_BOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
@@ -59,6 +65,56 @@ export function isFacebookShareUrl(url: string): boolean {
     return host === 'facebook.com' && /^\/share\//.test(parsed.pathname)
   } catch {
     return false
+  }
+}
+
+/**
+ * The canonical /groups/<group>/posts/<post>/ permalink of a group post, or
+ * null for anything else. Group feeds link a post as
+ * /groups/<group>/?multi_permalinks=<post>, which loads the whole group — its
+ * og: tags describe the group, not the post — so it has to be rewritten
+ * before any fetch, and before the query string is dropped with the post id.
+ */
+export function toGroupPostUrl(url: string): string | null {
+  const groupPost = parseGroupPost(url)
+  return groupPost ? `https://www.facebook.com/groups/${groupPost.group}/posts/${groupPost.post}/` : null
+}
+
+/** The group and post ids of a group post link, in any of the shapes toGroupPostUrl reads. */
+function parseGroupPost(url: string): { group: string; post: string } | null {
+  try {
+    const parsed = new URL(url)
+    if (normalizeFacebookHost(parsed.hostname) !== 'facebook.com') return null
+    const permalink = /^\/groups\/([^/]+)\/(?:posts|permalink)\/(\d+)/.exec(parsed.pathname)
+    const group = permalink?.[1] ?? /^\/groups\/([^/]+)\/?$/.exec(parsed.pathname)?.[1]
+    // multi_permalinks may list several ids; the first is the one clicked.
+    const post = permalink?.[2] ?? parsed.searchParams.get('multi_permalinks')?.split(',')[0]
+    if (!group || !post || !/^\d+$/.test(post)) return null
+    return { group, post }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The /<page>/posts/<story>/ form of a Page post shared as
+ * permalink.php?story_fbid=<story>&id=<page> (or story.php), or null for
+ * anything else. From Cloudflare's addresses Facebook answers permalink.php
+ * and story.php with its login page for every user-agent, while the /posts/
+ * page still carries the post text for a search-engine one and the og: tags
+ * for a crawler — so the link has to be rewritten before any fetch.
+ */
+export function toPagePostUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    if (normalizeFacebookHost(parsed.hostname) !== 'facebook.com') return null
+    if (!/^\/(?:permalink|story)\.php$/.test(parsed.pathname)) return null
+    const story = parsed.searchParams.get('story_fbid')
+    const page = parsed.searchParams.get('id')
+    if (!story || !page || !/^[\w-]+$/.test(story) || !/^\d+$/.test(page)) return null
+    return `https://www.facebook.com/${page}/posts/${story}/`
+  } catch {
+    return null
   }
 }
 
@@ -199,8 +255,9 @@ export interface FacebookPost {
    * How the embed plugin answered, which is what a null `caption` means:
    *   - `rendered`  — we saw the post; no caption means it carries no text.
    *   - `refused`   — the plugin showed its error card (embedding disabled by
-   *                   the author, or a group / private / removed post). We
-   *                   never saw the post, so a null caption says nothing.
+   *                   the author, or a private / removed post), or a group
+   *                   post page came back without the post (a private group).
+   *                   We never saw the post, so a null caption says nothing.
    *   - `unreachable` — the plugin page did not come back (timeout, 5xx). Also
    *                   no verdict, but transient rather than a policy.
    */
@@ -218,6 +275,11 @@ export interface FacebookPost {
    * persist the link itself.
    */
   image: string | null
+  /**
+   * Every photo of a multi-photo group post, in post order — signed fbcdn.net
+   * URLs that expire like `image`. Empty for other posts.
+   */
+  images: string[]
 }
 
 export interface FetchFacebookPostDeps {
@@ -244,7 +306,7 @@ async function fetchPermalink(
     return {
       // Drop the ?rdid=/&share_url= tracking params the redirect appends —
       // the plugin wants a bare permalink.
-      canonicalUrl: response.url.split('?')[0] || url,
+      canonicalUrl: stripFacebookTracking(response.url || url),
       image: extractOgTag(html, 'image'),
       // Facebook truncates this, so it is no substitute for the plugin
       // caption as recipe text — but it is enough to spot a blog link.
@@ -256,15 +318,18 @@ async function fetchPermalink(
   }
 }
 
-const UNREACHABLE = { caption: null, embedStatus: 'unreachable' as const }
+interface PostText {
+  caption: string | null
+  embedStatus: FacebookEmbedStatus
+  images: string[]
+}
+
+const UNREACHABLE: PostText = { caption: null, embedStatus: 'unreachable', images: [] }
 
 /** The embedded-video plugin page — the only logged-out surface that renders
  *  the caption. Never throws; a page we could not load is `unreachable`, which
  *  the caller must not read as "the post has no caption". */
-async function fetchCaption(
-  url: string,
-  fetch: typeof globalThis.fetch,
-): Promise<{ caption: string | null; embedStatus: FacebookEmbedStatus }> {
+async function fetchCaption(url: string, fetch: typeof globalThis.fetch): Promise<PostText> {
   try {
     const response = await fetch(buildFacebookPluginUrl(url), {
       headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
@@ -281,10 +346,192 @@ async function fetchCaption(
     return {
       caption,
       embedStatus: caption == null && pluginHasNoPlayer(html) ? 'refused' : 'rendered',
+      images: [],
     }
   } catch (error) {
     console.warn('[facebook] plugin fetch failed:', error)
     return UNREACHABLE
+  }
+}
+
+// A JSON string literal's body, escapes included, for JSON.parse to decode.
+const JSON_STRING = String.raw`"((?:[^"\\]|\\.)*)"`
+const POST_MESSAGE = new RegExp(`"message":\\{"text":${JSON_STRING}`)
+// The story's first actor is the post author.
+const POST_AUTHOR = /"actors":\[\{[^\]]*?"id":"([^"]+)"/
+const TOP_LEVEL_COMMENT = new RegExp(
+  `"depth":0,"body":\\{"text":${JSON_STRING}[\\s\\S]{0,3000}?"author":\\{"__typename":"\\w+","id":"([^"]+)"`,
+  'g',
+)
+
+function decodeJsonString(body: string): string | null {
+  try {
+    return JSON.parse(`"${body}"`) as string
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The text of a group post as its permalink page embeds it in the Relay data:
+ * the post message, followed by every top-level comment its author wrote —
+ * which is where group authors tend to put the recipe. Other members'
+ * comments are left out; they are reactions, not the recipe. Returns null
+ * when the page carries neither (a private group, or the login wall).
+ */
+export function extractGroupPostText(html: string): string | null {
+  const message = POST_MESSAGE.exec(html)
+  const authorId = POST_AUTHOR.exec(html)?.[1]
+
+  const parts = new Set<string>()
+  const messageText = message ? decodeJsonString(message[1]) : null
+  if (messageText) parts.add(messageText.trim())
+
+  if (authorId) {
+    // Each comment sits in the data more than once; the Set keeps one copy.
+    for (const [, body, commentAuthor] of html.matchAll(TOP_LEVEL_COMMENT)) {
+      const text = commentAuthor === authorId ? decodeJsonString(body)?.trim() : null
+      if (text) parts.add(text)
+    }
+  }
+
+  return parts.size > 0 ? [...parts].join('\n\n') : null
+}
+
+// A photo of the post links to its viewer as photo.php?fbid=<photo>&set=gm.<post>.
+// Photos in members' comments sit in other sets, so the set pins the post's own.
+const POST_PHOTO_LINK = /fbid=(\d+)(?:&|&amp;|\\u0026)set=gm\.(\d+)/g
+
+/** Ids of a group post's own photos, in post order, each once. */
+export function extractGroupPostPhotoIds(html: string, postId: string): string[] {
+  const ids = new Set<string>()
+  for (const [, photoId, setId] of html.matchAll(POST_PHOTO_LINK)) {
+    if (setId === postId) ids.add(photoId)
+  }
+  return [...ids]
+}
+
+/** The embedded-post plugin page for one photo of a group post. */
+export function buildFacebookPhotoPluginUrl(photoId: string, postId: string): string {
+  const photo = `https://www.facebook.com/photo.php?fbid=${photoId}&set=gm.${postId}&type=3`
+  return `https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(photo)}&show_text=false&width=500`
+}
+
+const IMG_TAG = /<img\b[^>]*>/gi
+const IMG_SRC = /\bsrc="([^"]+)"/
+const IMG_WIDTH = /\bwidth="(\d+)"/
+
+/**
+ * The photo in an embedded-post plugin page. The page also carries the
+ * author's avatar (no declared size) and the app badge (24px, on
+ * static.xx.fbcdn.net); the photo is the fbcdn image declaring a real width.
+ */
+export function extractPluginPhoto(html: string): string | null {
+  for (const tag of html.match(IMG_TAG) ?? []) {
+    const src = IMG_SRC.exec(tag)?.[1]
+    if (!src || !/^https:\/\/scontent[^/]*\.fbcdn\.net\//.test(src)) continue
+    if (Number(IMG_WIDTH.exec(tag)?.[1] ?? 0) >= 200) return decodeEntities(src)
+  }
+  return null
+}
+
+/**
+ * A group post photo's image URL. Its viewer page is behind the login wall
+ * from Cloudflare's addresses for every user-agent (it only answers
+ * link-preview bots from residential ones), but the embedded-post plugin
+ * renders the photo for a crawler from anywhere — at 394px, the plugin's only
+ * size. Never throws.
+ */
+async function fetchGroupPhoto(
+  photoId: string,
+  postId: string,
+  fetch: typeof globalThis.fetch,
+): Promise<string | null> {
+  try {
+    const response = await fetch(buildFacebookPhotoPluginUrl(photoId, postId), {
+      headers: { 'User-Agent': CRAWLER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
+      signal: AbortSignal.timeout(15_000),
+    })
+    return response.ok ? extractPluginPhoto(await response.text()) : null
+  } catch (error) {
+    console.warn('[facebook] group photo fetch failed:', error)
+    return null
+  }
+}
+
+/** A public post's message and its author's comments, read off its permalink
+ *  page — the video plugin refuses group posts and every post that is not a
+ *  video. A group post's photos come along when `groupPostId` is given. Never
+ *  throws — same contract as `fetchCaption`. */
+async function fetchPostPageCaption(
+  url: string,
+  groupPostId: string | null,
+  fetch: typeof globalThis.fetch,
+): Promise<PostText> {
+  try {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': SEARCH_BOT_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
+      signal: AbortSignal.timeout(20_000),
+    })
+    if (!response.ok) {
+      console.warn('[facebook] post page returned', response.status)
+      return UNREACHABLE
+    }
+    const html = await response.text()
+    const caption = extractGroupPostText(html)
+    // A login wall carries no photos worth fetching.
+    const images =
+      caption == null || groupPostId == null
+        ? []
+        : await Promise.all(
+            extractGroupPostPhotoIds(html, groupPostId)
+              .slice(0, GALLERY_LIMIT)
+              .map((photoId) => fetchGroupPhoto(photoId, groupPostId, fetch)),
+          )
+    // No text at all means Facebook served the login wall: a private post.
+    return {
+      caption,
+      embedStatus: caption == null ? 'refused' : 'rendered',
+      images: images.filter((image): image is string => image != null),
+    }
+  } catch (error) {
+    console.warn('[facebook] post page fetch failed:', error)
+    return UNREACHABLE
+  }
+}
+
+/** The caption for a post, from whichever logged-out surface renders its kind. */
+async function fetchPostText(url: string, fetch: typeof globalThis.fetch): Promise<PostText> {
+  const groupPost = toGroupPostUrl(url)
+  const postId = parseGroupPost(url)?.post
+  if (groupPost && postId) return fetchPostPageCaption(groupPost, postId, fetch)
+
+  // Reels and videos render in the plugin; any other post — a photo or text
+  // post on a Page or profile — gets its error card, and is read off the
+  // permalink page instead. So does a video whose author disabled embedding.
+  const plugin = await fetchCaption(url, fetch)
+  return plugin.embedStatus === 'refused' ? fetchPostPageCaption(url, null, fetch) : plugin
+}
+
+// The query params that identify the post itself; everything else on a
+// Facebook link (__cft__, __tn__, rdid, share_url, …) is tracking.
+const POST_ID_PARAMS = ['story_fbid', 'id', 'fbid', 'v']
+
+/** `url` without its tracking params, keeping the ones that name the post
+ *  (permalink.php and story.php carry the post id in the query). */
+export function stripFacebookTracking(url: string): string {
+  try {
+    const parsed = new URL(url)
+    const kept = new URLSearchParams()
+    for (const name of POST_ID_PARAMS) {
+      const value = parsed.searchParams.get(name)
+      if (value != null) kept.set(name, value)
+    }
+    parsed.search = kept.toString()
+    parsed.hash = ''
+    return parsed.toString()
+  } catch {
+    return url
   }
 }
 
@@ -300,16 +547,18 @@ export async function fetchFacebookPost(
 ): Promise<FacebookPost | null> {
   if (!isFacebookUrl(url)) return null
 
-  const permalink = fetchPermalink(url, fetch)
+  const target = toGroupPostUrl(url) ?? toPagePostUrl(url) ?? stripFacebookTracking(url)
+  const permalink = fetchPermalink(target, fetch)
 
   const pluginPage = isFacebookShareUrl(url)
     ? // A share link only reveals its target through the redirect, so the
-      // plugin fetch has to wait for the permalink.
-      permalink.then(({ canonicalUrl }) => fetchCaption(canonicalUrl, fetch))
+      // plugin fetch has to wait for the permalink — which may itself be a
+      // permalink.php link that needs the /posts/ form.
+      permalink.then(({ canonicalUrl }) => fetchPostText(toPagePostUrl(canonicalUrl) ?? canonicalUrl, fetch))
     : // Already a permalink — both requests go out together.
-      fetchCaption(url, fetch)
+      fetchPostText(target, fetch)
 
-  const [{ canonicalUrl, image, description }, { caption, embedStatus }] = await Promise.all([
+  const [{ canonicalUrl, image, description }, { caption, embedStatus, images }] = await Promise.all([
     permalink,
     pluginPage,
   ])
@@ -324,5 +573,6 @@ export async function fetchFacebookPost(
     embedStatus,
     recipeLink: findRecipeLinkInText(caption ?? description ?? ''),
     image,
+    images,
   }
 }

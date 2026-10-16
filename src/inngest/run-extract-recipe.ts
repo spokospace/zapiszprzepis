@@ -1,12 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
-import { archiveImage, extractFirstImage } from '@/lib/recipe-image-archive'
+import { archiveRecipeImages, buildGallery, pickGalleryImages, pickRecipeImage } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { labelRecipe } from '@/lib/recipe-labeling'
+import type { Database } from '@/lib/supabase.types'
 
 // Failure copy. These strings are stored verbatim in
 // recipe_shares.error_message and rendered raw in the notification bell, so
@@ -14,7 +16,7 @@ import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 // applies turns on what we actually observed — never blame the author for a
 // post nobody could read.
 const FB_EMBED_REFUSED =
-  'Facebook nie udostępnia treści tego posta (autor wyłączył osadzanie albo post jest prywatny lub w grupie) — skopiuj przepis ręcznie albo podaj link do bloga'
+  'Facebook nie udostępnia treści tego posta (autor wyłączył osadzanie albo post jest prywatny lub w zamkniętej grupie) — skopiuj przepis ręcznie albo podaj link do bloga'
 const FB_UNREACHABLE =
   'Nie udało się pobrać tego posta z Facebooka — spróbuj ponownie za chwilę'
 const FB_NO_CAPTION =
@@ -98,6 +100,8 @@ export async function runExtractRecipe(
     let markdown = ''
     let html = ''
     let ogImage: string | undefined
+    // The recipe's other photos, for the gallery under it; see buildGallery.
+    let photos: string[] = []
     let embedHtml = ''
     // True while the content came verbatim from the author (a post caption, a
     // feed body) rather than from a rendered page; drives the junk gate below.
@@ -145,18 +149,21 @@ export async function runExtractRecipe(
       html = linkedPage.html ?? ''
       // The blog's own og:image is a stable URL; the post thumbnail is only a
       // last resort, and it expires.
-      ogImage = linkedPage.metadata?.ogImage ?? extractFirstImage(html) ?? facebookPost?.image ?? undefined
+      ogImage = linkedPage.metadata?.ogImage ?? pickRecipeImage(html, linkedUrl ?? undefined) ?? facebookPost?.image ?? undefined
+      photos = pickGalleryImages(html, linkedUrl ?? undefined)
     } else if (facebookPost?.caption) {
       console.log('[extract-recipe] using Facebook caption for', facebookPost.canonicalUrl)
       // The caption is already plain text and opens with the post's headline,
       // so it needs no title prefix the way the Blogger feed does.
       markdown = facebookPost.caption
       ogImage = facebookPost.image ?? undefined
+      photos = facebookPost.images
       trustedContent = true
     } else if (bloggerPost) {
       console.log('[extract-recipe] using Blogger feed for', sharedUrl)
       html = bloggerPost.html
       ogImage = bloggerPost.image ?? undefined
+      photos = pickGalleryImages(bloggerPost.html, sharedUrl)
       // Give the LLM clean text, prefixed with the post title as a strong
       // title signal.
       const text = bloggerPost.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
@@ -186,7 +193,9 @@ export async function runExtractRecipe(
       ])
       markdown = scraped.markdown ?? ''
       html = scraped.html ?? ''
-      ogImage = scraped.metadata?.ogImage ?? extractFirstImage(html)
+      ogImage = scraped.metadata?.ogImage ?? pickRecipeImage(html, sharedUrl)
+      // A YouTube page's images are other videos' thumbnails, not the dish.
+      if (sourceType === 'web_blog') photos = pickGalleryImages(html, sharedUrl)
       embedHtml = scrapedEmbedHtml
     }
 
@@ -198,6 +207,7 @@ export async function runExtractRecipe(
     // image from a blog page.
     const durableImageUrl =
       ogImage != null && ogImage === facebookPost?.image ? null : ogImage ?? null
+    const gallery = buildGallery(ogImage, photos)
 
     // S-04: capture a YouTube video id for the detail-page embed. Either the
     // shared URL is itself a YouTube link (source_type 'youtube'), or a blog
@@ -264,6 +274,7 @@ Rules:
 - Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml).
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
+- Category: cookies, biscuits, gingerbread cookies and macarons ("ciasteczka", "herbatniki", "pierniczki", "makaroniki") are "ciasteczka", not "desery". Cakes, muffins and other sweets stay "desery".
 - Return null for any field the source does not specify. Do not guess.
 - Best-effort if content incomplete.`,
             },
@@ -300,6 +311,15 @@ Rules:
       return JSON.parse(content) as RecipeData
     }
 
+    // The user's other recipes, for the labelling pass below; read while the
+    // LLM extracts. A failed read only costs the note its comparison.
+    const existingRecipesQuery = supabase
+      .from('recipes')
+      .select('title, description, source_url')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
     let recipeJSON = inputIsJunk ? null : await extractWithLlm()
 
     // YouTube second pass: the description is where channels paste the
@@ -332,6 +352,16 @@ Rules:
       throw new Error('Extracted content has no usable recipe (title present but no ingredients or steps)')
     }
 
+    // Title casing, the distinguishing note and the tags, judged against the
+    // user's own recipes (minus this one, on a refresh) so the note tells
+    // same-titled ones apart.
+    const { data: existingRecipes } = await existingRecipesQuery
+    const { title, description, tags } = await labelRecipe(
+      recipeJSON,
+      (existingRecipes ?? []).filter((r) => r.source_url !== sharedUrl),
+      { fetch, apiKey: process.env.OPENAI_API_KEY },
+    )
+
     // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
     // this (user, source_url) in place. The normal path below dedups and
     // gap-fills, so it can never replace already-populated fields. We keep
@@ -340,10 +370,12 @@ Rules:
       const { data: refreshed, error: refreshError } = await supabase
         .from('recipes')
         .update({
-          title: recipeJSON.title,
+          title,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
           category: recipeJSON.category,
+          description,
+          tags,
           source_type: sourceType,
           youtube_id: youtubeId,
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
@@ -360,20 +392,33 @@ Rules:
         throw new Error(`Refresh update failed: ${refreshError?.message ?? 'recipe not found'}`)
       }
 
-      if (ogImage != null) {
-        const archivedUrl = await archiveImage(supabase, userId, refreshed.id, ogImage)
-        await supabase.from('recipes').update({ image_url: archivedUrl ?? durableImageUrl }).eq('id', refreshed.id)
-      }
+      // A refresh replaces the gallery outright, emptying it when the source
+      // no longer has several photos — but keeps it when none of the new
+      // photos could be archived (gallery is null).
+      const archived = await archiveRecipeImages(supabase, userId, refreshed.id, ogImage, gallery, {
+        clearStale: true,
+      })
+      // Never downgrade the cover: a failed re-archive of a Facebook thumbnail
+      // has no durable fallback, and writing null would drop the image the
+      // recipe already had archived.
+      const nextImageUrl = archived.cover ?? durableImageUrl
+      await supabase
+        .from('recipes')
+        .update({
+          ...(nextImageUrl != null ? { image_url: nextImageUrl } : {}),
+          ...(archived.gallery != null ? { image_urls: archived.gallery } : {}),
+        })
+        .eq('id', refreshed.id)
 
       await supabase
         .from('recipe_shares')
         .update({ recipe_id: refreshed.id, status: 'completed' })
         .eq('id', shareId)
 
-      return { recipeId: refreshed.id, title: recipeJSON.title, category: recipeJSON.category, status: 'refreshed' }
+      return { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' }
     }
 
-    const baseSlug = slugify(recipeJSON.title)
+    const baseSlug = slugify(title)
     const SLUG_KEY = 'recipes_user_id_slug_key'
     const URL_KEY = 'recipes_user_source_url_uniq'
     const MAX_ATTEMPTS = 10
@@ -388,9 +433,10 @@ Rules:
         .from('recipes')
         .insert({
           user_id: userId,
-          title: recipeJSON.title,
+          title,
           slug,
-          description: null,
+          description,
+          tags,
           image_url: durableImageUrl,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
@@ -410,11 +456,15 @@ Rules:
         recipe = data
         // Archive the external og:image into Supabase Storage. On failure
         // image_url keeps whatever durableImageUrl put there.
-        if (ogImage != null) {
-          const archivedUrl = await archiveImage(supabase, userId, data.id, ogImage)
-          if (archivedUrl != null) {
-            await supabase.from('recipes').update({ image_url: archivedUrl }).eq('id', data.id)
-          }
+        const archived = await archiveRecipeImages(supabase, userId, data.id, ogImage, gallery)
+        if (archived.cover != null || archived.gallery?.length) {
+          await supabase
+            .from('recipes')
+            .update({
+              ...(archived.cover != null ? { image_url: archived.cover } : {}),
+              ...(archived.gallery?.length ? { image_urls: archived.gallery } : {}),
+            })
+            .eq('id', data.id)
         }
         break
       } else {
@@ -428,13 +478,13 @@ Rules:
       if (error?.message.includes(URL_KEY)) {
         const { data: existing } = await supabase
           .from('recipes')
-          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id')
+          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, description, tags')
           .eq('user_id', userId)
           .eq('source_url', sharedUrl)
           .single()
 
         if (existing) {
-          const gapFill: Record<string, number | string> = {}
+          const gapFill: Database['public']['Tables']['recipes']['Update'] = {}
           if (existing.prep_time_minutes == null && recipeJSON.prepTimeMinutes != null) {
             gapFill.prep_time_minutes = recipeJSON.prepTimeMinutes
           }
@@ -447,19 +497,26 @@ Rules:
           if (existing.youtube_id == null && youtubeId != null) {
             gapFill.youtube_id = youtubeId
           }
+          if (existing.description == null && description != null) {
+            gapFill.description = description
+          }
+          if (!existing.tags?.length && tags.length > 0) {
+            gapFill.tags = tags
+          }
           // Archive flow: when archiveImage returns a Storage URL, always
           // overwrite image_url — even if it's already populated with an
           // external link. That's how scripts/archive-recipe-images.ts
           // backfills existing recipes to be archive-first. External URL
           // is only kept when there was no prior value AND archive failed.
-          if (ogImage != null) {
-            const archivedUrl = await archiveImage(supabase, userId, existing.id, ogImage)
-            if (archivedUrl != null) {
-              gapFill.image_url = archivedUrl
-            } else if (existing.image_url == null && durableImageUrl != null) {
-              gapFill.image_url = durableImageUrl
-            }
+          // The gallery follows the same rule: archived photos replace whatever
+          // is there, which is how the backfill gives old recipes a gallery.
+          const archived = await archiveRecipeImages(supabase, userId, existing.id, ogImage, gallery)
+          if (archived.cover != null) {
+            gapFill.image_url = archived.cover
+          } else if (ogImage != null && existing.image_url == null && durableImageUrl != null) {
+            gapFill.image_url = durableImageUrl
           }
+          if (archived.gallery?.length) gapFill.image_urls = archived.gallery
 
           if (Object.keys(gapFill).length > 0) {
             await supabase.from('recipes').update(gapFill).eq('id', existing.id)
@@ -487,7 +544,7 @@ Rules:
       .update({ recipe_id: recipe.id, status: 'completed' })
       .eq('id', shareId)
 
-    return { recipeId: recipe.id, title: recipeJSON.title, category: recipeJSON.category, status: 'completed' }
+    return { recipeId: recipe.id, title, category: recipeJSON.category, status: 'completed' }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
 

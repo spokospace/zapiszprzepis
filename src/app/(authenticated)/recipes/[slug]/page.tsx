@@ -4,11 +4,15 @@ import Link from 'next/link'
 import { Clock, Flame, Timer, type LucideIcon } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
+import { sourceLabel } from '@/lib/recipe-source'
+import { tagLabel } from '@/lib/recipe-tags'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
+import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
+import { parseSteps } from '@/lib/steps'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import type { Database } from '@/lib/supabase.types'
 
@@ -23,13 +27,6 @@ function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: st
 }
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
-
-const SOURCE_LABELS: Partial<Record<Recipe['source_type'], string>> = {
-  facebook_text: 'Facebook',
-  facebook_reel: 'Facebook',
-  web_blog: 'Blog',
-  youtube: 'YouTube',
-}
 
 export const metadata = {
   title: 'Przepis',
@@ -73,13 +70,11 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
   const typedRecipe = recipe as Recipe
 
-  // Parse + group the jsonb ingredients. parseIngredients is crash-safe (an RSC
-  // exception is a full page crash); groupBySection splits by optional `section`.
+  // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
+  // exception is a full page crash, which would also hide the delete button);
+  // groupBySection splits ingredients by optional `section`.
   const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
-
-  const steps = (Array.isArray(typedRecipe.steps)
-    ? typedRecipe.steps
-    : JSON.parse(typedRecipe.steps as string)) as string[]
+  const steps = parseSteps(typedRecipe.steps)
 
   return (
     <div className="min-h-screen bg-white py-8">
@@ -108,6 +103,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{typedRecipe.title}</h1>
+          {typedRecipe.description && (
+            <p className="-mt-2 mb-4 text-lg text-gray-500">{typedRecipe.description}</p>
+          )}
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/recipes?category=${typedRecipe.category}`}
@@ -116,7 +114,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               <span>{categoryLabel(typedRecipe.category)}</span>
             </Link>
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
-              {SOURCE_LABELS[typedRecipe.source_type] ?? 'Inny'}
+              {sourceLabel(typedRecipe.source_type, typedRecipe.source_url)}
             </span>
             {typedRecipe.source_url && (
               <a
@@ -129,6 +127,21 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               </a>
             )}
           </div>
+          {typedRecipe.tags.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-2" aria-label="Tagi">
+              {typedRecipe.tags.map((tag) => (
+                // Slanted (parallelogram) badge; the inner span skews back so the text stays upright.
+                <li key={tag}>
+                  <Link
+                    href={`/recipes?tag=${tag}`}
+                    className="inline-block -skew-x-12 px-3 py-0.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium hover:bg-orange-100 transition"
+                  >
+                    <span className="inline-block skew-x-12">{tagLabel(tag)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
           {(typedRecipe.prep_time_minutes != null
             || typedRecipe.cook_time_minutes != null
             || typedRecipe.total_time_minutes != null) && (
@@ -178,16 +191,20 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
           <section>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Przygotowanie</h2>
-            <ol className="space-y-4">
-              {steps.map((step: string, idx: number) => (
-                <li key={idx} className="flex gap-4">
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold flex-shrink-0">
-                    {idx + 1}
-                  </span>
-                  <p className="text-gray-700 pt-1">{step}</p>
-                </li>
-              ))}
-            </ol>
+            {steps.length === 0 ? (
+              <p className="text-gray-500">Brak kroków przygotowania.</p>
+            ) : (
+              <ol className="space-y-4">
+                {steps.map((step, idx) => (
+                  <li key={idx} className="flex gap-4">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-semibold flex-shrink-0">
+                      {idx + 1}
+                    </span>
+                    <p className="text-gray-700 pt-1">{step}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
           </section>
         </div>
 
@@ -206,6 +223,11 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               />
             </div>
           </section>
+        )}
+
+        {/* A gallery of one would only repeat the cover. */}
+        {typedRecipe.image_urls.length > 1 && (
+          <RecipeGallery images={typedRecipe.image_urls} title={typedRecipe.title} />
         )}
 
         <div className="border-t pt-8 flex items-center justify-between gap-3">
