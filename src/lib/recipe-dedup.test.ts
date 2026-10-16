@@ -1,5 +1,49 @@
 import { describe, expect, it } from 'vitest'
-import { classifyExisting, findExistingRecipeForUrl, sameIngredients } from './recipe-dedup'
+import { classifyExisting, findExistingRecipeForUrl, findSameRecipe, sameIngredients } from './recipe-dedup'
+
+describe('findSameRecipe — the preferred user’s own copy', () => {
+  const NALESNIKI = { title: 'Naleśniki', ingredients: [{ name: 'mąka' }] }
+  const recipeRow = (id: number, user_id: string) => ({
+    id,
+    user_id,
+    slug: `nalesniki-${id}`,
+    title: 'Naleśniki',
+    category: 'sniadania',
+    ingredients: [{ name: 'mąka' }],
+  })
+
+  /** A client that honours the user_id filter and the page limit, like the database. */
+  function makeRecipesClient(rows: ReturnType<typeof recipeRow>[]) {
+    return {
+      from: () => {
+        let owner: string | null = null
+        const chain = {
+          select: () => chain,
+          eq: (_column: string, value: string) => {
+            owner = value
+            return chain
+          },
+          ilike: () => chain,
+          limit: async (n: number) => ({ data: rows.filter((r) => owner == null || r.user_id === owner).slice(0, n) }),
+        }
+        return chain
+      },
+    } as never
+  }
+
+  it('finds it even when a common title fills the site-wide page with other users’ copies', async () => {
+    const others = Array.from({ length: 60 }, (_, i) => recipeRow(i + 1, `user-${i + 10}`))
+    const client = makeRecipesClient([...others, recipeRow(99, 'user-1')])
+
+    expect(await findSameRecipe(client, null, NALESNIKI, 'user-1')).toMatchObject({ id: 99, user_id: 'user-1' })
+  })
+
+  it('falls back to anyone’s copy when the user has none', async () => {
+    const client = makeRecipesClient([recipeRow(5, 'user-2')])
+
+    expect(await findSameRecipe(client, null, NALESNIKI, 'user-1')).toMatchObject({ id: 5, user_id: 'user-2' })
+  })
+})
 
 describe('sameIngredients', () => {
   it('ignores order, casing, spacing and repeats', () => {

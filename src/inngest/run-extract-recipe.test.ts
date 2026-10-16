@@ -913,6 +913,17 @@ describe('runExtractRecipe — a link someone else saved first (E01-S03a)', () =
     expect(result).toMatchObject({ recipeId: 99, status: 'favorited' })
   })
 
+  it('fails the share, instead of reporting success, when the share cannot be completed', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', { data: [{ ...THEIRS, ingredients: [{ name: 'mąka' }] }], error: null })
+    mock.queueList('recipe_shares', { data: null, error: { message: 'connection reset' } })
+
+    await expect(
+      runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any }),
+    ).rejects.toThrow('Share update failed: connection reset')
+    expect(mock.didUpdate('recipe_shares', { status: 'failed' })).toBe(true)
+  })
+
   it('fails the share when the favorite cannot be saved', async () => {
     const mock = makeSupabaseMock()
     mock.queueList('recipes', { data: [{ ...THEIRS, ingredients: [{ name: 'mąka' }] }], error: null })
