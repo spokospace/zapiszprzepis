@@ -11,6 +11,7 @@ import {
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutubeTranscript } from '@/lib/youtube'
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
+import { publicFacebookAuthor } from '@/lib/facebook-authors'
 import { findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
 import { fingerprintText } from '@/lib/source-fingerprint'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
@@ -366,12 +367,13 @@ export async function runExtractRecipe(
     }
 
     // Who published the recipe, for the source label ("Kulinarna Wiola ·
-    // Facebook"): the Facebook poster, or the YouTube channel — fetched while
-    // the LLM extracts. A blog is named by its domain, so it needs none.
+    // Facebook"): the Facebook poster — a private person only as "Elżbieta
+    // K." — or the YouTube channel, fetched while the LLM extracts. A blog is
+    // named by its domain, so it needs none.
     const sourceAuthorPromise: Promise<string | null> =
       sourceType === 'youtube' && youtubeId != null
         ? fetchYoutubeAuthor(youtubeId, { fetch })
-        : Promise.resolve(facebookPost?.author ?? null)
+        : Promise.resolve(facebookPost?.author ? publicFacebookAuthor(facebookPost.author, sourceUrl) : null)
 
     // One LLM pass over the content. `transcript`, when given, is the video's
     // captions — the second-pass source for a YouTube link (below).

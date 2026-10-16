@@ -38,3 +38,40 @@ export function facebookAuthorName(url: string): string | null {
   const id = facebookProfileId(url)
   return id ? KNOWN_FACEBOOK_AUTHORS[id] ?? null : null
 }
+
+// First path segments that are Facebook's own routes, not a Page's name.
+const FACEBOOK_ROUTES = new Set([
+  'groups', 'watch', 'reel', 'reels', 'share', 'people', 'photo', 'photo.php',
+  'permalink.php', 'story.php', 'profile.php', 'plugins',
+])
+
+/** True for a post on a Page with its own name in the address
+ *  (facebook.com/SavoryDailyRecipes/posts/…) — a public publisher. */
+function isNamedPagePost(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    if (!FACEBOOK_HOST.test(parsed.hostname)) return false
+    const segment = parsed.pathname.split('/')[1] ?? ''
+    return segment !== '' && !/^\d+$/.test(segment) && !FACEBOOK_ROUTES.has(segment.toLowerCase())
+  } catch {
+    return false
+  }
+}
+
+// Two or three capitalised words and nothing else: the shape of a person's
+// first and last name ("Elżbieta Kacperek"), unlike a brand ("BeHealthy",
+// "Proste przepisy", "Alex & Cris P").
+const PERSON_NAME = /^(\p{Lu}[\p{L}'’-]*)(?:\s+\p{Lu}[\p{L}'’-]*)?\s+(\p{Lu})[\p{L}'’-]*$/u
+
+/**
+ * The poster's name as it may be stored and shown. A known recipe author or
+ * a named Page publishes in public, so their full name stays. Anyone else —
+ * a group member, a personal profile — is a private person: a full name is
+ * cut to the first name and the last name's initial ("Elżbieta K."). When in
+ * doubt it shortens, so a full name of a private person is never stored.
+ */
+export function publicFacebookAuthor(name: string, postUrl: string): string {
+  if (facebookAuthorName(postUrl) || isNamedPagePost(postUrl)) return name
+  const person = PERSON_NAME.exec(name.trim())
+  return person ? `${person[1]} ${person[2]}.` : name
+}
