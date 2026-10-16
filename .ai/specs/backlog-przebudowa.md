@@ -37,6 +37,7 @@
 - [ ] E01-S02 — Publiczny dostęp: wyjście stron z `(authenticated)` + RLS dla `anon` *(fundament)*
 - [ ] E01-S03 — Model danych: źródło zamiast loginu, globalny dedup, slug `/przepis`, „kto dodał” *(fundament)*
 - [ ] E01-S12 — Logowanie OAuth Facebook/Google + pierwsze logowanie (płeć) + wołacz *(fundament auth)*
+- [ ] E01-S18 — Tożsamość: nazwa wyświetlana + username (+ minimalne ustawienie) *(fundament, wydzielone z S03)*
 - [ ] E01-S04 — Strona główna: gość i zalogowany
 - [ ] E01-S05 — Jedna wyszukiwarka z wynikami i zakresem (Wszystkie / Moje / Ulubione)
 - [ ] E01-S06 — Ulubione: serce z podpisem + przepływ gość → logowanie → zapis
@@ -63,6 +64,7 @@ Fala 0 (fundamenty):
   S02 (public/anon) ──┐
   S03 (model danych) ─┤ (S02 i S03 ~równoległe, dzielą migracje — koordynacja schematu)
   S12 (OAuth+płeć)  ──┘ (S12 zależy od S02)
+  S18 (tożsamość: nazwa wyświetlana + username) ► używana przez S02 (autor), S13, S14
 
 Fala 1 (ekrany rdzeniowe, zależą od Fali 0):
   S04 home        (S01, S02)
@@ -90,6 +92,7 @@ Fala 3:
 | S02 | — | S01, S03 | **high** (RLS, scoping) | high |
 | S03 | — | S01, S02 | **high** (migracja, dedup, 301) | high |
 | S12 | S02 | S01, S03 | **high** (auth) | high |
+| S18 | — | S01, S02, S03 | medium | high |
 | S04 | S01, S02 | S05, S07, S09 | medium | high |
 | S05 | S01, S02 | S04, S07, S09 | medium | high |
 | S06 | S02 | S08, S10, S15, S16 | medium | medium |
@@ -98,8 +101,8 @@ Fala 3:
 | S09 | S01 | S04, S05, S07 | low | medium |
 | S10 | S01, S11 | Fala 2 | medium | medium |
 | S11 | S02 | Fala 2 | **high** (dostęp) | medium |
-| S13 | S01, S12, S03 | Fala 2 | medium | medium |
-| S14 | S02, S03 | Fala 2 | medium | low |
+| S13 | S01, S12, S03, S18 | Fala 2 | medium | medium |
+| S14 | S02, S03, S18 | Fala 2 | medium | low |
 | S15 | S01 | Fala 2 | medium | medium |
 | S16 | S01, S03 | Fala 2 | medium | medium |
 | S17 | S01, S04, S05, S07 | — | low | low |
@@ -121,7 +124,8 @@ Fundament wizualny: tokeny kolorów/typografii, bazowe prymitywy (przycisk, kart
 - **Uwaga:** brak nowej trasy; weryfikacja na istniejących ekranach + Storybook/przykład.
 
 ### E01-S02 — Publiczny dostęp: wyjście stron z `(authenticated)` + RLS dla `anon`
-**Epic:** E01 · **Kategoria:** refactor, security · **Priorytet:** high · **Ryzyko:** high · **Ref:** README „Model danych i dostępu”, tabela dostępu
+**Epic:** E01 · **Kategoria:** refactor, security · **Priorytet:** high · **Ryzyko:** high · **Ref:** README „Model danych i dostępu”, tabela dostępu · **Spec:** `.ai/specs/2026-10-16-public-access-anon-rls.md`
+> Decyzje z bramki (2026-10-16): dedup jest per-user (zweryfikowane w `recipe-dedup.ts`) → brak duplikatów przy kilku testowych userach, więc S02 **nie** czeka na S03 (otwarcie interim). Zakres: tylko warstwa dostępu na istniejących trasach. Galeria w całości ukryta przed anon. Linia autora („Dodała…”) włączona teraz → **zależy od S18**.
 
 Strona główna, wyszukiwarka i przepis działają bez logowania; nagłówek ma warianty gość/zalogowany.
 
@@ -133,6 +137,7 @@ Strona główna, wyszukiwarka i przepis działają bez logowania; nagłówek ma 
 
 ### E01-S03 — Model danych: źródło zamiast loginu, globalny dedup, slug `/przepis`, „kto dodał”
 **Epic:** E01 · **Kategoria:** refactor, feature · **Priorytet:** high · **Ryzyko:** high · **Ref:** README „Model danych i dostępu”, „Źródło zamiast loginu”, „Kto dodał”
+> Zmiana zakresu (2026-10-16): tożsamość (`display_name` + `username`) wydzielona do **S18**. S03 zostaje: globalny dedup, slug `/przepis` + 301, etykieta źródła oraz relacja „dodał jako pierwszy” (wskazuje na profil z S18).
 
 Jeden przepis na znormalizowany `source_url` (globalnie), publiczny slug `/przepis/{slug}` z 301 ze starego `/recipes/[slug]`, etykieta źródła, „pierwszy dodający” i dane do profilu.
 
@@ -154,6 +159,17 @@ Logowanie przez Facebooka/Google (zamiast nowego hasła), jednorazowy wybór pł
 - **Given** konto Facebook bez emaila lub drugie konto z tym samym emailem, **When** logowanie, **Then** obsłużone (łączenie / brak kolizji).
 - **Pliki:** `src/app/login/*`, `src/app/auth/callback/route.ts`, nowy ekran pierwszego logowania, pola profilu (płeć/wołacz), `src/lib/` util wołacza.
 - **Uwaga:** blokuje zależność zewnętrzna (Meta/Google/Supabase providers); auth + sesje → review drugiej osoby i test ścieżki odmowy.
+
+### E01-S18 — Tożsamość: nazwa wyświetlana + username
+**Epic:** E01 · **Kategoria:** feature · **Priorytet:** high · **Ryzyko:** medium · **Ref:** README „Kto dodał”, „Username” · **Zależy:** —
+
+Wydzielone z S03 (decyzja użytkownika 2026-10-16): skoro autor ma być widoczny od S02, minimalny profil tożsamości jest osobnym fundamentem, z którego korzystają S02 (linia „Dodała…”), S13 (ustawienia) i S14 (profil publiczny). Mamy tylko kilku testowych użytkowników — nadajemy im nazwy wyświetlane.
+
+- **Given** rejestracja/istniejące konto, **When** profil powstaje, **Then** tabela `profiles` ma `display_name` i `username` (generowany z imienia: małe litery, `ł→l`, bez diakrytyków, sufiks unikalności; nieedytowalny).
+- **Given** gość lub zalogowany, **When** czyta kartę/przepis, **Then** RLS udostępnia anonimowi tylko `display_name` i `username` (atrybuty prywatne — płeć itp. — poza odczytem anon).
+- **Given** zalogowany, **When** chce zmienić „nazwę wyświetlaną”, **Then** istnieje minimalne ustawienie tego pola (zalążek `/settings`; pełny ekran 2a to S13); testowym użytkownikom nadajemy nazwy (seed/ręcznie).
+- **Pliki:** migracja `profiles` + RLS (anon read na publicznych kolumnach), generator username (`src/lib/`), minimalne pole ustawienia.
+- **Uwaga:** publiczne kolumny trzymać osobno od prywatnych (osobna tabela/kolumny albo widok), żeby anon nie czytał płci/emaila.
 
 ### E01-S04 — Strona główna: gość i zalogowany
 **Epic:** E01 · **Kategoria:** feature · **Priorytet:** high · **Ryzyko:** medium · **Ref:** A1, A2, C1 · **Zależy:** S01, S02
