@@ -40,8 +40,10 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'desery', label: 'Desery' },
   { value: 'ciasteczka', label: 'Ciasteczka' },
   { value: 'sniadania', label: 'Śniadania' },
+  { value: 'pieczywo', label: 'Pieczywo' },
   { value: 'przekaski', label: 'Przekąski' },
   { value: 'salatki', label: 'Sałatki' },
   { value: 'napoje', label: 'Napoje' },
+  { value: 'syropy', label: 'Syropy i napary' },
   { value: 'inne', label: 'Inne' },
 ]

@@ -418,6 +418,8 @@ Rules:
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
 - Category: cookies, biscuits, gingerbread cookies and macarons ("ciasteczka", "herbatniki", "pierniczki", "makaroniki") are "ciasteczka", not "desery". Cakes, muffins and other sweets stay "desery".
+- Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast bakes (drożdżówki, rogaliki z dżemem) stay "desery"/"ciasteczka".
+- Category: homemade syrups, tinctures and herbal remedies made for health ("syrop na odporność/na kaszel", "mikstura na zatoki", "napar prozdrowotny") are "syropy". Everyday drinks (lemoniada, herbata, kompot, soki, koktajle) stay "napoje".
 - Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
 - Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
 - Return null for any non-time field the source does not specify. Do not guess.
