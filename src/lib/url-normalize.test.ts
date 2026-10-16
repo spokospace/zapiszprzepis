@@ -6,6 +6,20 @@ describe('normalizeUrl', () => {
     expect(normalizeUrl('https://Example.COM/przepis/?id=3#comments')).toBe('https://example.com/przepis?id=3')
   })
 
+  it('drops the fbclid tail a link shared from Facebook carries', () => {
+    expect(
+      normalizeUrl(
+        'http://babskieporady.pl/syrop-na-kaszel-z-marchwi?fbclid=IwZXh0bgNhZW0CMTAAcGRvZgVicmlkETE2WEh3ejNKABHvV8_aem_zY5T7M0TBf0HVZRdTdzGxw',
+      ),
+    ).toBe('http://babskieporady.pl/syrop-na-kaszel-z-marchwi')
+  })
+
+  it('drops utm_* and ad-click params but keeps params that name the page', () => {
+    expect(
+      normalizeUrl('https://blog.pl/ciasto?utm_source=nl&utm_medium=email&p=42&gclid=abc&paged=2'),
+    ).toBe('https://blog.pl/ciasto?p=42&paged=2')
+  })
+
   it('keys a feed-opened group post by its permalink, whatever the tracking token', () => {
     const fromFeed = (cft: string) =>
       `https://www.facebook.com/groups/7359364344169972?multi_permalinks=28043864251960012&hoisted_section_header_type=recently_seen&__cft__[0]=${cft}&__tn__=%2CO%2CP-R`

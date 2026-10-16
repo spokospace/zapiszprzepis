@@ -9,6 +9,7 @@ import {
   GALLERY_LIMIT,
   isArchivedImageUrl,
   proxiedImageUrl,
+  insecureHttpUrl,
 } from '@/lib/recipe-image-archive'
 
 describe('archiveGallery — a failed re-archive never loses the stored gallery', () => {
@@ -397,12 +398,22 @@ function storageMock(upload = vi.fn().mockResolvedValue({ error: null })) {
   }
 }
 
-describe('archiveImage — proxy fallback for hosts that refuse the Worker', () => {
+describe('insecureHttpUrl', () => {
+  it('downgrades https to http', () => {
+    expect(insecureHttpUrl('https://babskieporady.pl/a.jpg')).toBe('http://babskieporady.pl/a.jpg')
+  })
+  it('is null for a URL that is not https', () => {
+    expect(insecureHttpUrl('http://babskieporady.pl/a.jpg')).toBeNull()
+    expect(insecureHttpUrl('data:image/png;base64,xyz')).toBeNull()
+  })
+})
+
+describe('archiveImage — http and proxy fallback for hosts the Worker cannot fetch', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('retries through wsrv.nl when the direct download is refused', async () => {
+  it('skips the http retry and goes straight to wsrv.nl when the direct download is refused', async () => {
     const fetchSpy = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, status: 403, headers: new Headers() })
@@ -413,6 +424,7 @@ describe('archiveImage — proxy fallback for hosts that refuse the Worker', () 
     const result = await archiveImage(client, 'user-1', 60, EXTERNAL)
 
     expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    // A refused status won't change over http, so no http attempt is made.
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     expect(fetchSpy.mock.calls[0][0]).toBe(EXTERNAL)
     expect(fetchSpy.mock.calls[1][0]).toBe(proxiedImageUrl(EXTERNAL))
@@ -422,9 +434,38 @@ describe('archiveImage — proxy fallback for hosts that refuse the Worker', () 
     })
   })
 
-  it('retries through wsrv.nl when the direct download throws', async () => {
+  it('skips the http retry on a timeout — the http endpoint is just as slow', async () => {
+    const timeout = Object.assign(new Error('timed out'), { name: 'TimeoutError' })
+    const fetchSpy = vi.fn().mockRejectedValueOnce(timeout).mockResolvedValueOnce(okImageResponse())
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await archiveImage(storageMock().client, 'user-1', 60, EXTERNAL)
+
+    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(fetchSpy.mock.calls[1][0]).toBe(proxiedImageUrl(EXTERNAL))
+  })
+
+  it('archives over plain http when https fails on an SSL-broken host', async () => {
     const fetchSpy = vi
       .fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed')) // TLS cert mismatch
+      .mockResolvedValueOnce(okImageResponse()) // same file over http
+    vi.stubGlobal('fetch', fetchSpy)
+    const { client, upload } = storageMock()
+
+    const result = await archiveImage(client, 'user-1', 60, EXTERNAL)
+
+    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(fetchSpy.mock.calls[1][0]).toBe(insecureHttpUrl(EXTERNAL))
+    expect(upload).toHaveBeenCalledOnce()
+  })
+
+  it('falls through to wsrv.nl when both https and http throw', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('connect ETIMEDOUT'))
       .mockRejectedValueOnce(new Error('connect ETIMEDOUT'))
       .mockResolvedValueOnce(okImageResponse())
     vi.stubGlobal('fetch', fetchSpy)
@@ -432,10 +473,10 @@ describe('archiveImage — proxy fallback for hosts that refuse the Worker', () 
     const result = await archiveImage(storageMock().client, 'user-1', 60, EXTERNAL)
 
     expect(result).toBe('https://supabase.co/storage/photo.jpg')
-    expect(fetchSpy.mock.calls[1][0]).toBe(proxiedImageUrl(EXTERNAL))
+    expect(fetchSpy.mock.calls[2][0]).toBe(proxiedImageUrl(EXTERNAL))
   })
 
-  it('does not use the proxy when the direct download succeeds', async () => {
+  it('does not retry when the direct download succeeds', async () => {
     const fetchSpy = vi.fn().mockResolvedValue(okImageResponse())
     vi.stubGlobal('fetch', fetchSpy)
 
@@ -444,7 +485,7 @@ describe('archiveImage — proxy fallback for hosts that refuse the Worker', () 
     expect(fetchSpy).toHaveBeenCalledOnce()
   })
 
-  it('returns null without uploading when both attempts fail', async () => {
+  it('returns null without uploading when every attempt fails', async () => {
     const fetchSpy = vi.fn().mockResolvedValue({ ok: false, status: 403, headers: new Headers() })
     vi.stubGlobal('fetch', fetchSpy)
     const { client, upload } = storageMock()
@@ -452,6 +493,7 @@ describe('archiveImage — proxy fallback for hosts that refuse the Worker', () 
     const result = await archiveImage(client, 'user-1', 60, EXTERNAL)
 
     expect(result).toBeNull()
+    // Direct (403) then proxy (403); the refused status skips the http retry.
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     expect(upload).not.toHaveBeenCalled()
   })
