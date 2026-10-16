@@ -190,6 +190,12 @@ describe('toGroupPostUrl', () => {
 })
 
 describe('extractGroupPostText', () => {
+  it('ignores a feed section heading — the Watch grid served for a hidden video', () => {
+    const watchGrid =
+      '"section_type_name":"WWW_LOE_POPULAR_VIDEOS","section_header":{"message":{"text":"Popularne filmy"}}'
+    expect(extractGroupPostText(watchGrid)).toBeNull()
+  })
+
   it("joins the post message with its author's comments, decoded, each once", () => {
     expect(extractGroupPostText(GROUP_POST_HTML)).toBe(
       'Ciasteczka maślane z rowkami\n\nSkładniki:\n\n300 g mąki pszennej\n\nWykonanie: piecz "na złoto"',

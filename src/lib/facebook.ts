@@ -349,7 +349,9 @@ async function fetchCaption(url: string, fetch: typeof globalThis.fetch): Promis
 
 // A JSON string literal's body, escapes included, for JSON.parse to decode.
 const JSON_STRING = String.raw`"((?:[^"\\]|\\.)*)"`
-const POST_MESSAGE = new RegExp(`"message":\\{"text":${JSON_STRING}`)
+// A feed section's heading ("Popularne filmy" on the Watch grid Facebook
+// serves in place of a video nobody may see) has the same shape; skip it.
+const POST_MESSAGE = new RegExp(`(?<!"section_header":\\{)"message":\\{"text":${JSON_STRING}`)
 // The story's first actor is the post author.
 const POST_AUTHOR = /"actors":\[\{[^\]]*?"id":"([^"]+)"/
 const TOP_LEVEL_COMMENT = new RegExp(
