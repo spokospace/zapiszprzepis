@@ -48,3 +48,36 @@ export async function findExistingRecipeForUrl(
 
   return { status: 'new', normalizedUrl }
 }
+
+/**
+ * Same ingredients, in any order, judged by name alone: two extractions of
+ * one recipe read amounts and units differently ("1 szkl." vs "250 ml"), but
+ * a variant swaps or adds an ingredient.
+ */
+export function sameIngredients(a: { name: string }[], b: { name: string }[]): boolean {
+  const names = (list: { name: string }[]) => [...new Set(list.map((i) => i.name.trim().toLowerCase()))].sort().join('\n')
+  return names(a) === names(b)
+}
+
+/**
+ * The user's recipe that `recipe` repeats — same title, any casing, and the
+ * same ingredients — or null. Catches a recipe saved from two different posts
+ * when its author published it twice (a Page reposting its own post), which
+ * no URL rule can tell apart.
+ */
+export async function findSameRecipe(
+  supabase: SupabaseClient,
+  userId: string,
+  recipe: { title: string; ingredients: { name: string }[] },
+): Promise<{ id: number; slug: string; title: string; category: string } | null> {
+  // ilike, not eq, for the casing; its wildcards in the title are escaped.
+  const title = recipe.title.trim().replace(/[\\%_]/g, (c) => '\\' + c)
+  const { data } = await supabase
+    .from('recipes')
+    .select('id, slug, title, category, ingredients')
+    .eq('user_id', userId)
+    .ilike('title', title)
+    .limit(20)
+  const same = (data ?? []).find((r) => Array.isArray(r.ingredients) && sameIngredients(r.ingredients, recipe.ingredients))
+  return same ? { id: same.id, slug: same.slug, title: same.title, category: same.category } : null
+}

@@ -11,7 +11,7 @@ import {
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
-import { findRecipeBySourceUrl } from '@/lib/recipe-dedup'
+import { findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
@@ -159,6 +159,13 @@ export async function runExtractRecipe(
     return { ...first, markdown, html }
   }
 
+  // The share repeats a recipe the user already has: point it there instead
+  // of saving a copy.
+  async function linkToSaved(saved: { id: number; title: string; category: string }) {
+    await supabase.from('recipe_shares').update({ recipe_id: saved.id, status: 'completed' }).eq('id', shareId)
+    return { recipeId: saved.id, title: saved.title, category: saved.category, status: 'duplicate' }
+  }
+
   try {
     let markdown = ''
     let html = ''
@@ -204,8 +211,7 @@ export async function runExtractRecipe(
       const saved = await findRecipeBySourceUrl(supabase, userId, sourceUrl)
       if (saved) {
         console.log('[extract-recipe] share link resolves to saved recipe', saved.slug)
-        await supabase.from('recipe_shares').update({ recipe_id: saved.id, status: 'completed' }).eq('id', shareId)
-        return { recipeId: saved.id, title: saved.title, category: saved.category, status: 'duplicate' }
+        return linkToSaved(saved)
       }
     }
 
@@ -442,6 +448,17 @@ Rules:
     // or steps — the title-only check above doesn't catch this.
     if (!isExtractedRecipeUsable(recipeJSON)) {
       throw new Error('Extracted content has no usable recipe (title present but no ingredients or steps)')
+    }
+
+    // The same recipe saved before from another post — its author published
+    // it twice. Link this share to it rather than keep a "-2" copy; checked
+    // before the labelling call, which it makes unnecessary.
+    if (!forceRefresh) {
+      const same = await findSameRecipe(supabase, userId, recipeJSON)
+      if (same) {
+        console.log('[extract-recipe] same recipe already saved from another post:', same.slug)
+        return linkToSaved(same)
+      }
     }
 
     // Title casing, the distinguishing note and the tags, judged against the

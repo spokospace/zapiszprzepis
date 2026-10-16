@@ -61,6 +61,7 @@ const isLabelingCall = (init?: RequestInit) =>
 function makeSupabaseMock() {
   const queues: Record<string, Array<{ data: any; error: any }>> = {}
   const maybeQueues: Record<string, Array<{ data: any; error: any }>> = {}
+  const listQueues: Record<string, Array<{ data: any; error: any }>> = {}
   const calls: Array<{ table: string; op: string; args?: any }> = []
 
   function makeChain(table: string) {
@@ -79,6 +80,7 @@ function makeSupabaseMock() {
     chain.order = vi.fn().mockReturnValue(chain)
     chain.limit = vi.fn().mockReturnValue(chain)
     chain.like = vi.fn().mockReturnValue(chain)
+    chain.ilike = vi.fn().mockReturnValue(chain)
     chain.single = vi.fn().mockImplementation(() => {
       const val = queues[table]?.shift() ?? { data: null, error: null }
       return Promise.resolve(val)
@@ -88,7 +90,7 @@ function makeSupabaseMock() {
     )
     // Make chain awaitable for update().eq() calls without .single()
     chain.then = (resolve: any, reject: any) =>
-      Promise.resolve({ data: null, error: null }).then(resolve, reject)
+      Promise.resolve(listQueues[table]?.shift() ?? { data: null, error: null }).then(resolve, reject)
     return chain
   }
 
@@ -107,6 +109,11 @@ function makeSupabaseMock() {
     queueMaybe(table: string, result: { data: any; error: any }) {
       if (!maybeQueues[table]) maybeQueues[table] = []
       maybeQueues[table].push(result)
+    },
+    /** Queue the result of the next awaited (list) query on this table */
+    queueList(table: string, result: { data: any; error: any }) {
+      if (!listQueues[table]) listQueues[table] = []
+      listQueues[table].push(result)
     },
     didInsert: (table: string) => calls.some(c => c.table === table && c.op === 'insert'),
     insertArgs: (table: string) => calls.find(c => c.table === table && c.op === 'insert')?.args,
@@ -527,6 +534,37 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
 
     expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(false)
+  })
+})
+
+describe('runExtractRecipe — the same recipe from another post', () => {
+  const SAVED = { id: 70, slug: 'nalesniki', title: 'Naleśniki', category: 'sniadania' }
+
+  it('links the share to the saved recipe when title and ingredients match', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', {
+      // Casing, spacing and amounts differ between two extractions of one recipe.
+      data: [{ ...SAVED, ingredients: [{ name: ' mąka', amount: '1', unit: 'szkl.' }] }],
+      error: null,
+    })
+    const fetch = makeFetchMock()
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 70, status: 'duplicate' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(mock.didUpdate('recipe_shares', { recipe_id: 70, status: 'completed' })).toBe(true)
+  })
+
+  it('saves a variant whose ingredients differ', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', { data: [{ ...SAVED, ingredients: [{ name: 'mąka' }, { name: 'kefir' }] }], error: null })
+    mock.queue('recipes', { data: { id: 71 }, error: null })
+    const fetch = makeFetchMock()
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 71, status: 'completed' })
   })
 })
 
