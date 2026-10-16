@@ -35,7 +35,7 @@
 
 - [ ] E01-S01 — Design system i tokeny czytelności *(fundament, odblokowuje całe UI)*
 - [ ] E01-S02 — Publiczny dostęp: wyjście stron z `(authenticated)` + RLS dla `anon` *(fundament)*
-- [ ] E01-S03 — Model danych: źródło zamiast loginu, globalny dedup, slug `/przepis`, „kto dodał” *(fundament)*
+- [ ] E01-S03 — Model danych: globalny dedup, slug `/przepis`, „kto dodał” *(fundament; podzielony na S03a + S03b, po S06)*
 - [ ] E01-S12 — Logowanie OAuth Facebook/Google + pierwsze logowanie (płeć) + wołacz *(fundament auth)*
 - [ ] E01-S18 — Tożsamość: nazwa wyświetlana + username (+ minimalne ustawienie) *(fundament, wydzielone z S03)*
 - [ ] E01-S04 — Strona główna: gość i zalogowany
@@ -90,7 +90,8 @@ Fala 3:
 |---|---|---|---|---|
 | S01 | — | wszystkim | low | high |
 | S02 | — | S01, S03 | **high** (RLS, scoping) | high |
-| S03 | — | S01, S02 | **high** (migracja, dedup, 301) | high |
+| S03a | S02, S18, **S06** | S01 | **high** (migracja danych, dedup, własność) | high |
+| S03b | S03a | — | medium (zmiana URL, 301) | high |
 | S12 | S02 | S01, S03 | **high** (auth) | high |
 | S18 | — | S01, S02, S03 | medium | high |
 | S04 | S01, S02 | S05, S07, S09 | medium | high |
@@ -138,6 +139,12 @@ Strona główna, wyszukiwarka i przepis działają bez logowania; nagłówek ma 
 ### E01-S03 — Model danych: źródło zamiast loginu, globalny dedup, slug `/przepis`, „kto dodał”
 **Epic:** E01 · **Kategoria:** refactor, feature · **Priorytet:** high · **Ryzyko:** high · **Ref:** README „Model danych i dostępu”, „Źródło zamiast loginu”, „Kto dodał”
 > Zmiana zakresu (2026-10-16): tożsamość (`display_name` + `username`) wydzielona do **S18**. S03 zostaje: globalny dedup, slug `/przepis` + 301, etykieta źródła oraz relacja „dodał jako pierwszy” (wskazuje na profil z S18).
+> **Podział (bramka speca, 2026-10-16):**
+> - **S03a**: globalny dedup + własność „dodał jako pierwszy”. Spec: `.ai/specs/2026-10-16-global-recipe-dedup-przepis-slug.md`. **Zależy od S06** (ulubione idą pierwsze).
+> - **S03b**: globalnie unikalny `/przepis/{slug}` + 301. Osobny spec po S03a.
+> - Etykieta źródła jest już zrobiona (#185/#186), więc nie dostaje osobnego slice'a.
+>
+> Kanoniczna kopia przy scalaniu duplikatów: konto `@uzytkownik-5` (główne konto na przepisy), w pozostałych grupach najstarsza. Pozostałe kopie są archiwizowane i usuwane z `recipes`. Przy usunięciu konta przepisy przechodzą na najstarszą osobę, która ma je w ulubionych.
 
 Jeden przepis na znormalizowany `source_url` (globalnie), publiczny slug `/przepis/{slug}` z 301 ze starego `/recipes/[slug]`, etykieta źródła, „pierwszy dodający” i dane do profilu.
 
