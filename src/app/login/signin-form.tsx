@@ -23,9 +23,11 @@ interface SignInFormProps {
   email?: string
   sent?: string
   success?: string
+  /** Where to return after logging in (E01-S06); validated server-side by the actions. */
+  next?: string
 }
 
-export function SignInForm({ error, email, sent, success }: SignInFormProps) {
+export function SignInForm({ error, email, sent, success, next }: SignInFormProps) {
   const [tab, setTab] = useState<TabType>('link')
   const [isLoading, setIsLoading] = useState(false)
   const [formEmail, setFormEmail] = useState(email ?? '')
@@ -126,6 +128,7 @@ export function SignInForm({ error, email, sent, success }: SignInFormProps) {
 
       {tab === 'link' ? (
         <form id="tab-link" action={handleLinkSubmit} className="mt-6 flex flex-col gap-3">
+          <input type="hidden" name="next" value={next ?? ''} />
           <label htmlFor="email-link" className="text-sm font-medium text-zinc-700">
             Email
           </label>
@@ -152,6 +155,7 @@ export function SignInForm({ error, email, sent, success }: SignInFormProps) {
         </form>
       ) : (
         <form id="tab-password" action={handlePasswordSubmit} className="mt-6 flex flex-col gap-3">
+          <input type="hidden" name="next" value={next ?? ''} />
           <div>
             <label htmlFor="email-pass" className="text-sm font-medium text-zinc-700">
               Email
