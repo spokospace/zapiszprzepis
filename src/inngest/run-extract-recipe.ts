@@ -9,7 +9,7 @@ import {
   pickRecipeImage,
 } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
-import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
+import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { findRecipeBySourceUrl } from '@/lib/recipe-dedup'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
@@ -170,11 +170,12 @@ export async function runExtractRecipe(
     // feed body) rather than from a rendered page; drives the junk gate below.
     let trustedContent = false
 
-    // Blogspot: pull the post straight from the Blogger JSON feed instead of
-    // rendering with Firecrawl — deterministic, no Google Translate / empty
-    // main-content junk. Fall back to Firecrawl when the feed has nothing
-    // (custom-domain blogs, disabled feed).
-    const bloggerPost = isBlogspotUrl(sharedUrl)
+    // Blogger (blogspot or a custom domain): pull the post straight from the
+    // Blogger JSON feed instead of rendering with Firecrawl — deterministic,
+    // no Google Translate / empty main-content junk. Fall back to Firecrawl
+    // when the feed has nothing (non-Blogger site behind a Blogger-shaped
+    // path, disabled feed).
+    const bloggerPost = mayBeBloggerPost(sharedUrl)
       ? await fetchBloggerPost(sharedUrl).catch((err) => {
           console.warn('[extract-recipe] Blogger feed failed, falling back to Firecrawl:', err)
           return null

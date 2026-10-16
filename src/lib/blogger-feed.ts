@@ -18,6 +18,21 @@ export function isBlogspotUrl(url: string): boolean {
   }
 }
 
+/**
+ * Whether the URL may be a Blogger post: either a blogspot host, or a custom
+ * domain whose path has Blogger's fixed post shape `/YYYY/MM/slug.html`
+ * (e.g. lekcjewkuchni.pl). The custom-domain case is only a guess — the feed
+ * fetch confirms it, and returns null for any non-Blogger site.
+ */
+export function mayBeBloggerPost(url: string): boolean {
+  if (isBlogspotUrl(url)) return true
+  try {
+    return /^\/\d{4}\/\d{2}\/[^/]+\.html$/i.test(new URL(url).pathname)
+  } catch {
+    return false
+  }
+}
+
 export interface BloggerPost {
   title: string
   html: string
@@ -26,8 +41,9 @@ export interface BloggerPost {
 
 /**
  * Fetch a single blogspot post via the Blogger JSON feed, filtered to the post
- * path. Returns null when the feed has no matching entry (e.g. custom-domain
- * blogs, disabled feed) so callers can fall back to a normal scrape.
+ * path. Works on custom domains too (the feed lives on the blog's own host).
+ * Returns null when there is no Blogger feed or no matching entry (non-Blogger
+ * site, disabled feed) so callers can fall back to a normal scrape.
  */
 export async function fetchBloggerPost(url: string): Promise<BloggerPost | null> {
   let parsed: URL
@@ -46,7 +62,9 @@ export async function fetchBloggerPost(url: string): Promise<BloggerPost | null>
     headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
     signal: AbortSignal.timeout(15_000),
   })
-  if (!response.ok) return null
+  // A custom-domain guess (see mayBeBloggerPost) can land on a site that
+  // answers any path with an HTML page — that is "not Blogger", not an error.
+  if (!response.ok || !response.headers.get('content-type')?.includes('json')) return null
 
   const data = await response.json()
   const entry = data?.feed?.entry?.[0]
