@@ -50,6 +50,14 @@ interface RecipeData {
   prepTimeMinutes?: number | null
   cookTimeMinutes?: number | null
   totalTimeMinutes?: number | null
+  timesEstimated?: boolean
+}
+
+// The model's own flag counts only when there is a time to flag: all three
+// null means nothing is shown, so nothing is an estimate.
+function timesAreEstimated(r: RecipeData): boolean {
+  const hasTime = r.prepTimeMinutes != null || r.cookTimeMinutes != null || r.totalTimeMinutes != null
+  return hasTime && r.timesEstimated === true
 }
 
 export async function runExtractRecipe(
@@ -266,7 +274,8 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
   "prepTimeMinutes": integer or null,
   "cookTimeMinutes": integer or null,
-  "totalTimeMinutes": integer or null
+  "totalTimeMinutes": integer or null,
+  "timesEstimated": boolean
 }
 Rules:
 - The page often includes navigation, related/popular posts widgets, comments and ads. Focus ONLY on the PRIMARY recipe — usually the post-body content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
@@ -275,7 +284,11 @@ Rules:
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
 - Category: cookies, biscuits, gingerbread cookies and macarons ("ciasteczka", "herbatniki", "pierniczki", "makaroniki") are "ciasteczka", not "desery". Cakes, muffins and other sweets stay "desery".
-- Return null for any field the source does not specify. Do not guess.
+- Return null for any non-time field the source does not specify. Do not guess.
+- Times stated in the source, or computed from durations it states (a sum of step times, a stated "razem 1,5 godz"), are source data: set "timesEstimated" to false.
+- When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
+- When estimating, include passive periods (rising, proofing, marinating, chilling, setting, resting) in totalTimeMinutes. If the recipe clearly has a long passive step whose length you cannot tell, return null for totalTimeMinutes rather than a number that ignores it.
+- All three times null → "timesEstimated": false.
 - Best-effort if content incomplete.`,
             },
             {
@@ -352,6 +365,8 @@ Rules:
       throw new Error('Extracted content has no usable recipe (title present but no ingredients or steps)')
     }
 
+    const timesEstimated = timesAreEstimated(recipeJSON)
+
     // Title casing, the distinguishing note and the tags, judged against the
     // user's own recipes (minus this one, on a refresh) so the note tells
     // same-titled ones apart.
@@ -381,6 +396,7 @@ Rules:
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
           total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
+          times_estimated: timesEstimated,
           extracted_at: new Date().toISOString(),
         })
         .eq('user_id', userId)
@@ -447,6 +463,7 @@ Rules:
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
           total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
+          times_estimated: timesEstimated,
           extracted_at: new Date().toISOString(),
         })
         .select('id')
@@ -493,6 +510,14 @@ Rules:
           }
           if (existing.total_time_minutes == null && recipeJSON.totalTimeMinutes != null) {
             gapFill.total_time_minutes = recipeJSON.totalTimeMinutes
+          }
+          // A time filled in from an estimate makes the row's times estimated;
+          // stated times filled in next to an earlier estimate leave the flag.
+          if (
+            timesEstimated &&
+            (gapFill.prep_time_minutes != null || gapFill.cook_time_minutes != null || gapFill.total_time_minutes != null)
+          ) {
+            gapFill.times_estimated = true
           }
           if (existing.youtube_id == null && youtubeId != null) {
             gapFill.youtube_id = youtubeId

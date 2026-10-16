@@ -101,6 +101,7 @@ function makeSupabaseMock() {
     },
     didInsert: (table: string) => calls.some(c => c.table === table && c.op === 'insert'),
     insertArgs: (table: string) => calls.find(c => c.table === table && c.op === 'insert')?.args,
+    updateArgs: (table: string) => calls.filter(c => c.table === table && c.op === 'update').map(c => c.args),
     didUpdate: (table: string, partial?: Record<string, any>) =>
       calls.some(c => {
         if (c.table !== table || c.op !== 'update') return false
@@ -208,6 +209,113 @@ describe('runExtractRecipe — URL collision gap-fill', () => {
     expect(result.status).toBe('completed')
     expect(mock.didUpdate('recipes', { youtube_id: videoId })).toBe(true)
     expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
+  })
+})
+
+describe('runExtractRecipe — estimated times', () => {
+  const URL_COLLISION = {
+    data: null,
+    error: { message: 'duplicate key value violates unique constraint "recipes_user_source_url_uniq"' },
+  }
+  const withTimes = (extra: Record<string, unknown>) =>
+    JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), ...extra })
+
+  it('flags the times when the LLM says it estimated them', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withTimes({ timesEstimated: true }) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ times_estimated: true })
+  })
+
+  it('treats a missing flag as stated times', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ times_estimated: false })
+  })
+
+  it('ignores the flag when there are no times to mark', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    const openaiContent = withTimes({
+      prepTimeMinutes: null,
+      cookTimeMinutes: null,
+      totalTimeMinutes: null,
+      timesEstimated: true,
+    })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock({ openaiContent }), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ times_estimated: false })
+  })
+
+  it('rewrites the flag on a refresh', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(
+      { ...BASE_EVENT, force: true },
+      { fetch: makeFetchMock({ openaiContent: withTimes({ timesEstimated: true }) }), supabase: mock.supabase as any },
+    )
+
+    expect(mock.didUpdate('recipes', { prep_time_minutes: 10, times_estimated: true })).toBe(true)
+  })
+
+  it('flags the existing recipe when it gap-fills a time from an estimate', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', URL_COLLISION)
+    mock.queue('recipes', {
+      data: { id: 99, prep_time_minutes: 5, cook_time_minutes: 20, total_time_minutes: null, tags: [] },
+      error: null,
+    })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withTimes({ timesEstimated: true }) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.didUpdate('recipes', { total_time_minutes: 30, times_estimated: true })).toBe(true)
+    expect(mock.updateArgs('recipes').some(a => 'prep_time_minutes' in a)).toBe(false)
+  })
+
+  it('leaves the existing flag alone when the estimate fills no time', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', URL_COLLISION)
+    mock.queue('recipes', {
+      data: { id: 99, prep_time_minutes: 5, cook_time_minutes: 20, total_time_minutes: 25, tags: [] },
+      error: null,
+    })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withTimes({ timesEstimated: true }) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.updateArgs('recipes').some(a => 'times_estimated' in a)).toBe(false)
+  })
+
+  it('leaves the existing flag alone when stated times fill the gaps', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', URL_COLLISION)
+    mock.queue('recipes', {
+      data: { id: 99, prep_time_minutes: null, cook_time_minutes: null, total_time_minutes: null, tags: [] },
+      error: null,
+    })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withTimes({ timesEstimated: false }) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.didUpdate('recipes', { total_time_minutes: 30 })).toBe(true)
+    expect(mock.updateArgs('recipes').some(a => 'times_estimated' in a)).toBe(false)
   })
 })
 

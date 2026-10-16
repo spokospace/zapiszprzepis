@@ -15,12 +15,30 @@ import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
 import type { Database } from '@/lib/supabase.types'
 
-function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: string; minutes: number }) {
+function TimeBadge({
+  icon: Icon,
+  label,
+  minutes,
+  estimated,
+}: {
+  icon: LucideIcon
+  label: string
+  minutes: number
+  estimated: boolean
+}) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <Icon aria-hidden="true" size={16} className="text-orange-500" />
       <span className="text-gray-500">{label}:</span>
-      <span className="font-medium">{formatMinutes(minutes)}</span>
+      <span className="font-medium" title={estimated ? 'Czas szacowany, nie podany w źródle' : undefined}>
+        {estimated && (
+          <>
+            <span aria-hidden="true">≈ </span>
+            <span className="sr-only">około </span>
+          </>
+        )}
+        {formatMinutes(minutes)}
+      </span>
     </span>
   )
 }
@@ -145,13 +163,16 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             || typedRecipe.total_time_minutes != null) && (
             <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-700">
               {typedRecipe.prep_time_minutes != null && (
-                <TimeBadge icon={Clock} label="Przygotowanie" minutes={typedRecipe.prep_time_minutes} />
+                <TimeBadge icon={Clock} label="Przygotowanie" minutes={typedRecipe.prep_time_minutes} estimated={typedRecipe.times_estimated} />
               )}
               {typedRecipe.cook_time_minutes != null && (
-                <TimeBadge icon={Flame} label="Gotowanie" minutes={typedRecipe.cook_time_minutes} />
+                <TimeBadge icon={Flame} label="Gotowanie" minutes={typedRecipe.cook_time_minutes} estimated={typedRecipe.times_estimated} />
               )}
               {typedRecipe.total_time_minutes != null && (
-                <TimeBadge icon={Timer} label="Łącznie" minutes={typedRecipe.total_time_minutes} />
+                <TimeBadge icon={Timer} label="Łącznie" minutes={typedRecipe.total_time_minutes} estimated={typedRecipe.times_estimated} />
+              )}
+              {typedRecipe.times_estimated && (
+                <p className="basis-full text-xs text-gray-500">Czasy szacunkowe — źródło ich nie podaje.</p>
               )}
             </div>
           )}
