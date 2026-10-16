@@ -217,6 +217,13 @@ const ATTR_RE = /\bdata-lazy-src=["']([^"']+)["']|\bdata-src=["']([^"']+)["']|\b
 const NOT_A_PHOTO_RE =
   /gravatar|avatar|\/logo|favicon|[/_-]icons?[/_.-]|[/_-]buttons?[/_.-]|emoji|sprite|spacer|placeholder|doubleclick|quantserve|google-analytics|googletagmanager|facebook\.com\/tr|pinterest\.com\/images|pixel|\/ads?\/|banner|\.(php|gif|svg)(\?|$)|^data:/i
 const AD_CLASS_RE = /\bclass=["'][^"']*(reklama|advert|\bads?\b|banner|sponsor)/i
+// Page chrome the markup itself flags as non-content, never a photo of the
+// dish: an image marked purely decorative (`role="presentation"`/`"none"`) or
+// hidden from the accessibility tree (`aria-hidden="true"`). pysznosci.pl
+// (Wirtualna Polska) renders a `role="presentation"` spinner per lightbox slot
+// and an `aria-hidden` flame icon in its exit-intent popup — both carry no
+// dimensions, so the size gates would otherwise let them into the gallery.
+const DECORATIVE_RE = /\brole=["'](?:presentation|none)["']|\baria-hidden=["']true["']/i
 const ITEMPROP_IMAGE_RE = /\bitemprop=["']image["']/i
 const WIDTH_RE = /\bwidth=["']?(\d+)/i
 const HEIGHT_RE = /\bheight=["']?(\d+)/i
@@ -246,15 +253,21 @@ interface ImageTag {
 
 /**
  * The page's `<img>` tags that could be a photo of the dish, in document
- * order: ads, tracking pixels and icons are dropped, and relative URLs are
- * resolved against `base`.
+ * order: ads, tracking pixels, icons and decorative lightbox chrome are
+ * dropped, relative URLs are resolved against `base`, and an `<img>` that
+ * merely links back to the page it sits on is dropped too.
  */
 function photoTags(html: string, base: URL | undefined): ImageTag[] {
   const tags: ImageTag[] = []
+  // The page's own URL (fragment stripped), so a lightbox placeholder whose src
+  // is the article itself (pysznosci.pl's `wpl-image`) is dropped: never a
+  // photo, and its "file name" — the page slug — would otherwise score it as
+  // the best cover.
+  const selfHref = base?.href.split('#')[0]
   for (const tag of html.match(/<img\b[^>]+>/gi) ?? []) {
     const m = ATTR_RE.exec(tag)
     const raw = m?.[1] ?? m?.[2] ?? m?.[3]
-    if (!raw || NOT_A_PHOTO_RE.test(raw) || AD_CLASS_RE.test(tag)) continue
+    if (!raw || NOT_A_PHOTO_RE.test(raw) || AD_CLASS_RE.test(tag) || DECORATIVE_RE.test(tag)) continue
 
     let url = raw
     if (base) {
@@ -263,6 +276,7 @@ function photoTags(html: string, base: URL | undefined): ImageTag[] {
       } catch {
         continue
       }
+      if (url.split('#')[0] === selfHref) continue
     }
     tags.push({
       url,
