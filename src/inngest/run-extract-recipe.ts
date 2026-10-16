@@ -4,9 +4,9 @@ import { slugify } from '@/lib/slugify'
 import {
   archiveRecipeImages,
   buildGallery,
+  coverImage,
   isPrivateUrl,
   pickGalleryImages,
-  pickRecipeImage,
 } from '@/lib/recipe-image-archive'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutubeTranscript } from '@/lib/youtube'
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
@@ -269,7 +269,7 @@ export async function runExtractRecipe(
       html = linkedPage.html ?? ''
       // The blog's own og:image is a stable URL; the post thumbnail is only a
       // last resort, and it expires.
-      ogImage = linkedPage.metadata?.ogImage ?? pickRecipeImage(html, linkedUrl ?? undefined) ?? facebookPost?.image ?? undefined
+      ogImage = coverImage(linkedPage.metadata?.ogImage, html, linkedUrl ?? undefined) ?? facebookPost?.image ?? undefined
       photos = pickGalleryImages(html, linkedUrl ?? undefined)
     } else if (facebookPost?.caption) {
       console.log('[extract-recipe] using Facebook caption for', facebookPost.canonicalUrl)
@@ -314,7 +314,7 @@ export async function runExtractRecipe(
       ])
       markdown = scraped.markdown ?? ''
       html = scraped.html ?? ''
-      ogImage = scraped.metadata?.ogImage ?? pickRecipeImage(html, sharedUrl)
+      ogImage = coverImage(scraped.metadata?.ogImage, html, sharedUrl)
       // A YouTube page's images are other videos' thumbnails, not the dish.
       if (sourceType === 'web_blog') photos = pickGalleryImages(html, sharedUrl)
       embedHtml = scrapedEmbedHtml
@@ -418,6 +418,8 @@ Rules:
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
 - Category: cookies, biscuits, gingerbread cookies and macarons ("ciasteczka", "herbatniki", "pierniczki", "makaroniki") are "ciasteczka", not "desery". Cakes, muffins and other sweets stay "desery".
+- Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast bakes (drożdżówki, rogaliki z dżemem) stay "desery"/"ciasteczka".
+- Category: homemade syrups, tinctures and herbal remedies made for health ("syrop na odporność/na kaszel", "mikstura na zatoki", "napar prozdrowotny") are "syropy". Everyday drinks (lemoniada, herbata, kompot, soki, koktajle) stay "napoje".
 - Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
 - Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
 - Return null for any non-time field the source does not specify. Do not guess.

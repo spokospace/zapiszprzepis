@@ -123,6 +123,25 @@ async function downloadImage(url: string): Promise<DownloadResult> {
   return { image: { bytes, contentType, ext }, transportError: false }
 }
 
+/**
+ * Fetches an image, recovering from the two ways a host defeats the Worker:
+ * direct first; a transport failure (a TLS cert mismatch on an SSL-broken
+ * host) retries the same file over plain http; any other failure, and a failed
+ * http retry, falls to the proxy (for a host that refuses the Worker's address
+ * space outright). Null when none of them yields an image.
+ */
+async function fetchImage(url: string): Promise<DownloadedImage | null> {
+  const httpUrl = insecureHttpUrl(url)
+  let result = await downloadImage(url)
+  if (!result.image && result.transportError && httpUrl) {
+    result = await downloadImage(httpUrl)
+  }
+  if (!result.image) {
+    result = await downloadImage(proxiedImageUrl(url))
+  }
+  return result.image
+}
+
 /** Archives a recipe's cover image as `<user>/<recipe>.<ext>`. */
 export function archiveImage(
   supabase: SupabaseClient,
@@ -148,21 +167,15 @@ async function archiveImageAt(
       return null
     }
 
-    // Direct first. A transport failure (a TLS cert mismatch on an SSL-broken
-    // host) retries the same file over plain http; any other failure, and a
-    // failed http retry, falls to the proxy (for a host that refuses the
-    // Worker's address space outright).
-    const httpUrl = insecureHttpUrl(externalUrl)
-    let result = await downloadImage(externalUrl)
-    if (!result.image && result.transportError && httpUrl) {
-      result = await downloadImage(httpUrl)
-    }
-    if (!result.image) {
-      result = await downloadImage(proxiedImageUrl(externalUrl))
-    }
-    if (!result.image) return null
+    // Prefer the full-size original — a WordPress resize URL may 301
+    // (kulinarnapolska.org) — but fall back to the URL as found when the
+    // original is missing or too big to archive (the 5 MB cap), so a resize
+    // that would archive cleanly is never traded for a broken cover.
+    const fullUrl = fullSizeImageUrl(externalUrl)
+    const image = (fullUrl !== externalUrl ? await fetchImage(fullUrl) : null) ?? (await fetchImage(externalUrl))
+    if (!image) return null
 
-    const { bytes, contentType, ext } = result.image
+    const { bytes, contentType, ext } = image
     const path = `${pathStem}.${ext}`
     const { error: uploadError } = await supabase.storage
       .from('recipe-images')
@@ -270,7 +283,7 @@ function photoTags(html: string, base: URL | undefined): ImageTag[] {
  */
 export function pickRecipeImage(html: string, pageUrl?: string): string | undefined {
   const base = parseBase(pageUrl)
-  const slugWords = base ? words(base.pathname) : new Set<string>()
+  const slugWords = slugWordsOf(base)
 
   let best: { url: string; score: number } | undefined
   for (const { url, tag, width, height } of photoTags(html, base)) {
@@ -280,13 +293,87 @@ export function pickRecipeImage(html: string, pageUrl?: string): string | undefi
 
     let score = 0
     if (ITEMPROP_IMAGE_RE.test(tag)) score += 100
-    const imageWords = words(`${url.split(/[?#]/)[0].split('/').pop()} ${ALT_RE.exec(tag)?.[1] ?? ''}`)
+    const imageWords = new Set([...fileWords(url), ...words(ALT_RE.exec(tag)?.[1] ?? '')])
     if ([...imageWords].some((w) => slugWords.has(w))) score += 20
     if (width >= 300 || height >= 300) score += 5
 
     if (!best || score > best.score) best = { url, score }
   }
   return best?.url
+}
+
+/** The 4+ letter words in a URL's file name — `szaszlyki`, `przepis` from
+ *  `.../szaszlyki-z-piekarnika-przepis-2.jpg`. */
+function fileWords(url: string): Set<string> {
+  return words(url.split(/[?#]/)[0].split('/').pop() ?? '')
+}
+
+/** The distinctive 4+ letter words of a page's URL path — its dish name. */
+function slugWordsOf(base: URL | undefined): Set<string> {
+  return base ? words(base.pathname) : new Set<string>()
+}
+
+// The `-696x464` (optionally `-v-360x360`) suffix of a WordPress resize, before
+// the extension. Shared so the full-size recovery and photoKey's identity strip
+// stay in step.
+const WP_RESIZE_SUFFIX_RE = /(-v)?[-_]\d{2,4}x\d{2,4}(?=\.\w+(?:[?#]|$))/
+
+// Best-effort, Polish-primary stopwords: words that sit in a recipe slug and in
+// most of a site's file names alike, so they don't tell one dish from another —
+// only the distinctive words do. Not exhaustive; a missed word only makes the
+// stale-og override below slightly less likely to fire.
+const GENERIC_SLUG_WORDS = new Set([
+  'przepis', 'przepisy', 'recipe', 'domowy', 'domowa', 'domowe', 'domowej',
+  'najlepszy', 'najlepsza', 'najlepsze', 'prawdziwy', 'prawdziwa', 'prawdziwe',
+  'szybki', 'szybka', 'szybkie', 'latwy', 'latwa', 'latwe', 'klasyczny', 'pyszny', 'pyszne',
+  'easy', 'best', 'homemade', 'quick', 'simple', 'classic',
+])
+
+// WordPress serves a `-696x464` resize of an uploaded photo; the full-size
+// original — the suffix removed — is generated from it, so archiveImage prefers
+// it but falls back to the resize URL when it is missing or over the size cap.
+function fullSizeImageUrl(url: string): string {
+  return url.replace(WP_RESIZE_SUFFIX_RE, '')
+}
+
+/** Whether the file name carries any distinctive (non-generic) slug word. */
+function sharesDistinctiveWord(url: string, slugWords: Set<string>): boolean {
+  for (const w of fileWords(url)) if (slugWords.has(w) && !GENERIC_SLUG_WORDS.has(w)) return true
+  return false
+}
+
+/**
+ * The cover for a rendered blog page: the page's declared og:image, resolved
+ * against the page when it is given relative. A misconfigured SEO plugin can
+ * emit a stale site-wide og:image — the same unrelated photo on every post
+ * (kulinarnapolska.org points them all at one "flaczki" image) — so when the
+ * og:image shares none of the page's distinctive slug words while the best
+ * in-content photo (taken outside the page's noise sections, so not a
+ * related-recipe card) does, the in-content photo wins. With no og:image it is
+ * the in-content pick; with neither, undefined.
+ */
+export function coverImage(ogImage: string | undefined, html: string, pageUrl?: string): string | undefined {
+  const base = parseBase(pageUrl)
+  let resolvedOg: string | undefined
+  if (ogImage) {
+    try {
+      resolvedOg = new URL(ogImage, base).href
+    } catch {
+      resolvedOg = undefined
+    }
+  }
+
+  const slugWords = slugWordsOf(base)
+  const pageImage = pickRecipeImage(withoutNoiseSections(html), pageUrl)
+  if (
+    resolvedOg &&
+    pageImage &&
+    !sharesDistinctiveWord(resolvedOg, slugWords) &&
+    sharesDistinctiveWord(pageImage, slugWords)
+  ) {
+    return pageImage
+  }
+  return resolvedOg ?? pageImage
 }
 
 /** Most photos a recipe keeps. A step-by-step post runs to about a dozen. */
@@ -345,7 +432,7 @@ function photoKey(url: string): string {
     return (hostname === WIX_HOST ? pathname.replace(WIX_RENDITION_RE, '$1') : pathname)
       .toLowerCase()
       .replace(BLOGGER_SIZE_SEGMENT_RE, '/')
-      .replace(/(-v)?[-_]\d{2,4}x\d{2,4}(?=\.\w+$)/, '')
+      .replace(WP_RESIZE_SUFFIX_RE, '')
       .replace(/-scaled(?=\.\w+$)/, '')
   } catch {
     return url
