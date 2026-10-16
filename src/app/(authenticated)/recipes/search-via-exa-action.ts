@@ -2,6 +2,7 @@
 
 import { requireUser } from '@/lib/supabase/server'
 import { getExaApiKey } from '@/lib/env'
+import { TRUSTED_RECIPE_DOMAINS } from '@/lib/recipe-source-domains'
 
 export type ExaResult = {
   url: string
@@ -41,6 +42,7 @@ export async function searchViaExa(query: string): Promise<ExaSearchResponse> {
         query,
         numResults: 5,
         type: 'auto',
+        includeDomains: TRUSTED_RECIPE_DOMAINS,
         // Without contents, Exa returns raw page text which is unparseable
         // as a recipe preview. 3 recipe-focused highlight sentences give users
         // enough context to pick the right result without loading the full page.
