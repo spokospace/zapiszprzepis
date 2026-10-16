@@ -11,6 +11,7 @@ import { PageContainer } from '@/app/components/page-container'
 import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
+import { cookTimeLabel } from '@/lib/cook-time-label'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
@@ -150,7 +151,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
                 <TimeBadge icon={Clock} label="Przygotowanie" minutes={typedRecipe.prep_time_minutes} />
               )}
               {typedRecipe.cook_time_minutes != null && (
-                <TimeBadge icon={Flame} label="Gotowanie" minutes={typedRecipe.cook_time_minutes} />
+                <TimeBadge icon={Flame} label={cookTimeLabel(steps)} minutes={typedRecipe.cook_time_minutes} />
               )}
               {typedRecipe.total_time_minutes != null && (
                 <TimeBadge icon={Timer} label="Łącznie" minutes={typedRecipe.total_time_minutes} />
