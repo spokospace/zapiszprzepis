@@ -5,6 +5,7 @@
 // and produce junk extractions. The feed is deterministic, fast and free.
 
 import { pickRecipeImage } from './recipe-image-archive'
+import { sliceBalancedDiv } from './html-div'
 
 export function isBlogspotUrl(url: string): boolean {
   try {
@@ -68,12 +69,47 @@ export async function fetchBloggerPost(url: string): Promise<BloggerPost | null>
 
   const data = await response.json()
   const entry = data?.feed?.entry?.[0]
-  const html: string = entry?.content?.$t ?? ''
+  const feedHtml: string = entry?.content?.$t ?? ''
+  if (!feedHtml) return null
+
+  // A blog whose feed is set to "until jump break" gives only the teaser
+  // above the cut — the recipe sits below it, on the post page itself.
+  const html = isCutAtJumpBreak(feedHtml) ? await fetchPostBody(parsed) : feedHtml
   if (!html) return null
 
   return {
     title: entry?.title?.$t ?? '',
     html,
     image: pickRecipeImage(html, url) ?? null,
+  }
+}
+
+/** The feed entry ends at the jump break: its last word is a "Read more" link
+ *  to the post's #more anchor. */
+export function isCutAtJumpBreak(feedHtml: string): boolean {
+  return /<a\b[^>]*href=["'][^"']*#more["'][^>]*>[^<]*<\/a>\s*$/i.test(feedHtml)
+}
+
+/** The post-body div of a Blogger post page — every Blogger template renders
+ *  the post into one, id="post-body-<post id>". Null when there is none. */
+export function extractPostBody(pageHtml: string): string | null {
+  const open = /<div\b[^>]*\bid=["']post-body-\d+["'][^>]*>/i.exec(pageHtml)
+  if (!open) return null
+  // Ad slots and widgets inside the body carry inline scripts and styles;
+  // their code is not text.
+  return sliceBalancedDiv(pageHtml, open.index + open[0].length).replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '')
+}
+
+/** The full post body, read off the post page — on the blog's own host,
+ *  like the feed. Null on any failure, so the caller falls back to Firecrawl. */
+async function fetchPostBody(url: URL): Promise<string | null> {
+  try {
+    const response = await fetch(`https://${url.hostname}${url.pathname}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(15_000),
+    })
+    return response.ok ? extractPostBody(await response.text()) : null
+  } catch {
+    return null
   }
 }

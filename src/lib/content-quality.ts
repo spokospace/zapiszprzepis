@@ -55,17 +55,23 @@ export function looksUnextractable(
  * recipe can be persisted as a titled, body-less recipe. Pure; wiring this into
  * the pipeline (reject-before-persist) is a later rollout phase.
  */
-export function isExtractedRecipeUsable(recipe: {
-  title?: unknown
-  ingredients?: unknown
-  steps?: unknown
-}): boolean {
+export function isExtractedRecipeUsable(
+  recipe: {
+    title?: unknown
+    ingredients?: unknown
+    steps?: unknown
+  },
+  { stepsOptional = false }: { stepsOptional?: boolean } = {},
+): boolean {
   const titleOk = typeof recipe.title === 'string' && recipe.title.trim().length > 0
   // Element shapes are checked too: a non-string step (or an ingredient that is
   // not an object) passes a length check but breaks the detail page render
   // (#135), so it is rejected before it is persisted. A blank step among real
   // ones is tolerated — parseSteps drops it on read — but at least one step
-  // must carry text.
+  // must carry text — unless `stepsOptional`: a video or photo post often lists
+  // only the ingredients and shows the method on screen, and no retry will
+  // ever find steps the author never wrote down. An empty list is then fine;
+  // malformed steps never are.
   const ingredientsOk =
     Array.isArray(recipe.ingredients) &&
     recipe.ingredients.length > 0 &&
@@ -73,6 +79,6 @@ export function isExtractedRecipeUsable(recipe: {
   const stepsOk =
     Array.isArray(recipe.steps) &&
     recipe.steps.every((s) => typeof s === 'string') &&
-    recipe.steps.some(isStepText)
+    (stepsOptional || recipe.steps.some(isStepText))
   return titleOk && ingredientsOk && stepsOk
 }

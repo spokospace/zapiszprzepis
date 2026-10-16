@@ -56,6 +56,12 @@ export interface RunExtractRecipeDeps {
   supabase: SupabaseClient
 }
 
+/** "HTTP 429 Too Many Requests". Workers' fetch leaves statusText empty on
+ *  HTTP/2, so the code has to carry the message on its own. */
+function httpStatus(response: Response): string {
+  return `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`
+}
+
 interface RecipeData {
   title: string
   ingredients: Array<{ name: string; amount?: string; unit?: string; section?: string }>
@@ -93,7 +99,7 @@ export async function runExtractRecipe(
       signal: AbortSignal.timeout(45_000),
     })
     if (!response.ok) {
-      throw new Error(`Firecrawl failed: ${response.statusText}`)
+      throw new Error(`Firecrawl failed: ${httpStatus(response)}`)
     }
     const data = await response.json()
     return data.data ?? {}
@@ -177,6 +183,9 @@ export async function runExtractRecipe(
     // True while the content came verbatim from the author (a post caption, a
     // feed body) rather than from a rendered page; drives the junk gate below.
     let trustedContent = false
+    // True when the content is a Facebook post's own caption: the recipe may
+    // be its ingredient list alone, with the method shown in the video.
+    let fromPostCaption = false
 
     // Blogger (blogspot or a custom domain): pull the post straight from the
     // Blogger JSON feed instead of rendering with Firecrawl — deterministic,
@@ -228,7 +237,21 @@ export async function runExtractRecipe(
         })
       : null
 
-    if (linkedPage?.markdown || linkedPage?.html) {
+    // A dead blog (a 404, a host's "website unavailable" page) still renders
+    // something; only a page that answered and reads as content beats the
+    // caption, which often carries the recipe itself.
+    const readableLinkedPage =
+      linkedPage &&
+      (linkedPage.metadata?.statusCode ?? 200) < 400 &&
+      !(looksUnextractable(linkedPage.markdown ?? '') && looksUnextractable(linkedPage.html ?? ''))
+        ? linkedPage
+        : null
+    if (linkedPage && !readableLinkedPage) {
+      console.warn('[extract-recipe] linked page unreadable, status', linkedPage.metadata?.statusCode, linkedUrl)
+    }
+
+    if (readableLinkedPage) {
+      const linkedPage = readableLinkedPage
       console.log('[extract-recipe] following Facebook caption link to', linkedUrl)
       markdown = linkedPage.markdown ?? ''
       html = linkedPage.html ?? ''
@@ -244,6 +267,7 @@ export async function runExtractRecipe(
       ogImage = facebookPost.image ?? undefined
       photos = facebookPost.images
       trustedContent = true
+      fromPostCaption = true
     } else if (bloggerPost) {
       console.log('[extract-recipe] using Blogger feed for', sharedUrl)
       html = bloggerPost.html
@@ -372,7 +396,9 @@ Rules:
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
 - Category: cookies, biscuits, gingerbread cookies and macarons ("ciasteczka", "herbatniki", "pierniczki", "makaroniki") are "ciasteczka", not "desery". Cakes, muffins and other sweets stay "desery".
-- Return null for any field the source does not specify. Do not guess.
+- Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
+- Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
+- Return null for any other field the source does not specify. Do not guess.
 - Best-effort if content incomplete.`,
             },
             {
@@ -399,7 +425,12 @@ Rules:
       })
 
       if (!openaiResponse.ok) {
-        throw new Error(`OpenAI failed: ${openaiResponse.statusText}`)
+        // OpenAI's own message says which limit or input it hit.
+        const detail = await openaiResponse
+          .json()
+          .then((body) => (typeof body?.error?.message === 'string' ? ` — ${body.error.message.slice(0, 200)}` : ''))
+          .catch(() => '')
+        throw new Error(`OpenAI failed: ${httpStatus(openaiResponse)}${detail}`)
       }
 
       const openaiData = await openaiResponse.json()
@@ -419,7 +450,9 @@ Rules:
       // and throws the whole extraction away.
       const { category, coerced } = toRecipeCategory(parsed.category)
       if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
-      return { ...parsed, category }
+      // A missing method comes back as null as often as []; the gate below
+      // and the steps column both want the list.
+      return { ...parsed, steps: parsed.steps ?? [], category }
     }
 
     // The user's other recipes, for the labelling pass below; read while the
@@ -459,7 +492,7 @@ Rules:
     // Output-side gate (Risk 2): reject body-less recipes before any DB write.
     // Catches the case where the LLM returns a valid title but empty ingredients
     // or steps — the title-only check above doesn't catch this.
-    if (!isExtractedRecipeUsable(recipeJSON)) {
+    if (!isExtractedRecipeUsable(recipeJSON, { stepsOptional: fromPostCaption })) {
       throw new Error('Extracted content has no usable recipe (title present but no ingredients or steps)')
     }
 

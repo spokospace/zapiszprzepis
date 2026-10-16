@@ -99,6 +99,16 @@ describe('isExtractedRecipeUsable — output-side gate (Risk 2)', () => {
     expect(isExtractedRecipeUsable({ ...ok, ingredients: [null] })).toBe(false)
     expect(isExtractedRecipeUsable({ ...ok, ingredients: [[{ name: 'Mąka' }]] })).toBe(false)
   })
+
+  it('accepts an ingredient-only recipe when steps are optional (method shown in a video)', () => {
+    expect(isExtractedRecipeUsable({ ...ok, steps: [] }, { stepsOptional: true })).toBe(true)
+  })
+
+  it('still rejects malformed steps, missing steps or no ingredients when steps are optional', () => {
+    expect(isExtractedRecipeUsable({ ...ok, steps: [{}] }, { stepsOptional: true })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, steps: undefined }, { stepsOptional: true })).toBe(false)
+    expect(isExtractedRecipeUsable({ ...ok, ingredients: [], steps: [] }, { stepsOptional: true })).toBe(false)
+  })
 })
 
 describe('looksUnextractable — trusted content', () => {

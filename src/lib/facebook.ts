@@ -27,6 +27,7 @@
 
 import { isYoutubeHost } from '@/lib/youtube'
 import { decodeEntities } from '@/lib/html-entities'
+import { sliceBalancedDiv } from '@/lib/html-div'
 import { GALLERY_LIMIT } from '@/lib/recipe-image-archive'
 
 const CRAWLER_UA = 'facebookexternalhit/1.1'
@@ -181,25 +182,6 @@ export function findRecipeLinkInText(text: string): string | null {
 
 export function buildFacebookPluginUrl(href: string): string {
   return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(href)}&show_text=true&width=500`
-}
-
-/**
- * Return the substring of `html` that sits inside the div opened at
- * `openTagEnd`, by counting nested <div> tags. Regex alone can't do this —
- * the caption contains its own nested spans/divs and Facebook's class names
- * are obfuscated and unstable, so a "stop at class X" heuristic rots.
- */
-function sliceBalancedDiv(html: string, openTagEnd: number): string {
-  const TAG = /<(\/?)div\b/gi
-  TAG.lastIndex = openTagEnd
-  let depth = 1
-  let match: RegExpExecArray | null
-  while ((match = TAG.exec(html)) !== null) {
-    depth += match[1] === '/' ? -1 : 1
-    if (depth === 0) return html.slice(openTagEnd, match.index)
-  }
-  // Unbalanced markup — take what's left rather than dropping the caption.
-  return html.slice(openTagEnd)
 }
 
 /**
