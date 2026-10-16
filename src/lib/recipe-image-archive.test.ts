@@ -246,6 +246,29 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
     ])
   })
 
+  it('keeps the post when a layout wrapper is named after its sidebar, still cutting the noise inside (krysiagotuje)', () => {
+    // Trimmed from krysiagotuje.pl: the whole post sits in a
+    // `layout-right-sidebar` container, and "sidebar" marks noise. Cutting the
+    // container took both lazy-loaded photos; the share links and the real
+    // sidebar must still go.
+    const UP = 'https://www.krysiagotuje.pl/wp-content/uploads'
+    const html = `
+      <main id="content"><div class="container layout-2-col layout-right-sidebar">
+        <div class="col-sm-8 content-column"><article class="post-12962">
+          <div class="entry-content clearfix single-post-content">
+            <a class="mashicon-facebook" href="https://www.facebook.com/sharer.php?u=x"><img src="${UP}/2020/09/share-card.jpg" width="1200" height="630"></a>
+            <p><img class="alignnone size-full" data-src="${UP}/2020/09/krem-rafaello-2.jpg" width="700" height="392"></p>
+            <p><img class="alignnone size-full" data-src="${UP}/2020/09/krem-rafaello-1.jpg" width="700" height="392"></p>
+          </div>
+        </article></div>
+        <aside class="sidebar-column"><img src="${UP}/2020/08/inny-przepis.jpg" width="700" height="392"></aside>
+      </div></main>`
+    expect(pickGalleryImages(html, 'https://www.krysiagotuje.pl/domowy-krem-raffaello/')).toEqual([
+      `${UP}/2020/09/krem-rafaello-2.jpg`,
+      `${UP}/2020/09/krem-rafaello-1.jpg`,
+    ])
+  })
+
   it('drops a print button whose rendered tag lost its size (slodkisentyment)', () => {
     // Firecrawl's render of slodkisentyment.pl: the lazy loader strips the
     // button's width/height, so only its file name and wrapper give it away.
