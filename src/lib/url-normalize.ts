@@ -1,4 +1,4 @@
-import { isFacebookUrl, normalizeFacebookHost, toPostUrl } from './facebook'
+import { groupPostKeyPattern, isFacebookPostUrl, isFacebookShareUrl, isFacebookUrl, normalizeFacebookHost, toPostUrl } from './facebook'
 
 /**
  * The dedup key for a shared link. Facebook names one post in many shapes —
@@ -23,4 +23,21 @@ export function normalizeUrl(raw: string): string {
   }
 
   return `${url.protocol}//${url.host}${pathname}${url.search}`
+}
+
+/**
+ * The key a recipe extracted from `sharedUrl` is stored under. A share
+ * shortlink (/share/p/<code>, a new code per copy) only names its post once
+ * the redirect is followed, so it is keyed by the post it resolved to — when
+ * that is a post permalink and not, say, the login wall.
+ */
+export function resolvedSourceUrl(sharedUrl: string, canonicalUrl: string | undefined): string {
+  if (!canonicalUrl || !isFacebookShareUrl(sharedUrl) || !isFacebookPostUrl(canonicalUrl)) return sharedUrl
+  return normalizeUrl(canonicalUrl)
+}
+
+/** A LIKE pattern matching every key of the same post, or null when the key
+ *  only matches itself (see groupPostKeyPattern). */
+export function sourceUrlPattern(key: string): string | null {
+  return groupPostKeyPattern(key)
 }
