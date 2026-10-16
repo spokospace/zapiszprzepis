@@ -14,6 +14,7 @@
     "backfill:recipe-tags": "node --env-file=.env.local --import tsx scripts/backfill-recipe-tags.ts",
     "backfill:source-urls": "node --env-file=.env.local --import tsx scripts/backfill-source-urls.ts",
     "backfill:source-fingerprints": "node --env-file=.env.local --import tsx scripts/backfill-source-fingerprints.ts",
+    "update:recipe-blog-domains": "node --import tsx scripts/update-recipe-blog-domains.ts",
     "render:banner": "node docs/banner/render.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
