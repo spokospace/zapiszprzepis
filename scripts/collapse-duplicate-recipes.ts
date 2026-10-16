@@ -77,9 +77,10 @@ rollback;
 // transaction (collapse_recipe_groups) and re-checks that no duplicate is
 // left. Undo: restore_recipe_merge('<merge id>') after migration B's down.
 
-// The main recipe account whose copy wins (Q2), by username: the spec's
-// "@uzytkownik-5", whose username may since have been regenerated (E01-S18).
-const MAIN_ACCOUNT = process.argv.find((a) => a.startsWith('--main-account='))?.split('=')[1] ?? 'uzytkownik-5'
+// The main recipe account whose copy wins (Q2), by username. The spec calls it
+// "@uzytkownik-5"; E01-S18 regenerated it as @tola (confirmed by the owner,
+// 2026-10-17). --main-account=<username> overrides it.
+const MAIN_ACCOUNT = process.argv.find((a) => a.startsWith('--main-account='))?.split('=')[1] ?? 'tola'
 const PAGE = 1000
 
 type Recipe = CollapseRow & { title: string }
