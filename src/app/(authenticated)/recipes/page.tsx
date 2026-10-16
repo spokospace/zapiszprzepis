@@ -85,6 +85,10 @@ export default async function RecipesPage({
         .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
         .order('created_at', { ascending: false })
 
+  // recipes_public_read (S02) makes SELECT return every user's recipes, so
+  // "Moje przepisy" must scope to the owner explicitly — RLS no longer does it.
+  filteredQuery = filteredQuery.eq('user_id', user.id)
+
   if (activeCategory) {
     filteredQuery = filteredQuery.eq('category', activeCategory)
   }
@@ -95,7 +99,7 @@ export default async function RecipesPage({
 
   const [{ data: recipes, error }, { data: allRecipes }] = await Promise.all([
     filteredQuery,
-    supabase.from('recipes').select('category'),
+    supabase.from('recipes').select('category').eq('user_id', user.id),
   ])
 
   if (error) {

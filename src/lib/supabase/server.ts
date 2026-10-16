@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -36,6 +37,19 @@ export async function createSupabaseServerClient() {
     },
   )
 }
+
+/**
+ * The signed-in user, or null for a guest (E01-S02 public routes). Wrapped in
+ * React `cache()` so a layout and its page share ONE Auth round trip per render
+ * instead of each calling getUser().
+ */
+export const getCurrentUser = cache(async () => {
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return user
+})
 
 /**
  * Auth guard for Server Actions / Server Components downstream of the proxy:

@@ -26,10 +26,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Missing slug parameter' }, { status: 400 })
     }
 
+    // Scope to the owner explicitly: recipes are public-read (E01-S02), so a bare
+    // slug lookup could resolve ANOTHER user's recipe — whose RLS-protected DELETE
+    // then matches 0 rows without an error, faking a successful delete.
     const { data: recipe, error: getError } = await supabase
       .from('recipes')
       .select('id, user_id, image_url')
       .eq('slug', slug)
+      .eq('user_id', user.id)
       .single()
 
     if (getError || !recipe) {

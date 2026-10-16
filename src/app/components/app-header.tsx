@@ -8,18 +8,25 @@ import { AppMenu } from './app-menu'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
 import type { FailedSharesResult } from '@/lib/failed-shares'
+import { RECIPE_PAGE_RE } from '@/lib/routes'
 
-const RECIPE_DETAIL_RE = /^\/recipes\/[^/]+$/
-
-export function AppHeader({ failedShares }: { failedShares: FailedSharesResult }) {
+export function AppHeader({
+  failedShares,
+  isAuthenticated,
+}: {
+  failedShares: FailedSharesResult
+  /** Guest (E01-S02) vs signed-in: guests get "Zaloguj się" instead of Dodaj + the bell. */
+  isAuthenticated: boolean
+}) {
   const pathname = usePathname()
-  const isRecipeDetail = RECIPE_DETAIL_RE.test(pathname)
+  // The back link targets "/recipes" (Moje przepisy), which is owner-only.
+  const showBackToList = isAuthenticated && RECIPE_PAGE_RE.test(pathname)
 
   return (
     <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
       <PageContainer className="flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
-          {isRecipeDetail && (
+          {showBackToList && (
             <Link
               href="/recipes"
               aria-label="Wróć do listy przepisów"
@@ -40,16 +47,27 @@ export function AppHeader({ failedShares }: { failedShares: FailedSharesResult }
           </Link>
         </div>
         <div className="flex items-center gap-1">
-          <Link
-            href="/?tab=add"
-            aria-label="Dodaj przepis z linku"
-            className="mr-1 inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
-          >
-            <LinkIcon aria-hidden="true" className="h-4 w-4" />
-            Dodaj
-          </Link>
-          <NotificationBell failedShares={failedShares} />
-          <AppMenu />
+          {isAuthenticated ? (
+            <>
+              <Link
+                href="/?tab=add"
+                aria-label="Dodaj przepis z linku"
+                className="mr-1 inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+              >
+                <LinkIcon aria-hidden="true" className="h-4 w-4" />
+                Dodaj
+              </Link>
+              <NotificationBell failedShares={failedShares} />
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="mr-1 inline-flex min-h-[44px] items-center rounded-lg border-2 border-gray-500 px-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+            >
+              Zaloguj się
+            </Link>
+          )}
+          <AppMenu isAuthenticated={isAuthenticated} />
         </div>
       </PageContainer>
     </header>
