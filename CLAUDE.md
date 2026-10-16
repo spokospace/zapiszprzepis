@@ -12,6 +12,18 @@ Git commit subjects **and** bodies must be written in English, even when the res
 - When proposing a commit message via `AskUserQuestion`, draft it in English; the user can still override.
 - PR titles/descriptions, `plan.md`, `change.md`, and chat stay in whichever language they were started in. The rule is specific to git commit text.
 
+## Przebudowa (epik E01) — zasady projektowe: WCAG, czytelność, model
+
+Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelność; grupa docelowa obejmuje osoby starsze). Backlog: `.ai/specs/backlog-przebudowa.md`. Tokeny i prymitywy: `src/app/globals.css` + `src/app/components/ui/`.
+
+- **WCAG 2.2 AA to standard każdego ekranu:** kontrast tekstu ≥ 4,5:1 (duże nagłówki 3:1), elementy UI i obramowania pól 3:1, cele dotyku ≥ 48 px, widoczny focus (`outline: 3px solid #1d4ed8; offset 2px`), linki podkreślone, ikony zawsze z podpisem.
+- **Czytelność dla starszych osób:** treść 19 px (mobile), tekst pomocniczy ≥ 16 px w kolorze `#374151`, przyciski główne 56 px, bez przewijania w poziomie.
+- **Pomarańcz z białym tekstem to `#c2410c`** — nigdy `#f97316` ani `#ea580c` z białym tekstem (2,8:1). Używaj tokenów (`bg-action`, `text-ink`, `border-field`…), nie surowych hexów.
+- **Model:** jeden przepis na dany link źródłowy (globalny dedup, bez duplikatów). Publiczny slug bez loginu: `/przepis/{nazwa}`. „Moje przepisy” = dodane przeze mnie jako pierwsza osoba; gdy ktoś doda link, który już jest, przepis trafia do jego Ulubionych. „Ulubione” = serce z podpisem, dowolne przepisy (nigdy gwiazdka).
+- **Źródło zamiast loginu** na kartach i przepisie (np. `aniagotuje.pl`, „YouTube · {kanał}”). „Kto dodał”: drobna linijka „Dodała/Dodał {nazwa}” z linkiem do `/u/{username}`.
+- **Dostęp:** gość przegląda i szuka; zalogowany (Facebook/Google) ma ulubione i galerię; dodawanie przepisów tylko z pełnym dostępem (kod lub płatność). Płeć wybierana raz przy pierwszym logowaniu, nieedytowalna.
+- **Wariant projektowy:** styl 1c (wysoka czytelność) + struktura nawigacji 1a. Wariant 1b (dolna nawigacja) niewdrażany.
+
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
 ## 10xDevs AI Toolkit — Moduł 3, Lekcja 1

@@ -4,6 +4,60 @@
   color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
+  /* Content text-size control (A / A+ / A++). Set per-container by useTextScale; 1 = default. */
+  --text-scale: 1;
+}
+
+/*
+ * E01-S01 — Design tokens (WCAG 2.2 AA, high readability).
+ * Source: design handoff "Design Tokens". Values are contrast-checked;
+ * never pair #ea580c or #f97316 with white text (both fail 4.5:1).
+ * Tailwind v4 generates utilities from these: text-ink, bg-action, border-field, ...
+ */
+@theme {
+  /* Text */
+  --color-ink: #111827;          /* primary text */
+  --color-ink-soft: #374151;     /* secondary text (min on white) */
+  --color-ink-muted: #4b5563;    /* disabled / placeholder; also field borders (3:1) */
+
+  /* Action / accent (orange) */
+  --color-action: #c2410c;       /* action bg with WHITE text (4.5:1+) */
+  --color-action-text: #9a3412;  /* accent text on light bg */
+  --color-action-hover: #7c2d12; /* link / action hover */
+  --color-orange-bright: #ea580c;/* ONLY with dark text */
+  --color-progress: #fb923c;     /* progress fills */
+  --color-accent-dark: #fdba74;  /* accent on dark surfaces */
+
+  /* Accent surfaces & borders */
+  --color-surface-accent: #fff7ed;
+  --color-surface-accent-2: #ffedd5;
+  --color-border-accent: #fed7aa;
+
+  /* Neutral surfaces & card borders */
+  --color-surface: #ffffff;
+  --color-surface-2: #f9fafb;
+  --color-surface-3: #f3f4f6;
+  --color-surface-dark: #111827;
+  --color-border-card: #e5e7eb;
+  --color-border-card-2: #d1d5db;
+  --color-field: #4b5563;        /* form field border, 2px */
+
+  /* Status */
+  --color-danger: #b91c1c;
+  --color-success: #15803d;
+  --color-success-bg: #dcfce7;
+  --color-facebook: #1877f2;
+
+  /* Focus ring (2.4.7) */
+  --color-focus: #1d4ed8;
+
+  /* Radii */
+  --radius-field: 14px;          /* buttons / inputs */
+  --radius-card: 16px;           /* cards */
+  --radius-pill: 999px;          /* chips / circles */
+
+  /* Minimum touch target (2.5.8) */
+  --spacing-touch: 48px;
 }
 
 @theme inline {
@@ -17,6 +71,29 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/*
+ * Visible keyboard focus everywhere (WCAG 2.4.7). offset keeps it clear of the
+ * element. Applies to anything focusable; components may override color, not remove it.
+ */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Links are always underlined (handoff readability rule). */
+a {
+  text-decoration: underline;
+}
+
+/*
+ * Content text-size scaling (A / A+ / A++). Wrap scalable recipe content in an
+ * element whose style sets --text-scale (via useTextScale); descendants opting in
+ * with .text-scalable grow 1 / 1.15 / 1.3. Used by the recipe screen (E01-S07).
+ */
+.text-scalable {
+  font-size: calc(1em * var(--text-scale, 1));
 }
 
 /* Keep the page behind an open modal (the header menu drawer) from scrolling. */

@@ -71,7 +71,7 @@ export function ForgotPasswordForm({ error, email, sent }: ForgotPasswordFormPro
           disabled={isLoading}
           defaultValue={email ?? ''}
           placeholder="ty@example.com"
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-500"
+          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
         />
         <button
           type="submit"
