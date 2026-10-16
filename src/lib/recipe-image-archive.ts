@@ -285,13 +285,31 @@ function bloggerFullSize(url: URL): string | null {
   return url.href.replace(BLOGGER_SIZE_SEGMENT_RE, '/s1600/').replace(BLOGGER_SIZE_SUFFIX_RE, '=s1600')
 }
 
+// Wix: `/media/<file>/v1/<mode>/<size, quality, blur…>/<name>` — everything
+// after the file is a rendition of it.
+const WIX_HOST = 'static.wixstatic.com'
+const WIX_RENDITION_RE = /^(\/media\/[^/]+)\/v1\/.*$/
+// The rendition's size — a card or banner is rendered small. Not a blurred
+// placeholder's (`blur_2`): that stands in for a full-width photo.
+const WIX_SIZE_RE = /^\/media\/[^/]+\/v1\/[^/]+\/w_(\d+),h_(\d+)(?![^/]*\bblur_)/
+
+/**
+ * Wix renders post photos at the column width, and its raw html carries only
+ * a blurred 147px placeholder; ask for a large rendition of the file instead.
+ */
+function wixFullSize(url: URL): string | null {
+  const file = url.hostname === WIX_HOST ? WIX_RENDITION_RE.exec(url.pathname)?.[1] : undefined
+  return file ? `${url.origin}${file}/v1/fit/w_1600,h_1600,q_85/${file.slice('/media/'.length)}` : null
+}
+
 /**
  * Identity of a photo across its renditions — the same file at another size
  * or on another CDN edge (`scontent-waw2-1` vs `-2`) is one photo.
  */
 function photoKey(url: string): string {
   try {
-    return new URL(url).pathname
+    const { hostname, pathname } = new URL(url)
+    return (hostname === WIX_HOST ? pathname.replace(WIX_RENDITION_RE, '$1') : pathname)
       .toLowerCase()
       .replace(BLOGGER_SIZE_SEGMENT_RE, '/')
       .replace(/(-v)?[-_]\d{2,4}x\d{2,4}(?=\.\w+$)/, '')
@@ -337,9 +355,11 @@ function isNoiseSection(openTag: string): boolean {
 
 // The post body itself. A section holding it is page layout, not noise,
 // whatever its class says: krysiagotuje wraps the whole post in
-// `layout-right-sidebar`, and cutting that took every photo with it.
+// `layout-right-sidebar`, and cutting that took every photo with it. Wix marks
+// its post with `data-hook="post-description"`, inside a page wrapper whose
+// breakpoint classes (`lte-banner-w980`) read as noise.
 const POST_BODY_RE =
-  /<main\b|\bitemprop=["']articleBody["']|\bclass=["'](?:[^"']*\s)?(?:entry-content|post-content|post-body)[\s"']/i
+  /<main\b|\bitemprop=["']articleBody["']|\bdata-hook=["']post-description["']|\bclass=["'](?:[^"']*\s)?(?:entry-content|post-content|post-body)[\s"']/i
 
 /**
  * The html with every noise section cut out, each up to its own closing tag.
@@ -399,13 +419,14 @@ export function pickGalleryImages(html: string, pageUrl?: string): string[] {
 
     // The size in the file name is the file's own, so it outranks the tag's,
     // which pages abuse (aniagotuje declares its 1000px hero as 1×1).
-    const fileSize = FILE_SIZE_RE.exec(parsed.pathname)
+    const fileSize =
+      FILE_SIZE_RE.exec(parsed.pathname) ?? (parsed.hostname === WIX_HOST ? WIX_SIZE_RE.exec(parsed.pathname) : null)
     const side = fileSize
       ? Math.max(Number(fileSize[1]), Number(fileSize[2]))
       : Math.max(width, height)
     // NaN — no size anywhere — passes: most in-post photos declare none.
     if (side < MIN_GALLERY_SIDE) continue
-    urls.push(url)
+    urls.push(wixFullSize(parsed) ?? url)
   }
   return urls
 }

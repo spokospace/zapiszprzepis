@@ -269,6 +269,31 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
     ])
   })
 
+  it('keeps a Wix post whose page wrapper has banner breakpoint classes, at full size (kulinarneprzygody)', () => {
+    // Trimmed from kulinarneprzygody.com: Wix wraps the page in a div whose
+    // breakpoint classes read `lte-banner-w980`, and "banner" marks noise —
+    // cutting it took the whole post. The raw html holds only blurred 147px
+    // placeholders; the related-post cards and the promo banner stay out.
+    const MEDIA = 'https://static.wixstatic.com/media'
+    const html = `
+      <div class="md gt-740 lte-banner-w980 lte-category-header-w980">
+        <article data-hook="post"><section data-hook="post-description"><div data-id="content-viewer">
+          <wow-image><img src="${MEDIA}/e92093_c7f9~mv2.jpg/v1/fill/w_147,h_83,al_c,q_80,blur_2,enc_avif,quality_auto/e92093_c7f9~mv2.jpg" alt=""></wow-image>
+          <wow-image><img src="${MEDIA}/e92093_023b~mv2.jpg/v1/fill/w_740,h_1316,al_c,q_85,enc_avif,quality_auto/e92093_023b~mv2.jpg" alt=""></wow-image>
+        </div></section></article>
+        <div class="kkOpHH"><img alt="Muffiny" src="${MEDIA}/e92093_03d9~mv2.jpeg/v1/fill/w_289,h_162,al_c,q_80/e92093_03d9~mv2.jpeg"></div>
+        <img src="${MEDIA}/e92093_444c~mv2.webp/v1/fill/w_356,h_178,al_c,q_80/week-day-baner-3.webp" alt="">
+      </div>`
+    const photos = pickGalleryImages(html, 'https://www.kulinarneprzygody.com/post/kruche-ciastka-z-marmolad%C4%85')
+    expect(photos).toEqual([
+      `${MEDIA}/e92093_c7f9~mv2.jpg/v1/fit/w_1600,h_1600,q_85/e92093_c7f9~mv2.jpg`,
+      `${MEDIA}/e92093_023b~mv2.jpg/v1/fit/w_1600,h_1600,q_85/e92093_023b~mv2.jpg`,
+    ])
+    // The og:image is another rendition of the first photo, so it is not repeated.
+    const cover = `${MEDIA}/e92093_c7f9~mv2.jpg/v1/fill/w_1000,h_562,al_c,q_85/e92093_c7f9~mv2.jpg`
+    expect(buildGallery(cover, photos)).toEqual([cover, photos[1]])
+  })
+
   it('drops a print button whose rendered tag lost its size (slodkisentyment)', () => {
     // Firecrawl's render of slodkisentyment.pl: the lazy loader strips the
     // button's width/height, so only its file name and wrapper give it away.
