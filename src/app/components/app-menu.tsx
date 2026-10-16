@@ -3,14 +3,17 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LogIn, LogOut, Menu, Settings, UserPlus, X, type LucideIcon } from 'lucide-react'
+import { Heart, LogIn, LogOut, Menu, Settings, UserPlus, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 
 type MenuLink = { href: string; label: string; icon: LucideIcon }
 
 // Navigation entries of the drawer. Later additions (category shortcuts etc.)
 // go here; "Wyloguj" is rendered separately at the bottom.
-const MENU_LINKS: MenuLink[] = [{ href: '/settings', label: 'Ustawienia', icon: Settings }]
+const MENU_LINKS: MenuLink[] = [
+  { href: '/ulubione', label: 'Ulubione', icon: Heart },
+  { href: '/settings', label: 'Ustawienia', icon: Settings },
+]
 
 // A guest (E01-S02) has no settings and nothing to sign out of.
 const GUEST_LINKS: MenuLink[] = [
