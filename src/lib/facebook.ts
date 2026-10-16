@@ -39,7 +39,7 @@ const BROWSER_UA =
 const FACEBOOK_HOSTS = new Set(['facebook.com', 'fb.watch', 'fb.me'])
 
 /** Strip the www./m./web./mbasic. subdomain so host comparisons are uniform. */
-function normalizeFacebookHost(host: string): string {
+export function normalizeFacebookHost(host: string): string {
   return host.replace(/^(www|m|web|mbasic|touch)\./, '')
 }
 
@@ -535,6 +535,13 @@ export function stripFacebookTracking(url: string): string {
   }
 }
 
+/** The link `url` names, in the form Facebook serves logged out: a group
+ *  or Page post rewritten to its /posts/ permalink, anything else without its
+ *  tracking params. Share links are left for the redirect to resolve. */
+export function toPostUrl(url: string): string {
+  return toGroupPostUrl(url) ?? toPagePostUrl(url) ?? stripFacebookTracking(url)
+}
+
 /**
  * Fetch a Facebook reel/video post's caption and thumbnail without a session.
  *
@@ -547,7 +554,7 @@ export async function fetchFacebookPost(
 ): Promise<FacebookPost | null> {
   if (!isFacebookUrl(url)) return null
 
-  const target = toGroupPostUrl(url) ?? toPagePostUrl(url) ?? stripFacebookTracking(url)
+  const target = toPostUrl(url)
   const permalink = fetchPermalink(target, fetch)
 
   const pluginPage = isFacebookShareUrl(url)
