@@ -92,9 +92,8 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
   // `?tab=add` comes from the header's quick-add button.
   const wantsAddTab = useSearchParams().get('tab') === 'add'
   const inputRef = useRef<HTMLInputElement>(null)
-  const [activeTab, setActiveTab] = useState<'search' | 'add'>(
-    addError || wantsAddTab ? 'add' : 'search',
-  )
+  // Adding from a link is the primary action, so it is the default/first tab.
+  const [activeTab, setActiveTab] = useState<'search' | 'add'>('add')
   const [searchState, setSearchState] = useState<SearchState>('idle')
   const [exaResults, setExaResults] = useState<ExaResult[]>([])
   const [isSpeechSupported, setIsSpeechSupported] = useState(false)
@@ -199,17 +198,17 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
       <div className="flex border-b border-gray-200 mb-4">
         <button
           type="button"
-          onClick={() => { setActiveTab('search'); setSearchState('idle') }}
-          className={tabClass('search')}
-        >
-          Wyszukaj przepis
-        </button>
-        <button
-          type="button"
           onClick={() => { setActiveTab('add'); setSearchState('idle') }}
           className={tabClass('add')}
         >
           Dodaj przez link
+        </button>
+        <button
+          type="button"
+          onClick={() => { setActiveTab('search'); setSearchState('idle') }}
+          className={tabClass('search')}
+        >
+          Wyszukaj przepis
         </button>
       </div>
 
