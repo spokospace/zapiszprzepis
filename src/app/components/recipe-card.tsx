@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
+import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 
 interface RecipeCardProps {
   slug: string
@@ -27,6 +28,7 @@ export function RecipeCard({ slug, title, imageUrl, category, description, sourc
               fill
               className="object-cover group-hover:scale-105 transition-transform"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              unoptimized={!isArchivedImageUrl(imageUrl)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-yellow-100">

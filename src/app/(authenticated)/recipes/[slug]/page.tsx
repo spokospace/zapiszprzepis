@@ -13,6 +13,7 @@ import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
+import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import type { Database } from '@/lib/supabase.types'
 
 function TimeBadge({ icon: Icon, label, minutes }: { icon: LucideIcon; label: string; minutes: number }) {
@@ -95,6 +96,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               fill
               className="object-cover"
               priority
+              unoptimized={!isArchivedImageUrl(typedRecipe.image_url)}
             />
           </div>
         )}

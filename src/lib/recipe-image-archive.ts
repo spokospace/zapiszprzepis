@@ -49,6 +49,57 @@ export function isPrivateUrl(url: string): boolean {
   return false
 }
 
+// Some hosts refuse requests coming from Cloudflare's address space (seen
+// with najprzepis.pl: the Worker gets no image while any other client does).
+// wsrv.nl fetches the image from its own servers and hands it back, so it
+// is the second try whenever the direct download fails. The proxy only sees
+// public URLs — isPrivateUrl runs before either attempt.
+const IMAGE_PROXY = 'https://wsrv.nl/?url='
+
+export function proxiedImageUrl(externalUrl: string): string {
+  return `${IMAGE_PROXY}${encodeURIComponent(externalUrl)}`
+}
+
+interface DownloadedImage {
+  bytes: Uint8Array
+  contentType: string
+  ext: string
+}
+
+// Null on any failure, a network error included: a host unreachable from
+// here is as good a reason to try the proxy as a refused status.
+async function downloadImage(url: string): Promise<DownloadedImage | null> {
+  const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }).catch((error) => {
+    console.warn(`[archiveImage] download failed for ${url}: ${error instanceof Error ? error.message : String(error)}`)
+    return null
+  })
+  if (!response?.ok) {
+    if (response) console.warn(`[archiveImage] download ${response.status} for ${url}`)
+    return null
+  }
+
+  const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? ''
+  const ext = ALLOWED_MIME[contentType]
+  if (!ext) {
+    console.warn(`[archiveImage] unsupported MIME ${contentType} for ${url}`)
+    return null
+  }
+
+  const contentLength = response.headers.get('content-length')
+  if (contentLength && Number(contentLength) > MAX_BYTES) {
+    console.warn(`[archiveImage] too large ${contentLength}B for ${url}`)
+    return null
+  }
+
+  const bytes = new Uint8Array(await response.arrayBuffer())
+  if (bytes.byteLength > MAX_BYTES) {
+    console.warn(`[archiveImage] too large after read ${bytes.byteLength}B for ${url}`)
+    return null
+  }
+
+  return { bytes, contentType, ext }
+}
+
 /** Archives a recipe's cover image as `<user>/<recipe>.<ext>`. */
 export function archiveImage(
   supabase: SupabaseClient,
@@ -74,31 +125,11 @@ async function archiveImageAt(
       return null
     }
 
-    const response = await fetch(externalUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
-    if (!response.ok) {
-      console.warn(`[archiveImage] download ${response.status} for ${externalUrl}`)
-      return null
-    }
+    const image =
+      (await downloadImage(externalUrl)) ?? (await downloadImage(proxiedImageUrl(externalUrl)))
+    if (!image) return null
 
-    const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? ''
-    const ext = ALLOWED_MIME[contentType]
-    if (!ext) {
-      console.warn(`[archiveImage] unsupported MIME ${contentType} for ${externalUrl}`)
-      return null
-    }
-
-    const contentLength = response.headers.get('content-length')
-    if (contentLength && Number(contentLength) > MAX_BYTES) {
-      console.warn(`[archiveImage] too large ${contentLength}B for ${externalUrl}`)
-      return null
-    }
-
-    const bytes = new Uint8Array(await response.arrayBuffer())
-    if (bytes.byteLength > MAX_BYTES) {
-      console.warn(`[archiveImage] too large after read ${bytes.byteLength}B for ${externalUrl}`)
-      return null
-    }
-
+    const { bytes, contentType, ext } = image
     const path = `${pathStem}.${ext}`
     const { error: uploadError } = await supabase.storage
       .from('recipe-images')
@@ -120,6 +151,15 @@ async function archiveImageAt(
 export function extractStoragePath(imageUrl: string): string | null {
   const match = imageUrl.match(/\/storage\/v1\/object\/public\/recipe-images\/(.+)$/)
   return match ? match[1] : null
+}
+
+// An image_url that archiving never replaced still points at the source
+// host. The Worker-side image optimizer fetches from the same place the
+// archive did, so when that host refuses Cloudflare, the optimized <Image>
+// renders nothing. Such covers are served unoptimized, straight from the
+// host, which is where the browser can still reach them.
+export function isArchivedImageUrl(imageUrl: string): boolean {
+  return extractStoragePath(imageUrl) != null
 }
 
 const ATTR_RE = /\bdata-lazy-src=["']([^"']+)["']|\bdata-src=["']([^"']+)["']|\bsrc=["']([^"']+)["']/i
