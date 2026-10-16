@@ -22,7 +22,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     getFailedShares(supabase),
     supabase
       .from('recipes')
-      .select('slug, title, image_url, category, description, source_type, source_url')
+      .select('slug, title, image_url, category, description, source_type, source_url, source_author')
       .order('created_at', { ascending: false })
       .limit(3),
   ])
@@ -56,6 +56,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
                     description={r.description}
                     sourceType={r.source_type}
                     sourceUrl={r.source_url}
+                    sourceAuthor={r.source_author}
                   />
                 ))}
               </div>

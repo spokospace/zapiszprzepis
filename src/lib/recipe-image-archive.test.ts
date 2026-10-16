@@ -7,6 +7,9 @@ import {
   buildGallery,
   archiveGallery,
   GALLERY_LIMIT,
+  isArchivedImageUrl,
+  proxiedImageUrl,
+  insecureHttpUrl,
 } from '@/lib/recipe-image-archive'
 
 describe('archiveGallery — a failed re-archive never loses the stored gallery', () => {
@@ -244,6 +247,54 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
     ])
   })
 
+  it('keeps the post when a layout wrapper is named after its sidebar, still cutting the noise inside (krysiagotuje)', () => {
+    // Trimmed from krysiagotuje.pl: the whole post sits in a
+    // `layout-right-sidebar` container, and "sidebar" marks noise. Cutting the
+    // container took both lazy-loaded photos; the share links and the real
+    // sidebar must still go.
+    const UP = 'https://www.krysiagotuje.pl/wp-content/uploads'
+    const html = `
+      <main id="content"><div class="container layout-2-col layout-right-sidebar">
+        <div class="col-sm-8 content-column"><article class="post-12962">
+          <div class="entry-content clearfix single-post-content">
+            <a class="mashicon-facebook" href="https://www.facebook.com/sharer.php?u=x"><img src="${UP}/2020/09/share-card.jpg" width="1200" height="630"></a>
+            <p><img class="alignnone size-full" data-src="${UP}/2020/09/krem-rafaello-2.jpg" width="700" height="392"></p>
+            <p><img class="alignnone size-full" data-src="${UP}/2020/09/krem-rafaello-1.jpg" width="700" height="392"></p>
+          </div>
+        </article></div>
+        <aside class="sidebar-column"><img src="${UP}/2020/08/inny-przepis.jpg" width="700" height="392"></aside>
+      </div></main>`
+    expect(pickGalleryImages(html, 'https://www.krysiagotuje.pl/domowy-krem-raffaello/')).toEqual([
+      `${UP}/2020/09/krem-rafaello-2.jpg`,
+      `${UP}/2020/09/krem-rafaello-1.jpg`,
+    ])
+  })
+
+  it('keeps a Wix post whose page wrapper has banner breakpoint classes, at full size (kulinarneprzygody)', () => {
+    // Trimmed from kulinarneprzygody.com: Wix wraps the page in a div whose
+    // breakpoint classes read `lte-banner-w980`, and "banner" marks noise —
+    // cutting it took the whole post. The raw html holds only blurred 147px
+    // placeholders; the related-post cards and the promo banner stay out.
+    const MEDIA = 'https://static.wixstatic.com/media'
+    const html = `
+      <div class="md gt-740 lte-banner-w980 lte-category-header-w980">
+        <article data-hook="post"><section data-hook="post-description"><div data-id="content-viewer">
+          <wow-image><img src="${MEDIA}/e92093_c7f9~mv2.jpg/v1/fill/w_147,h_83,al_c,q_80,blur_2,enc_avif,quality_auto/e92093_c7f9~mv2.jpg" alt=""></wow-image>
+          <wow-image><img src="${MEDIA}/e92093_023b~mv2.jpg/v1/fill/w_740,h_1316,al_c,q_85,enc_avif,quality_auto/e92093_023b~mv2.jpg" alt=""></wow-image>
+        </div></section></article>
+        <div class="kkOpHH"><img alt="Muffiny" src="${MEDIA}/e92093_03d9~mv2.jpeg/v1/fill/w_289,h_162,al_c,q_80/e92093_03d9~mv2.jpeg"></div>
+        <img src="${MEDIA}/e92093_444c~mv2.webp/v1/fill/w_356,h_178,al_c,q_80/week-day-baner-3.webp" alt="">
+      </div>`
+    const photos = pickGalleryImages(html, 'https://www.kulinarneprzygody.com/post/kruche-ciastka-z-marmolad%C4%85')
+    expect(photos).toEqual([
+      `${MEDIA}/e92093_c7f9~mv2.jpg/v1/fit/w_1600,h_1600,q_85/e92093_c7f9~mv2.jpg`,
+      `${MEDIA}/e92093_023b~mv2.jpg/v1/fit/w_1600,h_1600,q_85/e92093_023b~mv2.jpg`,
+    ])
+    // The og:image is another rendition of the first photo, so it is not repeated.
+    const cover = `${MEDIA}/e92093_c7f9~mv2.jpg/v1/fill/w_1000,h_562,al_c,q_85/e92093_c7f9~mv2.jpg`
+    expect(buildGallery(cover, photos)).toEqual([cover, photos[1]])
+  })
+
   it('drops a print button whose rendered tag lost its size (slodkisentyment)', () => {
     // Firecrawl's render of slodkisentyment.pl: the lazy loader strips the
     // button's width/height, so only its file name and wrapper give it away.
@@ -319,5 +370,157 @@ describe('buildGallery', () => {
   it('is empty when there is nothing beyond the cover', () => {
     expect(buildGallery('https://cdn.example/a.jpg', ['https://cdn.example/a.jpg'])).toEqual([])
     expect(buildGallery(undefined, [])).toEqual([])
+  })
+})
+
+const EXTERNAL = 'https://www.najprzepis.pl/upload/66477920_8933c3cf37e485_full.jpg'
+
+function okImageResponse() {
+  return {
+    ok: true,
+    status: 200,
+    headers: new Headers({ 'content-type': 'image/jpeg', 'content-length': '100' }),
+    arrayBuffer: async () => new ArrayBuffer(100),
+  }
+}
+
+function storageMock(upload = vi.fn().mockResolvedValue({ error: null })) {
+  return {
+    upload,
+    client: {
+      storage: {
+        from: () => ({
+          upload,
+          getPublicUrl: () => ({ data: { publicUrl: 'https://supabase.co/storage/photo.jpg' } }),
+        }),
+      },
+    } as any,
+  }
+}
+
+describe('insecureHttpUrl', () => {
+  it('downgrades https to http', () => {
+    expect(insecureHttpUrl('https://babskieporady.pl/a.jpg')).toBe('http://babskieporady.pl/a.jpg')
+  })
+  it('is null for a URL that is not https', () => {
+    expect(insecureHttpUrl('http://babskieporady.pl/a.jpg')).toBeNull()
+    expect(insecureHttpUrl('data:image/png;base64,xyz')).toBeNull()
+  })
+})
+
+describe('archiveImage — http and proxy fallback for hosts the Worker cannot fetch', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('skips the http retry and goes straight to wsrv.nl when the direct download is refused', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 403, headers: new Headers() })
+      .mockResolvedValueOnce(okImageResponse())
+    vi.stubGlobal('fetch', fetchSpy)
+    const { client, upload } = storageMock()
+
+    const result = await archiveImage(client, 'user-1', 60, EXTERNAL)
+
+    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    // A refused status won't change over http, so no http attempt is made.
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(fetchSpy.mock.calls[0][0]).toBe(EXTERNAL)
+    expect(fetchSpy.mock.calls[1][0]).toBe(proxiedImageUrl(EXTERNAL))
+    expect(upload).toHaveBeenCalledWith('user-1/60.jpg', expect.any(Uint8Array), {
+      contentType: 'image/jpeg',
+      upsert: true,
+    })
+  })
+
+  it('skips the http retry on a timeout — the http endpoint is just as slow', async () => {
+    const timeout = Object.assign(new Error('timed out'), { name: 'TimeoutError' })
+    const fetchSpy = vi.fn().mockRejectedValueOnce(timeout).mockResolvedValueOnce(okImageResponse())
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await archiveImage(storageMock().client, 'user-1', 60, EXTERNAL)
+
+    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(fetchSpy.mock.calls[1][0]).toBe(proxiedImageUrl(EXTERNAL))
+  })
+
+  it('archives over plain http when https fails on an SSL-broken host', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed')) // TLS cert mismatch
+      .mockResolvedValueOnce(okImageResponse()) // same file over http
+    vi.stubGlobal('fetch', fetchSpy)
+    const { client, upload } = storageMock()
+
+    const result = await archiveImage(client, 'user-1', 60, EXTERNAL)
+
+    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(fetchSpy.mock.calls[1][0]).toBe(insecureHttpUrl(EXTERNAL))
+    expect(upload).toHaveBeenCalledOnce()
+  })
+
+  it('falls through to wsrv.nl when both https and http throw', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('connect ETIMEDOUT'))
+      .mockRejectedValueOnce(new Error('connect ETIMEDOUT'))
+      .mockResolvedValueOnce(okImageResponse())
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await archiveImage(storageMock().client, 'user-1', 60, EXTERNAL)
+
+    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(fetchSpy.mock.calls[2][0]).toBe(proxiedImageUrl(EXTERNAL))
+  })
+
+  it('does not retry when the direct download succeeds', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue(okImageResponse())
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await archiveImage(storageMock().client, 'user-1', 60, EXTERNAL)
+
+    expect(fetchSpy).toHaveBeenCalledOnce()
+  })
+
+  it('returns null without uploading when every attempt fails', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: false, status: 403, headers: new Headers() })
+    vi.stubGlobal('fetch', fetchSpy)
+    const { client, upload } = storageMock()
+
+    const result = await archiveImage(client, 'user-1', 60, EXTERNAL)
+
+    expect(result).toBeNull()
+    // Direct (403) then proxy (403); the refused status skips the http retry.
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('never sends a private URL to the proxy either', async () => {
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await archiveImage(storageMock().client, 'user-1', 60, 'http://10.0.0.1/secret.jpg')
+
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('proxiedImageUrl', () => {
+  it('encodes the source URL as the wsrv.nl url parameter', () => {
+    expect(proxiedImageUrl('https://example.com/a b.jpg?x=1&y=2')).toBe(
+      'https://wsrv.nl/?url=https%3A%2F%2Fexample.com%2Fa%20b.jpg%3Fx%3D1%26y%3D2',
+    )
+  })
+})
+
+describe('isArchivedImageUrl', () => {
+  it.each([
+    ['https://xyz.supabase.co/storage/v1/object/public/recipe-images/user/60.jpg', true],
+    ['https://www.najprzepis.pl/upload/66477920_8933c3cf37e485_full.jpg', false],
+  ] as const)('%s → %s', (url, expected) => {
+    expect(isArchivedImageUrl(url)).toBe(expected)
   })
 })

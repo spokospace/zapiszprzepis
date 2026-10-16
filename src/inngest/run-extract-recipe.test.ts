@@ -60,6 +60,8 @@ const isLabelingCall = (init?: RequestInit) =>
 // Results for .single() are served from a per-table FIFO queue.
 function makeSupabaseMock() {
   const queues: Record<string, Array<{ data: any; error: any }>> = {}
+  const maybeQueues: Record<string, Array<{ data: any; error: any }>> = {}
+  const listQueues: Record<string, Array<{ data: any; error: any }>> = {}
   const calls: Array<{ table: string; op: string; args?: any }> = []
 
   function makeChain(table: string) {
@@ -77,14 +79,18 @@ function makeSupabaseMock() {
     chain.neq = vi.fn().mockReturnValue(chain)
     chain.order = vi.fn().mockReturnValue(chain)
     chain.limit = vi.fn().mockReturnValue(chain)
+    chain.like = vi.fn().mockReturnValue(chain)
+    chain.ilike = vi.fn().mockReturnValue(chain)
     chain.single = vi.fn().mockImplementation(() => {
       const val = queues[table]?.shift() ?? { data: null, error: null }
       return Promise.resolve(val)
     })
-    chain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null })
+    chain.maybeSingle = vi.fn().mockImplementation(() =>
+      Promise.resolve(maybeQueues[table]?.shift() ?? { data: null, error: null }),
+    )
     // Make chain awaitable for update().eq() calls without .single()
     chain.then = (resolve: any, reject: any) =>
-      Promise.resolve({ data: null, error: null }).then(resolve, reject)
+      Promise.resolve(listQueues[table]?.shift() ?? { data: null, error: null }).then(resolve, reject)
     return chain
   }
 
@@ -98,6 +104,16 @@ function makeSupabaseMock() {
     queue(table: string, result: { data: any; error: any }) {
       if (!queues[table]) queues[table] = []
       queues[table].push(result)
+    },
+    /** Queue a .maybeSingle() result for the next lookup on this table */
+    queueMaybe(table: string, result: { data: any; error: any }) {
+      if (!maybeQueues[table]) maybeQueues[table] = []
+      maybeQueues[table].push(result)
+    },
+    /** Queue the result of the next awaited (list) query on this table */
+    queueList(table: string, result: { data: any; error: any }) {
+      if (!listQueues[table]) listQueues[table] = []
+      listQueues[table].push(result)
     },
     didInsert: (table: string) => calls.some(c => c.table === table && c.op === 'insert'),
     insertArgs: (table: string) => calls.find(c => c.table === table && c.op === 'insert')?.args,
@@ -116,17 +132,20 @@ function makeFetchMock({
   firecrawlMarkdown = 'Przepis na naleśniki. '.repeat(30),
   firecrawlHtml = '<p>Przepis na naleśniki.</p>'.repeat(20),
   openaiContent = VALID_RECIPE_JSON,
+  firecrawlStatusCode,
 }: {
   firecrawlMarkdown?: string
   firecrawlHtml?: string
   openaiContent?: string
+  /** The scraped page's own HTTP status, as Firecrawl reports it. */
+  firecrawlStatusCode?: number
 } = {}) {
   return vi.fn().mockImplementation((url: string) => {
     if (url.includes('firecrawl.dev')) {
       return Promise.resolve({
         ok: true,
         json: async () => ({
-          data: { markdown: firecrawlMarkdown, html: firecrawlHtml, metadata: {} },
+          data: { markdown: firecrawlMarkdown, html: firecrawlHtml, metadata: { statusCode: firecrawlStatusCode } },
         }),
       })
     }
@@ -154,6 +173,151 @@ describe('runExtractRecipe — Risk 2: junk input gate', () => {
   })
 })
 
+describe('runExtractRecipe — LLM output the database would reject (#134)', () => {
+  const withCategory = (category: unknown) => JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), category })
+
+  it.each([
+    ['sałatki', 'salatki'],
+    ['Sałatki', 'salatki'],
+    ['kolacje', 'inne'],
+  ])('stores category %j as the enum value %s', async (raw, value) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withCategory(raw) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgs('recipes')?.category).toBe(value)
+  })
+
+  it('coerces the category on a refresh too', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(
+      { ...BASE_EVENT, force: true },
+      { fetch: makeFetchMock({ openaiContent: withCategory('kolacje') }), supabase: mock.supabase as any },
+    )
+
+    expect(mock.didUpdate('recipes', { category: 'inne' })).toBe(true)
+  })
+
+  it('asks for JSON mode and reads a fenced answer', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: '```json\n' + VALID_RECIPE_JSON + '\n```' })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    expect(JSON.parse(String(extraction?.[1]?.body)).response_format).toEqual({ type: 'json_object' })
+    expect(mock.insertArgs('recipes')?.title).toBe('Naleśniki')
+  })
+
+  it('fails with a Polish message, not a SyntaxError, when the answer is not JSON', async () => {
+    const mock = makeSupabaseMock()
+
+    await expect(
+      runExtractRecipe(BASE_EVENT, {
+        fetch: makeFetchMock({ openaiContent: 'Oto przepis: naleśniki' }),
+        supabase: mock.supabase as any,
+      }),
+    ).rejects.toThrow('Nie udało się odczytać przepisu z odpowiedzi modelu')
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+})
+
+describe('runExtractRecipe — article split over pages (#168)', () => {
+  const ARTICLE = 'https://obiady.foodmeld.com/babcine-ciasteczka/2819/2026/'
+  const NAV = (n: number) => `<nav class="post-page-nav"><a href="${ARTICLE}${n}/">Dalej »</a></nav>`
+
+  /** A short link redirecting to a two-page article; Firecrawl drops the nav. */
+  function makePagedFetch(pages: Record<string, { markdown: string; raw: string }>) {
+    return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('firecrawl.dev')) {
+        const target = JSON.parse(String(init?.body)).url as string
+        const page = pages[target] ?? pages['https://beltoc.com/s/x']
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            data: {
+              markdown: page.markdown,
+              html: `<p>${page.markdown}</p>`,
+              // A private address resolves to itself, so the guard is what stops it.
+              metadata: { url: target.startsWith('http://169.254') ? undefined : ARTICLE },
+            },
+          }),
+        })
+      }
+      if (url.includes('openai.com')) {
+        return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: VALID_RECIPE_JSON } }] }) })
+      }
+      const page = pages[url]
+      return page
+        ? Promise.resolve({ ok: true, text: async () => page.raw })
+        : Promise.reject(new Error(`Unexpected fetch URL: ${url}`))
+    })
+  }
+
+  it('reads the following pages and extracts from all of them', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const page1 = { markdown: 'Babcine ciasteczka. Składniki: 350 g mąki, 150 g masła. '.repeat(5), raw: NAV(2) }
+    const page2 = { markdown: 'Sposób przygotowania: wymieszaj i piecz 12 minut.', raw: `<nav><a href="${ARTICLE}">Wstecz</a></nav>` }
+    const fetch = makePagedFetch({ 'https://beltoc.com/s/x': page1, [ARTICLE]: page1, [`${ARTICLE}2/`]: page2 })
+
+    await runExtractRecipe({ ...BASE_EVENT, sharedUrl: 'https://beltoc.com/s/x' }, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const prompt = JSON.parse(String(extraction?.[1]?.body)).messages[1].content as string
+    expect(prompt).toContain('350 g mąki')
+    expect(prompt).toContain('piecz 12 minut')
+    expect(mock.didInsert('recipes')).toBe(true)
+  })
+
+  it('never fetches a private address for page detection, and never follows redirects', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const page1 = { markdown: 'Strona 1 przepisu. '.repeat(20), raw: NAV(2) }
+    const fetch = makePagedFetch({ 'https://beltoc.com/s/x': page1, [ARTICLE]: page1 })
+
+    await runExtractRecipe({ ...BASE_EVENT, sharedUrl: 'http://169.254.169.254/latest/' }, { fetch, supabase: mock.supabase as any })
+    const raw = fetch.mock.calls.filter((c) => !/firecrawl\.dev|openai\.com/.test(String(c[0])))
+    expect(raw).toEqual([])
+
+    // A public article is fetched, but without following redirects.
+    const mock2 = makeSupabaseMock()
+    mock2.queue('recipes', { data: { id: 8 }, error: null })
+    await runExtractRecipe({ ...BASE_EVENT, sharedUrl: 'https://beltoc.com/s/x' }, { fetch, supabase: mock2.supabase as any })
+    const publicRaw = fetch.mock.calls.filter((c) => !/firecrawl\.dev|openai\.com/.test(String(c[0])))
+    expect(publicRaw.length).toBeGreaterThan(0)
+    expect(publicRaw.every((c) => (c[1] as RequestInit | undefined)?.redirect === 'manual')).toBe(true)
+  })
+
+  it('stops after the cap of extra pages', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const pages: Record<string, { markdown: string; raw: string }> = {
+      [ARTICLE]: { markdown: 'Strona 1 przepisu. '.repeat(20), raw: NAV(2) },
+    }
+    // Every page links to the next one, forever.
+    for (let n = 2; n <= 20; n++) pages[`${ARTICLE}${n}/`] = { markdown: `Strona ${n}.`, raw: NAV(n + 1) }
+    const fetch = makePagedFetch({ ...pages, 'https://beltoc.com/s/x': pages[ARTICLE] })
+
+    await runExtractRecipe({ ...BASE_EVENT, sharedUrl: ARTICLE }, { fetch, supabase: mock.supabase as any })
+
+    const scrapedPages = fetch.mock.calls
+      .filter((c) => String(c[0]).includes('firecrawl.dev'))
+      .map((c) => JSON.parse(String(c[1]?.body)).url as string)
+      .filter((u) => u.startsWith(ARTICLE) && /^\d+\/$/.test(u.slice(ARTICLE.length)))
+    expect(scrapedPages).toEqual([2, 3, 4, 5].map((n) => `${ARTICLE}${n}/`))
+  })
+})
+
 describe('runExtractRecipe — Risk 2: output gate', () => {
   it('throws before recipe insert when LLM returns empty ingredients and steps', async () => {
     const mock = makeSupabaseMock()
@@ -176,6 +340,37 @@ describe('runExtractRecipe — Risk 2: output gate', () => {
 
     // The force-refresh recipes.update must not have been called
     expect(mock.didUpdate('recipes')).toBe(false)
+  })
+
+  it('still rejects a scraped page whose recipe has ingredients but no steps', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeFetchMock({ openaiContent: JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), steps: [] }) })
+
+    await expect(runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow(
+      'no usable recipe',
+    )
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+})
+
+describe('runExtractRecipe — OpenAI error', () => {
+  it('names the HTTP status and OpenAI\'s reason, even with an empty statusText', async () => {
+    const mock = makeSupabaseMock()
+    const base = makeFetchMock()
+    const fetch = vi.fn().mockImplementation((url: string, init?: RequestInit) =>
+      String(url).includes('openai.com')
+        ? Promise.resolve({
+            ok: false,
+            status: 429,
+            statusText: '',
+            json: async () => ({ error: { message: 'Rate limit reached for gpt-4o-mini' } }),
+          })
+        : base(url, init),
+    )
+
+    await expect(runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow(
+      'OpenAI failed: HTTP 429 — Rate limit reached for gpt-4o-mini',
+    )
   })
 })
 
@@ -396,12 +591,15 @@ function makeFacebookFetchMock({
   embedRefused?: boolean
   firecrawlMarkdown?: string
   firecrawlHtml?: string
+  firecrawlStatusCode?: number
+  openaiContent?: string
 } = {}) {
   const fallback = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '', ...base })
   return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
     if (url.includes('/plugins/video.php')) {
+      // The plugin's header names the poster, linked to their Watch page.
       const body = caption != null
-        ? `<html><body><div data-testid="post_message"><p>${caption.replace(/\n/g, '<br />')}</p></div></body></html>`
+        ? `<html><body><a title="Kulinarna Wiola" target="_blank" href="/watch/100069645633702/?ref=embed_video">Kulinarna Wiola</a><div data-testid="post_message"><p>${caption.replace(/\n/g, '<br />')}</p></div></body></html>`
         : embedRefused
           ? PLUGIN_REFUSED_HTML
           : PLUGIN_NO_TEXT_HTML
@@ -450,7 +648,7 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     expect(JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content).toContain('Ciasto kruche')
   })
 
-  it('still stores the share under the Facebook URL the user sent', async () => {
+  it('stores the recipe under the Facebook post, not the blog it links to', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 9 }, error: null })
     const fetch = makeFacebookFetchMock({
@@ -464,7 +662,8 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     const inserted = mock.supabase.from.mock.results
       .map((r) => r.value.insert.mock.calls[0]?.[0])
       .find((args) => args?.source_url)
-    expect(inserted.source_url).toBe(FB_EVENT.sharedUrl)
+    // The share link resolved to the reel, so the recipe is keyed by the reel.
+    expect(inserted.source_url).toBe('https://www.facebook.com/reel/943809852095733')
     expect(inserted.source_type).toBe('facebook_text')
   })
 
@@ -480,6 +679,138 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
 
     expect(fetch.mock.calls.some((c) => String(c[0]).includes('firecrawl.dev'))).toBe(false)
+  })
+
+  it('falls back to the caption when the linked blog is gone', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 9 }, error: null })
+    // The blog's host answers with its own "Website Unavailable" page — long
+    // enough to pass for content, but a 404.
+    const fetch = makeFacebookFetchMock({
+      caption: `Makaroniki kokosowe\nSkładniki: 2 szklanki wiórków, 2 białka\nPełny przepis 👇 ${BLOG_URL}`,
+      firecrawlMarkdown: '# Website Unavailable\nThe website you are trying to reach is unavailable. '.repeat(10),
+      firecrawlStatusCode: 404,
+    })
+
+    await expect(runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({
+      recipeId: 9,
+    })
+
+    const openaiCall = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const prompt = JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content
+    expect(prompt).toContain('2 szklanki wiórków')
+    expect(prompt).not.toContain('Website Unavailable')
+  })
+})
+
+describe('runExtractRecipe — the same post text saved before', () => {
+  it('links the share to the saved recipe before any LLM call', async () => {
+    const mock = makeSupabaseMock()
+    // First lookup: the resolved post URL (not saved); second: the caption's fingerprint.
+    mock.queueMaybe('recipes', { data: null, error: null })
+    mock.queueMaybe('recipes', { data: { id: 70, slug: 'placki', title: 'Placki', category: 'sniadania' }, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 70, status: 'duplicate' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('openai.com'))).toBe(false)
+  })
+
+  it('stores the caption fingerprint with a new recipe', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_fingerprint).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('gives a rendered web page no fingerprint', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_fingerprint).toBeNull()
+  })
+})
+
+describe('runExtractRecipe — source author', () => {
+  it('stores a known author named in the plugin header in full', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const event = { ...FB_EVENT, sharedUrl: 'https://www.facebook.com/100069645633702/videos/1784278505620096/' }
+
+    await runExtractRecipe(event, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_author).toBe('Kulinarna Wiola')
+  })
+
+  it("never stores an unknown poster's full name", async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    // The share link resolves to no known profile, so the name is a person's.
+    await runExtractRecipe(FB_EVENT, { fetch: makeFacebookFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_author).toBe('Kulinarna W.')
+  })
+
+  it('stores no author for a blog, which is named by its domain', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes').source_author).toBeNull()
+  })
+})
+
+describe('runExtractRecipe — the same recipe from another post', () => {
+  const SAVED = { id: 70, slug: 'nalesniki', title: 'Naleśniki', category: 'sniadania' }
+
+  it('links the share to the saved recipe when title and ingredients match', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', {
+      // Casing, spacing and amounts differ between two extractions of one recipe.
+      data: [{ ...SAVED, ingredients: [{ name: ' mąka', amount: '1', unit: 'szkl.' }] }],
+      error: null,
+    })
+    const fetch = makeFetchMock()
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 70, status: 'duplicate' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(mock.didUpdate('recipe_shares', { recipe_id: 70, status: 'completed' })).toBe(true)
+  })
+
+  it('saves a variant whose ingredients differ', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', { data: [{ ...SAVED, ingredients: [{ name: 'mąka' }, { name: 'kefir' }] }], error: null })
+    mock.queue('recipes', { data: { id: 71 }, error: null })
+    const fetch = makeFetchMock()
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 71, status: 'completed' })
+  })
+})
+
+describe('runExtractRecipe — Facebook share link to a saved post', () => {
+  it('links the share to the saved recipe without extracting it again', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { id: 5, slug: 'placki', title: 'Placki', category: 'sniadania' }, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 5, status: 'duplicate' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(mock.didUpdate('recipe_shares', { recipe_id: 5, status: 'completed' })).toBe(true)
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('openai.com'))).toBe(false)
   })
 })
 
@@ -574,6 +905,37 @@ describe('runExtractRecipe — Facebook short caption', () => {
     const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
 
     expect(result).toMatchObject({ recipeId: 8, status: 'completed' })
+  })
+
+  it('saves an ingredient-only caption — the method is in the video', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 8 }, error: null })
+    const fetch = makeFacebookFetchMock({
+      caption: 'Deska wędlin 🧀\nIngredients\n- salami\n- mozzarella\n- olives',
+      openaiContent: JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), steps: null }),
+    })
+
+    await expect(runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({
+      recipeId: 8,
+    })
+
+    const inserted = mock.supabase.from.mock.results
+      .map((r) => r.value.insert.mock.calls[0]?.[0])
+      .find((args) => args?.source_url)
+    expect(inserted.steps).toEqual([])
+  })
+
+  it('says in Polish that the caption holds no recipe when it is only a video teaser', async () => {
+    const mock = makeSupabaseMock()
+    const fetch = makeFacebookFetchMock({
+      caption: 'Puff it up! 9 folds to make impressive puff pastry treats!',
+      openaiContent: JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), ingredients: [], steps: [] }),
+    })
+
+    await expect(runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow(
+      'Opis tego posta na Facebooku nie zawiera przepisu',
+    )
+    expect(mock.didInsert('recipes')).toBe(false)
   })
 })
 
@@ -765,6 +1127,9 @@ function makeYoutubeFetchMock({
     if (url.includes('/api/timedtext')) {
       return Promise.resolve({ ok: true, status: 200, text: async () => CAPTION_XML })
     }
+    if (url.startsWith('https://www.youtube.com/oembed')) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({ author_name: 'PALCE LIZAĆ' }) })
+    }
     if (url.includes('openai.com') && isLabelingCall(init)) {
       return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: '{}' } }] }) })
     }
@@ -791,6 +1156,7 @@ describe('runExtractRecipe — YouTube transcript fallback', () => {
     const fetch = makeYoutubeFetchMock({ openaiContents: [VALID_RECIPE_JSON] })
 
     await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 7 })
+    expect(mock.insertArgs('recipes').source_author).toBe('PALCE LIZAĆ')
 
     expect(transcriptCalls(fetch)).toHaveLength(0)
     expect(openaiCalls(fetch)).toHaveLength(1)
@@ -837,6 +1203,43 @@ describe('runExtractRecipe — YouTube transcript fallback', () => {
 
     expect(openaiCalls(fetch)).toHaveLength(1)
     expect(mock.didInsert('recipes')).toBe(false)
+  })
+
+  // A channel often lists only the ingredients and shows the method on
+  // screen; with no usable captions (music only, or auto captions in another
+  // language) the ingredient list is all there is, and the page embeds the video.
+  const INGREDIENTS_ONLY_JSON = JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), steps: [] })
+
+  it('saves the description ingredients when the video has no captions', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 10 }, error: null })
+    const fetch = makeYoutubeFetchMock({ openaiContents: [INGREDIENTS_ONLY_JSON], hasCaptions: false })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 10 })
+
+    expect(transcriptCalls(fetch)).toHaveLength(1)
+    expect(mock.insertArgs('recipes')).toMatchObject({ steps: [] })
+  })
+
+  it('keeps the description ingredients when the captions yield nothing', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 11 }, error: null })
+    const fetch = makeYoutubeFetchMock({ openaiContents: [INGREDIENTS_ONLY_JSON, JUNK_RECIPE_JSON] })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 11 })
+
+    expect(openaiCalls(fetch)).toHaveLength(2)
+    expect(mock.insertArgs('recipes')?.ingredients).toHaveLength(1)
+  })
+
+  it('prefers the captions when they add the steps the description lacks', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 12 }, error: null })
+    const fetch = makeYoutubeFetchMock({ openaiContents: [INGREDIENTS_ONLY_JSON, VALID_RECIPE_JSON] })
+
+    await expect(runExtractRecipe(YT_EVENT, { fetch, supabase: mock.supabase as any })).resolves.toMatchObject({ recipeId: 12 })
+
+    expect(mock.insertArgs('recipes')?.steps).toHaveLength(2)
   })
 
   it('reports an unreadable page when both the description and the captions are missing', async () => {

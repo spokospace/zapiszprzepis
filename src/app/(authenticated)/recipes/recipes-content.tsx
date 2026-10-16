@@ -123,6 +123,7 @@ export function RecipesContent({
                 description={recipe.description}
                 sourceType={recipe.source_type}
                 sourceUrl={recipe.source_url}
+                sourceAuthor={recipe.source_author}
               />
             ))}
           </div>

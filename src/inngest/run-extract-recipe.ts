@@ -1,13 +1,27 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { slugify } from '@/lib/slugify'
-import { archiveRecipeImages, buildGallery, pickGalleryImages, pickRecipeImage } from '@/lib/recipe-image-archive'
-import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeTranscript } from '@/lib/youtube'
-import { isBlogspotUrl, fetchBloggerPost } from '@/lib/blogger-feed'
+import {
+  archiveRecipeImages,
+  buildGallery,
+  isPrivateUrl,
+  pickGalleryImages,
+  pickRecipeImage,
+} from '@/lib/recipe-image-archive'
+import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutubeTranscript } from '@/lib/youtube'
+import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
+import { publicFacebookAuthor } from '@/lib/facebook-authors'
+import { findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
+import { fingerprintText } from '@/lib/source-fingerprint'
+import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
-import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
+import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
+
+const BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 import type { Database } from '@/lib/supabase.types'
 
 // Failure copy. These strings are stored verbatim in
@@ -16,11 +30,16 @@ import type { Database } from '@/lib/supabase.types'
 // applies turns on what we actually observed — never blame the author for a
 // post nobody could read.
 const FB_EMBED_REFUSED =
-  'Facebook nie udostępnia treści tego posta (autor wyłączył osadzanie albo post jest prywatny lub w zamkniętej grupie) — skopiuj przepis ręcznie albo podaj link do bloga'
+  'Facebook nie udostępnia treści tego posta (autor wyłączył osadzanie, post jest widoczny tylko po zalogowaniu, prywatny albo w zamkniętej grupie) — skopiuj przepis ręcznie albo podaj link do bloga'
 const FB_UNREACHABLE =
   'Nie udało się pobrać tego posta z Facebooka — spróbuj ponownie za chwilę'
 const FB_NO_CAPTION =
   'Ten post na Facebooku nie ma opisu z przepisem ani linku do niego (może być prywatny, usunięty albo przepis jest tylko w filmie)'
+// The caption was read fine — it just holds no recipe (a teaser for a video).
+const FB_CAPTION_NO_RECIPE =
+  'Opis tego posta na Facebooku nie zawiera przepisu (przepis jest pewnie tylko w filmie) — skopiuj składniki ręcznie albo podaj link do bloga'
+const LLM_UNREADABLE =
+  'Nie udało się odczytać przepisu z odpowiedzi modelu — spróbuj ponownie'
 const UNREADABLE_PAGE =
   'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)'
 
@@ -39,6 +58,12 @@ export interface ExtractRecipeEvent {
 export interface RunExtractRecipeDeps {
   fetch: typeof globalThis.fetch
   supabase: SupabaseClient
+}
+
+/** "HTTP 429 Too Many Requests". Workers' fetch leaves statusText empty on
+ *  HTTP/2, so the code has to carry the message on its own. */
+function httpStatus(response: Response): string {
+  return `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`
 }
 
 interface RecipeData {
@@ -86,7 +111,7 @@ export async function runExtractRecipe(
       signal: AbortSignal.timeout(45_000),
     })
     if (!response.ok) {
-      throw new Error(`Firecrawl failed: ${response.statusText}`)
+      throw new Error(`Firecrawl failed: ${httpStatus(response)}`)
     }
     const data = await response.json()
     return data.data ?? {}
@@ -101,7 +126,63 @@ export async function runExtractRecipe(
       console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
       s = await firecrawlScrape(buildFirecrawlOptions(url, type, { fullContent: true }))
     }
-    return s
+    return type === 'web_blog' ? withFollowingPages(s, url) : s
+  }
+
+  /** A page's raw HTML, or null on any failure. The URL comes from the user's
+   *  share, so the same SSRF guard as image archiving applies. */
+  async function fetchRawHtml(url: string): Promise<string | null> {
+    if (isPrivateUrl(url)) return null
+    try {
+      // No redirects: a public URL must not bounce the request to a private
+      // one. The article URL is Firecrawl's final URL already, and a page
+      // that redirects (one past the last) simply ends the walk.
+      const response = await fetch(url, {
+        headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(15_000),
+      })
+      return response.ok ? await response.text() : null
+    } catch {
+      return null
+    }
+  }
+
+  // An article split over pages ("Dalej »", <article>/2/, /3/ …) holds the
+  // recipe across all of them. Firecrawl's main-content output drops that
+  // navigation, so each page's raw HTML is checked for a link to the next one,
+  // and the pages found are appended. A failure keeps what was gathered.
+  async function withFollowingPages<T extends { markdown?: string; html?: string; metadata?: { url?: string; ogUrl?: string } }>(
+    first: T,
+    url: string,
+  ): Promise<T> {
+    const articleUrl = first.metadata?.url ?? first.metadata?.ogUrl ?? url
+    let { markdown = '', html = '' } = first
+    let pageUrl = articleUrl
+    for (let page = 1; page <= MAX_EXTRA_PAGES; page++) {
+      const raw = await fetchRawHtml(pageUrl)
+      const next = raw ? findNextPageUrl(raw, articleUrl, page) : null
+      if (!next) break
+      const scraped = await firecrawlScrape(buildFirecrawlOptions(next, 'web_blog', { fullContent: false })).catch(
+        (err) => {
+          console.warn('[extract-recipe] next page scrape failed:', err)
+          return null
+        },
+      )
+      if (!scraped?.markdown) break
+      console.log('[extract-recipe] appending article page', page + 1, next)
+      markdown += `\n\n${scraped.markdown}`
+      html += scraped.html ?? ''
+      pageUrl = next
+    }
+    return { ...first, markdown, html }
+  }
+
+  // The share repeats a recipe the user already has: point it there instead
+  // of saving a copy.
+  async function linkToSaved(saved: { id: number; title: string; category: string }) {
+    await supabase.from('recipe_shares').update({ recipe_id: saved.id, status: 'completed' }).eq('id', shareId)
+    return { recipeId: saved.id, title: saved.title, category: saved.category, status: 'duplicate' }
   }
 
   try {
@@ -114,12 +195,16 @@ export async function runExtractRecipe(
     // True while the content came verbatim from the author (a post caption, a
     // feed body) rather than from a rendered page; drives the junk gate below.
     let trustedContent = false
+    // True when the content is a Facebook post's own caption: the recipe may
+    // be its ingredient list alone, with the method shown in the video.
+    let fromPostCaption = false
 
-    // Blogspot: pull the post straight from the Blogger JSON feed instead of
-    // rendering with Firecrawl — deterministic, no Google Translate / empty
-    // main-content junk. Fall back to Firecrawl when the feed has nothing
-    // (custom-domain blogs, disabled feed).
-    const bloggerPost = isBlogspotUrl(sharedUrl)
+    // Blogger (blogspot or a custom domain): pull the post straight from the
+    // Blogger JSON feed instead of rendering with Firecrawl — deterministic,
+    // no Google Translate / empty main-content junk. Fall back to Firecrawl
+    // when the feed has nothing (non-Blogger site behind a Blogger-shaped
+    // path, disabled feed).
+    const bloggerPost = mayBeBloggerPost(sharedUrl)
       ? await fetchBloggerPost(sharedUrl).catch((err) => {
           console.warn('[extract-recipe] Blogger feed failed, falling back to Firecrawl:', err)
           return null
@@ -139,6 +224,19 @@ export async function runExtractRecipe(
           })
         : null
 
+    // A share shortlink names its post only now, after the redirect. Store the
+    // recipe under that post, and when it is already saved — shared earlier by
+    // its permalink or by another shortlink — link this share to it instead of
+    // extracting it a second time.
+    const sourceUrl = resolvedSourceUrl(sharedUrl, facebookPost?.canonicalUrl)
+    if (!forceRefresh && sourceUrl !== sharedUrl) {
+      const saved = await findRecipeBySourceUrl(supabase, userId, sourceUrl)
+      if (saved) {
+        console.log('[extract-recipe] share link resolves to saved recipe', saved.slug)
+        return linkToSaved(saved)
+      }
+    }
+
     // Many Facebook posts — group posts especially — are a teaser plus a link
     // to the author's blog, and the recipe only lives on the other side of
     // that link. Follow it: the blog is a page Firecrawl can actually read,
@@ -151,7 +249,21 @@ export async function runExtractRecipe(
         })
       : null
 
-    if (linkedPage?.markdown || linkedPage?.html) {
+    // A dead blog (a 404, a host's "website unavailable" page) still renders
+    // something; only a page that answered and reads as content beats the
+    // caption, which often carries the recipe itself.
+    const readableLinkedPage =
+      linkedPage &&
+      (linkedPage.metadata?.statusCode ?? 200) < 400 &&
+      !(looksUnextractable(linkedPage.markdown ?? '') && looksUnextractable(linkedPage.html ?? ''))
+        ? linkedPage
+        : null
+    if (linkedPage && !readableLinkedPage) {
+      console.warn('[extract-recipe] linked page unreadable, status', linkedPage.metadata?.statusCode, linkedUrl)
+    }
+
+    if (readableLinkedPage) {
+      const linkedPage = readableLinkedPage
       console.log('[extract-recipe] following Facebook caption link to', linkedUrl)
       markdown = linkedPage.markdown ?? ''
       html = linkedPage.html ?? ''
@@ -167,6 +279,7 @@ export async function runExtractRecipe(
       ogImage = facebookPost.image ?? undefined
       photos = facebookPost.images
       trustedContent = true
+      fromPostCaption = true
     } else if (bloggerPost) {
       console.log('[extract-recipe] using Blogger feed for', sharedUrl)
       html = bloggerPost.html
@@ -249,6 +362,27 @@ export async function runExtractRecipe(
       )
     }
 
+    // The author's own text identifies the recipe across posts: a Page that
+    // publishes it twice gives two URLs but one text. Checked before any LLM
+    // call. A rendered page differs between scrapes, so it gets no fingerprint.
+    const sourceFingerprint = trustedContent ? await fingerprintText(markdown) : null
+    if (!forceRefresh && sourceFingerprint) {
+      const sameText = await findRecipeBySourceFingerprint(supabase, userId, sourceFingerprint)
+      if (sameText) {
+        console.log('[extract-recipe] same post text already saved:', sameText.slug)
+        return linkToSaved(sameText)
+      }
+    }
+
+    // Who published the recipe, for the source label ("Kulinarna Wiola ·
+    // Facebook"): the Facebook poster — a private person only as "Elżbieta
+    // K." — or the YouTube channel, fetched while the LLM extracts. A blog is
+    // named by its domain, so it needs none.
+    const sourceAuthorPromise: Promise<string | null> =
+      sourceType === 'youtube' && youtubeId != null
+        ? fetchYoutubeAuthor(youtubeId, { fetch })
+        : Promise.resolve(facebookPost?.author ? publicFacebookAuthor(facebookPost.author, sourceUrl) : null)
+
     // One LLM pass over the content. `transcript`, when given, is the video's
     // captions — the second-pass source for a YouTube link (below).
     async function extractWithLlm(transcript?: string): Promise<RecipeData> {
@@ -284,6 +418,8 @@ Rules:
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
 - Category: cookies, biscuits, gingerbread cookies and macarons ("ciasteczka", "herbatniki", "pierniczki", "makaroniki") are "ciasteczka", not "desery". Cakes, muffins and other sweets stay "desery".
+- Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
+- Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
 - Return null for any non-time field the source does not specify. Do not guess.
 - Times stated in the source, or computed from durations it states (a sum of step times, a stated "razem 1,5 godz"), are source data: set "timesEstimated" to false.
 - When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
@@ -309,19 +445,40 @@ Rules:
             },
           ],
           temperature: 0.3,
+          response_format: { type: 'json_object' },
         }),
         signal: AbortSignal.timeout(60_000),
       })
 
       if (!openaiResponse.ok) {
-        throw new Error(`OpenAI failed: ${openaiResponse.statusText}`)
+        // OpenAI's own message says which limit or input it hit.
+        const detail = await openaiResponse
+          .json()
+          .then((body) => (typeof body?.error?.message === 'string' ? ` — ${body.error.message.slice(0, 200)}` : ''))
+          .catch(() => '')
+        throw new Error(`OpenAI failed: ${httpStatus(openaiResponse)}${detail}`)
       }
 
       const openaiData = await openaiResponse.json()
       const content = openaiData.choices?.[0]?.message?.content
       if (!content) throw new Error('No response from OpenAI')
 
-      return JSON.parse(content) as RecipeData
+      // JSON mode should rule out a ```json fence, but strip one anyway: a
+      // parser error is not something to show in the bell.
+      let parsed: RecipeData
+      try {
+        parsed = JSON.parse(content.trim().replace(/^```(?:json)?\s*|\s*```$/g, '')) as RecipeData
+      } catch {
+        throw new Error(LLM_UNREADABLE)
+      }
+
+      // recipes.category is a strict enum: one off-list value fails the insert
+      // and throws the whole extraction away.
+      const { category, coerced } = toRecipeCategory(parsed.category)
+      if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
+      // A missing method comes back as null as often as []; the gate below
+      // and the steps column both want the list.
+      return { ...parsed, steps: parsed.steps ?? [], category }
     }
 
     // The user's other recipes, for the labelling pass below; read while the
@@ -341,12 +498,24 @@ Rules:
     // extraction again with the spoken video in front of the LLM. Costs two
     // fetches and one more OpenAI call, and only for videos that need it.
     if (canTryTranscript && (recipeJSON == null || !isExtractedRecipeUsable(recipeJSON))) {
+      const fromDescription = recipeJSON
       const transcript = await fetchYoutubeTranscript(youtubeId, { fetch })
       if (transcript) {
         console.log('[extract-recipe] description had no recipe; retrying with transcript for', youtubeId)
         recipeJSON = await extractWithLlm(transcript)
       } else {
         console.warn('[extract-recipe] no transcript available for', youtubeId)
+      }
+      // The captions found no steps either (a music-only video, or auto
+      // captions in the wrong language). The author's own ingredient list
+      // beats whatever the LLM made of them; the method is in the video, which
+      // the recipe page embeds.
+      if (
+        (recipeJSON == null || !isExtractedRecipeUsable(recipeJSON)) &&
+        fromDescription != null &&
+        isExtractedRecipeUsable(fromDescription, { stepsOptional: true })
+      ) {
+        recipeJSON = fromDescription
       }
     }
 
@@ -355,14 +524,35 @@ Rules:
     if (recipeJSON == null) throw new Error(UNREADABLE_PAGE)
 
     if (!recipeJSON.title || typeof recipeJSON.title !== 'string') {
-      throw new Error('No recipe title extracted — source page may not contain a recipe')
+      throw new Error(
+        fromPostCaption ? FB_CAPTION_NO_RECIPE : 'No recipe title extracted — source page may not contain a recipe',
+      )
     }
 
     // Output-side gate (Risk 2): reject body-less recipes before any DB write.
     // Catches the case where the LLM returns a valid title but empty ingredients
-    // or steps — the title-only check above doesn't catch this.
-    if (!isExtractedRecipeUsable(recipeJSON)) {
-      throw new Error('Extracted content has no usable recipe (title present but no ingredients or steps)')
+    // or steps — the title-only check above doesn't catch this. A video (a
+    // Facebook post's caption, a YouTube description) may list only the
+    // ingredients and show the method on screen; no retry will find steps the
+    // author never wrote down.
+    const methodMayBeOnScreen = fromPostCaption || sourceType === 'youtube'
+    if (!isExtractedRecipeUsable(recipeJSON, { stepsOptional: methodMayBeOnScreen })) {
+      throw new Error(
+        fromPostCaption
+          ? FB_CAPTION_NO_RECIPE
+          : 'Extracted content has no usable recipe (title present but no ingredients or steps)',
+      )
+    }
+
+    // The same recipe saved before from another post — its author published
+    // it twice. Link this share to it rather than keep a "-2" copy; checked
+    // before the labelling call, which it makes unnecessary.
+    if (!forceRefresh) {
+      const same = await findSameRecipe(supabase, userId, recipeJSON)
+      if (same) {
+        console.log('[extract-recipe] same recipe already saved from another post:', same.slug)
+        return linkToSaved(same)
+      }
     }
 
     const timesEstimated = timesAreEstimated(recipeJSON)
@@ -373,9 +563,10 @@ Rules:
     const { data: existingRecipes } = await existingRecipesQuery
     const { title, description, tags } = await labelRecipe(
       recipeJSON,
-      (existingRecipes ?? []).filter((r) => r.source_url !== sharedUrl),
+      (existingRecipes ?? []).filter((r) => r.source_url !== sourceUrl && r.source_url !== sharedUrl),
       { fetch, apiKey: process.env.OPENAI_API_KEY },
     )
+    const sourceAuthor = await sourceAuthorPromise
 
     // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
     // this (user, source_url) in place. The normal path below dedups and
@@ -393,6 +584,8 @@ Rules:
           tags,
           source_type: sourceType,
           youtube_id: youtubeId,
+          // Keep the author a previous run found when this one saw none.
+          ...(sourceAuthor != null ? { source_author: sourceAuthor } : {}),
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
           total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
@@ -437,6 +630,7 @@ Rules:
     const baseSlug = slugify(title)
     const SLUG_KEY = 'recipes_user_id_slug_key'
     const URL_KEY = 'recipes_user_source_url_uniq'
+    const FINGERPRINT_KEY = 'recipes_user_source_fingerprint_uniq'
     const MAX_ATTEMPTS = 10
 
     let recipe: { id: number } | null = null
@@ -457,7 +651,9 @@ Rules:
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
           source_type: sourceType,
-          source_url: sharedUrl,
+          source_url: sourceUrl,
+          source_fingerprint: sourceFingerprint,
+          source_author: sourceAuthor,
           youtube_id: youtubeId,
           category: recipeJSON.category,
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
@@ -488,6 +684,16 @@ Rules:
         lastInsertError = error
       }
 
+      // Fingerprint collision: a share of the same text from another post
+      // won the race. Link this share to that recipe.
+      if (error?.message.includes(FINGERPRINT_KEY) && sourceFingerprint) {
+        const existing = await findRecipeBySourceFingerprint(supabase, userId, sourceFingerprint)
+        if (existing) {
+          recipe = { id: existing.id }
+          break
+        }
+      }
+
       // URL collision: a parallel share won the race, OR this is a refresh
       // run for an already-stored recipe. Link this share to the existing
       // recipe and gap-fill any null fields with newly extracted values
@@ -495,9 +701,9 @@ Rules:
       if (error?.message.includes(URL_KEY)) {
         const { data: existing } = await supabase
           .from('recipes')
-          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, description, tags')
+          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, source_author, description, tags')
           .eq('user_id', userId)
-          .eq('source_url', sharedUrl)
+          .eq('source_url', sourceUrl)
           .single()
 
         if (existing) {
@@ -521,6 +727,9 @@ Rules:
           }
           if (existing.youtube_id == null && youtubeId != null) {
             gapFill.youtube_id = youtubeId
+          }
+          if (existing.source_author == null && sourceAuthor != null) {
+            gapFill.source_author = sourceAuthor
           }
           if (existing.description == null && description != null) {
             gapFill.description = description

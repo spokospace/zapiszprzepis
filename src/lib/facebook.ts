@@ -27,6 +27,7 @@
 
 import { isYoutubeHost } from '@/lib/youtube'
 import { decodeEntities } from '@/lib/html-entities'
+import { sliceBalancedDiv } from '@/lib/html-div'
 import { GALLERY_LIMIT } from '@/lib/recipe-image-archive'
 
 const CRAWLER_UA = 'facebookexternalhit/1.1'
@@ -39,7 +40,7 @@ const BROWSER_UA =
 const FACEBOOK_HOSTS = new Set(['facebook.com', 'fb.watch', 'fb.me'])
 
 /** Strip the www./m./web./mbasic. subdomain so host comparisons are uniform. */
-function normalizeFacebookHost(host: string): string {
+export function normalizeFacebookHost(host: string): string {
   return host.replace(/^(www|m|web|mbasic|touch)\./, '')
 }
 
@@ -78,6 +79,17 @@ export function isFacebookShareUrl(url: string): boolean {
 export function toGroupPostUrl(url: string): string | null {
   const groupPost = parseGroupPost(url)
   return groupPost ? `https://www.facebook.com/groups/${groupPost.group}/posts/${groupPost.post}/` : null
+}
+
+/**
+ * A SQL LIKE pattern matching the dedup key (toGroupPostUrl's permalink,
+ * trailing slash dropped) of this post under any group, or null for anything
+ * else. Group post ids are global, so one post reached through the group's
+ * name and through its number is one post.
+ */
+export function groupPostKeyPattern(url: string): string | null {
+  const groupPost = parseGroupPost(url)
+  return groupPost ? `https://www.facebook.com/groups/%/posts/${groupPost.post}` : null
 }
 
 /** The group and post ids of a group post link, in any of the shapes toGroupPostUrl reads. */
@@ -173,25 +185,6 @@ export function buildFacebookPluginUrl(href: string): string {
 }
 
 /**
- * Return the substring of `html` that sits inside the div opened at
- * `openTagEnd`, by counting nested <div> tags. Regex alone can't do this —
- * the caption contains its own nested spans/divs and Facebook's class names
- * are obfuscated and unstable, so a "stop at class X" heuristic rots.
- */
-function sliceBalancedDiv(html: string, openTagEnd: number): string {
-  const TAG = /<(\/?)div\b/gi
-  TAG.lastIndex = openTagEnd
-  let depth = 1
-  let match: RegExpExecArray | null
-  while ((match = TAG.exec(html)) !== null) {
-    depth += match[1] === '/' ? -1 : 1
-    if (depth === 0) return html.slice(openTagEnd, match.index)
-  }
-  // Unbalanced markup — take what's left rather than dropping the caption.
-  return html.slice(openTagEnd)
-}
-
-/**
  * Pull the post caption out of a rendered video-plugin page. Returns null when
  * the page carries no caption (private/removed post, or a post whose author
  * wrote no text).
@@ -280,6 +273,9 @@ export interface FacebookPost {
    * URLs that expire like `image`. Empty for other posts.
    */
   images: string[]
+  /** The name of the profile or Page that posted it, or null when the
+   *  surface that rendered the post did not show one. */
+  author: string | null
 }
 
 export interface FetchFacebookPostDeps {
@@ -322,9 +318,19 @@ interface PostText {
   caption: string | null
   embedStatus: FacebookEmbedStatus
   images: string[]
+  author: string | null
 }
 
-const UNREACHABLE: PostText = { caption: null, embedStatus: 'unreachable', images: [] }
+const UNREACHABLE: PostText = { caption: null, embedStatus: 'unreachable', images: [], author: null }
+
+// The plugin's header links the poster's name to their Watch page.
+const PLUGIN_AUTHOR = /<a title="([^"]+)"[^>]*?href="\/watch\/\d+\/\?ref=embed_video"/
+
+/** The poster's name in the plugin page's header, or null. */
+export function extractPluginAuthor(html: string): string | null {
+  const match = PLUGIN_AUTHOR.exec(html)
+  return match ? decodeEntities(match[1]).trim() || null : null
+}
 
 /** The embedded-video plugin page — the only logged-out surface that renders
  *  the caption. Never throws; a page we could not load is `unreachable`, which
@@ -347,6 +353,7 @@ async function fetchCaption(url: string, fetch: typeof globalThis.fetch): Promis
       caption,
       embedStatus: caption == null && pluginHasNoPlayer(html) ? 'refused' : 'rendered',
       images: [],
+      author: extractPluginAuthor(html),
     }
   } catch (error) {
     console.warn('[facebook] plugin fetch failed:', error)
@@ -356,7 +363,9 @@ async function fetchCaption(url: string, fetch: typeof globalThis.fetch): Promis
 
 // A JSON string literal's body, escapes included, for JSON.parse to decode.
 const JSON_STRING = String.raw`"((?:[^"\\]|\\.)*)"`
-const POST_MESSAGE = new RegExp(`"message":\\{"text":${JSON_STRING}`)
+// A feed section's heading ("Popularne filmy" on the Watch grid Facebook
+// serves in place of a video nobody may see) has the same shape; skip it.
+const POST_MESSAGE = new RegExp(`(?<!"section_header":\\{)"message":\\{"text":${JSON_STRING}`)
 // The story's first actor is the post author.
 const POST_AUTHOR = /"actors":\[\{[^\]]*?"id":"([^"]+)"/
 const TOP_LEVEL_COMMENT = new RegExp(
@@ -396,6 +405,20 @@ export function extractGroupPostText(html: string): string | null {
   }
 
   return parts.size > 0 ? [...parts].join('\n\n') : null
+}
+
+/**
+ * The post author's name from a permalink page's Relay data, or null. The
+ * first actor names the author by id, but carries the name only on some
+ * pages; the same id sits next to the name wherever the data lists it.
+ */
+export function extractPostAuthor(html: string): string | null {
+  const authorId = POST_AUTHOR.exec(html)?.[1]
+  if (!authorId) return null
+  const id = authorId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`"name":${JSON_STRING},"id":"${id}"|"id":"${id}","name":${JSON_STRING}`).exec(html)
+  const body = match?.[1] ?? match?.[2]
+  return body ? decodeJsonString(body)?.trim() || null : null
 }
 
 // A photo of the post links to its viewer as photo.php?fbid=<photo>&set=gm.<post>.
@@ -459,6 +482,22 @@ async function fetchGroupPhoto(
   }
 }
 
+/** True for the Watch feed itself — where Facebook sends a removed or private
+ *  video. It used to redirect there (og:url https://www.facebook.com/watch/, no
+ *  video id); now it also serves the feed at the video's own URL, with no og
+ *  tags at all, recognisable only by the feed's Relay sections. */
+export function isWatchLanding(html: string): boolean {
+  if (html.includes('CometVideoHomeSection')) return true
+  const ogUrl = extractOgTag(html, 'url')
+  if (!ogUrl) return false
+  try {
+    const parsed = new URL(ogUrl)
+    return /^\/watch\/?$/.test(parsed.pathname) && !parsed.searchParams.has('v')
+  } catch {
+    return false
+  }
+}
+
 /** A public post's message and its author's comments, read off its permalink
  *  page — the video plugin refuses group posts and every post that is not a
  *  video. A group post's photos come along when `groupPostId` is given. Never
@@ -478,6 +517,9 @@ async function fetchPostPageCaption(
       return UNREACHABLE
     }
     const html = await response.text()
+    // A video nobody may see redirects to the Watch feed, whose own Relay data
+    // ("Popularne filmy") would pass for the post's caption.
+    if (isWatchLanding(html)) return { caption: null, embedStatus: 'refused', images: [], author: null }
     const caption = extractGroupPostText(html)
     // A login wall carries no photos worth fetching.
     const images =
@@ -493,6 +535,7 @@ async function fetchPostPageCaption(
       caption,
       embedStatus: caption == null ? 'refused' : 'rendered',
       images: images.filter((image): image is string => image != null),
+      author: caption == null ? null : extractPostAuthor(html),
     }
   } catch (error) {
     console.warn('[facebook] post page fetch failed:', error)
@@ -535,6 +578,29 @@ export function stripFacebookTracking(url: string): string {
   }
 }
 
+/** True for a link to one post — a group or Page post, a reel, a video or a
+ *  photo — and false for anything a redirect may land on instead (the login
+ *  wall, a profile, a feed). Only such a link may stand in for a share link
+ *  as the post's identity. */
+export function isFacebookPostUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    if (normalizeFacebookHost(parsed.hostname) !== 'facebook.com') return false
+    if (toGroupPostUrl(url) || toPagePostUrl(url)) return true
+    if (/^\/(?:[^/]+\/(?:posts|videos)\/[\w-]+|reel\/\d+)\/?$/.test(parsed.pathname)) return true
+    return /^\/(?:watch|photo(?:\.php)?)\/?$/.test(parsed.pathname) && (parsed.searchParams.has('v') || parsed.searchParams.has('fbid'))
+  } catch {
+    return false
+  }
+}
+
+/** The link `url` names, in the form Facebook serves logged out: a group
+ *  or Page post rewritten to its /posts/ permalink, anything else without its
+ *  tracking params. Share links are left for the redirect to resolve. */
+export function toPostUrl(url: string): string {
+  return toGroupPostUrl(url) ?? toPagePostUrl(url) ?? stripFacebookTracking(url)
+}
+
 /**
  * Fetch a Facebook reel/video post's caption and thumbnail without a session.
  *
@@ -547,7 +613,7 @@ export async function fetchFacebookPost(
 ): Promise<FacebookPost | null> {
   if (!isFacebookUrl(url)) return null
 
-  const target = toGroupPostUrl(url) ?? toPagePostUrl(url) ?? stripFacebookTracking(url)
+  const target = toPostUrl(url)
   const permalink = fetchPermalink(target, fetch)
 
   const pluginPage = isFacebookShareUrl(url)
@@ -558,7 +624,7 @@ export async function fetchFacebookPost(
     : // Already a permalink — both requests go out together.
       fetchPostText(target, fetch)
 
-  const [{ canonicalUrl, image, description }, { caption, embedStatus, images }] = await Promise.all([
+  const [{ canonicalUrl, image, description }, { caption, embedStatus, images, author }] = await Promise.all([
     permalink,
     pluginPage,
   ])
@@ -574,5 +640,6 @@ export async function fetchFacebookPost(
     recipeLink: findRecipeLinkInText(caption ?? description ?? ''),
     image,
     images,
+    author,
   }
 }

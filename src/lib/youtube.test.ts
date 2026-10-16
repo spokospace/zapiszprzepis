@@ -7,7 +7,32 @@ import {
   pickCaptionTrack,
   timedTextToPlain,
   fetchYoutubeTranscript,
+  fetchYoutubeAuthor,
 } from '@/lib/youtube'
+
+describe('fetchYoutubeAuthor', () => {
+  const respond = (init: { ok: boolean; body?: unknown }) =>
+    vi.fn(async () => ({ ok: init.ok, json: async () => init.body }) as Response) as unknown as typeof globalThis.fetch
+
+  it("returns the channel name from oEmbed's author_name", async () => {
+    const fetch = respond({ ok: true, body: { author_name: ' PALCE LIZAĆ ', title: 'Pieczarki' } })
+    await expect(fetchYoutubeAuthor('JOI3NVTVwdQ', { fetch })).resolves.toBe('PALCE LIZAĆ')
+    expect(String(vi.mocked(fetch).mock.calls[0][0])).toBe(
+      'https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DJOI3NVTVwdQ&format=json',
+    )
+  })
+
+  it('returns null for a private or removed video', async () => {
+    await expect(fetchYoutubeAuthor('JOI3NVTVwdQ', { fetch: respond({ ok: false }) })).resolves.toBeNull()
+  })
+
+  it('returns null instead of throwing when the request fails', async () => {
+    const fetch = vi.fn(async () => {
+      throw new Error('network down')
+    }) as unknown as typeof globalThis.fetch
+    await expect(fetchYoutubeAuthor('JOI3NVTVwdQ', { fetch })).resolves.toBeNull()
+  })
+})
 
 // Risk 5 — YouTube host detection and id extraction (S-04 stores youtube_id).
 const ID = 'dQw4w9WgXcQ' // canonical 11-char id

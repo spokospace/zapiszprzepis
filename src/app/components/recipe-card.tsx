@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
+import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 
 interface RecipeCardProps {
   slug: string
@@ -12,9 +13,19 @@ interface RecipeCardProps {
   description?: string | null
   sourceType: RecipeSource
   sourceUrl: string | null
+  sourceAuthor: string | null
 }
 
-export function RecipeCard({ slug, title, imageUrl, category, description, sourceType, sourceUrl }: RecipeCardProps) {
+export function RecipeCard({
+  slug,
+  title,
+  imageUrl,
+  category,
+  description,
+  sourceType,
+  sourceUrl,
+  sourceAuthor,
+}: RecipeCardProps) {
   return (
     <Link href={`/recipes/${slug}`}>
       <div className="group cursor-pointer rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
@@ -27,6 +38,7 @@ export function RecipeCard({ slug, title, imageUrl, category, description, sourc
               fill
               className="object-cover group-hover:scale-105 transition-transform"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              unoptimized={!isArchivedImageUrl(imageUrl)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-yellow-100">
@@ -57,7 +69,7 @@ export function RecipeCard({ slug, title, imageUrl, category, description, sourc
             <span className="inline-block px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
               {categoryLabel(category)}
             </span>
-            <span className="truncate text-xs text-gray-400">{sourceLabel(sourceType, sourceUrl)}</span>
+            <span className="truncate text-xs text-gray-400">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</span>
           </div>
         </div>
       </div>

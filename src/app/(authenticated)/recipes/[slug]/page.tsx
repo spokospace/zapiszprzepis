@@ -11,8 +11,10 @@ import { PageContainer } from '@/app/components/page-container'
 import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
+import { cookTimeLabel } from '@/lib/cook-time-label'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
+import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import type { Database } from '@/lib/supabase.types'
 
 function TimeBadge({
@@ -30,7 +32,7 @@ function TimeBadge({
     <span className="inline-flex items-center gap-1.5">
       <Icon aria-hidden="true" size={16} className="text-orange-500" />
       <span className="text-gray-500">{label}:</span>
-      <span className="font-medium" title={estimated ? 'Czas szacowany, nie podany w źródle' : undefined}>
+      <span className="font-medium" title={estimated ? 'Co najmniej jeden z czasów przepisu jest szacowany' : undefined}>
         {estimated && (
           <>
             <span aria-hidden="true">≈ </span>
@@ -113,6 +115,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               fill
               className="object-cover"
               priority
+              unoptimized={!isArchivedImageUrl(typedRecipe.image_url)}
             />
           </div>
         )}
@@ -130,7 +133,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               <span>{categoryLabel(typedRecipe.category)}</span>
             </Link>
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
-              {sourceLabel(typedRecipe.source_type, typedRecipe.source_url)}
+              {sourceLabel(typedRecipe.source_type, typedRecipe.source_url, typedRecipe.source_author)}
             </span>
             {typedRecipe.source_url && (
               <a
@@ -166,13 +169,13 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
                 <TimeBadge icon={Clock} label="Przygotowanie" minutes={typedRecipe.prep_time_minutes} estimated={typedRecipe.times_estimated} />
               )}
               {typedRecipe.cook_time_minutes != null && (
-                <TimeBadge icon={Flame} label="Gotowanie" minutes={typedRecipe.cook_time_minutes} estimated={typedRecipe.times_estimated} />
+                <TimeBadge icon={Flame} label={cookTimeLabel(steps)} minutes={typedRecipe.cook_time_minutes} estimated={typedRecipe.times_estimated} />
               )}
               {typedRecipe.total_time_minutes != null && (
                 <TimeBadge icon={Timer} label="Łącznie" minutes={typedRecipe.total_time_minutes} estimated={typedRecipe.times_estimated} />
               )}
               {typedRecipe.times_estimated && (
-                <p className="basis-full text-xs text-gray-500">Czasy szacunkowe — źródło ich nie podaje.</p>
+                <p className="basis-full text-xs text-gray-500">Co najmniej jeden z czasów jest szacowany — źródło go nie podaje.</p>
               )}
             </div>
           )}

@@ -99,6 +99,8 @@ export type Database = {
           ingredients: Json
           prep_time_minutes: number | null
           slug: string
+          source_author: string | null
+          source_fingerprint: string | null
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url: string | null
           steps: Json
@@ -122,6 +124,8 @@ export type Database = {
           ingredients?: Json
           prep_time_minutes?: number | null
           slug: string
+          source_author?: string | null
+          source_fingerprint?: string | null
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
           steps?: Json
@@ -145,6 +149,8 @@ export type Database = {
           ingredients?: Json
           prep_time_minutes?: number | null
           slug?: string
+          source_author?: string | null
+          source_fingerprint?: string | null
           source_type?: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
           steps?: Json

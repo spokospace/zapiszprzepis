@@ -49,6 +49,80 @@ export function isPrivateUrl(url: string): boolean {
   return false
 }
 
+// Some hosts refuse requests coming from Cloudflare's address space (seen
+// with najprzepis.pl: the Worker gets no image while any other client does).
+// wsrv.nl fetches the image from its own servers and hands it back, so it
+// is the second try whenever the direct download fails. The proxy only sees
+// public URLs — isPrivateUrl runs before either attempt.
+const IMAGE_PROXY = 'https://wsrv.nl/?url='
+
+export function proxiedImageUrl(externalUrl: string): string {
+  return `${IMAGE_PROXY}${encodeURIComponent(externalUrl)}`
+}
+
+// Polish shared hosting (home.pl, nazwa.pl) often serves a domain over https
+// with the host's default certificate — `*.home.pl` on babskieporady.pl — which
+// matches neither the domain nor any SAN, so the TLS handshake fails both here
+// and in the reader's browser. The file itself is served fine over plain http,
+// so an https URL whose fetch failed at the transport layer is retried over
+// http before the proxy. Downgrading the scheme is safe for a public recipe
+// photo: no credentials ride along, and the SSRF guard already ran on the same
+// host.
+export function insecureHttpUrl(url: string): string | null {
+  return url.startsWith('https://') ? `http://${url.slice('https://'.length)}` : null
+}
+
+interface DownloadedImage {
+  bytes: Uint8Array
+  contentType: string
+  ext: string
+}
+
+interface DownloadResult {
+  image: DownloadedImage | null
+  // True only for a transport-layer failure worth retrying over plain http: a
+  // TLS cert mismatch or a connection error (both throw). A refused status,
+  // wrong MIME, oversize, or a timeout is false — http would not help, so the
+  // caller skips straight to the proxy.
+  transportError: boolean
+}
+
+async function downloadImage(url: string): Promise<DownloadResult> {
+  let response: Response
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+  } catch (error) {
+    console.warn(`[archiveImage] download failed for ${url}: ${error instanceof Error ? error.message : String(error)}`)
+    // A timeout won't resolve any faster over http, so it is not a retry case.
+    return { image: null, transportError: !(error instanceof Error) || error.name !== 'TimeoutError' }
+  }
+  if (!response.ok) {
+    console.warn(`[archiveImage] download ${response.status} for ${url}`)
+    return { image: null, transportError: false }
+  }
+
+  const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? ''
+  const ext = ALLOWED_MIME[contentType]
+  if (!ext) {
+    console.warn(`[archiveImage] unsupported MIME ${contentType} for ${url}`)
+    return { image: null, transportError: false }
+  }
+
+  const contentLength = response.headers.get('content-length')
+  if (contentLength && Number(contentLength) > MAX_BYTES) {
+    console.warn(`[archiveImage] too large ${contentLength}B for ${url}`)
+    return { image: null, transportError: false }
+  }
+
+  const bytes = new Uint8Array(await response.arrayBuffer())
+  if (bytes.byteLength > MAX_BYTES) {
+    console.warn(`[archiveImage] too large after read ${bytes.byteLength}B for ${url}`)
+    return { image: null, transportError: false }
+  }
+
+  return { image: { bytes, contentType, ext }, transportError: false }
+}
+
 /** Archives a recipe's cover image as `<user>/<recipe>.<ext>`. */
 export function archiveImage(
   supabase: SupabaseClient,
@@ -74,31 +148,21 @@ async function archiveImageAt(
       return null
     }
 
-    const response = await fetch(externalUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
-    if (!response.ok) {
-      console.warn(`[archiveImage] download ${response.status} for ${externalUrl}`)
-      return null
+    // Direct first. A transport failure (a TLS cert mismatch on an SSL-broken
+    // host) retries the same file over plain http; any other failure, and a
+    // failed http retry, falls to the proxy (for a host that refuses the
+    // Worker's address space outright).
+    const httpUrl = insecureHttpUrl(externalUrl)
+    let result = await downloadImage(externalUrl)
+    if (!result.image && result.transportError && httpUrl) {
+      result = await downloadImage(httpUrl)
     }
-
-    const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? ''
-    const ext = ALLOWED_MIME[contentType]
-    if (!ext) {
-      console.warn(`[archiveImage] unsupported MIME ${contentType} for ${externalUrl}`)
-      return null
+    if (!result.image) {
+      result = await downloadImage(proxiedImageUrl(externalUrl))
     }
+    if (!result.image) return null
 
-    const contentLength = response.headers.get('content-length')
-    if (contentLength && Number(contentLength) > MAX_BYTES) {
-      console.warn(`[archiveImage] too large ${contentLength}B for ${externalUrl}`)
-      return null
-    }
-
-    const bytes = new Uint8Array(await response.arrayBuffer())
-    if (bytes.byteLength > MAX_BYTES) {
-      console.warn(`[archiveImage] too large after read ${bytes.byteLength}B for ${externalUrl}`)
-      return null
-    }
-
+    const { bytes, contentType, ext } = result.image
     const path = `${pathStem}.${ext}`
     const { error: uploadError } = await supabase.storage
       .from('recipe-images')
@@ -120,6 +184,15 @@ async function archiveImageAt(
 export function extractStoragePath(imageUrl: string): string | null {
   const match = imageUrl.match(/\/storage\/v1\/object\/public\/recipe-images\/(.+)$/)
   return match ? match[1] : null
+}
+
+// An image_url that archiving never replaced still points at the source
+// host. The Worker-side image optimizer fetches from the same place the
+// archive did, so when that host refuses Cloudflare, the optimized <Image>
+// renders nothing. Such covers are served unoptimized, straight from the
+// host, which is where the browser can still reach them.
+export function isArchivedImageUrl(imageUrl: string): boolean {
+  return extractStoragePath(imageUrl) != null
 }
 
 const ATTR_RE = /\bdata-lazy-src=["']([^"']+)["']|\bdata-src=["']([^"']+)["']|\bsrc=["']([^"']+)["']/i
@@ -245,13 +318,31 @@ function bloggerFullSize(url: URL): string | null {
   return url.href.replace(BLOGGER_SIZE_SEGMENT_RE, '/s1600/').replace(BLOGGER_SIZE_SUFFIX_RE, '=s1600')
 }
 
+// Wix: `/media/<file>/v1/<mode>/<size, quality, blur…>/<name>` — everything
+// after the file is a rendition of it.
+const WIX_HOST = 'static.wixstatic.com'
+const WIX_RENDITION_RE = /^(\/media\/[^/]+)\/v1\/.*$/
+// The rendition's size — a card or banner is rendered small. Not a blurred
+// placeholder's (`blur_2`): that stands in for a full-width photo.
+const WIX_SIZE_RE = /^\/media\/[^/]+\/v1\/[^/]+\/w_(\d+),h_(\d+)(?![^/]*\bblur_)/
+
+/**
+ * Wix renders post photos at the column width, and its raw html carries only
+ * a blurred 147px placeholder; ask for a large rendition of the file instead.
+ */
+function wixFullSize(url: URL): string | null {
+  const file = url.hostname === WIX_HOST ? WIX_RENDITION_RE.exec(url.pathname)?.[1] : undefined
+  return file ? `${url.origin}${file}/v1/fit/w_1600,h_1600,q_85/${file.slice('/media/'.length)}` : null
+}
+
 /**
  * Identity of a photo across its renditions — the same file at another size
  * or on another CDN edge (`scontent-waw2-1` vs `-2`) is one photo.
  */
 function photoKey(url: string): string {
   try {
-    return new URL(url).pathname
+    const { hostname, pathname } = new URL(url)
+    return (hostname === WIX_HOST ? pathname.replace(WIX_RENDITION_RE, '$1') : pathname)
       .toLowerCase()
       .replace(BLOGGER_SIZE_SEGMENT_RE, '/')
       .replace(/(-v)?[-_]\d{2,4}x\d{2,4}(?=\.\w+$)/, '')
@@ -295,10 +386,19 @@ function isNoiseSection(openTag: string): boolean {
   return false
 }
 
+// The post body itself. A section holding it is page layout, not noise,
+// whatever its class says: krysiagotuje wraps the whole post in
+// `layout-right-sidebar`, and cutting that took every photo with it. Wix marks
+// its post with `data-hook="post-description"`, inside a page wrapper whose
+// breakpoint classes (`lte-banner-w980`) read as noise.
+const POST_BODY_RE =
+  /<main\b|\bitemprop=["']articleBody["']|\bdata-hook=["']post-description["']|\bclass=["'](?:[^"']*\s)?(?:entry-content|post-content|post-body)[\s"']/i
+
 /**
  * The html with every noise section cut out, each up to its own closing tag.
  * A section whose closing tag is missing is left in — cutting to the end of
- * the page on broken markup could drop the recipe's own photos.
+ * the page on broken markup could drop the recipe's own photos. So is one
+ * that holds the post body; the noise inside it is still cut.
  */
 function withoutNoiseSections(html: string): string {
   let out = ''
@@ -319,7 +419,7 @@ function withoutNoiseSections(html: string): string {
         break
       }
     }
-    if (end < 0) continue
+    if (end < 0 || POST_BODY_RE.test(html.slice(SECTION_OPEN_RE.lastIndex, end))) continue
     out += html.slice(from, m.index)
     from = end
     SECTION_OPEN_RE.lastIndex = end
@@ -352,13 +452,14 @@ export function pickGalleryImages(html: string, pageUrl?: string): string[] {
 
     // The size in the file name is the file's own, so it outranks the tag's,
     // which pages abuse (aniagotuje declares its 1000px hero as 1×1).
-    const fileSize = FILE_SIZE_RE.exec(parsed.pathname)
+    const fileSize =
+      FILE_SIZE_RE.exec(parsed.pathname) ?? (parsed.hostname === WIX_HOST ? WIX_SIZE_RE.exec(parsed.pathname) : null)
     const side = fileSize
       ? Math.max(Number(fileSize[1]), Number(fileSize[2]))
       : Math.max(width, height)
     // NaN — no size anywhere — passes: most in-post photos declare none.
     if (side < MIN_GALLERY_SIDE) continue
-    urls.push(url)
+    urls.push(wixFullSize(parsed) ?? url)
   }
   return urls
 }
