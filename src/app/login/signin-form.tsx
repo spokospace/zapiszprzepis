@@ -140,7 +140,7 @@ export function SignInForm({ error, email, sent, success }: SignInFormProps) {
             disabled={isLoading}
             defaultValue={formEmail}
             placeholder="ty@example.com"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-500"
+            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
           />
           <button
             type="submit"
@@ -167,7 +167,7 @@ export function SignInForm({ error, email, sent, success }: SignInFormProps) {
               disabled={isLoading}
               defaultValue={formEmail}
               placeholder="ty@example.com"
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-500"
+              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
             />
           </div>
           <div>
@@ -182,7 +182,7 @@ export function SignInForm({ error, email, sent, success }: SignInFormProps) {
               required
               disabled={isLoading}
               placeholder="••••••••"
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-500"
+              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
             />
           </div>
           <button

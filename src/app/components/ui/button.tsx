@@ -31,6 +31,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize
 }
 
-export function Button({ variant = 'primary', size = 'lg', className = '', ...props }: ButtonProps) {
-  return <button className={`${buttonClasses(variant, size)} ${className}`} {...props} />
+/** Defaults to type="button" so it never submits a surrounding form by accident; pass type="submit" explicitly. */
+export function Button({ variant = 'primary', size = 'lg', className = '', type = 'button', ...props }: ButtonProps) {
+  return <button type={type} className={`${buttonClasses(variant, size)} ${className}`} {...props} />
 }
