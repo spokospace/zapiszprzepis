@@ -4,6 +4,10 @@
 // the stored recipe: no re-scraping. The slug is left alone so recipe URLs
 // stay stable.
 //
+// meta_description is NOT written here: it has its own source-aware generator
+// (scripts/generate-meta-description-migration.ts), the single owner of that
+// field's backfill, so its no-source-copy guarantee is not bypassed.
+//
 //   pnpm backfill:recipe-tags            # preview, writes nothing
 //   pnpm backfill:recipe-tags --apply    # write the changes
 import { createClient } from '@supabase/supabase-js'

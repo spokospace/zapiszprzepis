@@ -590,7 +590,7 @@ Rules:
     // user's own recipes (minus this one, on a refresh) so the note tells
     // same-titled ones apart.
     const { data: existingRecipes } = await existingRecipesQuery
-    const { title, description, tags } = await labelRecipe(
+    const { title, description, metaDescription, tags } = await labelRecipe(
       recipeJSON,
       (existingRecipes ?? []).filter((r) => r.source_url !== sourceUrl && r.source_url !== sharedUrl),
       { fetch, apiKey: process.env.OPENAI_API_KEY },
@@ -610,6 +610,7 @@ Rules:
           steps: recipeJSON.steps,
           category: recipeJSON.category,
           description,
+          meta_description: metaDescription,
           tags,
           source_type: sourceType,
           youtube_id: youtubeId,
@@ -681,6 +682,7 @@ Rules:
           title,
           slug,
           description,
+          meta_description: metaDescription,
           tags,
           image_url: durableImageUrl,
           ingredients: recipeJSON.ingredients,
@@ -741,7 +743,7 @@ Rules:
       if (ownUrl || error?.message.includes(GLOBAL_URL_KEY)) {
         const existingQuery = supabase
           .from('recipes')
-          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, source_author, description, tags')
+          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, source_author, description, meta_description, tags')
         const { data: existing } = await (ownUrl ? existingQuery.eq('user_id', userId) : existingQuery)
           .eq('source_url', sourceUrl)
           .single()
@@ -775,6 +777,9 @@ Rules:
           }
           if (existing.description == null && description != null) {
             gapFill.description = description
+          }
+          if (existing.meta_description == null && metaDescription != null) {
+            gapFill.meta_description = metaDescription
           }
           if (!existing.tags?.length && tags.length > 0) {
             gapFill.tags = tags

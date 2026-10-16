@@ -97,6 +97,7 @@ export type Database = {
           image_url: string | null
           image_urls: string[]
           ingredients: Json
+          meta_description: string | null
           prep_time_minutes: number | null
           slug: string
           source_author: string | null
@@ -122,6 +123,7 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[]
           ingredients?: Json
+          meta_description?: string | null
           prep_time_minutes?: number | null
           slug: string
           source_author?: string | null
@@ -147,6 +149,7 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[]
           ingredients?: Json
+          meta_description?: string | null
           prep_time_minutes?: number | null
           slug?: string
           source_author?: string | null
