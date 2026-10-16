@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { parseRecipeId, UNIQUE_VIOLATION, type FavoriteResult } from '@/lib/favorites'
+import { insertFavorite, parseRecipeId, type FavoriteResult } from '@/lib/favorites'
 
 /** Bookmark a recipe for the signed-in user. Idempotent: an existing favorite is a success. */
 export async function addFavorite(rawRecipeId: unknown): Promise<FavoriteResult> {
@@ -17,8 +17,8 @@ export async function addFavorite(rawRecipeId: unknown): Promise<FavoriteResult>
 
   // Plain insert; a duplicate (double click, retried POST, auto-add after login)
   // is the desired end state, so unique_violation counts as success.
-  const { error } = await supabase.from('favorites').insert({ user_id: user.id, recipe_id: recipeId })
-  if (error && error.code !== UNIQUE_VIOLATION) {
+  const error = await insertFavorite(supabase, user.id, recipeId)
+  if (error) {
     console.error('[favorites] add failed', { code: error.code })
     return { ok: false, error: 'failed' }
   }

@@ -12,11 +12,46 @@ vi.mock('@/lib/recipe-dedup', () => ({
 vi.mock('@/lib/detect-source-type', () => ({
   detectSourceType: vi.fn().mockReturnValue('web_blog'),
 }))
+vi.mock('@/lib/intake-favorite', () => ({
+  favoriteExistingRecipe: vi.fn(),
+}))
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { inngest } from '@/inngest/client'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
+import { favoriteExistingRecipe } from '@/lib/intake-favorite'
 import { triggerRecipeExtraction } from '@/app/share/actions'
+
+describe('triggerRecipeExtraction — a link someone else added first (E01-S03a)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('adds their recipe to favorites instead of extracting a copy', async () => {
+    const from = vi.fn()
+    vi.mocked(createSupabaseServerClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from,
+    } as any)
+    vi.mocked(findExistingRecipeForUrl).mockResolvedValue({
+      status: 'other',
+      recipeId: 7,
+      slug: 'tiramisu',
+      normalizedUrl: 'https://example.com/tiramisu',
+    })
+
+    const result = await triggerRecipeExtraction('https://example.com/tiramisu')
+
+    expect(result).toEqual({ duplicate: 'in_favorites', slug: 'tiramisu' })
+    expect(favoriteExistingRecipe).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, 'https://example.com/tiramisu')
+    // No share row, no extraction: the recipe already exists.
+    expect(from).not.toHaveBeenCalled()
+    expect(inngest.send).not.toHaveBeenCalled()
+  })
+})
 
 describe('triggerRecipeExtraction — send-failure marks share failed (Risk 3)', () => {
   beforeEach(() => {

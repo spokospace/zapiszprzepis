@@ -5,6 +5,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { inngest } from '@/inngest/client'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
+import { favoriteExistingRecipe } from '@/lib/intake-favorite'
+import { revalidatePath } from 'next/cache'
 
 export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   const url = String(formData.get('url') ?? '').trim()
@@ -25,6 +27,20 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   const dedup = await findExistingRecipeForUrl(supabase, user.id, url)
   if (dedup.status === 'completed') redirect(`/recipes/${dedup.slug}?duplicate=1`)
   if (dedup.status === 'pending') redirect('/recipes?duplicate=pending')
+  if (dedup.status === 'other') {
+    // Someone else added the link first: favorite it instead of extracting a copy.
+    let favorited = true
+    try {
+      await favoriteExistingRecipe(supabase, user.id, dedup.recipeId, dedup.normalizedUrl)
+    } catch (err) {
+      console.error('Failed to add existing recipe to favorites:', err)
+      favorited = false
+    }
+    // redirect() throws, so it stays outside the try.
+    if (!favorited) redirect('/?add_error=server')
+    revalidatePath('/ulubione')
+    redirect(`/recipes/${dedup.slug}?in_favorites=1`)
+  }
 
   const sourceType = detectSourceType(url)
 

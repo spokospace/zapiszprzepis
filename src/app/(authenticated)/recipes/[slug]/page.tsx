@@ -17,6 +17,7 @@ import { cookTimeLabel } from '@/lib/cook-time-label'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import type { Database } from '@/lib/supabase.types'
 
 function TimeBadge({
@@ -94,12 +95,16 @@ interface RecipeDetailPageProps {
     refresh_error?: string
     /** Set by the guest heart's login round-trip: add this recipe to favorites (E01-S06). */
     fav?: string
+    /** The link was someone else's recipe; it was added to favorites instead (E01-S03a). */
+    in_favorites?: string
+    /** The delete was refused: others have this recipe as a favorite (E01-S03a). */
+    delete_error?: string
   }>
 }
 
 export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
-  const { duplicate, refreshing, refresh_error, fav } = await searchParams
+  const { duplicate, refreshing, refresh_error, fav, in_favorites, delete_error } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   const user = await getCurrentUser()
@@ -155,6 +160,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     <div className="min-h-screen bg-white py-8">
       {duplicate === '1' && (
         <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
+      )}
+      {in_favorites === '1' && (
+        <Toast
+          message="Ten przepis już jest w ZapiszPrzepis. Dodaliśmy go do Twoich ulubionych."
+          type="info"
+          duration={5000}
+          clearParam="in_favorites"
+        />
       )}
       {refreshing === '1' && (
         <Toast message="Odświeżam przepis — zmiany pojawią się za chwilę." type="success" duration={5000} clearParam="refreshing" />
@@ -327,6 +340,11 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           <RecipeGallery images={galleryImages} title={typedRecipe.title} />
         )}
 
+        {isOwner && delete_error === 'shared' && (
+          <p role="alert" className="border-t pt-8 mb-4 text-base font-medium text-danger">
+            {RECIPE_SHARED_MESSAGE}
+          </p>
+        )}
         {isOwner && (
           <div className="border-t pt-8 flex items-center justify-between gap-3">
             <form action={refreshRecipe}>

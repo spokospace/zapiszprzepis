@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { extractStoragePath, removeGallery } from '@/lib/recipe-image-archive'
+import { isRecipeSharedError, RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -41,6 +42,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 })
     }
 
+    // The row goes first: the database refuses it while others have the recipe
+    // as a favorite (recipes_block_shared_delete), and a refused delete must
+    // leave the images in place.
+    const { error: deleteError } = await supabase.from('recipes').delete().eq('id', recipe.id)
+
+    if (isRecipeSharedError(deleteError)) {
+      // The recipe page's plain form gets the message inline; other clients the 409.
+      if (request.headers.get('accept')?.includes('text/html')) {
+        return NextResponse.redirect(new URL(`/recipes/${slug}?delete_error=shared`, request.url), { status: 303 })
+      }
+      return NextResponse.json({ error: 'recipe_shared', message: RECIPE_SHARED_MESSAGE }, { status: 409 })
+    }
+    if (deleteError) {
+      console.error('[delete] Database error:', deleteError)
+      return NextResponse.json({ error: 'Failed to delete recipe' }, { status: 500 })
+    }
+
     if (recipe.image_url) {
       const storagePath = extractStoragePath(recipe.image_url)
       if (storagePath) {
@@ -54,13 +72,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     await removeGallery(supabase, recipe.user_id, recipe.id)
-
-    const { error: deleteError } = await supabase.from('recipes').delete().eq('id', recipe.id)
-
-    if (deleteError) {
-      console.error('[delete] Database error:', deleteError)
-      return NextResponse.json({ error: 'Failed to delete recipe' }, { status: 500 })
-    }
 
     return NextResponse.redirect(new URL('/recipes', request.url), { status: 303 })
   } catch (error) {

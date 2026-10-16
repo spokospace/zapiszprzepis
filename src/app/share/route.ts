@@ -70,6 +70,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if ('duplicate' in result && result.duplicate === 'pending') {
       return NextResponse.redirect(new URL('/recipes?duplicate=pending', request.url), { status: 303 })
     }
+    if ('duplicate' in result && result.duplicate === 'in_favorites') {
+      return NextResponse.redirect(new URL(`/recipes/${result.slug}?in_favorites=1`, request.url), { status: 303 })
+    }
 
     // Redirect to recipes list with shared flag (shows toast confirmation)
     const recipesUrl = new URL('/recipes?shared=1', request.url)
