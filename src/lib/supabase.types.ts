@@ -181,9 +181,11 @@ export type Database = {
         | "desery"
         | "ciasteczka"
         | "sniadania"
+        | "pieczywo"
         | "przekaski"
         | "salatki"
         | "napoje"
+        | "syropy"
         | "inne"
       recipe_share_status: "pending" | "completed" | "failed"
       recipe_source:
@@ -328,9 +330,11 @@ export const Constants = {
         "desery",
         "ciasteczka",
         "sniadania",
+        "pieczywo",
         "przekaski",
         "salatki",
         "napoje",
+        "syropy",
         "inne",
       ],
       recipe_share_status: ["pending", "completed", "failed"],
