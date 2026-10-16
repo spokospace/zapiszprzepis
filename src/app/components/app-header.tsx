@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronLeft, Link as LinkIcon } from 'lucide-react'
-import { signOut } from '@/app/(actions)/sign-out'
+import { AppMenu } from './app-menu'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
 import type { FailedSharesResult } from '@/lib/failed-shares'
@@ -49,14 +49,7 @@ export function AppHeader({ failedShares }: { failedShares: FailedSharesResult }
             Dodaj
           </Link>
           <NotificationBell failedShares={failedShares} />
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
-            >
-              Wyloguj
-            </button>
-          </form>
+          <AppMenu />
         </div>
       </PageContainer>
     </header>
