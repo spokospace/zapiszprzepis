@@ -13,6 +13,9 @@ export type FailedShare = {
  */
 export type FailedSharesResult = { status: 'ok'; shares: FailedShare[] } | { status: 'error' }
 
+/** A guest has no shares and no bell (E01-S02); used instead of querying for one. */
+export const NO_FAILED_SHARES: FailedSharesResult = { status: 'ok', shares: [] }
+
 type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
 
 /**
@@ -28,11 +31,14 @@ type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
  *    (`normalizeUrl` / SQL `normalize_url()`); the match relies on that invariant.
  *  - Dedupe by URL: retries can leave several failed rows for one URL.
  *
- * RLS scopes every query to the current user. The common case (no failures)
- * costs a single small indexed query — the recipes lookup runs only when there
- * are failed rows, and is bounded to their URLs.
+ * RLS scopes the recipe_shares query to the current user. The recipes lookup is
+ * scoped by `userId` explicitly: since recipes became public-read (E01-S02), RLS
+ * would otherwise let ANOTHER user's recipe for the same URL auto-resolve (hide)
+ * this user's failed share. The common case (no failures) costs a single small
+ * indexed query — the recipes lookup runs only when there are failed rows, and
+ * is bounded to their URLs.
  */
-export async function getFailedShares(supabase: ServerClient): Promise<FailedSharesResult> {
+export async function getFailedShares(supabase: ServerClient, userId: string): Promise<FailedSharesResult> {
   const { data: failed, error: failedError } = await supabase
     .from('recipe_shares')
     .select('id, shared_url, error_message')
@@ -52,6 +58,7 @@ export async function getFailedShares(supabase: ServerClient): Promise<FailedSha
   const { data: recipes, error: recipesError } = await supabase
     .from('recipes')
     .select('source_url')
+    .eq('user_id', userId)
     .in('source_url', failedUrls)
 
   // Without the lookup nothing can be auto-resolved: list every failed share

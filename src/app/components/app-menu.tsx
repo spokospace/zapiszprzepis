@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LogOut, Menu, Settings, X, type LucideIcon } from 'lucide-react'
+import { LogIn, LogOut, Menu, Settings, UserPlus, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 
 type MenuLink = { href: string; label: string; icon: LucideIcon }
@@ -11,6 +11,12 @@ type MenuLink = { href: string; label: string; icon: LucideIcon }
 // Navigation entries of the drawer. Later additions (category shortcuts etc.)
 // go here; "Wyloguj" is rendered separately at the bottom.
 const MENU_LINKS: MenuLink[] = [{ href: '/settings', label: 'Ustawienia', icon: Settings }]
+
+// A guest (E01-S02) has no settings and nothing to sign out of.
+const GUEST_LINKS: MenuLink[] = [
+  { href: '/login', label: 'Zaloguj się', icon: LogIn },
+  { href: '/signup', label: 'Załóż konto', icon: UserPlus },
+]
 
 const LABELED_ICON_BUTTON =
   'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100'
@@ -21,9 +27,10 @@ const LABELED_ICON_BUTTON =
  * Built on a native `<dialog>` opened with `showModal()`, which gives Escape to
  * close, a focus trap and an inert page behind it without extra code.
  */
-export function AppMenu() {
+export function AppMenu({ isAuthenticated }: { isAuthenticated: boolean }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const pathname = usePathname()
+  const links = isAuthenticated ? MENU_LINKS : GUEST_LINKS
 
   function close() {
     dialogRef.current?.close()
@@ -73,7 +80,7 @@ export function AppMenu() {
 
           <nav aria-label="Menu główne" className="flex-1 overflow-y-auto py-2">
             <ul>
-              {MENU_LINKS.map(({ href, label, icon: Icon }) => {
+              {links.map(({ href, label, icon: Icon }) => {
                 const active = pathname === href
                 return (
                   <li key={href}>
@@ -95,15 +102,17 @@ export function AppMenu() {
             </ul>
           </nav>
 
-          <form action={signOut} className="border-t border-gray-100 p-2">
-            <button
-              type="submit"
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-4 text-left text-lg font-medium text-gray-800 hover:bg-gray-50"
-            >
-              <LogOut aria-hidden="true" className="h-6 w-6 shrink-0" />
-              Wyloguj
-            </button>
-          </form>
+          {isAuthenticated && (
+            <form action={signOut} className="border-t border-gray-100 p-2">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-4 text-left text-lg font-medium text-gray-800 hover:bg-gray-50"
+              >
+                <LogOut aria-hidden="true" className="h-6 w-6 shrink-0" />
+                Wyloguj
+              </button>
+            </form>
+          )}
         </div>
       </dialog>
     </>

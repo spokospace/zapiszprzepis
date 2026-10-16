@@ -9,6 +9,7 @@
 //   https://github.com/opennextjs/opennextjs-cloudflare/issues/1213
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
+import { isPublicRoute } from '@/lib/routes'
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { response, user } = await updateSession(request)
@@ -45,6 +46,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return user
       ? NextResponse.redirect(new URL('/', request.url))
       : response
+  }
+
+  // E01-S02 public routes: a guest may read the home and a single recipe. Data
+  // visibility is decided by RLS (recipes_public_read), not by this allowlist.
+  // "/recipes" itself is "Moje przepisy" — owner-only — so it stays gated below.
+  if (isPublicRoute(pathname)) {
+    return response
   }
 
   // All other paths require a session.

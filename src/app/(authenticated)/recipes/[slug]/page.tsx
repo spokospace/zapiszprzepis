@@ -1,8 +1,8 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Clock, Flame, Timer, type LucideIcon } from 'lucide-react'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel } from '@/lib/recipe-source'
 import { tagLabel } from '@/lib/recipe-tags'
@@ -45,6 +45,31 @@ function TimeBadge({
   )
 }
 
+/**
+ * A chip that links for a signed-in visitor and is a plain label for a guest: its
+ * filter targets "/recipes" (Moje przepisy, owner-only), which would bounce a
+ * guest to /login. One class string, so the two variants cannot drift.
+ */
+function MaybeLink({
+  href,
+  className,
+  hoverClassName,
+  children,
+}: {
+  href: string | null
+  className: string
+  hoverClassName: string
+  children: React.ReactNode
+}) {
+  return href ? (
+    <Link href={href} className={`${className} ${hoverClassName}`}>
+      {children}
+    </Link>
+  ) : (
+    <span className={className}>{children}</span>
+  )
+}
+
 type Recipe = Database['public']['Tables']['recipes']['Row']
 
 export const metadata = {
@@ -68,26 +93,36 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   const { duplicate, refreshing, refresh_error } = await searchParams
   const supabase = await createSupabaseServerClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
 
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: recipe, error } = await supabase
+  // Public since E01-S02 (recipes_public_read). Slugs are unique per user only, so
+  // one slug can exist for several users: prefer the visitor's own recipe, else the
+  // oldest. (A globally unique slug arrives with E01-S03.)
+  const { data: candidates, error } = await supabase
     .from('recipes')
     .select('*')
     .eq('slug', slug)
-    .single()
+    .order('created_at', { ascending: true })
+    // A guest always takes the first row; only a signed-in visitor looks for their own.
+    .limit(user ? 10 : 1)
 
-  if (error || !recipe) {
-    console.error('[recipe] Query error:', error)
+  const rows = (candidates ?? []) as Recipe[]
+  const typedRecipe = rows.find((r) => r.user_id === user?.id) ?? rows[0]
+
+  if (error || !typedRecipe) {
+    if (error) console.error('[recipe] Query error:', error)
     notFound()
   }
 
-  const typedRecipe = recipe as Recipe
+  // Refresh/delete are the owner's; a guest or another user only reads.
+  const isOwner = typedRecipe.user_id === user?.id
+
+  // Author line (E01-S18 identity) — profiles is anon-readable by design.
+  const { data: author } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', typedRecipe.user_id)
+    .maybeSingle()
 
   // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
   // exception is a full page crash, which would also hide the delete button);
@@ -126,12 +161,13 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             <p className="-mt-2 mb-4 text-lg text-gray-500">{typedRecipe.description}</p>
           )}
           <div className="flex flex-wrap gap-3">
-            <Link
-              href={`/recipes?category=${typedRecipe.category}`}
-              className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded-full hover:bg-orange-200 transition"
+            <MaybeLink
+              href={user ? `/recipes?category=${typedRecipe.category}` : null}
+              className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded-full"
+              hoverClassName="hover:bg-orange-200 transition"
             >
-              <span>{categoryLabel(typedRecipe.category)}</span>
-            </Link>
+              {categoryLabel(typedRecipe.category)}
+            </MaybeLink>
             <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded-full">
               {sourceLabel(typedRecipe.source_type, typedRecipe.source_url, typedRecipe.source_author)}
             </span>
@@ -146,17 +182,25 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               </a>
             )}
           </div>
+          {/* Gender-neutral until E01-S12 supplies gender ("Dodała/Dodał"); plain text
+              until E01-S14 builds /u/{username}, so the line never links to a 404. */}
+          {author?.display_name && (
+            <p className="mt-3 text-base text-gray-600">
+              Dodane przez <span className="font-medium text-gray-900">{author.display_name}</span>
+            </p>
+          )}
           {typedRecipe.tags.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Tagi">
               {typedRecipe.tags.map((tag) => (
                 // Slanted (parallelogram) badge; the inner span skews back so the text stays upright.
                 <li key={tag}>
-                  <Link
-                    href={`/recipes?tag=${tag}`}
-                    className="inline-block -skew-x-12 px-3 py-0.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium hover:bg-orange-100 transition"
+                  <MaybeLink
+                    href={user ? `/recipes?tag=${tag}` : null}
+                    className="inline-block -skew-x-12 px-3 py-0.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-medium"
+                    hoverClassName="hover:bg-orange-100 transition"
                   >
                     <span className="inline-block skew-x-12">{tagLabel(tag)}</span>
-                  </Link>
+                  </MaybeLink>
                 </li>
               ))}
             </ul>
@@ -247,31 +291,36 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           </section>
         )}
 
-        {/* A gallery of one would only repeat the cover. */}
-        {typedRecipe.image_urls.length > 1 && (
+        {/* A gallery of one would only repeat the cover. The gallery is a login perk
+            (E01-S02, Q3): not rendered — so its URLs never reach the browser — for a
+            guest. Note image_urls is a recipes COLUMN, so this is a UI boundary, not
+            an RLS one; a data-level hide would need column privileges or a view. */}
+        {user && typedRecipe.image_urls.length > 1 && (
           <RecipeGallery images={typedRecipe.image_urls} title={typedRecipe.title} />
         )}
 
-        <div className="border-t pt-8 flex items-center justify-between gap-3">
-          <form action={refreshRecipe}>
-            <input type="hidden" name="slug" value={typedRecipe.slug} />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition text-sm font-medium"
-            >
-              Odśwież przepis
-            </button>
-          </form>
-          <form action="/api/recipes/delete" method="POST">
-            <input type="hidden" name="slug" value={typedRecipe.slug} />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm font-medium"
-            >
-              Usuń przepis
-            </button>
-          </form>
-        </div>
+        {isOwner && (
+          <div className="border-t pt-8 flex items-center justify-between gap-3">
+            <form action={refreshRecipe}>
+              <input type="hidden" name="slug" value={typedRecipe.slug} />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition text-sm font-medium"
+              >
+                Odśwież przepis
+              </button>
+            </form>
+            <form action="/api/recipes/delete" method="POST">
+              <input type="hidden" name="slug" value={typedRecipe.slug} />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm font-medium"
+              >
+                Usuń przepis
+              </button>
+            </form>
+          </div>
+        )}
       </PageContainer>
     </div>
   )
