@@ -9,6 +9,8 @@ import { tagLabel } from '@/lib/recipe-tags'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
 import { RecipeGallery } from '@/app/components/recipe-gallery'
+import { FavoriteButton } from '@/app/components/favorite-button'
+import { loginPath, favoriteReturnPath } from '@/lib/login-redirect'
 import { refreshRecipe } from './refresh-action'
 import { formatMinutes } from '@/lib/format-minutes'
 import { cookTimeLabel } from '@/lib/cook-time-label'
@@ -90,12 +92,14 @@ interface RecipeDetailPageProps {
     duplicate?: string
     refreshing?: string
     refresh_error?: string
+    /** Set by the guest heart's login round-trip: add this recipe to favorites (E01-S06). */
+    fav?: string
   }>
 }
 
 export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
-  const { duplicate, refreshing, refresh_error } = await searchParams
+  const { duplicate, refreshing, refresh_error, fav } = await searchParams
   const supabase = await createSupabaseServerClient()
 
   const user = await getCurrentUser()
@@ -131,10 +135,15 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
 
   // The gallery is a login perk (decision Q3). recipe_gallery_images is granted to
   // signed-in users only, so a guest cannot read it through the API either.
-  const { data: gallery } = user
-    ? await supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle()
-    : { data: null }
+  // Favorites are private (owner-only RLS); both reads need a session.
+  const [{ data: gallery }, { data: favorite }] = user
+    ? await Promise.all([
+        supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle(),
+        supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle(),
+      ])
+    : [{ data: null }, { data: null }]
   const galleryImages: string[] = gallery?.image_urls ?? []
+  const isFavorite = Boolean(favorite)
 
   // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
   // exception is a full page crash, which would also hide the delete button);
@@ -201,6 +210,15 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               Dodane przez <span className="font-medium text-gray-900">{typedRecipe.author_name}</span>
             </p>
           )}
+          <div className="mt-4">
+            <FavoriteButton
+              recipeId={typedRecipe.id}
+              initialFavorited={isFavorite}
+              isAuthenticated={Boolean(user)}
+              loginHref={loginPath(favoriteReturnPath(typedRecipe.slug))}
+              autoAdd={fav === '1' && Boolean(user)}
+            />
+          </div>
           {typedRecipe.tags.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Tagi">
               {typedRecipe.tags.map((tag) => (

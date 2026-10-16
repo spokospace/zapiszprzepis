@@ -10,10 +10,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 import { isPublicRoute } from '@/lib/routes'
+import { loginPath, resolveLoginNext } from '@/lib/login-redirect'
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { response, user } = await updateSession(request)
-  const { pathname } = request.nextUrl
+  const { pathname, search, searchParams, origin } = request.nextUrl
 
   // /auth/callback and /auth/confirm always pass through — they open the
   // session themselves from the email link, whatever state the visitor is in.
@@ -43,8 +44,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     || pathname === '/forgot-password' || pathname.startsWith('/forgot-password/')
 
   if (isAuthPage) {
+    // Already signed in: honour where the login link was meant to lead (E01-S06),
+    // validated the same way as after logging in.
     return user
-      ? NextResponse.redirect(new URL('/', request.url))
+      ? NextResponse.redirect(new URL(resolveLoginNext(searchParams.get('next'), origin, '/'), request.url))
       : response
   }
 
@@ -56,9 +59,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
-  // All other paths require a session.
+  // All other paths require a session; come back here after logging in (E01-S06).
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL(loginPath(pathname + search), request.url))
   }
 
   return response
