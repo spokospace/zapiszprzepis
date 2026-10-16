@@ -14,11 +14,18 @@ describe('TRUSTED_RECIPE_DOMAINS', () => {
     expect(new Set(TRUSTED_RECIPE_DOMAINS).size).toBe(TRUSTED_RECIPE_DOMAINS.length)
   })
 
-  it('holds bare lowercase hostnames', () => {
+  // Only Facebook profiles may carry a path: a path on a blog would hide its
+  // posts from Exa, while on facebook.com it is what scopes it to one author.
+  it('holds bare lowercase hostnames, or a facebook.com profile id path', () => {
     for (const domain of TRUSTED_RECIPE_DOMAINS) {
-      expect(domain).toMatch(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/)
+      expect(domain).toMatch(/^[a-z0-9-]+(\.[a-z0-9-]+)+$|^facebook\.com\/\d+$/)
       expect(domain).not.toMatch(/^www\./)
     }
+  })
+
+  it('never lets the whole of facebook.com in', () => {
+    expect(TRUSTED_RECIPE_DOMAINS).not.toContain('facebook.com')
+    expect(TRUSTED_RECIPE_DOMAINS).toContain('facebook.com/100069645633702')
   })
 
   it('includes both the hand-picked portals and the aggregated blogs', () => {
