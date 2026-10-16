@@ -5,6 +5,7 @@ import {
   pickRecipeImage,
   pickGalleryImages,
   buildGallery,
+  coverImage,
   archiveGallery,
   GALLERY_LIMIT,
   isArchivedImageUrl,
@@ -190,6 +191,52 @@ describe('pickRecipeImage — cover fallback for pages without og:image', () => 
   it('reads lazy-loaded sources before the placeholder src', () => {
     const html = `<img data-lazy-src="https://example.com/real.jpg" src="https://example.com/placeholder.png">`
     expect(pickRecipeImage(html)).toBe('https://example.com/real.jpg')
+  })
+})
+
+describe('coverImage — og:image vs the in-content photo', () => {
+  const PAGE = 'https://kulinarnapolska.org/szaszlyki-z-piekarnika-prawdziwa-miesna-uczta-w-domu-przepis'
+  const CONTENT = `
+    <img src="/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-przepis-2.jpg" alt="Szaszłyki z piekarnika">
+    <img src="/wp-content/uploads/2018/04/pasek-kulinarna-polska.png" alt="">`
+
+  it('resolves a relative og:image against the page', () => {
+    const html = `<img src="/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-przepis-2.jpg" alt="Szaszłyki">`
+    expect(coverImage('/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-przepis-2.jpg', html, PAGE)).toBe(
+      'https://kulinarnapolska.org/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-przepis-2.jpg',
+    )
+  })
+
+  it('prefers the in-content photo over a stale site-wide og:image that misses the slug', () => {
+    // The page's own og:image is the same unrelated "flaczki" photo on every
+    // post; the in-content photo matches the szaszłyki slug, so it wins.
+    expect(coverImage('/wp-content/uploads/2019/09/falszywe-flaczki-z-boczniakow-przepis-1-1.jpg', CONTENT, PAGE)).toBe(
+      'https://kulinarnapolska.org/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-przepis-2.jpg',
+    )
+  })
+
+  it('ignores a related-recipe card in a noise section even when it matches the slug', () => {
+    const og = 'https://kulinarnapolska.org/wp-content/uploads/2019/09/falszywe-flaczki-z-boczniakow.jpg'
+    const html = `
+      <img src="https://kulinarnapolska.org/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-przepis-2.jpg" alt="Szaszłyki">
+      <div class="related"><img src="https://kulinarnapolska.org/wp-content/uploads/x/szaszlyki-inne.jpg" alt="inne"></div>`
+    // The in-content szaszłyki photo wins over the stale flaczki og; the
+    // related-section card is cut before the pick.
+    expect(coverImage(og, html, PAGE)).toBe(
+      'https://kulinarnapolska.org/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-przepis-2.jpg',
+    )
+  })
+
+  it('keeps an og:image that matches the dish as well as the content photo', () => {
+    const og = 'https://kulinarnapolska.org/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-hero.jpg'
+    expect(coverImage(og, CONTENT, PAGE)).toBe(og)
+  })
+
+  it('falls back to the in-content pick when there is no og:image, and undefined when neither', () => {
+    expect(coverImage(undefined, CONTENT, PAGE)).toBe(
+      'https://kulinarnapolska.org/wp-content/uploads/2019/07/szaszlyki-z-piekarnika-przepis-2.jpg',
+    )
+    expect(coverImage(undefined, '<p>no images</p>', PAGE)).toBeUndefined()
   })
 })
 
@@ -505,6 +552,42 @@ describe('archiveImage — http and proxy fallback for hosts the Worker cannot f
     await archiveImage(storageMock().client, 'user-1', 60, 'http://10.0.0.1/secret.jpg')
 
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('archiveImage — full-size preference over a WordPress resize', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const RESIZE = 'https://blog.example/a/ciasto-696x464.jpg'
+  const FULL = 'https://blog.example/a/ciasto.jpg'
+
+  it('fetches the full-size original first when given a resize URL', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue(okImageResponse())
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await archiveImage(storageMock().client, 'user-1', 60, RESIZE)
+
+    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(fetchSpy).toHaveBeenCalledOnce()
+    expect(fetchSpy.mock.calls[0][0]).toBe(FULL)
+  })
+
+  it('falls back to the resize URL when the full-size cannot be archived (e.g. over the size cap)', async () => {
+    // The full-size original and its proxy fail (404 / too large); the resize
+    // then archives cleanly, so the cover is never lost.
+    const fetchSpy = vi.fn((input: unknown) => {
+      const url = String(input)
+      const failing = url === FULL || url === proxiedImageUrl(FULL)
+      return Promise.resolve(failing ? { ok: false, status: 404, headers: new Headers() } : okImageResponse())
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await archiveImage(storageMock().client, 'user-1', 60, RESIZE)
+
+    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(fetchSpy.mock.calls.map((c) => c[0])).toContain(RESIZE)
   })
 })
 
