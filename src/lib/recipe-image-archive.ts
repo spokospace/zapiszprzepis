@@ -335,10 +335,17 @@ function isNoiseSection(openTag: string): boolean {
   return false
 }
 
+// The post body itself. A section holding it is page layout, not noise,
+// whatever its class says: krysiagotuje wraps the whole post in
+// `layout-right-sidebar`, and cutting that took every photo with it.
+const POST_BODY_RE =
+  /<main\b|\bitemprop=["']articleBody["']|\bclass=["'](?:[^"']*\s)?(?:entry-content|post-content|post-body)[\s"']/i
+
 /**
  * The html with every noise section cut out, each up to its own closing tag.
  * A section whose closing tag is missing is left in — cutting to the end of
- * the page on broken markup could drop the recipe's own photos.
+ * the page on broken markup could drop the recipe's own photos. So is one
+ * that holds the post body; the noise inside it is still cut.
  */
 function withoutNoiseSections(html: string): string {
   let out = ''
@@ -359,7 +366,7 @@ function withoutNoiseSections(html: string): string {
         break
       }
     }
-    if (end < 0) continue
+    if (end < 0 || POST_BODY_RE.test(html.slice(SECTION_OPEN_RE.lastIndex, end))) continue
     out += html.slice(from, m.index)
     from = end
     SECTION_OPEN_RE.lastIndex = end
