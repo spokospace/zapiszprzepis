@@ -286,3 +286,5 @@ Wydzielone z S03 (decyzja użytkownika 2026-10-16): skoro autor ma być widoczny
 4. **UX/design** — referencje `.dc.html` są kontraktem wyglądu; `om-ux-review-pr` sprawdza zgodność ekranów w PR.
 
 > ⚠️ Projekt `om` (Open Mercato) nie jest zainstalowany w tej sesji — ten backlog jest napisany ręcznie w jego formacie. Aby uruchomić realne skille: `npx skills add open-mercato/skills --skill '*'` + `/om-setup-agent-pipeline` (zapisze `.ai/agentic.config.json` i `SDLC.md`).
+
+> **S18 status (2026-10-16, production):** the `profiles` defaults never use the email address. `display_name` is the first name plus the initial of the last name from OAuth metadata, otherwise "Użytkownik". `username` comes from the first name, otherwise `uzytkownik-N`. The 5 test accounts were re-keyed to `Użytkownik` / `@uzytkownik…`: they still need real names, either set by the user in /settings or set by hand. Migrations `20261016160000` and `20261016190000` are applied in production.
