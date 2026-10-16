@@ -36,6 +36,8 @@ select
   r.steps,
   r.source_type,
   r.source_url,
+  r.source_author,
+  r.times_estimated,
   r.youtube_id,
   r.created_at,
   p.display_name as author_name
