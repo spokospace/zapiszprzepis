@@ -41,7 +41,13 @@ async function settleOnSaved(
     const error = await insertFavorite(supabase, userId, saved.id)
     if (error) throw new Error(`Favorite insert failed: ${error.message}`)
   }
-  await supabase.from('recipe_shares').update({ recipe_id: saved.id, status: 'completed' }).eq('id', shareId)
+  const { error: shareError } = await supabase
+    .from('recipe_shares')
+    .update({ recipe_id: saved.id, status: 'completed' })
+    .eq('id', shareId)
+  // Thrown, so the caller's catch fails the share rather than reporting success
+  // over a share left pending.
+  if (shareError) throw new Error(`Share update failed: ${shareError.message}`)
   return {
     recipeId: saved.id,
     title: saved.title,

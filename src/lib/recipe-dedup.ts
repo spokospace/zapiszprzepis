@@ -137,13 +137,21 @@ export async function findSameRecipe(
 ): Promise<SavedRecipe | null> {
   // ilike, not eq, for the casing; its wildcards in the title are escaped.
   const title = recipe.title.trim().replace(/[\\%_]/g, (c) => '\\' + c)
-  const query = supabase.from('recipes').select('id, slug, title, category, user_id, ingredients')
-  const { data } = await (userId ? query.eq('user_id', userId) : query).ilike('title', title).limit(50)
-  const same = (data ?? []).filter((r) => Array.isArray(r.ingredients) && ingredientsSubsume(r.ingredients, recipe.ingredients))
-  const match = same.find((r) => r.user_id === preferUserId) ?? same[0]
-  return match
-    ? { id: match.id, slug: match.slug, title: match.title, category: match.category, user_id: match.user_id }
-    : null
+  const sameIn = async (ownerId: string | null) => {
+    const query = supabase.from('recipes').select('id, slug, title, category, user_id, ingredients')
+    const { data } = await (ownerId ? query.eq('user_id', ownerId) : query).ilike('title', title).limit(50)
+    return (data ?? []).filter((r) => Array.isArray(r.ingredients) && ingredientsSubsume(r.ingredients, recipe.ingredients))
+  }
+
+  // The preferred user's own copy is looked up on its own first: one page of a
+  // common title site-wide could leave it out and pass someone else's instead.
+  const scopes = userId ? [userId] : preferUserId ? [preferUserId, null] : [null]
+  for (const ownerId of scopes) {
+    const same = await sameIn(ownerId)
+    const match = same.find((r) => r.user_id === preferUserId) ?? same[0]
+    if (match) return { id: match.id, slug: match.slug, title: match.title, category: match.category, user_id: match.user_id }
+  }
+  return null
 }
 
 /** The recipe saved from the same author text (see fingerprintText): the user's own when `userId` is given, else anyone's. */

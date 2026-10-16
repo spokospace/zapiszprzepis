@@ -2,7 +2,8 @@
 -- (supabase/migrations/20261017090000_recipe_ownership_guards.sql).
 --
 -- Build the script as: `begin;` + the migration file + this file, then run it
--- with `supabase db query --linked --project-ref <ref> -f <script>`. The DO
+-- with `supabase db query --linked --project-ref <ref> -f <script>`. Migration
+-- C is live in production since 2026-10-17: there, use `begin;` + this file. The DO
 -- block always ends by raising REHEARSAL_RESULT, so the migration, the test
 -- favorites and the test account delete all roll back. Expected:
 --   T1[P0001 recipe_shared]  T2[undo-ok]  T3[undo-ok]
@@ -15,17 +16,23 @@ declare
   t1 text; t2 text; t3 text; t4 text;
   owner_after uuid; fav_left int; r2_left int;
 begin
-  -- A recipe R of owner A (with another recipe R2 nobody favorites), and a
-  -- user B who has no copy of R's link.
+  -- A recipe R of owner A that nobody else has as a favorite (with another
+  -- recipe R2 nobody else favorites either), and a user B who has no copy of
+  -- R's link and does not favorite R yet — so each test starts from a known state.
   select rec.user_id, rec.id, rec.source_url into a, r, r_url
   from public.recipes rec
   where rec.source_url is not null
     and (select count(*) from public.recipes x where x.user_id = rec.user_id) >= 2
+    and not exists (select 1 from public.favorites f where f.recipe_id = rec.id and f.user_id <> rec.user_id)
   order by rec.id limit 1;
-  select rec.id into r2 from public.recipes rec where rec.user_id = a and rec.id <> r order by rec.id limit 1;
+  select rec.id into r2 from public.recipes rec
+  where rec.user_id = a and rec.id <> r
+    and not exists (select 1 from public.favorites f where f.recipe_id = rec.id and f.user_id <> a)
+  order by rec.id limit 1;
   select u.id into b from auth.users u
   where u.id <> a
     and not exists (select 1 from public.recipes x where x.user_id = u.id and x.source_url = r_url)
+    and not exists (select 1 from public.favorites f where f.user_id = u.id and f.recipe_id = r)
   order by u.created_at limit 1;
 
   -- T1: owner delete refused while B has it as a favorite.
