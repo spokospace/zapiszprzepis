@@ -81,8 +81,8 @@ Takeaway: a recipe is created at most once, and every intake path leaves the use
 - `recipes_merged_duplicates`: a plain column copy of `recipes` (`create table … as select * from recipes where false`; **no indexes, no `nextval` default** [R-H3e]) + `canonical_id`, `merge_id uuid`, `merged_at`. RLS on, no policies (service-only).
 - `recipe_merge_log(merge_id, kind, ref_id, old_value, new_value, created_at)`. `kind` is one of: `share_repoint`, `favorite_repoint`, `favorite_deleted`, `favorite_created`, `failed_share_completed`, `fingerprint_copied`. This records every side effect, so the down path is exact, with no time windows and no marker columns on S06's table [R-H3a, R-H3b].
 - `collapse_recipe_group(canonical_id bigint, loser_ids bigint[], merge_id uuid)`: `security definer`, `set search_path = ''`, `execute` granted to `service_role` only. For each loser, **inside one transaction** and in this order:
-  1. Repoint existing favorites of the loser → canonical. If the favoriter already has the canonical, or **is** the canonical owner, delete that favorite instead (logged) [R-C1].
-  2. Insert a favorite for the loser's owner → canonical, unless they own the canonical (logged).
+  1. Repoint existing favorites of the loser → canonical. If the favoriter already has the canonical, delete the duplicate favorite instead (logged) [R-C1]. A favorite whose user **owns** the canonical is kept: S06 allows favoriting your own recipes (#200).
+  2. Insert a favorite for the loser's owner → canonical, `on conflict do nothing` (logged when inserted). This applies even if they own the canonical, which can't happen for a loser's owner anyway, since the loser is a different row.
   3. Repoint `recipe_shares.recipe_id` loser → canonical, for all statuses (logged by share id).
   4. Mark the loser owner's `failed` shares for that URL `completed` with the canonical id (logged).
   5. Copy the loser's `source_fingerprint` onto the canonical when the canonical has none, and clear it on the loser (logged) [R-M2].
