@@ -1,14 +1,14 @@
--- E01 follow-up to S02 — make public recipe reads FAIL CLOSED.
--- S02's recipes_public_read (using true) made every SELECT on recipes return every
--- user's rows, so any query that forgot a user_id filter leaked across users (the
--- delete route and the failed-shares bell both did, and were patched by hand).
--- Restore owner-only RLS on the table and serve guest reads through views whose
--- column lists ARE the boundary. A forgotten filter on `recipes` now returns only
--- the caller's own rows.
+-- E01 — public recipe reads that FAIL CLOSED.
+-- Guests read recipes through views whose column lists ARE the boundary; the
+-- recipes table keeps owner-only RLS (recipes_user_isolation). A query on
+-- `recipes` that forgets a user_id filter therefore returns only the caller's own
+-- rows. (S02 first opened the table with a permissive `using (true)` SELECT
+-- policy; that migration was dropped before it ever reached a database because it
+-- failed open — the delete route and the failed-shares bell both leaked.)
 --
--- Rollback: drop both views and the index, then re-create recipes_public_read
--- (20261016170000_recipes_public_read.sql).
+-- Rollback: drop both views and idx_recipes_slug. Nothing here changes rows.
 
+-- Defensive: make sure the fail-open policy is absent wherever this runs.
 drop policy if exists recipes_public_read on public.recipes;
 
 -- Guest-safe projection of a recipe plus the author's public display name.
