@@ -19,6 +19,33 @@ export const NO_FAILED_SHARES: FailedSharesResult = { status: 'ok', shares: [] }
 type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
 
 /**
+ * Which of `urls` are the source of a recipe in the user's favorites — a link
+ * someone else added first lands there instead of in "Moje przepisy"
+ * (E01-S03a). Those recipes are usually other people's, which owner-only RLS
+ * hides in `recipes`, so their source comes from public_recipes. A failed
+ * lookup resolves nothing: over-reporting is the safe direction.
+ */
+async function favoritedSourceUrls(supabase: ServerClient, userId: string, urls: string[]): Promise<Set<string>> {
+  const { data: favorites, error } = await supabase.from('favorites').select('recipe_id').eq('user_id', userId)
+  if (error) {
+    console.error('[failed-shares] Failed to load favorites:', error)
+    return new Set()
+  }
+  if (!favorites || favorites.length === 0) return new Set()
+
+  const { data: recipes, error: recipesError } = await supabase
+    .from('public_recipes')
+    .select('source_url')
+    .in('id', favorites.map((f) => f.recipe_id))
+    .in('source_url', urls)
+  if (recipesError) {
+    console.error('[failed-shares] Failed to resolve favorited links:', recipesError)
+    return new Set()
+  }
+  return new Set((recipes ?? []).map((r) => r.source_url).filter((u): u is string => Boolean(u)))
+}
+
+/**
  * Failed extractions that never produced a recipe — surfaced in the header
  * notification bell so no shared URL is silently lost (NFR "żadne żądanie nie
  * ginie cicho"). Two cleanups keep the bell honest:
@@ -55,11 +82,10 @@ export async function getFailedShares(supabase: ServerClient, userId: string): P
   if (!failed || failed.length === 0) return { status: 'ok', shares: [] }
 
   const failedUrls = [...new Set(failed.map((s) => s.shared_url))]
-  const { data: recipes, error: recipesError } = await supabase
-    .from('recipes')
-    .select('source_url')
-    .eq('user_id', userId)
-    .in('source_url', failedUrls)
+  const [{ data: recipes, error: recipesError }, favoritedUrls] = await Promise.all([
+    supabase.from('recipes').select('source_url').eq('user_id', userId).in('source_url', failedUrls),
+    favoritedSourceUrls(supabase, userId, failedUrls),
+  ])
 
   // Without the lookup nothing can be auto-resolved: list every failed share
   // (over-reporting is the safe direction) instead of guessing.
@@ -73,7 +99,7 @@ export async function getFailedShares(supabase: ServerClient, userId: string): P
 
   const seen = new Set<string>()
   const shares = failed.filter((s) => {
-    if (savedUrls.has(s.shared_url)) return false
+    if (savedUrls.has(s.shared_url) || favoritedUrls.has(s.shared_url)) return false
     if (seen.has(s.shared_url)) return false
     seen.add(s.shared_url)
     return true

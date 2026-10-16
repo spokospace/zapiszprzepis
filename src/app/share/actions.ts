@@ -4,10 +4,14 @@ import { inngest } from '@/inngest/client'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
+import { favoriteExistingRecipe } from '@/lib/intake-favorite'
+import { revalidatePath } from 'next/cache'
 
 export type TriggerExtractionResult =
   | { duplicate: 'completed'; slug: string }
   | { duplicate: 'pending' }
+  // Someone else added the link first; it is now in the user's favorites.
+  | { duplicate: 'in_favorites'; slug: string }
   | { shareId: number; message: string }
 
 export async function triggerRecipeExtraction(
@@ -31,6 +35,11 @@ export async function triggerRecipeExtraction(
   }
   if (dedup.status === 'pending') {
     return { duplicate: 'pending' }
+  }
+  if (dedup.status === 'other') {
+    await favoriteExistingRecipe(supabase, user.id, dedup.recipeId, dedup.normalizedUrl)
+    revalidatePath('/ulubione')
+    return { duplicate: 'in_favorites', slug: dedup.slug }
   }
 
   const sourceType = detectSourceType(url)

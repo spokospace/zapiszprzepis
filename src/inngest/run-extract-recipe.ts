@@ -12,7 +12,8 @@ import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutu
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { publicFacebookAuthor } from '@/lib/facebook-authors'
-import { findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
+import { classifyExisting, findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
+import { insertFavorite } from '@/lib/favorites'
 import { fingerprintText } from '@/lib/source-fingerprint'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
@@ -23,6 +24,31 @@ import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 import type { Database } from '@/lib/supabase.types'
+
+/**
+ * The share repeats a saved recipe, so no copy is made. The user's own: link
+ * the share to it. Someone else's (one recipe per link, E01-S03a): add it to
+ * the user's favorites and complete the share. Another owner's row is never
+ * written — no gap-fill, no image archive.
+ */
+async function settleOnSaved(
+  supabase: SupabaseClient,
+  { shareId, userId }: { shareId: number; userId: string },
+  saved: { id: number; title: string; category: string; user_id: string },
+) {
+  const owner = classifyExisting({ ownMatch: saved.user_id === userId, globalMatch: true })
+  if (owner === 'other') {
+    const error = await insertFavorite(supabase, userId, saved.id)
+    if (error) throw new Error(`Favorite insert failed: ${error.message}`)
+  }
+  await supabase.from('recipe_shares').update({ recipe_id: saved.id, status: 'completed' }).eq('id', shareId)
+  return {
+    recipeId: saved.id,
+    title: saved.title,
+    category: saved.category,
+    status: owner === 'own' ? 'duplicate' : 'favorited',
+  }
+}
 
 // Failure copy. These strings are stored verbatim in
 // recipe_shares.error_message and rendered raw in the notification bell, so
@@ -178,12 +204,12 @@ export async function runExtractRecipe(
     return { ...first, markdown, html }
   }
 
-  // The share repeats a recipe the user already has: point it there instead
-  // of saving a copy.
-  async function linkToSaved(saved: { id: number; title: string; category: string }) {
-    await supabase.from('recipe_shares').update({ recipe_id: saved.id, status: 'completed' }).eq('id', shareId)
-    return { recipeId: saved.id, title: saved.title, category: saved.category, status: 'duplicate' }
-  }
+  // The share repeats a recipe someone — the user or anyone else — already
+  // saved: point it there instead of saving a copy (see settleOnSaved). It
+  // can throw, so callers inside the try below `return await` it: a bare
+  // `return` would let the rejection skip the catch that fails the share.
+  const linkToSaved = (saved: { id: number; title: string; category: string; user_id: string }) =>
+    settleOnSaved(supabase, { shareId, userId }, saved)
 
   try {
     let markdown = ''
@@ -225,15 +251,15 @@ export async function runExtractRecipe(
         : null
 
     // A share shortlink names its post only now, after the redirect. Store the
-    // recipe under that post, and when it is already saved — shared earlier by
-    // its permalink or by another shortlink — link this share to it instead of
-    // extracting it a second time.
+    // recipe under that post, and when anyone already saved it — shared earlier
+    // by its permalink or by another shortlink — link this share to it instead
+    // of extracting it a second time.
     const sourceUrl = resolvedSourceUrl(sharedUrl, facebookPost?.canonicalUrl)
     if (!forceRefresh && sourceUrl !== sharedUrl) {
-      const saved = await findRecipeBySourceUrl(supabase, userId, sourceUrl)
+      const saved = await findRecipeBySourceUrl(supabase, null, sourceUrl)
       if (saved) {
         console.log('[extract-recipe] share link resolves to saved recipe', saved.slug)
-        return linkToSaved(saved)
+        return await linkToSaved(saved)
       }
     }
 
@@ -367,10 +393,10 @@ export async function runExtractRecipe(
     // call. A rendered page differs between scrapes, so it gets no fingerprint.
     const sourceFingerprint = trustedContent ? await fingerprintText(markdown) : null
     if (!forceRefresh && sourceFingerprint) {
-      const sameText = await findRecipeBySourceFingerprint(supabase, userId, sourceFingerprint)
+      const sameText = await findRecipeBySourceFingerprint(supabase, null, sourceFingerprint)
       if (sameText) {
         console.log('[extract-recipe] same post text already saved:', sameText.slug)
-        return linkToSaved(sameText)
+        return await linkToSaved(sameText)
       }
     }
 
@@ -547,13 +573,14 @@ Rules:
     }
 
     // The same recipe saved before from another post — its author published
-    // it twice. Link this share to it rather than keep a "-2" copy; checked
-    // before the labelling call, which it makes unnecessary.
+    // it twice — by this user or anyone else. Link this share to it rather
+    // than keep a "-2" copy; checked before the labelling call, which it makes
+    // unnecessary.
     if (!forceRefresh) {
-      const same = await findSameRecipe(supabase, userId, recipeJSON)
+      const same = await findSameRecipe(supabase, null, recipeJSON, userId)
       if (same) {
         console.log('[extract-recipe] same recipe already saved from another post:', same.slug)
-        return linkToSaved(same)
+        return await linkToSaved(same)
       }
     }
 
@@ -632,8 +659,14 @@ Rules:
 
     const baseSlug = slugify(title)
     const SLUG_KEY = 'recipes_user_id_slug_key'
+    // Per-user unique indexes now; global ones once the existing duplicates
+    // are collapsed (E01-S03a migration B). Both are matched, so the deploy
+    // gap is covered. The per-user index always names the user's own row; the
+    // global one names the single row for that key, whoever owns it.
     const URL_KEY = 'recipes_user_source_url_uniq'
+    const GLOBAL_URL_KEY = 'recipes_source_url_uniq'
     const FINGERPRINT_KEY = 'recipes_user_source_fingerprint_uniq'
+    const GLOBAL_FINGERPRINT_KEY = 'recipes_source_fingerprint_uniq'
     const MAX_ATTEMPTS = 10
 
     let recipe: { id: number } | null = null
@@ -689,10 +722,13 @@ Rules:
       }
 
       // Fingerprint collision: a share of the same text from another post
-      // won the race. Link this share to that recipe.
-      if (error?.message.includes(FINGERPRINT_KEY) && sourceFingerprint) {
-        const existing = await findRecipeBySourceFingerprint(supabase, userId, sourceFingerprint)
+      // won the race. Link this share to that recipe — or, when it is someone
+      // else's, add it to the user's favorites.
+      const ownFingerprint = error?.message.includes(FINGERPRINT_KEY) ?? false
+      if (sourceFingerprint && (ownFingerprint || error?.message.includes(GLOBAL_FINGERPRINT_KEY))) {
+        const existing = await findRecipeBySourceFingerprint(supabase, ownFingerprint ? userId : null, sourceFingerprint)
         if (existing) {
+          if (!ownFingerprint && existing.user_id !== userId) return await linkToSaved(existing)
           recipe = { id: existing.id }
           break
         }
@@ -701,14 +737,18 @@ Rules:
       // URL collision: a parallel share won the race, OR this is a refresh
       // run for an already-stored recipe. Link this share to the existing
       // recipe and gap-fill any null fields with newly extracted values
-      // (we never overwrite already-populated fields).
-      if (error?.message.includes(URL_KEY)) {
-        const { data: existing } = await supabase
+      // (we never overwrite already-populated fields). Someone else's recipe
+      // is never gap-filled: it goes to the user's favorites untouched.
+      const ownUrl = error?.message.includes(URL_KEY) ?? false
+      if (ownUrl || error?.message.includes(GLOBAL_URL_KEY)) {
+        const existingQuery = supabase
           .from('recipes')
-          .select('id, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, source_author, description, meta_description, tags')
-          .eq('user_id', userId)
+          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, source_author, description, meta_description, tags')
+        const { data: existing } = await (ownUrl ? existingQuery.eq('user_id', userId) : existingQuery)
           .eq('source_url', sourceUrl)
           .single()
+
+        if (existing && !ownUrl && existing.user_id !== userId) return await linkToSaved(existing)
 
         if (existing) {
           const gapFill: Database['public']['Tables']['recipes']['Update'] = {}

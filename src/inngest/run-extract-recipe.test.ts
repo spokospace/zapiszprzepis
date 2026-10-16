@@ -708,7 +708,7 @@ describe('runExtractRecipe — the same post text saved before', () => {
     const mock = makeSupabaseMock()
     // First lookup: the resolved post URL (not saved); second: the caption's fingerprint.
     mock.queueMaybe('recipes', { data: null, error: null })
-    mock.queueMaybe('recipes', { data: { id: 70, slug: 'placki', title: 'Placki', category: 'sniadania' }, error: null })
+    mock.queueMaybe('recipes', { data: { id: 70, slug: 'placki', title: 'Placki', category: 'sniadania', user_id: 'user-1' }, error: null })
     const fetch = makeFacebookFetchMock()
 
     const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
@@ -769,7 +769,7 @@ describe('runExtractRecipe — source author', () => {
 })
 
 describe('runExtractRecipe — the same recipe from another post', () => {
-  const SAVED = { id: 70, slug: 'nalesniki', title: 'Naleśniki', category: 'sniadania' }
+  const SAVED = { id: 70, slug: 'nalesniki', title: 'Naleśniki', category: 'sniadania', user_id: 'user-1' }
 
   it('links the share to the saved recipe when title and ingredients match', async () => {
     const mock = makeSupabaseMock()
@@ -802,7 +802,7 @@ describe('runExtractRecipe — the same recipe from another post', () => {
 describe('runExtractRecipe — Facebook share link to a saved post', () => {
   it('links the share to the saved recipe without extracting it again', async () => {
     const mock = makeSupabaseMock()
-    mock.queueMaybe('recipes', { data: { id: 5, slug: 'placki', title: 'Placki', category: 'sniadania' }, error: null })
+    mock.queueMaybe('recipes', { data: { id: 5, slug: 'placki', title: 'Placki', category: 'sniadania', user_id: 'user-1' }, error: null })
     const fetch = makeFacebookFetchMock()
 
     const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
@@ -811,6 +811,117 @@ describe('runExtractRecipe — Facebook share link to a saved post', () => {
     expect(mock.didInsert('recipes')).toBe(false)
     expect(mock.didUpdate('recipe_shares', { recipe_id: 5, status: 'completed' })).toBe(true)
     expect(fetch.mock.calls.some((c) => String(c[0]).includes('openai.com'))).toBe(false)
+  })
+})
+
+describe('runExtractRecipe — a link someone else saved first (E01-S03a)', () => {
+  const GLOBAL_URL_COLLISION = {
+    data: null,
+    error: { message: 'duplicate key value violates unique constraint "recipes_source_url_uniq"' },
+  }
+  const THEIRS = {
+    id: 99,
+    user_id: 'user-2',
+    slug: 'nalesniki',
+    title: 'Naleśniki',
+    category: 'sniadania',
+    prep_time_minutes: null,
+    cook_time_minutes: null,
+    total_time_minutes: null,
+    image_url: null,
+    youtube_id: null,
+    source_author: null,
+    description: null,
+    tags: [],
+  }
+
+  it("favorites the other owner's recipe on a cross-owner insert conflict, never writing their row", async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', GLOBAL_URL_COLLISION)
+    mock.queue('recipes', { data: THEIRS, error: null })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 99, status: 'favorited' })
+    expect(mock.insertArgs('favorites')).toEqual({ user_id: 'user-1', recipe_id: 99 })
+    expect(mock.didUpdate('recipe_shares', { recipe_id: 99, status: 'completed' })).toBe(true)
+    // Their row is never gap-filled, and their images are never re-archived.
+    expect(mock.didUpdate('recipes')).toBe(false)
+    expect(archiveRecipeImages).not.toHaveBeenCalled()
+  })
+
+  it("still gap-fills the user's own recipe when the global index reports the conflict", async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', GLOBAL_URL_COLLISION)
+    mock.queue('recipes', { data: { ...THEIRS, user_id: 'user-1' }, error: null })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 99, status: 'completed' })
+    expect(mock.didUpdate('recipes', { prep_time_minutes: 10 })).toBe(true)
+    expect(mock.didInsert('favorites')).toBe(false)
+  })
+
+  it('favorites the same recipe another user saved from a different post, without inserting a copy', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', { data: [{ ...THEIRS, ingredients: [{ name: 'mąka' }] }], error: null })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 99, status: 'favorited' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(mock.insertArgs('favorites')).toEqual({ user_id: 'user-1', recipe_id: 99 })
+  })
+
+  it("prefers the user's own copy when several users saved the same recipe", async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', {
+      data: [
+        { ...THEIRS, ingredients: [{ name: 'mąka' }] },
+        { ...THEIRS, id: 5, user_id: 'user-1', ingredients: [{ name: 'mąka' }] },
+      ],
+      error: null,
+    })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 5, status: 'duplicate' })
+    expect(mock.didInsert('favorites')).toBe(false)
+  })
+
+  it("favorites the same post text another user saved, before any LLM call", async () => {
+    const mock = makeSupabaseMock()
+    // First lookup: the resolved post URL (nobody has it); second: the caption's fingerprint.
+    mock.queueMaybe('recipes', { data: null, error: null })
+    mock.queueMaybe('recipes', { data: THEIRS, error: null })
+    const fetch = makeFacebookFetchMock()
+
+    const result = await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 99, status: 'favorited' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('openai.com'))).toBe(false)
+  })
+
+  it('treats a favorite the user already has as done', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', { data: [{ ...THEIRS, ingredients: [{ name: 'mąka' }] }], error: null })
+    mock.queueList('favorites', { data: null, error: { code: '23505', message: 'duplicate key' } })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 99, status: 'favorited' })
+  })
+
+  it('fails the share when the favorite cannot be saved', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueList('recipes', { data: [{ ...THEIRS, ingredients: [{ name: 'mąka' }] }], error: null })
+    mock.queueList('favorites', { data: null, error: { code: '42501', message: 'permission denied' } })
+
+    await expect(
+      runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any }),
+    ).rejects.toThrow('Favorite insert failed: permission denied')
+    expect(mock.didUpdate('recipe_shares', { status: 'failed' })).toBe(true)
   })
 })
 
