@@ -38,6 +38,7 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'obiady', label: 'Obiady' },
   { value: 'zupy', label: 'Zupy' },
   { value: 'desery', label: 'Desery' },
+  { value: 'ciasta', label: 'Ciasta' },
   { value: 'ciasteczka', label: 'Ciasteczka' },
   { value: 'sniadania', label: 'Śniadania' },
   { value: 'pieczywo', label: 'Pieczywo' },
