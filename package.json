@@ -12,6 +12,7 @@
     "refresh:recipe-times": "node --env-file=.env.local --import tsx scripts/refresh-recipe-times.ts",
     "archive:recipe-images": "node --env-file=.env.local --import tsx scripts/archive-recipe-images.ts",
     "backfill:recipe-tags": "node --env-file=.env.local --import tsx scripts/backfill-recipe-tags.ts",
+    "backfill:source-urls": "node --env-file=.env.local --import tsx scripts/backfill-source-urls.ts",
     "render:banner": "node docs/banner/render.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
