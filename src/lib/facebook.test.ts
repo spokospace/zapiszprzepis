@@ -24,6 +24,13 @@ describe('isWatchLanding', () => {
     expect(isWatchLanding('<meta property="og:url" content="https://www.facebook.com/watch/" />')).toBe(true)
   })
 
+  it('detects the Watch feed served at the removed video’s own URL, with no og tags', () => {
+    const feed =
+      '<title>Film</title><script>{"section_type_name":"WWW_LOE_POPULAR_VIDEOS","section_header":{"message":{"text":"Popularne filmy"}}},' +
+      '"__module_operation_CometVideoHomeSection_section":{}</script>'
+    expect(isWatchLanding(feed)).toBe(true)
+  })
+
   it('leaves a real video or post page alone', () => {
     expect(isWatchLanding('<meta property="og:url" content="https://www.facebook.com/watch/?v=891090724827098" />')).toBe(false)
     expect(

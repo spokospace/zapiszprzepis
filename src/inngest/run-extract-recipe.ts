@@ -475,12 +475,24 @@ Rules:
     // extraction again with the spoken video in front of the LLM. Costs two
     // fetches and one more OpenAI call, and only for videos that need it.
     if (canTryTranscript && (recipeJSON == null || !isExtractedRecipeUsable(recipeJSON))) {
+      const fromDescription = recipeJSON
       const transcript = await fetchYoutubeTranscript(youtubeId, { fetch })
       if (transcript) {
         console.log('[extract-recipe] description had no recipe; retrying with transcript for', youtubeId)
         recipeJSON = await extractWithLlm(transcript)
       } else {
         console.warn('[extract-recipe] no transcript available for', youtubeId)
+      }
+      // The captions found no steps either (a music-only video, or auto
+      // captions in the wrong language). The author's own ingredient list
+      // beats whatever the LLM made of them; the method is in the video, which
+      // the recipe page embeds.
+      if (
+        (recipeJSON == null || !isExtractedRecipeUsable(recipeJSON)) &&
+        fromDescription != null &&
+        isExtractedRecipeUsable(fromDescription, { stepsOptional: true })
+      ) {
+        recipeJSON = fromDescription
       }
     }
 
@@ -496,8 +508,12 @@ Rules:
 
     // Output-side gate (Risk 2): reject body-less recipes before any DB write.
     // Catches the case where the LLM returns a valid title but empty ingredients
-    // or steps — the title-only check above doesn't catch this.
-    if (!isExtractedRecipeUsable(recipeJSON, { stepsOptional: fromPostCaption })) {
+    // or steps — the title-only check above doesn't catch this. A video (a
+    // Facebook post's caption, a YouTube description) may list only the
+    // ingredients and show the method on screen; no retry will find steps the
+    // author never wrote down.
+    const methodMayBeOnScreen = fromPostCaption || sourceType === 'youtube'
+    if (!isExtractedRecipeUsable(recipeJSON, { stepsOptional: methodMayBeOnScreen })) {
       throw new Error(
         fromPostCaption
           ? FB_CAPTION_NO_RECIPE
