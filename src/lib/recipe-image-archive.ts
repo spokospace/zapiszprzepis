@@ -60,44 +60,67 @@ export function proxiedImageUrl(externalUrl: string): string {
   return `${IMAGE_PROXY}${encodeURIComponent(externalUrl)}`
 }
 
+// Polish shared hosting (home.pl, nazwa.pl) often serves a domain over https
+// with the host's default certificate — `*.home.pl` on babskieporady.pl — which
+// matches neither the domain nor any SAN, so the TLS handshake fails both here
+// and in the reader's browser. The file itself is served fine over plain http,
+// so an https URL whose fetch failed at the transport layer is retried over
+// http before the proxy. Downgrading the scheme is safe for a public recipe
+// photo: no credentials ride along, and the SSRF guard already ran on the same
+// host.
+export function insecureHttpUrl(url: string): string | null {
+  return url.startsWith('https://') ? `http://${url.slice('https://'.length)}` : null
+}
+
 interface DownloadedImage {
   bytes: Uint8Array
   contentType: string
   ext: string
 }
 
-// Null on any failure, a network error included: a host unreachable from
-// here is as good a reason to try the proxy as a refused status.
-async function downloadImage(url: string): Promise<DownloadedImage | null> {
-  const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }).catch((error) => {
+interface DownloadResult {
+  image: DownloadedImage | null
+  // True only for a transport-layer failure worth retrying over plain http: a
+  // TLS cert mismatch or a connection error (both throw). A refused status,
+  // wrong MIME, oversize, or a timeout is false — http would not help, so the
+  // caller skips straight to the proxy.
+  transportError: boolean
+}
+
+async function downloadImage(url: string): Promise<DownloadResult> {
+  let response: Response
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+  } catch (error) {
     console.warn(`[archiveImage] download failed for ${url}: ${error instanceof Error ? error.message : String(error)}`)
-    return null
-  })
-  if (!response?.ok) {
-    if (response) console.warn(`[archiveImage] download ${response.status} for ${url}`)
-    return null
+    // A timeout won't resolve any faster over http, so it is not a retry case.
+    return { image: null, transportError: !(error instanceof Error) || error.name !== 'TimeoutError' }
+  }
+  if (!response.ok) {
+    console.warn(`[archiveImage] download ${response.status} for ${url}`)
+    return { image: null, transportError: false }
   }
 
   const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? ''
   const ext = ALLOWED_MIME[contentType]
   if (!ext) {
     console.warn(`[archiveImage] unsupported MIME ${contentType} for ${url}`)
-    return null
+    return { image: null, transportError: false }
   }
 
   const contentLength = response.headers.get('content-length')
   if (contentLength && Number(contentLength) > MAX_BYTES) {
     console.warn(`[archiveImage] too large ${contentLength}B for ${url}`)
-    return null
+    return { image: null, transportError: false }
   }
 
   const bytes = new Uint8Array(await response.arrayBuffer())
   if (bytes.byteLength > MAX_BYTES) {
     console.warn(`[archiveImage] too large after read ${bytes.byteLength}B for ${url}`)
-    return null
+    return { image: null, transportError: false }
   }
 
-  return { bytes, contentType, ext }
+  return { image: { bytes, contentType, ext }, transportError: false }
 }
 
 /** Archives a recipe's cover image as `<user>/<recipe>.<ext>`. */
@@ -125,11 +148,21 @@ async function archiveImageAt(
       return null
     }
 
-    const image =
-      (await downloadImage(externalUrl)) ?? (await downloadImage(proxiedImageUrl(externalUrl)))
-    if (!image) return null
+    // Direct first. A transport failure (a TLS cert mismatch on an SSL-broken
+    // host) retries the same file over plain http; any other failure, and a
+    // failed http retry, falls to the proxy (for a host that refuses the
+    // Worker's address space outright).
+    const httpUrl = insecureHttpUrl(externalUrl)
+    let result = await downloadImage(externalUrl)
+    if (!result.image && result.transportError && httpUrl) {
+      result = await downloadImage(httpUrl)
+    }
+    if (!result.image) {
+      result = await downloadImage(proxiedImageUrl(externalUrl))
+    }
+    if (!result.image) return null
 
-    const { bytes, contentType, ext } = image
+    const { bytes, contentType, ext } = result.image
     const path = `${pathStem}.${ext}`
     const { error: uploadError } = await supabase.storage
       .from('recipe-images')
