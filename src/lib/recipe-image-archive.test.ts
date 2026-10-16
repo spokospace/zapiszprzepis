@@ -238,6 +238,21 @@ describe('coverImage — og:image vs the in-content photo', () => {
     )
     expect(coverImage(undefined, '<p>no images</p>', PAGE)).toBeUndefined()
   })
+
+  it('keeps the og:image when a lightbox <img> merely links back to the article (pysznosci)', () => {
+    // pysznosci.pl (Wirtualna Polska) renders a lightbox whose `wpl-image`
+    // placeholder's src is the article URL itself. It declares no size (so it
+    // clears the size gate) and its "file name" is the page slug, so without a
+    // guard it would score as the best cover and beat the real og:image —
+    // which, being an obfuscated v.wpimg.pl URL, carries no slug word.
+    const PAGE = 'https://pysznosci.pl/ciastka-owsiane-bez-cukru,6966548765367168a'
+    const og = 'https://v.wpimg.pl/MGE5YjMxYiYkVy9ZYgNvM2cPewMkWmFlMBdj'
+    const html = `
+      <img class="wpl-image" aria-describedby="lightbox-caption" alt="" src="${PAGE}">
+      <img role="presentation" class="absolute" src="https://v.wpimg.pl/ZXJfd3AudTkrBBIA" loading="lazy">
+      <img src="https://v.wpimg.pl/NmFhYjU2YQwnCi9ZeklsGWRS">`
+    expect(coverImage(og, html, PAGE)).toBe(og)
+  })
 })
 
 describe('pickGalleryImages — the recipe photos for the gallery', () => {
@@ -373,6 +388,24 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
       'https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-4.jpg',
       'https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-2.jpg',
       'https://ciastkozercy.pl/wp-content/uploads/2019/09/Magdalenki-8.jpg',
+    ])
+  })
+
+  it('drops a decorative lightbox placeholder and an <img> self-linking the page (pysznosci)', () => {
+    // pysznosci.pl's lightbox: a `role="presentation"` spinner repeated per
+    // slot, a `wpl-image` whose src is the article URL, and an `aria-hidden`
+    // flame icon in the exit-intent popup. All carry no size, so the size gate
+    // alone lets them through; all are junk.
+    const PAGE = 'https://pysznosci.pl/ciastka-owsiane-bez-cukru,6966548765367168a'
+    const html = `
+      <img class="wpl-image" aria-describedby="lightbox-caption" alt="" src="${PAGE}">
+      <img role="presentation" class="absolute" src="https://v.wpimg.pl/ZXJfd3AudTkrBBIA" loading="lazy">
+      <img src="https://v.wpimg.pl/MjhlM2MyYgsJDjsBYgJvHkpW" alt="" aria-hidden="true">
+      <img src="https://v.wpimg.pl/NmFhYjU2YQwnCi9ZeklsGWRS">
+      <img src="https://v.wpimg.pl/NGI2YWYxYSYoUC9kdgNsM2sI">`
+    expect(pickGalleryImages(html, PAGE)).toEqual([
+      'https://v.wpimg.pl/NmFhYjU2YQwnCi9ZeklsGWRS',
+      'https://v.wpimg.pl/NGI2YWYxYSYoUC9kdgNsM2sI',
     ])
   })
 
