@@ -1,3 +1,5 @@
+import { parseIngredients } from '@/lib/ingredients'
+
 /**
  * Tags: extra, overlapping labels on top of the one category (an occasion, a
  * pastry type, a leading ingredient). The list is CLOSED on purpose — letting
@@ -161,4 +163,50 @@ export function resolveDescription(raw: unknown, title: string): string | null {
     .filter((part) => part.length > 0 && !stems(part).some((s) => titleStems.has(s)))
     .join(', ')
   return text.length > 0 && text.length <= 80 ? text : null
+}
+
+// Google renders roughly the first 150-160 characters of a meta description
+// before truncating it with an ellipsis of its own, so we keep ours inside that
+// budget and cut it ourselves, on a word boundary, when the model runs long.
+export const META_DESCRIPTION_MAX = 160
+
+/**
+ * The LLM's SEO meta description: one plain sentence describing the dish, or
+ * null when it gave nothing usable. Unlike the distinguishing note this is a
+ * full sentence and may repeat the title — it is for search results and link
+ * previews, not the on-page subtitle. Over Google's display budget it is
+ * trimmed to the last whole word and finished with an ellipsis.
+ */
+export function resolveMetaDescription(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  // Models sometimes wrap the sentence in quotes; strip any surrounding quote chars.
+  const text = raw.replace(/\s+/g, ' ').trim().replace(/^["'„”]+|["'”]+$/g, '').trim()
+  if (text.length === 0) return null
+  if (text.length <= META_DESCRIPTION_MAX) return text
+  // Leave one char for the ellipsis, then cut back to the last whole word.
+  const head = text.slice(0, META_DESCRIPTION_MAX - 1)
+  const lastSpace = head.lastIndexOf(' ')
+  const trimmed = (lastSpace > 0 ? head.slice(0, lastSpace) : head).replace(/[.,;:!?]+$/, '')
+  return `${trimmed}…`
+}
+
+/**
+ * The self-derived meta description: a sentence built from the title, the
+ * distinguishing note and the first few ingredients, clamped by
+ * resolveMetaDescription. Used wherever the stored meta_description is missing —
+ * the recipe page's render fallback and the one-off migration generator — so the
+ * wording stays identical across them.
+ */
+export function buildFallbackMetaDescription(recipe: {
+  title: string
+  description: string | null
+  ingredients: unknown
+}): string {
+  const names = parseIngredients(recipe.ingredients)
+    .map((i) => i.name?.trim())
+    .filter((n): n is string => Boolean(n))
+    .slice(0, 6)
+  const note = recipe.description ? ` — ${recipe.description}` : ''
+  const ingredients = names.length ? `. Składniki: ${names.join(', ')}` : ''
+  return resolveMetaDescription(`${recipe.title}${note}${ingredients}`) ?? `${recipe.title} — przepis krok po kroku.`
 }

@@ -1,11 +1,13 @@
+import { cache } from 'react'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Clock, Flame, Timer, type LucideIcon } from 'lucide-react'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
+import { buildFallbackMetaDescription, tagLabel } from '@/lib/recipe-tags'
 import { sourceLabel } from '@/lib/recipe-source'
-import { tagLabel } from '@/lib/recipe-tags'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
 import { RecipeGallery } from '@/app/components/recipe-gallery'
@@ -79,9 +81,59 @@ type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_fingerprint'
   author_name: string | null
 }
 
-export const metadata = {
-  title: 'Przepis',
-  description: 'Szczegóły przepisu',
+/**
+ * One guest-safe read of the recipe for this slug, shared by generateMetadata
+ * and the page through React cache() so a single render hits the DB once.
+ * Everyone reads through the public_recipes view (recipes itself is owner-only
+ * RLS). Slugs are unique per user only, so one slug can resolve to several rows:
+ * prefer the signed-in visitor's own, else the oldest. (A globally unique slug
+ * arrives with E01-S03.)
+ */
+const loadRecipe = cache(async (slug: string) => {
+  const supabase = await createSupabaseServerClient()
+  const user = await getCurrentUser()
+  const [{ data: candidates, error }, { data: own }] = await Promise.all([
+    supabase
+      .from('public_recipes')
+      .select('*')
+      .eq('slug', slug)
+      .order('created_at', { ascending: true })
+      // A guest always takes the first row; only a signed-in visitor looks for their own.
+      .limit(user ? 10 : 1),
+    user
+      ? supabase.from('recipes').select('id').eq('slug', slug).eq('user_id', user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
+  const rows = (candidates ?? []) as PublicRecipe[]
+  const recipe = rows.find((r) => r.id === own?.id) ?? rows[0] ?? null
+  // Refresh/delete are the owner's; a guest or another user only reads.
+  return { recipe, error, isOwner: own?.id != null && recipe?.id === own.id, user }
+})
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  // Crawlers and link-preview bots are anonymous, so the metadata describes what
+  // a guest sees; meta_description falls back to a self-derived sentence.
+  const { recipe } = await loadRecipe(slug)
+  if (!recipe) return { title: 'Przepis', description: 'Szczegóły przepisu' }
+
+  const description = recipe.meta_description ?? buildFallbackMetaDescription(recipe)
+  const images = recipe.image_url ? [recipe.image_url] : undefined
+  return {
+    title: recipe.title,
+    description,
+    openGraph: {
+      title: recipe.title,
+      description,
+      type: 'article',
+      ...(images ? { images } : {}),
+    },
+    twitter: {
+      card: images ? 'summary_large_image' : 'summary',
+      title: recipe.title,
+      description,
+    },
+  }
 }
 
 interface RecipeDetailPageProps {
@@ -100,50 +152,29 @@ interface RecipeDetailPageProps {
 export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
   const { duplicate, refreshing, refresh_error, fav } = await searchParams
-  const supabase = await createSupabaseServerClient()
 
-  const user = await getCurrentUser()
-
-  // Everyone reads through the guest-safe public_recipes view (recipes itself is
-  // owner-only RLS). Slugs are unique per user only, so one slug can exist for
-  // several users: prefer the visitor's own recipe, else the oldest. The visitor's
-  // own id comes from `recipes`, where RLS already limits rows to them. (A globally
-  // unique slug arrives with E01-S03.)
-  const [{ data: candidates, error }, { data: own }] = await Promise.all([
-    supabase
-      .from('public_recipes')
-      .select('*')
-      .eq('slug', slug)
-      .order('created_at', { ascending: true })
-      // A guest always takes the first row; only a signed-in visitor looks for their own.
-      .limit(user ? 10 : 1),
-    user
-      ? supabase.from('recipes').select('id').eq('slug', slug).eq('user_id', user.id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ])
-
-  const rows = (candidates ?? []) as PublicRecipe[]
-  const typedRecipe = rows.find((r) => r.id === own?.id) ?? rows[0]
+  const { recipe: typedRecipe, error, isOwner, user } = await loadRecipe(slug)
 
   if (error || !typedRecipe) {
     if (error) console.error('[recipe] Query error:', error)
     notFound()
   }
 
-  // Refresh/delete are the owner's; a guest or another user only reads.
-  const isOwner = own?.id === typedRecipe.id
-
   // The gallery is a login perk (decision Q3). recipe_gallery_images is granted to
   // signed-in users only, so a guest cannot read it through the API either.
-  // Favorites are private (owner-only RLS); both reads need a session.
-  const [{ data: gallery }, { data: favorite }] = user
-    ? await Promise.all([
-        supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle(),
-        supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle(),
-      ])
-    : [{ data: null }, { data: null }]
-  const galleryImages: string[] = gallery?.image_urls ?? []
-  const isFavorite = Boolean(favorite)
+  // The gallery is a login perk (decision Q3); favorites are private (owner-only
+  // RLS). Both reads need a session, so they share one client and one round trip.
+  let galleryImages: string[] = []
+  let isFavorite = false
+  if (user) {
+    const supabase = await createSupabaseServerClient()
+    const [{ data: gallery }, { data: favorite }] = await Promise.all([
+      supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle(),
+      supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle(),
+    ])
+    galleryImages = gallery?.image_urls ?? []
+    isFavorite = Boolean(favorite)
+  }
 
   // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
   // exception is a full page crash, which would also hide the delete button);
@@ -180,6 +211,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{typedRecipe.title}</h1>
           {typedRecipe.description && (
             <p className="-mt-2 mb-4 text-lg text-gray-500">{typedRecipe.description}</p>
+          )}
+          {typedRecipe.meta_description && (
+            <p className="mb-5 text-lg leading-relaxed text-gray-700">{typedRecipe.meta_description}</p>
           )}
           <div className="flex flex-wrap gap-3">
             <MaybeLink

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { formatExistingRecipes, LABELING_PROMPT, labelRecipe, resolveTitle } from '@/lib/recipe-labeling'
+import { formatExistingRecipes, generateMetaDescription, isNearCopy, LABELING_PROMPT, labelRecipe, resolveTitle } from '@/lib/recipe-labeling'
 
 const RECIPE = {
   title: 'Bardzo Kruche Ciastka',
@@ -48,12 +48,18 @@ describe('formatExistingRecipes', () => {
 })
 
 describe('labelRecipe', () => {
-  it('returns the re-cased title, the note and the resolved tags', async () => {
-    const fetch = openaiReply({ title: 'Bardzo kruche ciastka', description: 'z polewą czekoladową', tags: ['czekoladowe', 'nowy'] })
+  it('returns the re-cased title, the note, the meta description and the resolved tags', async () => {
+    const fetch = openaiReply({
+      title: 'Bardzo kruche ciastka',
+      description: 'z polewą czekoladową',
+      metaDescription: 'Bardzo kruche ciastka maślane z polewą czekoladową — prosty przepis na chrupiące ciasteczka.',
+      tags: ['czekoladowe', 'nowy'],
+    })
 
     await expect(labelRecipe(RECIPE, [], { fetch, apiKey: 'k' })).resolves.toEqual({
       title: 'Bardzo kruche ciastka',
       description: 'z polewą czekoladową',
+      metaDescription: 'Bardzo kruche ciastka maślane z polewą czekoladową — prosty przepis na chrupiące ciasteczka.',
       tags: ['kruche', 'szybkie', 'czekoladowe'],
     })
   })
@@ -74,7 +80,65 @@ describe('labelRecipe', () => {
     await expect(labelRecipe(RECIPE, [], { fetch, apiKey: 'k' })).resolves.toEqual({
       title: 'Bardzo Kruche Ciastka',
       description: null,
+      metaDescription: null,
       tags: ['kruche', 'szybkie'],
     })
+  })
+})
+
+describe('generateMetaDescription', () => {
+  it('returns the clamped sentence and passes the source description as a hint', async () => {
+    const fetch = openaiReply({ metaDescription: 'Kruche ciastka maślane, chrupiące i proste w wykonaniu.' })
+
+    await expect(
+      generateMetaDescription(RECIPE, { sourceDescription: 'Najlepsze kruche ciastka!', fetch, apiKey: 'k' }),
+    ).resolves.toBe('Kruche ciastka maślane, chrupiące i proste w wykonaniu.')
+
+    const body = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body))
+    expect(JSON.parse(body.messages[1].content).sourceDescription).toBe('Najlepsze kruche ciastka!')
+  })
+
+  it('returns null when the call fails, so the caller can fall back', async () => {
+    const fetch = vi.fn(async () => {
+      throw new Error('network down')
+    }) as unknown as typeof globalThis.fetch
+
+    await expect(generateMetaDescription(RECIPE, { fetch, apiKey: 'k' })).resolves.toBeNull()
+  })
+
+  it('retries without the hint when the model echoes the source, then keeps the rewrite', async () => {
+    const source = 'Najlepsze kruche ciastka maślane prosto z pieca.'
+    const replies = [source, 'Maślane ciasteczka, które rozpływają się w ustach — szybkie i chrupiące.']
+    const fetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ choices: [{ message: { content: JSON.stringify({ metaDescription: replies.shift() }) } }] }),
+    })) as unknown as typeof globalThis.fetch
+
+    await expect(generateMetaDescription(RECIPE, { sourceDescription: source, fetch, apiKey: 'k' })).resolves.toBe(
+      'Maślane ciasteczka, które rozpływają się w ustach — szybkie i chrupiące.',
+    )
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2)
+  })
+
+  it('returns null when even the retry echoes the source, so the caller falls back', async () => {
+    const source = 'Najlepsze kruche ciastka maślane prosto z pieca.'
+    const fetch = openaiReply({ metaDescription: source })
+
+    await expect(
+      generateMetaDescription(RECIPE, { sourceDescription: source, fetch, apiKey: 'k' }),
+    ).resolves.toBeNull()
+  })
+})
+
+describe('isNearCopy', () => {
+  it('flags verbatim and lightly-reworded copies', () => {
+    expect(isNearCopy('Kruche ciastka maślane.', 'kruche ciastka maślane')).toBe(true)
+    expect(isNearCopy('Najlepsze kruche ciastka maślane z pieca, extra.', 'Najlepsze kruche ciastka maślane z pieca')).toBe(true)
+  })
+
+  it('allows a genuinely different sentence', () => {
+    expect(isNearCopy('Maślane ciasteczka, które rozpływają się w ustach.', 'Najlepsze kruche ciastka z pieca')).toBe(false)
+    expect(isNearCopy('', 'cokolwiek')).toBe(false)
   })
 })

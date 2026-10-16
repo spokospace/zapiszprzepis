@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { MAX_TAGS, RECIPE_TAGS, resolveDescription, resolveTags, tagLabel } from '@/lib/recipe-tags'
+import {
+  MAX_TAGS,
+  META_DESCRIPTION_MAX,
+  RECIPE_TAGS,
+  resolveDescription,
+  resolveMetaDescription,
+  resolveTags,
+  tagLabel,
+} from '@/lib/recipe-tags'
 
 describe('resolveTags', () => {
   it('adds the tags the title names outright, whatever the LLM said', () => {
@@ -77,5 +85,33 @@ describe('resolveDescription', () => {
     expect(resolveDescription('', 'Tiramisu')).toBeNull()
     expect(resolveDescription(null, 'Tiramisu')).toBeNull()
     expect(resolveDescription('x'.repeat(81), 'Tiramisu')).toBeNull()
+  })
+})
+
+describe('resolveMetaDescription', () => {
+  it('keeps a sentence within budget, collapsing whitespace', () => {
+    expect(resolveMetaDescription('  Kruche ciastka   maślane z polewą.  ')).toBe('Kruche ciastka maślane z polewą.')
+  })
+
+  it('strips a surrounding pair of quotes', () => {
+    expect(resolveMetaDescription('„Sernik na zimno z truskawkami"')).toBe('Sernik na zimno z truskawkami')
+    expect(resolveMetaDescription('"Prosty przepis"')).toBe('Prosty przepis')
+  })
+
+  it('drops empty and non-string input', () => {
+    expect(resolveMetaDescription('')).toBeNull()
+    expect(resolveMetaDescription('   ')).toBeNull()
+    expect(resolveMetaDescription(null)).toBeNull()
+    expect(resolveMetaDescription(42)).toBeNull()
+  })
+
+  it('truncates on a word boundary with an ellipsis past Google\'s budget', () => {
+    const long = `${'słowo '.repeat(40)}koniec`
+    const out = resolveMetaDescription(long)!
+    expect(out.length).toBeLessThanOrEqual(META_DESCRIPTION_MAX)
+    expect(out.endsWith('…')).toBe(true)
+    // Cut on a boundary: no dangling partial word before the ellipsis.
+    expect(out).not.toMatch(/sło…$/)
+    expect(out.slice(0, -1).trim().endsWith('słowo')).toBe(true)
   })
 })
