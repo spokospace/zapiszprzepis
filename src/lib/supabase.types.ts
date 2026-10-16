@@ -105,6 +105,7 @@ export type Database = {
           source_url: string | null
           steps: Json
           tags: string[]
+          times_estimated: boolean
           title: string
           total_time_minutes: number | null
           updated_at: string
@@ -129,6 +130,7 @@ export type Database = {
           source_url?: string | null
           steps?: Json
           tags?: string[]
+          times_estimated?: boolean
           title: string
           total_time_minutes?: number | null
           updated_at?: string
@@ -153,6 +155,7 @@ export type Database = {
           source_url?: string | null
           steps?: Json
           tags?: string[]
+          times_estimated?: boolean
           title?: string
           total_time_minutes?: number | null
           updated_at?: string
