@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}input:focus-visible,button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}@keyframes zpspin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<section id="4" style="padding:48px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:600px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">4</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Wyszukiwarka · styl 1c</span></div>
+      <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Jedno pole: najpierw przepisy w serwisie, potem blogi</div>
+      <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekran jest klikalny. Wpisz hasło, wybierz podpowiedź albo naciśnij „Szukaj”, potem przełącz na „Na blogach”. Przełącznik obok zmienia, kim jest użytkownik.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px 20px;max-width:440px">
+      <span style="font-size:15px;font-weight:700;color:#111827">Pokaż jako</span>
+      <div role="radiogroup" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        <sc-for list="{{ roles }}" as="r" hint-placeholder-count="3"><button role="radio" aria-checked="{{ r.on }}" onClick="{{ r.pick }}" style="height:48px;border-radius:10px;border:2px solid {{ r.border }};background:{{ r.bg }};color:{{ r.fg }};font:700 15px Arial;cursor:pointer">{{ r.l }}</button></sc-for>
+      </div>
+      <span style="font-size:15px;color:#374151;line-height:1.5">{{ roleNote }}</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">4a</b> · Prototyp</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 12px 4px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Wróć</span>
+          <div style="display:flex;align-items:center;gap:4px"><sc-if value="{{ notGuest }}" hint-placeholder-val="{{ true }}"><span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span><span style="position:relative;min-width:100px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia<span style="position:absolute;top:0;right:26px;min-width:22px;height:22px;border-radius:999px;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">1</span></span></sc-if><sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}"><span style="height:52px;padding:0 14px;border-radius:12px;border:2px solid #4b5563;color:#111827;display:inline-flex;align-items:center;font-size:17px;font-weight:700;white-space:nowrap">Zaloguj się</span></sc-if><span style="width:60px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span></div>
+        </div>
+        <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;border-bottom:1px solid #f3f4f6">
+          <label for="q" style="font-size:18px;font-weight:700;color:#111827">Czego szukasz?</label>
+          <div style="display:flex;align-items:center;gap:8px;border:2px solid {{ inputBorder }};border-radius:14px;padding:0 6px 0 14px;height:60px">
+            <span style="display:inline-flex;color:#374151"><i data-lucide="search" width="24" height="24"></i></span>
+            <input id="q" value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ onFocus }}" onKeyDown="{{ onKey }}" placeholder="Danie lub składnik, np. dynia" autocomplete="off" style="flex:1;min-width:0;border:none;outline-offset:6px;font:19px Arial;color:#111827;background:none">
+            <sc-if value="{{ hasQ }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clear }}" style="height:48px;padding:0 10px;border:none;background:none;display:inline-flex;align-items:center;gap:4px;font:700 16px Arial;color:#111827;cursor:pointer"><i data-lucide="x" width="20" height="20"></i>Wyczyść</button></sc-if>
+            <sc-if value="{{ noQ }}" hint-placeholder-val="{{ true }}"><span style="height:48px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;font-size:16px;font-weight:700;color:#111827"><i data-lucide="mic" width="22" height="22"></i>Powiedz</span></sc-if>
+          </div>
+          <sc-if value="{{ isSuggest }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ submit }}" style="height:58px;border-radius:14px;border:none;background:#c2410c;color:#fff;font:700 19px Arial;cursor:pointer">Szukaj</button>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ isSuggest }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:20px">
+            <sc-if value="{{ showRecent }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:17px;font-weight:700;color:#374151">Ostatnio szukane</span>
+                <sc-for list="{{ recentQ }}" as="r" hint-placeholder-count="3"><button onClick="{{ r.pick }}" style="flex-shrink:0;min-height:52px;display:flex;align-items:center;gap:12px;padding:0 4px;border:none;border-bottom:1.5px solid #e5e7eb;background:none;font:19px Arial;color:#111827;text-align:left;cursor:pointer"><span style="display:inline-flex;color:#374151"><i data-lucide="history" width="22" height="22"></i></span>{{ r.t }}</button></sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:17px;font-weight:700;color:#374151">Albo wybierz kategorię</span>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <sc-for list="{{ cats }}" as="c" hint-placeholder-count="6"><button onClick="{{ c.pick }}" style="height:56px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:14px;background:#fff7ed;border:1.5px solid #fed7aa;cursor:pointer;font:700 18px Arial;color:#111827"><span style="display:inline-flex;color:#9a3412"><i data-lucide="{{ c.i }}" width="24" height="24"></i></span>{{ c.l }}</button></sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ showLive }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:17px;font-weight:700;color:#374151">Podpowiedzi</span>
+                <sc-for list="{{ live }}" as="r" hint-placeholder-count="4"><button onClick="{{ r.open }}" style="flex-shrink:0;min-height:60px;display:flex;align-items:center;gap:12px;padding:6px 4px;border:none;border-bottom:1.5px solid #e5e7eb;background:none;text-align:left;cursor:pointer"><span style="width:48px;height:48px;flex-shrink:0;border-radius:10px;background:repeating-linear-gradient(135deg,#fdf0e4 0 8px,#fbe6d3 8px 16px)"></span><span style="display:flex;flex-direction:column;gap:2px"><span style="font:700 19px Arial;color:#111827">{{ r.t }}</span><span style="font:16px Arial;color:#374151">{{ r.c }}</span></span></button></sc-for>
+                <button onClick="{{ submit }}" style="min-height:56px;display:flex;align-items:center;gap:10px;padding:0 4px;border:none;background:none;font:700 18px Arial;color:#9a3412;text-decoration:underline;cursor:pointer;text-align:left">Pokaż wszystkie wyniki dla „{{ q }}”</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isResults }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:12px 16px 0;flex-shrink:0">
+            <div role="tablist" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <button role="tab" aria-selected="{{ tabLocalOn }}" onClick="{{ toLocal }}" style="min-height:60px;border-radius:12px;border:2px solid {{ tabLocalBorder }};background:{{ tabLocalBg }};color:{{ tabLocalFg }};font:700 17px Arial;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.2">W serwisie<span style="font-size:15px;font-weight:400">{{ localCount }}</span></button>
+              <button role="tab" aria-selected="{{ tabWebOn }}" onClick="{{ toWeb }}" style="min-height:60px;border-radius:12px;border:2px solid {{ tabWebBorder }};background:{{ tabWebBg }};color:{{ tabWebFg }};font:700 17px Arial;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.2"><span style="display:inline-flex;align-items:center;gap:6px">Na blogach<sc-if value="{{ webLocked }}" hint-placeholder-val="{{ false }}"><i data-lucide="lock" width="16" height="16"></i></sc-if></span><span style="font-size:15px;font-weight:400">{{ webCountLabel }}</span></button>
+            </div>
+          </div>
+
+          <sc-if value="{{ tabLocal }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px">
+              <sc-if value="{{ showScope }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:16px;font-weight:700;color:#111827">Szukaj w:</span>
+                  <div style="display:grid;grid-template-columns:{{ scopeCols }};gap:6px">
+                    <sc-for list="{{ scopes }}" as="s" hint-placeholder-count="2"><button onClick="{{ s.pick }}" aria-pressed="{{ s.on }}" style="height:50px;border-radius:12px;border:2px solid {{ s.border }};background:{{ s.bg }};color:{{ s.fg }};font:700 16px Arial;cursor:pointer">{{ s.l }}</button></sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasLocal }}" hint-placeholder-val="{{ true }}">
+                <span style="flex-shrink:0;font-size:18px;color:#111827"><b>{{ localCountText }}</b> dla „{{ q }}”</span>
+                <sc-for list="{{ localResults }}" as="r" hint-placeholder-count="3">
+                  <div style="flex-shrink:0;border:2px solid #e5e7eb;border-radius:16px;overflow:hidden">
+                    <div style="display:flex;gap:12px;padding:12px">
+                      <div style="width:84px;height:84px;flex-shrink:0;border-radius:12px;background:repeating-linear-gradient(135deg,#fdf0e4 0 8px,#fbe6d3 8px 16px)"></div>
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px"><span style="font-size:19px;font-weight:700;color:#111827;line-height:1.25">{{ r.t }}</span><span style="font-size:16px;color:#374151">{{ r.c }} · {{ r.time }}</span><span style="font-size:16px;color:#374151">{{ r.a }}</span></div>
+                    </div>
+                    <button onClick="{{ r.fav }}" style="width:100%;height:52px;border:none;border-top:2px solid #e5e7eb;background:{{ r.favBg }};color:{{ r.favFg }};display:flex;align-items:center;justify-content:center;gap:8px;font:700 17px Arial;cursor:pointer"><i data-lucide="heart" width="22" height="22" fill="{{ r.favFill }}"></i>{{ r.favLabel }}</button>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{ noLocal }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:10px;padding:8px 0">
+                  <span style="font-size:22px;font-weight:700;color:#111827">Nie mamy jeszcze przepisu „{{ q }}”</span>
+                  <span style="font-size:18px;color:#374151;line-height:1.5">Sprawdź pisownię albo wpisz jeden składnik, np. „dynia”.</span>
+                </div>
+              </sc-if>
+              <div style="flex-shrink:0;margin-top:6px;border:2px dashed #9ca3af;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:18px;font-weight:700;color:#111827">{{ webPromptTitle }}</span>
+                <span style="font-size:16px;color:#374151;line-height:1.5">Przeszukamy polskie blogi kulinarne i strony z przepisami.</span>
+                <button onClick="{{ toWeb }}" style="height:56px;border-radius:14px;border:2px solid #4b5563;background:#fff;color:#111827;font:700 18px Arial;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><i data-lucide="globe" width="22" height="22"></i>Szukaj „{{ q }}” na blogach</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tabWeb }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1;overflow:auto;padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px">
+              <sc-if value="{{ webLocked }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
+                  <span style="width:64px;height:64px;border-radius:999px;background:#fff7ed;color:#9a3412;display:flex;align-items:center;justify-content:center"><i data-lucide="lock" width="30" height="30"></i></span>
+                  <span style="font-size:24px;font-weight:700;color:#111827;line-height:1.25">Szukanie na blogach po zalogowaniu</span>
+                  <span style="font-size:18px;color:#374151;line-height:1.5">Znajdziemy przepis „{{ q }}” na polskich blogach kulinarnych. Logowanie przez Facebooka lub Google, bez nowego hasła.</span>
+                  <button style="height:60px;border-radius:14px;border:none;background:#1877f2;color:#fff;font:700 19px Arial;cursor:pointer">Zaloguj przez Facebooka</button>
+                  <button style="height:60px;border-radius:14px;border:2px solid #4b5563;background:#fff;color:#111827;font:700 19px Arial;cursor:pointer">Zaloguj przez Google</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ webLoading }}" hint-placeholder-val="{{ false }}">
+                <div role="status" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 0;text-align:center">
+                  {{ spinner }}
+                  <span style="font-size:20px;font-weight:700;color:#111827">Szukamy na blogach…</span>
+                  <span style="font-size:17px;color:#374151">To trwa kilka sekund.</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ webReady }}" hint-placeholder-val="{{ false }}">
+                <span style="flex-shrink:0;font-size:18px;color:#111827"><b>{{ webCountText }}</b> z blogów dla „{{ q }}”</span>
+                <sc-if value="{{ savedMsg }}" hint-placeholder-val="{{ false }}"><div role="status" style="flex-shrink:0;background:#111827;color:#fff;border-radius:12px;padding:14px 16px;font-size:17px;line-height:1.45">Zapisujemy przepis. Pojawi się w „Moich przepisach” za 1–3 minuty.</div></sc-if>
+                <sc-for list="{{ webResults }}" as="w" hint-placeholder-count="3">
+                  <div style="flex-shrink:0;border:2px solid #e5e7eb;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px">
+                    <span style="font-size:16px;color:#374151;display:flex;align-items:center;gap:6px"><i data-lucide="globe" width="18" height="18"></i>{{ w.domain }}</span>
+                    <span style="font-size:19px;font-weight:700;color:#111827;line-height:1.3">{{ w.t }}</span>
+                    <span style="font-size:17px;color:#374151;line-height:1.5">{{ w.snippet }}</span>
+                    <sc-if value="{{ w.isExisting }}" hint-placeholder-val="{{ false }}"><span style="font-size:16px;font-weight:700;color:#14532d;background:#dcfce7;border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:center"><i data-lucide="check" width="20" height="20"></i>{{ w.existingText }}</span></sc-if>
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-top:2px">
+                      <button onClick="{{ w.primary }}" style="height:54px;border-radius:12px;border:{{ w.pBorder }};background:{{ w.pBg }};color:{{ w.pFg }};font:700 17px Arial;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><i data-lucide="{{ w.pIcon }}" width="20" height="20"></i>{{ w.pLabel }}</button>
+                      <span style="height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font:700 16px Arial;color:#111827;text-decoration:underline"><i data-lucide="external-link" width="18" height="18"></i>Otwórz stronę bloga</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </sc-if>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:460px;font-size:16px;line-height:1.55;color:#374151">
+      <div style="font-size:20px;font-weight:700;color:#111827">Jak działa</div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <span><b style="color:#111827">Zanim wpiszesz:</b> ostatnio szukane hasła i kategorie. Bez pustego ekranu.</span>
+        <span><b style="color:#111827">Podczas pisania:</b> do 4 podpowiedzi z serwisu, od 2 liter. Podpowiedź otwiera przepis, a „Pokaż wszystkie wyniki” pokazuje listę.</span>
+        <span><b style="color:#111827">Dwie zakładki zamiast jednej długiej listy:</b> „W serwisie” od razu, „Na blogach” dopiero po wybraniu. Szukanie na blogach trwa kilka sekund i jest płatne za zapytanie, więc nie uruchamiamy go przy każdym wyszukaniu.</span>
+        <span><b style="color:#111827">Wynik z bloga, który już mamy:</b> zamiast zapisywać drugi raz, pokazujemy „Ten przepis jest już w ZapiszPrzepis” i przycisk do niego. Własny zapisany: „Masz go w Moich przepisach”.</span>
+        <span><b style="color:#111827">Zapis z bloga:</b> tylko z pełnym dostępem, bo tworzy własny przepis. Zalogowany bez dostępu widzi „Odblokuj zapisywanie” (ekran z kodem 3c).</span>
+        <span><b style="color:#111827">Gość:</b> szuka w serwisie, zakładka blogów jest widoczna z kłódką i prowadzi do logowania.</span>
+      </div>
+      <div style="font-size:15px;color:#374151">W kodzie: wyniki z blogów to istniejące <span style="font-family:monospace">searchViaExa</span> (5 wyników, fragmenty o składnikach). Dziś działa tylko w formularzu dodawania. Trzeba sprawdzać zgodność adresu z przepisami wszystkich użytkowników, nie tylko własnymi.</div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { role: 'user', q: '', screen: 'suggest', tab: 'local', scope: 'all', webState: 'idle', favs: { 0: true }, saved: {}, savedMsg: false };
+  componentDidMount() { this.icons(); }
+  componentDidUpdate() { this.icons(); }
+  componentWillUnmount() { clearTimeout(this.t); }
+  icons() { setTimeout(() => window.lucide && window.lucide.createIcons(), 0); }
+  recipes = [
+    { t: 'Zupa krem z dyni', c: 'Zupy', time: '45 minut', a: 'aniagotuje.pl', k: 'dynia zupa krem', mine: true },
+    { t: 'Ciasto dyniowe z kruszonką', c: 'Desery', time: '1 godz. 10 min', a: 'kwestiasmaku.com', k: 'dynia ciasto' },
+    { t: 'Risotto z dynią i szałwią', c: 'Obiady', time: '40 minut', a: 'YouTube · Kuchnia Marka', k: 'dynia risotto ryż' },
+    { t: 'Placuszki dyniowe', c: 'Śniadania', time: '25 minut', a: 'aniagotuje.pl', k: 'dynia placki', mine: true },
+    { t: 'Pierogi ruskie', c: 'Obiady', time: '1 godz. 30 min', a: 'kwestiasmaku.com', k: 'pierogi ziemniaki ser' },
+    { t: 'Pierogi z kapustą i grzybami', c: 'Obiady', time: '2 godz.', a: 'mojewypieki.com', k: 'pierogi kapusta grzyby' },
+    { t: 'Tiramisu klasyczne', c: 'Desery', time: '30 minut', a: 'kwestiasmaku.com', k: 'tiramisu mascarpone kawa' },
+    { t: 'Barszcz czerwony', c: 'Zupy', time: '1 godz. 30 min', a: 'YouTube · Kuchnia Marka', k: 'barszcz buraki zupa' },
+    { t: 'Placki ziemniaczane', c: 'Obiady', time: '40 minut', a: 'mojewypieki.com', k: 'placki ziemniaki' },
+  ];
+  web(q) {
+    const k = q.toLowerCase();
+    if (k.includes('dyni') || k.includes('dyn')) return [
+      { domain: 'kwestiasmaku.com', t: 'Zupa krem z dyni z imbirem', snippet: 'Dynię pokrój w kostkę, podsmaż z cebulą i imbirem, zalej bulionem i gotuj 20 minut…', st: 'new' },
+      { domain: 'aniagotuje.pl', t: 'Zupa krem z dyni hokkaido', snippet: 'Składniki: 1 kg dyni hokkaido, cebula, 2 ząbki czosnku, 1 l bulionu, mleczko kokosowe…', st: 'existing', by: 'aniagotuje.pl' },
+      { domain: 'mojewypieki.com', t: 'Ciasto dyniowe (pumpkin pie)', snippet: 'Purée z pieczonej dyni wymieszaj z jajkami, cukrem i przyprawą do piernika…', st: 'new' },
+      { domain: 'smaker.pl', t: 'Gnocchi z dyni', snippet: 'Upieczoną dynię przetrzyj, dodaj mąkę i żółtko, uformuj wałeczki i pokrój…', st: 'new' },
+    ];
+    const Q = q.charAt(0).toUpperCase() + q.slice(1);
+    return [
+      { domain: 'kwestiasmaku.com', t: `${Q} — przepis tradycyjny`, snippet: 'Składniki i sposób przygotowania krok po kroku, ze zdjęciami…', st: 'new' },
+      { domain: 'aniagotuje.pl', t: `${Q} jak u babci`, snippet: 'Sprawdzony przepis na rodzinny obiad, prosty i szybki…', st: 'new' },
+      { domain: 'przepisy.pl', t: `${Q} w 30 minut`, snippet: 'Wersja na co dzień, z łatwo dostępnych składników…', st: 'new' },
+    ];
+  }
+  renderVals() {
+    const s = this.state, role = s.role, q = s.q.trim();
+    const set = (p) => this.setState(p);
+    const match = (r) => { const k = q.toLowerCase().slice(0, Math.max(3, q.length - 1)); return (r.t + ' ' + r.k).toLowerCase().includes(k); };
+    const startWeb = () => {
+      if (role === 'guest') return set({ tab: 'web' });
+      if (s.webState === 'ready') return set({ tab: 'web' });
+      set({ tab: 'web', webState: 'loading' });
+      clearTimeout(this.t); this.t = setTimeout(() => this.setState({ webState: 'ready' }), 1400);
+    };
+    const submitWith = (val) => set({ q: val, screen: 'results', tab: 'local', webState: 'idle', saved: {}, savedMsg: false });
+    let local = q ? this.recipes.map((r, i) => ({ ...r, i })).filter(match) : [];
+    if (s.scope === 'mine') local = local.filter(r => r.mine);
+    if (s.scope === 'fav') local = local.filter(r => s.favs[r.i]);
+    const pl = (n) => n === 1 ? '1 przepis' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? `${n} przepisy` : `${n} przepisów`;
+    const tabBtn = (on) => ({ border: on ? '#111827' : '#d1d5db', bg: on ? '#111827' : '#fff', fg: on ? '#fff' : '#111827' });
+    const tl = tabBtn(s.tab === 'local'), tw = tabBtn(s.tab === 'web');
+    const scopeDefs = [['all', 'Wszystkich'], ...(role === 'full' ? [['mine', 'Moich']] : []), ['fav', 'Ulubionych']];
+    const webRes = this.web(q || 'dynia').map((w, i) => {
+      const saved = s.saved[i];
+      let p;
+      if (w.st === 'existing') p = { pLabel: 'Otwórz w ZapiszPrzepis', pIcon: 'arrow-right', pBg: '#c2410c', pFg: '#fff', pBorder: 'none', primary: () => {} };
+      else if (saved) p = { pLabel: 'Zapisujemy…', pIcon: 'loader', pBg: '#f3f4f6', pFg: '#111827', pBorder: '2px solid #d1d5db', primary: () => {} };
+      else if (role === 'full') p = { pLabel: 'Zapisz do moich przepisów', pIcon: 'plus', pBg: '#c2410c', pFg: '#fff', pBorder: 'none', primary: () => this.setState(x => ({ saved: { ...x.saved, [i]: true }, savedMsg: true })) };
+      else p = { pLabel: 'Odblokuj zapisywanie', pIcon: 'lock', pBg: '#fff', pFg: '#111827', pBorder: '2px solid #4b5563', primary: () => {} };
+      return { ...w, ...p, isExisting: w.st === 'existing', existingText: 'Ten przepis jest już w ZapiszPrzepis' };
+    });
+    const roleNotes = { guest: 'Gość: szuka w serwisie. Zakładka „Na blogach” prowadzi do logowania. Brak „Szukaj w:”.', user: 'Zalogowany bez pełnego dostępu: szuka w serwisie, w ulubionych i na blogach. Z bloga może otworzyć stronę, zapis wymaga odblokowania.', full: 'Pełny dostęp: dodatkowo „Moich” w zakresie i „Zapisz do moich przepisów” przy wynikach z blogów.' };
+    return {
+      roles: [['guest', 'Gość'], ['user', 'Zalogowany'], ['full', 'Pełny dostęp']].map(([v, l]) => ({ l, on: String(role === v), border: role === v ? '#111827' : '#d1d5db', bg: role === v ? '#111827' : '#fff', fg: role === v ? '#fff' : '#111827', pick: () => set({ role: v, scope: 'all', webState: 'idle', saved: {}, savedMsg: false, tab: 'local' }) })),
+      roleNote: roleNotes[role], isGuest: role === 'guest', notGuest: role !== 'guest',
+      q: s.q, hasQ: !!s.q, noQ: !s.q,
+      inputBorder: s.screen === 'suggest' ? '#c2410c' : '#4b5563',
+      onQ: e => set({ q: e.target.value, screen: 'suggest' }),
+      onFocus: () => set({ screen: 'suggest' }),
+      onKey: e => { if (e.key === 'Enter' && q) submitWith(q); },
+      clear: () => set({ q: '', screen: 'suggest' }),
+      submit: () => q && submitWith(q),
+      isSuggest: s.screen === 'suggest', isResults: s.screen === 'results',
+      showRecent: q.length < 2, showLive: q.length >= 2,
+      recentQ: ['dynia', 'pierogi', 'tiramisu'].map(t => ({ t, pick: () => submitWith(t) })),
+      cats: [['Obiady','utensils'],['Zupy','soup'],['Desery','cake-slice'],['Śniadania','coffee'],['Sałatki','salad'],['Przekąski','sandwich']].map(([l, i]) => ({ l, i, pick: () => submitWith(l.toLowerCase()) })),
+      live: this.recipes.filter(r => q.length >= 2 && (r.t + ' ' + r.k).toLowerCase().includes(q.toLowerCase())).slice(0, 4).map(r => ({ ...r, open: () => submitWith(q) })),
+      tabLocal: s.tab === 'local', tabWeb: s.tab === 'web',
+      tabLocalOn: String(s.tab === 'local'), tabWebOn: String(s.tab === 'web'),
+      tabLocalBorder: tl.border, tabLocalBg: tl.bg, tabLocalFg: tl.fg,
+      tabWebBorder: tw.border, tabWebBg: tw.bg, tabWebFg: tw.fg,
+      toLocal: () => set({ tab: 'local' }), toWeb: startWeb,
+      localCount: pl(local.length),
+      webLocked: role === 'guest',
+      webCountLabel: role === 'guest' ? 'po zalogowaniu' : s.webState === 'ready' ? pl(webRes.length) : 'kliknij, aby szukać',
+      showScope: role !== 'guest',
+      scopeCols: `repeat(${scopeDefs.length},1fr)`,
+      scopes: scopeDefs.map(([v, l]) => ({ l, on: String(s.scope === v), border: s.scope === v ? '#111827' : '#d1d5db', bg: s.scope === v ? '#111827' : '#fff', fg: s.scope === v ? '#fff' : '#111827', pick: () => set({ scope: v }) })),
+      hasLocal: local.length > 0, noLocal: local.length === 0,
+      localCountText: pl(local.length),
+      localResults: local.map(r => {
+        const on = !!s.favs[r.i];
+        const guest = role === 'guest';
+        return { ...r, favBg: on ? '#fff7ed' : '#fff', favFg: on ? '#9a3412' : '#111827', favFill: on ? 'currentColor' : 'none', favLabel: guest ? 'Zaloguj się, aby dodać do ulubionych' : on ? 'W ulubionych' : 'Dodaj do ulubionych', fav: () => !guest && this.setState(x => ({ favs: { ...x.favs, [r.i]: !x.favs[r.i] } })) };
+      }),
+      webPromptTitle: local.length ? 'Szukasz innej wersji?' : 'Poszukaj na blogach',
+      webLoading: role !== 'guest' && s.webState === 'loading',
+      webReady: role !== 'guest' && s.webState === 'ready',
+      webCountText: pl(webRes.length), webResults: webRes, savedMsg: s.savedMsg,
+      spinner: React.createElement('span', { 'aria-hidden': true, style: { width: 48, height: 48, borderRadius: 999, border: '5px solid #fed7aa', borderTopColor: '#c2410c', animation: 'zpspin 0.9s linear infinite', display: 'block' } }),
+    };
+  }
+}
+</script>
+</body>
+</html>

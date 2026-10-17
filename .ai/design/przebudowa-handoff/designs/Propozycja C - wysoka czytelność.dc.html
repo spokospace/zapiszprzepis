@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}</style>
+</helmet>
+<section id="1c" style="padding:48px;display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">1c</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#4b5563">Kierunek C · Wysoka czytelność (na bazie 1a)</span></div>
+      <div style="font-size:32px;font-weight:700;color:#111827;line-height:1.15;text-wrap:pretty">Duży tekst, wysoki kontrast, mniej rzeczy naraz</div>
+      <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Układ i nawigacja jak w <a href="Propozycja A.dc.html">1a</a>, ale przepisane pod wzrok i palce starszych osób. Ekran przepisu jest klikalny: zmień rozmiar tekstu, odhacz składniki, dodaj do ulubionych, otwórz tryb gotowania.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;max-width:520px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px 24px;font-size:15px;line-height:1.45;color:#374151">
+      <b style="color:#111827">Tekst</b><span>treść 19 px, interlinia 1,6; pomocniczy min. 16 px w kolorze gray-700</span>
+      <b style="color:#111827">Kontrast</b><span>przyciski <span style="font-family:monospace">#c2410c</span> z białym tekstem (5,2:1 zamiast 2,8:1)</span>
+      <b style="color:#111827">Dotyk</b><span>przyciski 56 px, odstęp min. 8 px, serce jako przycisk z napisem</span>
+      <b style="color:#111827">Prostota</b><span>bez przewijania w bok, każda ikona podpisana, jedna główna akcja na ekran</span>
+      <b style="color:#111827">WCAG 2.2 AA</b><span>standard dla 1a, 1b i 1c: widoczny focus (3 px obrys), podkreślone linki, etykiety pól widoczne nad polem, komunikaty ogłaszane czytnikom ekranu, działanie przy powiększeniu 200% i dużej czcionce systemowej</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+
+    <!-- C1 Home -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">C1</b> · Strona główna — zalogowany</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:10px 12px 10px 16px;display:flex;align-items:center;justify-content:space-between">
+          <img src="public/logo-lettering.svg" width="120" height="30" alt="ZapiszPrzepis">
+          <div style="display:flex;align-items:stretch;gap:4px">
+            <span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span>
+            <span style="position:relative;min-width:100px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia<span style="position:absolute;top:0;right:26px;min-width:22px;height:22px;border-radius:999px;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">1</span></span>
+            <span style="width:60px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span>
+          </div>
+        </div>
+        <div style="padding:24px 16px;display:flex;flex-direction:column;gap:18px">
+          <div style="font-size:28px;font-weight:700;color:#111827">Dzień dobry, Aniu</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:18px;font-weight:700;color:#111827">Czego szukasz?</span>
+            <div style="display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #4b5563;border-radius:14px;padding:0 14px;height:60px"><span style="display:inline-flex;color:#374151"><i data-lucide="search" width="24" height="24"></i></span><span style="flex:1;font-size:19px;color:#4b5563">np. zupa z dyni</span></div>
+            <span style="height:58px;border-radius:14px;background:#c2410c;color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;justify-content:center">Szukaj</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:14px;border:2px solid #e5e7eb;border-radius:16px;padding:16px;min-height:64px"><span style="display:inline-flex;color:#9a3412"><i data-lucide="book-open" width="28" height="28"></i></span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:700;color:#111827">Moje przepisy</span><span style="font-size:16px;color:#374151">24 dodane przez Ciebie</span></span><span style="display:inline-flex;color:#374151"><i data-lucide="chevron-right" width="26" height="26"></i></span></div>
+            <div style="display:flex;align-items:center;gap:14px;border:2px solid #e5e7eb;border-radius:16px;padding:16px;min-height:64px"><span style="display:inline-flex;color:#9a3412"><i data-lucide="heart" width="28" height="28"></i></span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:700;color:#111827">Ulubione</span><span style="font-size:16px;color:#374151">12 przepisów</span></span><span style="display:inline-flex;color:#374151"><i data-lucide="chevron-right" width="26" height="26"></i></span></div>
+            <div style="display:flex;align-items:center;gap:14px;border:2px solid #e5e7eb;border-radius:16px;padding:16px;min-height:64px"><span style="display:inline-flex;color:#9a3412"><i data-lucide="plus" width="28" height="28"></i></span><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:700;color:#111827">Dodaj przepis</span><span style="font-size:16px;color:#374151">z linku · ze zdjęcia wkrótce</span></span><span style="display:inline-flex;color:#374151"><i data-lucide="chevron-right" width="26" height="26"></i></span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">
+            <span style="font-size:22px;font-weight:700;color:#111827">Kategorie</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <sc-for list="{{ cats }}" as="c" hint-placeholder-count="9"><div style="display:flex;align-items:center;gap:10px;padding:0 14px;height:56px;border-radius:14px;background:#fff7ed;border:1.5px solid #fed7aa"><span style="display:inline-flex;color:#9a3412"><i data-lucide="{{ c.i }}" width="24" height="24" stroke-width="2"></i></span><span style="font-size:18px;font-weight:700;color:#111827">{{ c.l }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">Kafle zamiast siatki zdjęć: pełne zdania, duża strzałka, cały wiersz klikalny. Kategorie w dwóch kolumnach, wszystkie widoczne bez przewijania w bok.</div>
+    </div>
+
+    <!-- C2 Results -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">C2</b> · Wyniki wyszukiwania</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 12px 4px 8px;display:flex;align-items:center;justify-content:space-between">
+          <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Wróć</span>
+          <div style="display:flex;align-items:stretch;gap:4px"><span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span><span style="position:relative;min-width:100px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia<span style="position:absolute;top:0;right:26px;min-width:22px;height:22px;border-radius:999px;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">1</span></span><span style="width:60px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span></div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:10px;border:2px solid #4b5563;border-radius:14px;padding:0 6px 0 14px;height:60px"><span style="display:inline-flex;color:#374151"><i data-lucide="search" width="24" height="24"></i></span><span style="flex:1;font-size:19px;color:#111827">dynia</span><span style="height:48px;padding:0 10px;display:inline-flex;align-items:center;gap:4px;font-size:16px;font-weight:700;color:#111827"><i data-lucide="x" width="20" height="20"></i>Wyczyść</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:16px;font-weight:700;color:#111827">Szukaj w:</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+              <span style="height:52px;border-radius:12px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">Wszystkich</span>
+              <span style="height:52px;border-radius:12px;border:2px solid #d1d5db;color:#111827;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">Moich</span>
+              <span style="height:52px;border-radius:12px;border:2px solid #d1d5db;color:#111827;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">Ulubionych</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <span style="font-size:19px;color:#111827"><b>18 przepisów</b> dla „dynia”</span>
+            <span style="height:48px;padding:0 12px;border-radius:12px;border:2px solid #d1d5db;display:inline-flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:#111827;white-space:nowrap"><i data-lucide="sliders-horizontal" width="20" height="20"></i>Kategoria</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ results }}" as="r" hint-placeholder-count="4">
+              <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden">
+                <div style="display:flex;gap:12px;padding:12px">
+                  <div style="width:96px;height:96px;flex-shrink:0;border-radius:12px;background:repeating-linear-gradient(135deg,#fdf0e4 0 8px,#fbe6d3 8px 16px)"></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <span style="font-size:20px;font-weight:700;color:#111827;line-height:1.25">{{ r.t }}</span>
+                    <span style="font-size:16px;color:#374151;line-height:1.4">{{ r.c }} · {{ r.time }}</span>
+                    <span style="font-size:16px;color:#374151">{{ r.a }}</span>
+                  </div>
+                </div>
+                <sc-if value="{{ r.fav }}" hint-placeholder-val="{{ false }}">
+                  <span style="height:52px;border-top:2px solid #e5e7eb;background:#fff7ed;color:#9a3412;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700"><i data-lucide="heart" width="22" height="22" fill="currentColor"></i>W ulubionych</span>
+                </sc-if>
+                <sc-if value="{{ r.notFav }}" hint-placeholder-val="{{ true }}">
+                  <span style="height:52px;border-top:2px solid #e5e7eb;color:#111827;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700"><i data-lucide="heart" width="22" height="22"></i>Dodaj do ulubionych</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <span style="height:56px;border-radius:14px;border:2px solid #4b5563;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#111827">Pokaż kolejne 14</span>
+        </div>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">„Szukaj w:” zamiast samych nazw zakładek. Serce dostaje cały pasek pod kartą z napisem, więc trudno trafić obok. „Pokaż kolejne” zamiast nieskończonego przewijania: łatwiej wrócić do tego samego miejsca.</div>
+    </div>
+
+    <!-- C3 Recipe interactive -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">C3</b> · Przepis — klikalny</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 12px 4px 8px;display:flex;align-items:center;justify-content:space-between">
+          <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Wyniki</span>
+          <div style="display:flex;align-items:stretch;gap:4px"><span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span><span style="position:relative;min-width:100px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia<span style="position:absolute;top:0;right:26px;min-width:22px;height:22px;border-radius:999px;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">1</span></span><span style="width:60px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span></div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+          <div style="aspect-ratio:4/3;border-radius:16px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px);position:relative"><span style="position:absolute;left:12px;bottom:10px;font:12px monospace;color:#9a3412">zdjęcie główne</span></div>
+          <div style="font-size:32px;font-weight:700;color:#111827;line-height:1.15">Zupa krem z dyni</div>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;color:#374151">Zupy · 45 minut</span><span style="display:flex;align-items:center;gap:8px;font-size:18px;color:#111827"><i data-lucide="globe" width="20" height="20"></i>Źródło: <b>YouTube · Kuchnia Ani</b></span><span style="font-size:16px;color:#374151">Dodała <a href="#">Ania K.</a></span></div>
+          <sc-if value="{{ fav }}" hint-placeholder-val="{{ false }}">
+            <span onClick="{{ toggleFav }}" style="cursor:pointer;height:58px;border-radius:14px;background:#c2410c;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-size:19px;font-weight:700"><i data-lucide="heart" width="24" height="24" fill="currentColor"></i>W ulubionych · usuń</span>
+          </sc-if>
+          <sc-if value="{{ notFav }}" hint-placeholder-val="{{ true }}">
+            <span onClick="{{ toggleFav }}" style="cursor:pointer;height:58px;border-radius:14px;border:2.5px solid #c2410c;color:#9a3412;display:flex;align-items:center;justify-content:center;gap:10px;font-size:19px;font-weight:700"><i data-lucide="heart" width="24" height="24"></i>Dodaj do ulubionych</span>
+          </sc-if>
+          <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#111827;color:#fff;border-radius:12px;padding:14px 16px;font-size:17px;display:flex;justify-content:space-between;align-items:center"><span>Dodano do ulubionych</span><span onClick="{{ toggleFav }}" style="cursor:pointer;font-weight:700;text-decoration:underline">Cofnij</span></div>
+          </sc-if>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f3f4f6;border-radius:14px;padding:8px 8px 8px 14px">
+            <span style="font-size:16px;font-weight:700;color:#111827">Wielkość tekstu</span>
+            <div style="display:flex;gap:4px">
+              <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="3"><span onClick="{{ s.pick }}" style="cursor:pointer;width:52px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:{{ s.fs }};background:{{ s.bg }};color:{{ s.fg }}">{{ s.l }}</span></sc-for>
+            </div>
+          </div>
+          <span onClick="{{ openCook }}" style="cursor:pointer;height:58px;border-radius:14px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;font-size:19px;font-weight:700"><i data-lucide="chef-hat" width="24" height="24"></i>Tryb gotowania</span>
+          <div style="zoom:{{ zoom }};display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:24px;font-weight:700;color:#111827">Składniki</span><span style="font-size:16px;color:#374151">na 4 porcje</span></div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ ingredients }}" as="g" hint-placeholder-count="5">
+                <div onClick="{{ g.toggle }}" style="cursor:pointer;display:flex;align-items:center;gap:14px;min-height:56px;padding:6px 4px;border-bottom:1.5px solid #e5e7eb">
+                  <span style="width:32px;height:32px;flex-shrink:0;border-radius:8px;border:2.5px solid #4b5563;background:{{ g.boxBg }};color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ g.mark }}</span>
+                  <span style="flex:1;font-size:19px;line-height:1.4;color:{{ g.color }};text-decoration:{{ g.deco }}">{{ g.n }}</span>
+                  <b style="font-size:19px;color:{{ g.color }};white-space:nowrap">{{ g.a }}</b>
+                </div>
+              </sc-for>
+            </div>
+            <span style="font-size:24px;font-weight:700;color:#111827;margin-top:8px">Przygotowanie</span>
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;color:#9a3412">Krok {{ s.n }} z 3</span><span style="font-size:19px;line-height:1.6;color:#111827">{{ s.t }}</span></div></sc-for>
+            </div>
+          </div>
+          <div style="border-top:2px solid #e5e7eb;padding-top:16px;display:flex;flex-direction:column;gap:8px">
+            <span style="height:64px;border-radius:14px;border:2px solid #d1d5db;padding:0 14px;display:flex;align-items:center;gap:12px;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:700;color:#374151">Poprzedni przepis</span><span style="font-size:18px;font-weight:700">Barszcz czerwony</span></span></span>
+            <span style="height:64px;border-radius:14px;border:2px solid #d1d5db;padding:0 14px;display:flex;align-items:center;gap:12px;color:#111827;justify-content:space-between"><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:700;color:#374151">Następny przepis</span><span style="font-size:18px;font-weight:700">Ciasto dyniowe z kruszonką</span></span><i data-lucide="arrow-right" width="24" height="24"></i></span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">Wielkość tekstu zapamiętana na urządzeniu. Składniki do odhaczania palcem. Kroki z podpisem „Krok 2 z 3”, a nie tylko z numerem w kółku. Poprzedni / następny jeden pod drugim, żeby zmieściły się pełne tytuły.</div>
+    </div>
+
+    <!-- C4 Cooking mode -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">C4</b> · Tryb gotowania — klikalny</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#111827;color:#fff;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.15)">
+        <div style="padding:8px 8px 8px 20px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:17px;font-weight:700;color:#e5e7eb">Zupa krem z dyni</span>
+          <span style="height:56px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700"><i data-lucide="x" width="26" height="26"></i>Zakończ</span>
+        </div>
+        <div style="display:flex;gap:6px;padding:0 20px">
+          <sc-for list="{{ progress }}" as="p" hint-placeholder-count="3"><span style="flex:1;height:8px;border-radius:99px;background:{{ p.bg }}"></span></sc-for>
+        </div>
+        <div style="flex:1;padding:28px 20px;display:flex;flex-direction:column;gap:20px">
+          <span style="font-size:22px;font-weight:700;color:#fdba74">Krok {{ cookN }} z 3</span>
+          <span style="font-size:30px;line-height:1.45;font-weight:600;text-wrap:pretty">{{ cookText }}</span>
+          <span style="font-size:17px;color:#d1d5db;display:flex;align-items:center;gap:8px"><i data-lucide="sun" width="20" height="20"></i>Ekran nie wygaśnie podczas gotowania</span>
+        </div>
+        <div style="padding:16px;display:grid;grid-template-columns:1fr 1.4fr;gap:10px">
+          <span onClick="{{ prevStep }}" style="cursor:pointer;height:72px;border-radius:16px;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;gap:6px;font-size:20px;font-weight:700"><i data-lucide="arrow-left" width="24" height="24"></i>Wstecz</span>
+          <span onClick="{{ nextStep }}" style="cursor:pointer;height:72px;border-radius:16px;background:#ea580c;color:#111827;display:flex;align-items:center;justify-content:center;gap:6px;font-size:22px;font-weight:700">Dalej<i data-lucide="arrow-right" width="26" height="26"></i></span>
+        </div>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">Jeden krok na ekran w 30 px, ciemne tło nie razi w kuchni. Przycisk „Dalej” na pół ekranu, ciemny tekst na jasnym pomarańczu (kontrast 5,6:1). Ekran nie gaśnie (Wake Lock API).</div>
+    </div>
+
+    <!-- C5 Menu -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">C5</b> · Menu na cały ekran</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 8px 4px 20px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:22px;font-weight:700;color:#111827">Menu</span>
+          <span style="height:56px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="x" width="26" height="26"></i>Zamknij</span>
+        </div>
+        <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding:8px 0">
+          <div style="padding:12px 20px 4px;font-size:16px;font-weight:700;color:#374151">Moje</div>
+          <div style="display:flex;align-items:center;gap:14px;height:58px;padding:0 20px;font-size:20px;font-weight:700;color:#111827"><i data-lucide="book-open" width="26" height="26"></i><span style="flex:1">Moje przepisy</span><span style="font-size:17px;color:#374151;font-weight:400">24</span></div>
+          <div style="display:flex;align-items:center;gap:14px;height:58px;padding:0 20px;font-size:20px;font-weight:700;color:#111827"><i data-lucide="heart" width="26" height="26"></i><span style="flex:1">Ulubione</span><span style="font-size:17px;color:#374151;font-weight:400">12</span></div>
+          <div style="display:flex;align-items:center;gap:14px;height:58px;padding:0 20px;font-size:20px;font-weight:700;color:#9a3412"><i data-lucide="plus" width="26" height="26"></i>Dodaj przepis</div>
+          <div style="margin:10px 20px;border-top:2px solid #e5e7eb"></div>
+          <div style="padding:4px 20px 8px;font-size:16px;font-weight:700;color:#374151">Wszystkie przepisy według kategorii</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px">
+            <sc-for list="{{ cats }}" as="c" hint-placeholder-count="9"><div style="display:flex;align-items:center;gap:10px;padding:0 12px;height:54px;border-radius:12px;background:#fff7ed;border:1.5px solid #fed7aa"><span style="display:inline-flex;color:#9a3412"><i data-lucide="{{ c.i }}" width="22" height="22"></i></span><span style="font-size:18px;font-weight:700;color:#111827">{{ c.l }}</span></div></sc-for>
+          </div>
+        </div>
+        <div style="border-top:2px solid #e5e7eb;display:grid;grid-template-columns:1fr 1fr">
+          <span style="height:64px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="settings" width="24" height="24"></i>Ustawienia</span>
+          <span style="height:64px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:700;color:#111827;border-left:2px solid #e5e7eb"><i data-lucide="log-out" width="24" height="24"></i>Wyloguj</span>
+        </div>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">Menu na cały ekran zamiast wąskiego panelu: mieści 20 px tekst bez skracania. Kategorie jako kafle w dwóch kolumnach, liczby tylko tam, gdzie pomagają (Moje, Ulubione).</div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { fav: false, toast: false, size: 0, checked: {}, step: 0 };
+  componentDidMount() { this.icons(); }
+  componentDidUpdate() { this.icons(); }
+  icons() { setTimeout(() => window.lucide && window.lucide.createIcons(), 0); }
+  renderVals() {
+    const { fav, toast, size, checked, step } = this.state;
+    const cats = [['Obiady','utensils'],['Zupy','soup'],['Desery','cake-slice'],['Ciasteczka','cookie'],['Śniadania','coffee'],['Przekąski','sandwich'],['Sałatki','salad'],['Napoje','glass-water'],['Inne','utensils-crossed']].map(([l,i]) => ({ l, i }));
+    const steps = [
+      { n: 1, t: 'Dynię umyj, usuń pestki i pokrój w kostkę. Skórki z hokkaido nie trzeba obierać.' },
+      { n: 2, t: 'Na oleju zeszklij cebulę i czosnek, dodaj dynię i wlej bulion. Gotuj 25 minut.' },
+      { n: 3, t: 'Zmiksuj na gładko, wlej mleczko kokosowe i dopraw solą oraz pieprzem.' },
+    ];
+    const ing = [{ n: 'dynia hokkaido', a: '1 kg' }, { n: 'cebula', a: '1 sztuka' }, { n: 'czosnek', a: '2 ząbki' }, { n: 'bulion warzywny', a: '1 litr' }, { n: 'mleczko kokosowe', a: '200 ml' }];
+    const res = [
+      { t: 'Zupa krem z dyni', a: 'aniagotuje.pl', c: 'Zupy', time: '45 minut', fav: true },
+      { t: 'Ciasto dyniowe z kruszonką', a: 'kwestiasmaku.com', c: 'Desery', time: '1 godz. 10 min' },
+      { t: 'Risotto z dynią i szałwią', a: 'YouTube · Kuchnia Marka', c: 'Obiady', time: '40 minut' },
+      { t: 'Placuszki dyniowe', a: 'aniagotuje.pl', c: 'Śniadania', time: '25 minut' },
+    ].map(r => ({ ...r, fav: !!r.fav, notFav: !r.fav }));
+    return {
+      cats, steps, results: res,
+      fav, notFav: !fav, toast,
+      toggleFav: () => this.setState(s => ({ fav: !s.fav, toast: !s.fav })),
+      zoom: [1, 1.15, 1.3][size],
+      sizes: ['A', 'A+', 'A++'].map((l, i) => ({ l, fs: ['17px', '20px', '23px'][i], bg: i === size ? '#111827' : '#fff', fg: i === size ? '#fff' : '#111827', pick: () => this.setState({ size: i }) })),
+      ingredients: ing.map((g, i) => ({ ...g, mark: checked[i] ? '✓' : '', boxBg: checked[i] ? '#15803d' : '#fff', color: checked[i] ? '#4b5563' : '#111827', deco: checked[i] ? 'line-through' : 'none', toggle: () => this.setState(s => ({ checked: { ...s.checked, [i]: !s.checked[i] } })) })),
+      openCook: () => this.setState({ step: 0 }),
+      cookN: step + 1,
+      cookText: steps[step].t,
+      progress: steps.map((_, i) => ({ bg: i <= step ? '#fb923c' : '#374151' })),
+      nextStep: () => this.setState(s => ({ step: Math.min(2, s.step + 1) })),
+      prevStep: () => this.setState(s => ({ step: Math.max(0, s.step - 1) })),
+    };
+  }
+}
+</script>
+</body>
+</html>
