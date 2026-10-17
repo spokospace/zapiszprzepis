@@ -1,8 +1,10 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
+import { searchNavigation } from '@/lib/search-navigation'
+import { useListTransition } from './list-transition'
 
 interface RecipeSearchProps {
   query?: string | null
@@ -10,7 +12,7 @@ interface RecipeSearchProps {
 
 export function RecipeSearch({ query }: RecipeSearchProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const { startTransition } = useListTransition()
   const [value, setValue] = useState(query ?? '')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -23,15 +25,19 @@ export function RecipeSearch({ query }: RecipeSearchProps) {
     setValue(query ?? '')
   }
 
-  function pushQuery(next: string) {
-    const params = new URLSearchParams(searchParams.toString())
-    const trimmed = next.trim()
-    if (trimmed) {
-      params.set('q', trimmed)
-    } else {
-      params.delete('q')
-    }
-    router.push(`/recipes?${params.toString()}`)
+  function navigateTo(next: string) {
+    // The URL is read when the call runs, not from a render: the debounced call fires
+    // later, and the address bar only changes once a navigation has finished, so it
+    // tells whether a search is already on screen (refine it) or about to start.
+    const target = searchNavigation(window.location.search, next)
+    if (!target) return
+    startTransition(() => {
+      if (target.replace) {
+        router.replace(target.href)
+      } else {
+        router.push(target.href)
+      }
+    })
   }
 
   function handleChange(next: string) {
@@ -39,7 +45,7 @@ export function RecipeSearch({ query }: RecipeSearchProps) {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
     }
-    debounceRef.current = setTimeout(() => pushQuery(next), 300)
+    debounceRef.current = setTimeout(() => navigateTo(next), 300)
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -47,7 +53,7 @@ export function RecipeSearch({ query }: RecipeSearchProps) {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
     }
-    pushQuery(value)
+    navigateTo(value)
   }
 
   function handleClear() {
@@ -55,7 +61,7 @@ export function RecipeSearch({ query }: RecipeSearchProps) {
       clearTimeout(debounceRef.current)
     }
     setValue('')
-    pushQuery('')
+    navigateTo('')
   }
 
   useEffect(() => {
