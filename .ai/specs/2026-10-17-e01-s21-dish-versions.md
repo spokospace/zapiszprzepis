@@ -5,7 +5,7 @@
 > **This document is a spec only.** It does not implement anything or change any data. The backfill runs only after the owner approves the dry-run output (Phase 2).
 
 ## 📝 TLDR
-Today a recipe page cannot tell the reader that the site has other recipes for the same dish. Three cheesecakes are only connected if their tags happen to overlap in "Podobne", and nothing says how they differ. *Proposed (future behavior):* every recipe gets a normalized **`dish`** ("sernik", "zupa ziemniaczana") and a short **`variant_note`** ("Na kruchym cieście, bez drożdży"). An LLM sets both, in the existing labelling pass for new recipes and through a reviewed, owner-gated backfill for the 677 existing ones. The recipe page then shows a 60 px bar, "Mamy jeszcze N inne przepisy na {danie}", under the source block. The bar scrolls to "Inne przepisy na {danie} (N)" before "Podobne". That section holds version cards titled with the difference, with servings/time badges and "+ jest / − nie ma" ingredient lines, ordered by favorites. "Podobne" stops repeating those versions.
+Today a recipe page cannot tell the reader that the site has other recipes for the same dish. Three cheesecakes are only connected if their tags happen to overlap in "Podobne", and nothing says how they differ. *Proposed (future behavior):* every recipe gets a normalized **`dish`** ("sernik", "zupa ziemniaczana") and a short **`variant_note`** ("Na kruchym cieście, bez drożdży"). An LLM sets both, in the existing labelling pass for new recipes and through a reviewed, owner-gated backfill for the 677 existing ones. The recipe page then shows a 60 px bar, "Mamy jeszcze N inne przepisy na {danie}", under the source block. The bar scrolls to "Inne przepisy na {danie} (N)" before "Podobne". That section holds version cards titled with the difference, with servings/time badges and "+ jest / − nie ma" ingredient lines, ordered by favorites by default. A sort control switches the order to newest or quickest. "Podobne" stops repeating those versions.
 
 ## 📝 Problem Statement
 - Production (2026-10-17, read-only count) holds 677 recipes, many of them several versions of one dish. Titles start with "Sernik" (6), "Szarlotka" (7), "Miodownik" (8), "Racuchy" (5) and "Naleśniki" (4), and the "ciasto" (86), "sałatka" (31) and "surówka" (13) families split into real dishes. None of this is linked.
@@ -78,7 +78,7 @@ flowchart LR
 4. A **blocklist** of bare class words and category labels gives `null`: "ciasto", "ciasta", "ciasteczka", "zupa", "sałatka", "surówka", "deser", "danie", "obiad", "przekąska", "napój", "syrop", "pieczywo", "inne", and every `RECIPE_CATEGORIES` label lowercased.
 5. **Vocabulary snap:** when a vocabulary entry equals the value after diacritic folding (`ą→a`, `ł→l`, …), the vocabulary spelling wins, so "pierogi ruskie" never splits from "pierogi ruskie" typed without diacritics.
 
-**Granularity rule (prompt and review rubric).** `dish` is the name a home cook types to find *any* recipe for the thing. Flavours, fillings, add-ins, toppings, origin or style ("nowojorski", "babci"), diet ("bez glutenu"), size ("mini") and praise ("najlepszy") are version traits: they go into `variant_note`, never into `dish`. A qualifier stays in `dish` only when it names a separately named dish made differently that a cook would not swap for the plain one. Bare class words name their kind ("zupa ziemniaczana", "ciasteczka owsiane"). When the dish is unclear, the value is `null`.
+**Granularity rule (prompt and review rubric) — decided by the owner, 2026-10-17.** Separately named preparations ("sernik na zimno", "sernik gotowany") are separate dishes, not versions of "sernik". `dish` is the name a home cook types to find *any* recipe for the thing. Flavours, fillings, add-ins, toppings, origin or style ("nowojorski", "babci"), diet ("bez glutenu"), size ("mini") and praise ("najlepszy") are version traits: they go into `variant_note`, never into `dish`. A qualifier stays in `dish` only when it names a separately named dish made differently that a cook would not swap for the plain one. Bare class words name their kind ("zupa ziemniaczana", "ciasteczka owsiane"). When the dish is unclear, the value is `null`.
 
 | Title | `dish` | Why |
 |---|---|---|
@@ -86,7 +86,7 @@ flowchart LR
 | Sernik nowojorski | `sernik` | style/origin is a version → `variant_note` "Nowojorski, na spodzie z herbatników" |
 | Sernik baskijski | `sernik` | same |
 | Sernik na zimno | `sernik na zimno` | no oven, set with gelatine: a separately named dish |
-| Sernik gotowany | `sernik gotowany` | cooked filling, own name (sample output below; **owner to confirm**, see Decisions) |
+| Sernik gotowany | `sernik gotowany` | cooked filling, own name (**decided by the owner, 2026-10-17**) |
 | Pierogi ruskie / z mięsem | `pierogi` | the filling is a version |
 | Ciasto z owocami | `null` | no single recognisable dish |
 
@@ -102,8 +102,8 @@ Append `r.dish, r.dish_accusative, r.variant_note` **after** `author_gender_form
 `create index if not exists recipes_dish_idx on public.recipes (dish) where dish is not null;` serves the RPC and the `SimilarRecipes` filter. The existing `favorites_recipe_id_idx` serves the count.
 
 ### RPC `public.dish_versions(p_recipe_id bigint)`
-`language sql stable security definer set search_path = ''`. It returns the other recipes with the same non-null `dish`, at most 12 (see Resolved assumptions):
-`id, slug, title, image_url, source_type, source_url, source_author, variant_note, servings, prep_time_minutes, cook_time_minutes, total_time_minutes, times_estimated, ingredients, favorites_count integer, total_count integer` (`count(*) over ()`), ordered by `favorites_count desc, created_at desc, id desc`. Grants: `revoke all … from public; grant execute … to anon, authenticated`.
+`language sql stable security definer set search_path = ''`. It returns the other recipes with the same non-null `dish`, at most 24 (see Resolved assumptions):
+`id, slug, title, image_url, source_type, source_url, source_author, variant_note, servings, prep_time_minutes, cook_time_minutes, total_time_minutes, times_estimated, ingredients, created_at, favorites_count integer, total_count integer` (`count(*) over ()`), ordered by `favorites_count desc, created_at desc, id desc`. The order the reader chooses is applied in TypeScript over these rows (`sortVersions`, see UI), so the RPC has a single, cacheable shape. Grants: `revoke all … from public; grant execute … to anon, authenticated`.
 
 ### RPC `public.dish_vocabulary()`
 `language sql stable security definer set search_path = ''`, returning `dish text, dish_accusative text, recipes integer`: `select dish, min(dish_accusative), count(*) … where dish is not null group by dish order by count(*) desc`. PostgREST has no `DISTINCT` and caps rows at `max-rows`, so reading `dish` off every row would truncate silently as the catalog grows. Granted to `service_role` only, because the extraction and the backfill use the service client. `dishVocabularyFor` filters the result by title stems in JS.
@@ -228,7 +228,19 @@ Prototype: `.ai/design/przebudowa-handoff/designs/Wersje przepisu.dc.html` (hand
 
 **Section** (`dish-versions.tsx`, `<section aria-labelledby="inne-przepisy">`):
 - `h2` 26 px bold "Inne przepisy na {acc} ({N})" (fallback "Inne wersje tego dania ({N})"), with the caption "Różnice w porównaniu z przepisem, który oglądasz." in 16 px `#374151`.
-- `<ul>` of cards; mobile one column, `lg` two columns (S17 grid, `gap-6`). It shows up to 12 versions (the RPC limit), and `N` is `total_count`.
+- `<ul>` of cards; mobile one column, `lg` two columns (S17 grid, `gap-6`). It shows up to 12 versions, taken after sorting from the ≤ 24 rows the RPC returns, and `N` is `total_count`.
+
+**Sort control** (decided by the owner, 2026-10-17: default most popular, alternatives allowed). It renders only when there are ≥ 2 versions, between the caption and the list.
+- Options and their `sortVersions(rows, order)` keys, all with ties broken by `created_at desc, id desc`:
+  - **„Najpopularniejsze”** (`popularne`, default): `favorites_count desc`;
+  - **„Najnowsze”** (`nowe`): `created_at desc`;
+  - **„Najszybsze”** (`szybkie`): total time (`total_time_minutes ?? prep + cook`) ascending, unknown times last. This one fits the target group ("what can I make in the time I have") and costs no new data. It can be dropped without touching the rest.
+- Markup: a visible label „Kolejność:” (16 px bold, `#374151`) and a **segmented control of links** in `<div role="group" aria-labelledby="wersje-kolejnosc">`. Each segment is an `<a href="?wersje={key}#inne-przepisy">` with min 48 × 48 px, 17 px bold, a `border-field` 2 px outline and radius 999, the same look as the S16 tag chips (`chipClasses`).
+- The active segment has `aria-current="true"`, the `#111827` fill with white text and a „✓ ” prefix, so it is never marked by colour alone. The segments wrap on 320 px and at A++.
+- **Without JS:** the links reload the page with `?wersje=`. The server reads it (whitelisted; anything else falls back to `popularne`) and renders that order. The `canonical` stays the bare `/przepis/{slug}`, so the parameter never competes in search (S07 already handles `?from=` this way). Nothing persists.
+- **With JS** (`dish-versions-sort.tsx`, a small client island wrapping the list): a click is intercepted. The cards are reordered in place from the rows already on the page (no request), the URL is updated with `history.replaceState` (keeping the hash, without scrolling), and focus stays on the activated segment. A polite live region (`role="status"`) announces „Kolejność: najnowsze”.
+- **Persistence:** the choice is saved per viewer in `localStorage` (`zp.versionsSort`, wrapped in try/catch) and applied on mount when the URL has no `?wersje=`. An explicit URL wins over the stored value. The section sits far below the fold, so reordering after hydration is not a visible jump. A private window or blocked storage simply gives the default.
+- Why links and not a `<select>`: a select needs JS or a submit button to act, hides the options behind a tap, and is harder for the target group. Three always-visible 48 px segments are clearer.
 
 **Version card** (`<li>`, `border: 2px solid` `border-card`, radius 16, padding 16; whole card clickable through the **stretched-link** pattern: the `h3` holds the only `<a>`, and its `::after` covers the card, so there is one tab stop and no nested links):
 - 72 px thumbnail (`rounded-lg`, `alt=""`, decorative because the link names the recipe) or the category icon placeholder already used by `RecipeCard`.
@@ -262,7 +274,7 @@ Prototype: `.ai/design/przebudowa-handoff/designs/Wersje przepisu.dc.html` (hand
 - **LLM down or slow during extraction:** the recipe is saved without a dish (`dish_classified_at` null); no UI change for it; `--pending` backfill fills it later. Extraction never fails because of the dish pass.
 - **Synonym split** ("pierogi ruskie" as a dish vs "pierogi"): vocabulary snap and prompt prevent most cases; the backfill `report` lists merge candidates. After launch a split shows two smaller groups (wrong but harmless) and is fixed with one SQL `update … where dish = 'x'`.
 - **Over-grouping** (two different dishes under one key): the reader sees an unrelated "version". Caught in review; fixable per id. The blocklist stops the worst case, a bare "ciasto" grouping 86 recipes.
-- **Huge group** (a future "sernik" with 40 recipes): the RPC caps at 12 by favorites; the heading still says the full N. A "Pokaż wszystkie" link to search (`/szukaj?q={dish}`) is a later story.
+- **Huge group** (a future "sernik" with 40 recipes): the RPC returns the 24 most popular, sorting is applied within those, and 12 are shown. Under "Najnowsze" a very new, unfavorited version may therefore be missing; the heading still says the full N. A "Pokaż wszystkie" link to search (`/szukaj?q={dish}`) is a later story.
 - **Same dish, different category** (a "pierogi" in obiady and one in inne): still versions; "Podobne" is per category anyway.
 - **Recipe deleted / merged (S03a collapse):** the RPC reads live rows; nothing is cached.
 - **Notes drift as groups grow:** existing notes are never rewritten automatically, so an older note may later overlap a newer recipe's. The new note is told to differ from all siblings, so the new card stays distinct.
@@ -272,16 +284,16 @@ Prototype: `.ai/design/przebudowa-handoff/designs/Wersje przepisu.dc.html` (hand
 
 ## 📝 Risks & Impact Review
 - **Schema / public contract (hard to reverse once consumed):** three appended view columns plus one RPC on the guest-safe surface. They are additive, and `select('*')` consumers are unaffected by the append. The migration's column-order assertion prevents a silent reorder.
-- **Favorites aggregate to guests:** a new disclosure from an owner-only table (count only). Needs owner confirmation (A5). The fallback with no new disclosure is sorting by `created_at desc` and exposing nothing.
+- **Favorites aggregate to guests:** a new disclosure from an owner-only table, count only. **Approved by the owner (2026-10-17).** It is never displayed as a number on the card; it is used only as the sort key.
 - **Production data write (backfill):** 677 rows, four new columns only. Nothing existing is overwritten, so rollback is exact (null them). Gated by four owner review stops.
 - **Extraction latency:** +2 sequential `gpt-4.1` calls (~1–2 s each) inside the Inngest step. The note call can start only after the dish is known; the dish call runs in parallel with `labelRecipe`. The sibling read (`dish = x`, indexed, ≤ 12 rows, ~50 ms) sits between them. Net ≈ +1.5–2 s per save, invisible to the user, who gets a notification on completion.
 - **Cost:** ≈ $3 once, plus ≈ $0.006 per new recipe.
-- **Product calls (owner, not defects):** the granularity of `dish`, and showing favorites counts as a sort key.
+- **Product calls:** granularity and the favorites sort key are decided. The backfill budget is still open.
 
 ## 📋 Phasing
 1. **Phase 1 — Schema + classification for new recipes** (no UI). Migration (rehearsed, owner-approved apply via Management API), `recipe-dish.ts`, extraction wiring. Shippable: new recipes start accumulating `dish`/`variant_note`; nothing visible changes.
 2. **Phase 2 — Backfill (owner-gated).** Script + dry runs + reviews + apply. Shippable: data complete; still invisible until Phase 3.
-3. **Phase 3 — Recipe page UI.** Bar, section, card, "Podobne" exclusion. Shippable on its own: with no data it renders nothing, so it may merge before Phase 2 finishes and lights up as rows are applied.
+3. **Phase 3 — Recipe page UI.** Bar, section, card, sort control, "Podobne" exclusion. Shippable on its own: with no data it renders nothing, so it may merge before Phase 2 finishes and lights up as rows are applied.
 
 ## 📋 Implementation Plan
 
@@ -300,16 +312,16 @@ Prototype: `.ai/design/przebudowa-handoff/designs/Wersje przepisu.dc.html` (hand
 5. **STOP** — `apply --dry-run` → owner go → `apply`; keep `applied-*.json`. **Verify:** SQL counts (`count(*) filter (where dish is not null)`, groups with ≥ 2 members) match the dry run.
 
 ### Phase 3 — Recipe page UI
-1. `src/lib/dish-versions.ts`: `ingredientKey`, `ingredientDiff`, `versionBadges`, `versionsBarLabel`, `versionsHeading`. **Tests:** Polish plurals (1, 2–4, 5, 12–14, 22), servings delta wording, the 10-minute threshold, estimated time "≈", diff cap 4, synonym table, "mąka" vs "mąka ziemniaczana", sections flattened, malformed input → empty.
-2. `dish-versions-bar.tsx` + `dish-versions.tsx`; `RecipeHeader` gets an optional `versionsBar` slot (no change for other callers); `page.tsx` adds the RPC to `Promise.all` and renders the section before `SimilarRecipes`. **Tests:** component render tests for hidden-at-0, singular, accusative fallback, note fallback to title, stretched link accessible name.
+1. `src/lib/dish-versions.ts`: `ingredientKey`, `ingredientDiff`, `versionBadges`, `versionsBarLabel`, `versionsHeading`, `sortVersions`, `parseVersionsSort`. **Tests:** each sort order and its tie-breaks, unknown times last, an unknown `?wersje=` value falling back to `popularne`, Polish plurals (1, 2–4, 5, 12–14, 22), servings delta wording, the 10-minute threshold, estimated time "≈", diff cap 4, synonym table, "mąka" vs "mąka ziemniaczana", sections flattened, malformed input → empty.
+2. `dish-versions-bar.tsx` + `dish-versions.tsx`; `RecipeHeader` gets an optional `versionsBar` slot (no change for other callers); `page.tsx` adds the RPC to `Promise.all` and renders the section before `SimilarRecipes`. **Tests:** component render tests for hidden-at-0, singular, accusative fallback, note fallback to title, stretched link accessible name; the sort control (hidden below 2 versions, `aria-current` on the active segment, server order from `?wersje=`, client reorder and the live-region text, localStorage read and write guarded, the URL beating storage).
 3. `SimilarRecipes` `dish` prop + `.or()` filter. **Test:** query builder called with the filter only when `dish` is set; null-dish rows still eligible.
 4. Add the recipe page with versions to `test:reflow` (320 px, A++) and the axe pass; desktop screenshot at 1280 px. **Verify** on prod after deploy: bar scroll + focus, card order by favorites, "Podobne" has no same-dish recipe, full-section screenshot (mobile + desktop).
 5. Update `.ai/specs/backlog-przebudowa.md` (S21 row) and the test-plan cookbook entry if one covers render helpers.
 
-## 📝 Decisions for the owner (kept minimal)
-1. **Granularity:** approve the rule and its examples, in particular whether "sernik gotowany" stays separate from "sernik" and "sernik na zimno" (the default: separate). Phase 2's review can still change any group.
-2. **Favorites count:** OK to expose a per-recipe favorites *count* to guests via `dish_versions` (A5)? If not, versions sort newest first and nothing new is exposed.
-3. **Backfill go-ahead:** budget ≤ $10 and the four review stops as described.
+## 📝 Decisions for the owner
+1. ~~**Granularity**~~ — **decided (owner, 2026-10-17):** separately named preparations ("sernik na zimno", "sernik gotowany") are separate dishes, not versions of "sernik". The Phase 2 review still checks individual groups against this rule.
+2. ~~**Favorites count**~~ — **decided (owner, 2026-10-17):** a count may be exposed to guests through the count-only RPC. New requirement from the same decision: a sort control (default most popular, alternative newest; see UI → Sort control).
+3. **Backfill go-ahead — OPEN:** the budget (≤ $10) and the four review stops. The owner asked for a fuller explanation before deciding. **The PR stays a draft until this is answered.**
 
 ## Resolved assumptions (autonomous defaults)
 | # | Question | Default chosen | Rationale |
@@ -318,8 +330,8 @@ Prototype: `.ai/design/przebudowa-handoff/designs/Wersje przepisu.dc.html` (hand
 | A2 | Only the two fields from the handoff? | Add `dish_accusative` (display) and `dish_classified_at` (operational, not exposed) | Polish case in "na {danie}"; resumable backfill needs "classified → null" ≠ "never classified" |
 | A3 | Where does the model produce `dish`/`variant_note`? | A separate `gpt-4.1` call next to `labelRecipe`, not the `gpt-4o-mini` extraction prompt | Needs the dish vocabulary; same call for backfill and new recipes; precedent of tags |
 | A4 | Reuse `description` as the variant note? | No — separate column; `description` unchanged | Different scope (per user vs global) and casing; no regression on cards |
-| A5 | How to sort versions by favorites when `favorites` is owner-only? | `SECURITY DEFINER` RPC exposing a count only. ⚠ NEEDS HUMAN CONFIRMATION | New aggregate disclosure from an RLS-protected table; fallback: newest first |
+| A5 | How to sort versions by favorites when `favorites` is owner-only? | `SECURITY DEFINER` RPC exposing a count only. **Confirmed by the owner (2026-10-17)**, together with the sort control | Count only; never shown as a number |
 | A6 | Backfill source | Stored fields, no re-fetch | Matches what the page shows; no scrape cost or dead-source failures |
 | A7 | Refresh / gap-fill behaviour | Never overwrite an existing `dish`/`variant_note` | Keeps reviewed grouping stable |
-| A8 | How many version cards | Up to 12, heading shows the full N | No group exceeds ~8 today; "Pokaż wszystkie" deferred |
-| A9 | Granularity edge ("sernik gotowany", ingredient-named salads) | Separate dish for named techniques; ingredient-only salad names → null | Sample evidence; owner review in Phase 2 can override |
+| A8 | How many version cards | Up to 12 shown, out of ≤ 24 fetched so the reader's sort has room; the heading shows the full N | No group exceeds ~8 today; "Pokaż wszystkie" deferred |
+| A9 | Granularity edge ("sernik gotowany", ingredient-named salads) | Separate dish for named techniques (**owner-decided**); ingredient-only salad names → null | Owner decision 2026-10-17 plus the sample evidence |
