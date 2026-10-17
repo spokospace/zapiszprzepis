@@ -34,23 +34,25 @@ Mirrors the spec's Implementation Plan (Phases 1–3, Steps 1–10).
 
 ## Progress
 
+PR: #246
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Header, checklists and text size
 
-- [ ] 1.1 Checklist storage lib with tests
-- [ ] 1.2 Recipe header and actions components
-- [ ] 1.3 Ingredient and step checklists with text size
-- [ ] 1.4 Canonical metadata and token restyle
+- [x] 1.1 Checklist storage lib with tests — b42ff80
+- [x] 1.2 Recipe header and actions components — b42ff80
+- [x] 1.3 Ingredient and step checklists with text size — b42ff80
+- [x] 1.4 Canonical metadata and token restyle — b42ff80
 
 ### Phase 2: List context
 
-- [ ] 2.1 List-context lib and route helpers with tests
-- [ ] 2.2 List snapshot component and list-page wiring
-- [ ] 2.3 Category context and list bar
+- [x] 2.1 List-context lib and route helpers with tests — 09b0733
+- [x] 2.2 List snapshot component and list-page wiring — 09b0733
+- [x] 2.3 Category context and list bar — 09b0733
 
 ### Phase 3: Gallery teaser and author link
 
-- [ ] 3.1 View migration and rolled-back rehearsal
-- [ ] 3.2 Locked gallery and author link
-- [ ] 3.3 Dev-server verification and full gate
+- [x] 3.1 View migration and rolled-back rehearsal — 908b898
+- [x] 3.2 Locked gallery and author link — 908b898
+- [x] 3.3 Dev-server verification and full gate — d143120
