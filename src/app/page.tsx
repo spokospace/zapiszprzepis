@@ -15,14 +15,16 @@ import { PopularSearches } from '@/app/components/home/popular-searches'
 import { CategoryGrid } from '@/app/components/home/category-grid'
 import { MemberTiles } from '@/app/components/home/member-tiles'
 import { GuestCta } from '@/app/components/home/guest-cta'
+import { FavoriteAddedNotice } from '@/app/components/favorite-button'
+import { parseRecipeId } from '@/lib/favorites'
 
-type SearchParams = Promise<{ add_error?: string }>
+type SearchParams = Promise<{ add_error?: string; fav_added?: string }>
 
 /** Recent public recipes on the guest home: 4 fills the 2-column grid (E01-S04). */
 const RECENT_LIMIT = 4
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
-  const { add_error } = await searchParams
+  const { add_error, fav_added } = await searchParams
   const supabase = await createSupabaseServerClient()
   const user = await getCurrentUser()
 
@@ -46,6 +48,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             addError={add_error}
             hasFullAccess={menu?.hasFullAccess ?? false}
             vocative={vocative(greetingName)}
+            favoriteAdded={parseRecipeId(fav_added)}
           />
         ) : (
           <GuestHome recentRecipes={recentRecipes} />
@@ -110,6 +113,7 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
                   sourceType={r.source_type}
                   sourceUrl={r.source_url}
                   sourceAuthor={r.source_author}
+                  favorite={{ recipeId: r.id, favorited: false, isAuthenticated: false }}
                 />
               ))}
             </div>
@@ -125,11 +129,14 @@ function MemberHome({
   addError,
   hasFullAccess,
   vocative,
+  favoriteAdded,
 }: {
   addError?: string
   hasFullAccess: boolean
   /** "Aniu" from the S13 first name (else the display name) via the S12 rule; null → "Dzień dobry!". */
   vocative: string | null
+  /** A guest-home card heart's login round-trip ends here (E01-S06); this page has no heart to show its toast. */
+  favoriteAdded: number | null
 }) {
   return (
     <PageContainer className="flex flex-col gap-8 pt-6">
@@ -137,6 +144,7 @@ function MemberHome({
         <h1 className="mb-4 text-[30px] leading-tight font-bold text-ink">{homeGreeting(vocative)}</h1>
         <HomeSearch id="home-search-member" />
       </div>
+      {favoriteAdded !== null && <FavoriteAddedNotice recipeId={favoriteAdded} />}
       <MemberTiles hasFullAccess={hasFullAccess} />
       <CategoryGrid columns={2} />
       {/* E01-S10 slot: adding moves to /dodaj; until then the form lives here (?tab=add focuses it).

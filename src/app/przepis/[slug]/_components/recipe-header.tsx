@@ -4,7 +4,6 @@ import { Globe } from 'lucide-react'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine } from '@/lib/recipe-meta'
-import { tagLabel } from '@/lib/recipe-tags'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { categoryPath, profilePath } from '@/lib/routes'
 
@@ -14,7 +13,6 @@ export interface RecipeHeaderData {
   meta_description: string | null
   image_url: string | null
   category: string
-  tags: string[]
   prep_time_minutes: number | null
   cook_time_minutes: number | null
   total_time_minutes: number | null
@@ -28,18 +26,14 @@ export interface RecipeHeaderData {
 
 interface RecipeHeaderProps {
   recipe: RecipeHeaderData
-  /** Tag chips filter "Moje przepisy" (/recipes, owner-only), so they link only for a signed-in visitor. */
-  isAuthenticated: boolean
 }
-
-const TAG_CHIP =
-  'inline-flex min-h-[48px] items-center rounded-pill border-2 border-border-accent bg-surface-accent px-4 text-[16px] font-bold text-action-text'
 
 /**
  * The recipe page header (E01-S07): 4:3 photo, breadcrumbs, 32 px title,
- * "Kategoria · czas", source with "Otwórz oryginał", and who added it.
+ * "Kategoria · czas", source with "Otwórz oryginał", and who added it. The tags
+ * render at the bottom of the page, in "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe }: RecipeHeaderProps) {
   const category = categoryLabel(recipe.category)
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
@@ -112,8 +106,9 @@ export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
         )}
       </p>
 
-      {/* Gender-neutral until E01-S12 supplies gender ("Dodała/Dodał"); a link once
-          E01-S14 turns profilePath on, so it never points at a 404. */}
+      {/* Gender-neutral on purpose: gender is owner-only (E01-S12), so no public
+          "Dodała/Dodał" (E01-S14 spec A1). A link to /u/{username} when the author
+          has a username, plain text otherwise. */}
       {recipe.author_name && (
         <p className="text-[17px] text-ink-soft">
           Dodane przez{' '}
@@ -129,22 +124,6 @@ export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
 
       {recipe.description && <p className="mt-4 text-[19px] text-ink-soft">{recipe.description}</p>}
       {recipe.meta_description && <p className="mt-3 text-[19px] leading-relaxed text-ink">{recipe.meta_description}</p>}
-
-      {recipe.tags.length > 0 && (
-        <ul className="mt-4 flex flex-wrap gap-2" aria-label="Tagi">
-          {recipe.tags.map((tag) => (
-            <li key={tag}>
-              {isAuthenticated ? (
-                <Link href={`/recipes?tag=${tag}`} className={`${TAG_CHIP} hover:bg-surface-accent-2`}>
-                  {tagLabel(tag)}
-                </Link>
-              ) : (
-                <span className={TAG_CHIP}>{tagLabel(tag)}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
     </header>
   )
 }

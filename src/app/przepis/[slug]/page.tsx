@@ -19,6 +19,7 @@ import { RecipeActions } from './_components/recipe-actions'
 import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar } from './_components/recipe-list-bar'
 import { LockedGallery } from './_components/locked-gallery'
+import { SimilarRecipes } from './_components/similar-recipes'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
@@ -101,8 +102,6 @@ interface RecipeDetailPageProps {
     duplicate?: string
     refreshing?: string
     refresh_error?: string
-    /** Set by the guest heart's login round-trip: add this recipe to favorites (E01-S06). */
-    fav?: string
     /** The link was someone else's recipe; it was added to favorites instead (E01-S03a). */
     in_favorites?: string
     /** The delete was refused: others have this recipe as a favorite (E01-S03a). */
@@ -114,7 +113,7 @@ interface RecipeDetailPageProps {
 
 export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
-  const { duplicate, refreshing, refresh_error, fav, in_favorites, delete_error, from } = await searchParams
+  const { duplicate, refreshing, refresh_error, in_favorites, delete_error, from } = await searchParams
 
   const { recipe: typedRecipe, error, isOwner, user } = await loadRecipe(slug)
 
@@ -168,13 +167,11 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       )}
       <PageContainer narrow>
         <RecipeListBar slug={typedRecipe.slug} from={parseListKey(from)} fallback={categoryContext} />
-        <RecipeHeader recipe={typedRecipe} isAuthenticated={Boolean(user)} />
+        <RecipeHeader recipe={typedRecipe} />
         <RecipeActions
           recipeId={typedRecipe.id}
-          slug={typedRecipe.slug}
           isFavorite={isFavorite}
           isAuthenticated={Boolean(user)}
-          autoAddFavorite={fav === '1' && Boolean(user)}
         />
         <RecipeChecklists recipeId={typedRecipe.id} ingredientGroups={ingredientGroups} steps={steps} />
 
@@ -205,7 +202,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
         )}
 
-        {/* E01-S16: <SimilarRecipes … /> ("Ten przepis jest" + "Podobne") */}
+        <SimilarRecipes recipe={typedRecipe} />
 
         {isOwner && delete_error === 'shared' && (
           <p role="alert" className="mb-4 border-t border-border-card pt-8 text-[17px] font-bold text-danger">
