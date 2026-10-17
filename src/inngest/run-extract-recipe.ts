@@ -19,6 +19,7 @@ import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
+import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantNoteSibling } from '@/lib/recipe-dish'
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
 import { jsonLdServings, toServings } from '@/lib/servings'
 
@@ -529,6 +530,10 @@ Rules:
       .order('created_at', { ascending: false })
       .limit(100)
 
+    // The existing dish vocabulary (E01-S21), read alongside so classifyDish can
+    // reuse a name already in use instead of coining a near-synonym.
+    const dishVocabularyQuery = supabase.rpc('dish_vocabulary')
+
     let recipeJSON = inputIsJunk ? null : await extractWithLlm()
 
     // YouTube second pass: the description is where channels paste the
@@ -603,13 +608,57 @@ Rules:
 
     // Title casing, the distinguishing note and the tags, judged against the
     // user's own recipes (minus this one, on a refresh) so the note tells
-    // same-titled ones apart.
-    const { data: existingRecipes } = await existingRecipesQuery
-    const { title, description, metaDescription, tags } = await labelRecipe(
-      recipeJSON,
-      (existingRecipes ?? []).filter((r) => r.source_url !== sourceUrl && r.source_url !== sharedUrl),
-      { fetch, apiKey: process.env.OPENAI_API_KEY },
-    )
+    // same-titled ones apart. The dish vocabulary is read alongside.
+    const [{ data: existingRecipes }, vocabularyResult] = await Promise.all([existingRecipesQuery, dishVocabularyQuery])
+    const vocabulary = (vocabularyResult.data ?? []) as DishVocabularyEntry[]
+    // A truncated vocabulary would silently split dish groups; the RPC returns
+    // one row per dish, well under PostgREST's row cap today. Warn (never fail a
+    // save) if it ever approaches it.
+    if (vocabulary.length >= 1000) {
+      console.warn('[extract-recipe] dish vocabulary near the PostgREST row cap:', vocabulary.length)
+    }
+
+    // Labelling and the dish classification (E01-S21) run in parallel over the
+    // same extracted recipe; the variant note needs the dish, so it comes after.
+    const deps = { fetch, apiKey: process.env.OPENAI_API_KEY }
+    const [labels, dishResult] = await Promise.all([
+      labelRecipe(
+        recipeJSON,
+        (existingRecipes ?? []).filter((r) => r.source_url !== sourceUrl && r.source_url !== sharedUrl),
+        deps,
+      ),
+      classifyDish(recipeJSON, vocabulary, deps),
+    ])
+    const { title, description, metaDescription, tags } = labels
+
+    // The variant note: only for a classified dish, told apart from its (≤12)
+    // siblings. Siblings read via the service client (recipes is owner-only RLS).
+    let variantNote: string | null = null
+    if (dishResult.dish) {
+      const { data: siblings } = await supabase
+        .from('recipes')
+        .select('title, ingredients, variant_note')
+        .eq('dish', dishResult.dish)
+        .limit(12)
+      variantNote = await writeVariantNote(
+        { dish: dishResult.dish, title: recipeJSON.title, ingredients: recipeJSON.ingredients, steps: recipeJSON.steps },
+        (siblings ?? []) as VariantNoteSibling[],
+        deps,
+      )
+    }
+
+    // The four dish columns to write — only when the classification call
+    // SUCCEEDED (even a successful null, which records the review). A failed call
+    // leaves them null for a later #298 re-run (`where dish_classified_at is null`).
+    const dishColumns: Record<string, string | null> = dishResult.classified
+      ? {
+          dish: dishResult.dish,
+          dish_accusative: dishResult.dishAccusative,
+          variant_note: variantNote,
+          dish_classified_at: new Date().toISOString(),
+        }
+      : {}
+
     const sourceAuthor = await sourceAuthorPromise
 
     // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
@@ -617,6 +666,21 @@ Rules:
     // gap-fills, so it can never replace already-populated fields. We keep
     // the existing slug so the recipe URL stays stable.
     if (forceRefresh) {
+      // A refresh must not regroup a reviewed recipe, including a reviewed null
+      // (an owner override): write the dish columns only when this row was never
+      // classified (dish_classified_at is null). Skip the pre-read entirely when
+      // the classification produced nothing to write.
+      let refreshDishColumns: Record<string, string | null> = {}
+      if (Object.keys(dishColumns).length > 0) {
+        const { data: existingDish } = await supabase
+          .from('recipes')
+          .select('dish_classified_at')
+          .eq('user_id', userId)
+          .eq('source_url', sharedUrl)
+          .maybeSingle()
+        if (existingDish?.dish_classified_at == null) refreshDishColumns = dishColumns
+      }
+
       const { data: refreshed, error: refreshError } = await supabase
         .from('recipes')
         .update({
@@ -636,6 +700,7 @@ Rules:
           total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
           times_estimated: timesEstimated,
           servings,
+          ...refreshDishColumns,
           extracted_at: new Date().toISOString(),
         })
         .eq('user_id', userId)
@@ -716,6 +781,7 @@ Rules:
           total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
           times_estimated: timesEstimated,
           servings,
+          ...dishColumns,
           extracted_at: new Date().toISOString(),
         })
         .select('id')
@@ -762,7 +828,7 @@ Rules:
       if (ownUrl || error?.message.includes(GLOBAL_URL_KEY)) {
         const existingQuery = supabase
           .from('recipes')
-          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags')
+          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags, dish_classified_at')
         const { data: existing } = await (ownUrl ? existingQuery.eq('user_id', userId) : existingQuery)
           .eq('source_url', sourceUrl)
           .single()
@@ -821,8 +887,12 @@ Rules:
           }
           if (archived.gallery?.length) gapFill.image_urls = archived.gallery
 
-          if (Object.keys(gapFill).length > 0) {
-            await supabase.from('recipes').update(gapFill).eq('id', existing.id)
+          // Fill the dish columns only when this row was never classified (never
+          // overwrite a reviewed value), the same guard as a refresh.
+          const dishGapFill = existing.dish_classified_at == null ? dishColumns : {}
+          const merged = { ...gapFill, ...dishGapFill }
+          if (Object.keys(merged).length > 0) {
+            await supabase.from('recipes').update(merged).eq('id', existing.id)
           }
 
           recipe = { id: existing.id }
