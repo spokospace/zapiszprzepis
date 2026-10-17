@@ -1,4 +1,4 @@
-import { ingredientNames, ingredientsSubsume } from './recipe-dedup'
+import { ingredientKey, ingredientNames, ingredientsSubsume } from './recipe-dedup'
 import { groupDuplicates, type CollapseGroup } from './recipe-collapse'
 
 /** A recipe as the content-duplicate scan reads it: enough to judge "same
@@ -40,6 +40,20 @@ export function buildContentDuplicateGroups(rows: ContentRow[], preferredOwnerId
   }
 
   return groupDuplicates(rows, (link) => {
+    // Same exact ingredient set, whatever the title: two shares of one dish
+    // added close together that the LLM named differently ("kanapki" vs
+    // "zapiekanka" — #835/#836), which the title bucket below can never pair
+    // because it buckets on the title. ingredientKey is null for a list too
+    // short to identify a recipe across titles (see MIN_FINGERPRINT_NAMES).
+    const firstByKey = new Map<string, number>()
+    for (const row of rows) {
+      const key = ingredientKey(row.ingredients)
+      if (key == null) continue
+      const first = firstByKey.get(key)
+      if (first === undefined) firstByKey.set(key, row.id)
+      else link(row.id, first)
+    }
+
     // Compare only within a title bucket: the ingredient check is O(n²) per
     // bucket, and two differently-titled recipes are never one recipe here.
     const byTitle = new Map<string, ContentRow[]>()

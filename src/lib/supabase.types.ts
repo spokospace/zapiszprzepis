@@ -102,6 +102,7 @@ export type Database = {
           id: number
           image_url: string | null
           image_urls: string[]
+          ingredient_fingerprint: string | null
           ingredients: Json
           meta_description: string | null
           prep_time_minutes: number | null
@@ -129,6 +130,7 @@ export type Database = {
           id?: number
           image_url?: string | null
           image_urls?: string[]
+          ingredient_fingerprint?: string | null
           ingredients?: Json
           meta_description?: string | null
           prep_time_minutes?: number | null
@@ -156,6 +158,7 @@ export type Database = {
           id?: number
           image_url?: string | null
           image_urls?: string[]
+          ingredient_fingerprint?: string | null
           ingredients?: Json
           meta_description?: string | null
           prep_time_minutes?: number | null

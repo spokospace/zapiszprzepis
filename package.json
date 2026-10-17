@@ -15,6 +15,7 @@
     "generate:meta-migration": "node --env-file=.env.local --import tsx scripts/generate-meta-description-migration.ts",
     "backfill:source-urls": "node --env-file=.env.local --import tsx scripts/backfill-source-urls.ts",
     "backfill:source-fingerprints": "node --env-file=.env.local --import tsx scripts/backfill-source-fingerprints.ts",
+    "backfill:ingredient-fingerprints": "node --env-file=.env.local --import tsx scripts/backfill-ingredient-fingerprints.ts",
     "collapse:duplicate-recipes": "node --env-file=.env.local --import tsx scripts/collapse-duplicate-recipes.ts",
     "collapse:content-duplicates": "node --env-file=.env.local --import tsx scripts/collapse-content-duplicates.ts",
     "fix:recipe-covers": "node --env-file=.env.local --import tsx scripts/fix-recipe-covers.ts",
