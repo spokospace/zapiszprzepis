@@ -68,13 +68,13 @@ export function RecipeCard({
             )}
           </div>
           <div className="min-w-0">
-            <h3 className="line-clamp-3 text-[20px] leading-snug font-bold break-words text-ink underline underline-offset-4 group-hover:text-action-text">
+            <h3 className="line-clamp-3 text-[20px] leading-snug font-bold text-ink underline underline-offset-4 group-hover:text-action-text">
               {title}
             </h3>
             <p className="mt-1 text-[16px] text-ink-soft">
               {minutes ? `${categoryLabel(category)} · ${formatMinutes(minutes)}` : categoryLabel(category)}
             </p>
-            <p className="mt-0.5 text-[16px] break-words text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
+            <p className="mt-0.5 text-[16px] text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
           </div>
         </Link>
         {heart && <div className="px-2.5 pb-2.5">{heart}</div>}
@@ -119,13 +119,13 @@ export function RecipeCard({
 
       {/* Card content */}
       <div className="flex-1 p-3">
-        <h3 className="line-clamp-3 text-[19px] leading-snug font-bold break-words text-ink group-hover:text-action-text">
+        <h3 className="line-clamp-3 text-[19px] leading-snug font-bold text-ink group-hover:text-action-text">
           <Link href={recipePath(slug, { from })} className="after:absolute after:inset-0">
             {title}
           </Link>
         </h3>
         {description && <p className="mt-1 line-clamp-2 text-[16px] text-ink-soft">{description}</p>}
-        <p className="mt-1 text-[16px] break-words text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
+        <p className="mt-1 text-[16px] text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
         <span className="mt-2 inline-block rounded-pill bg-surface-accent-2 px-2.5 py-0.5 text-[16px] font-bold text-action-text">
           {categoryLabel(category)}
         </span>

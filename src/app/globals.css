@@ -73,6 +73,16 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /*
+   * Reflow (WCAG 1.4.10): user and recipe content (titles, ingredient amounts,
+   * source names, search queries, display names, tags) may hold a token longer
+   * than a 320 px line at A++. `anywhere` (unlike `break-word`) also lowers the
+   * min-content width, so flex and grid items holding such a token shrink and
+   * wrap instead of pushing the page sideways. Normal words still wrap at spaces;
+   * a word only breaks when it cannot fit on a line of its own. Guarded by
+   * e2e/reflow.spec.ts.
+   */
+  overflow-wrap: anywhere;
 }
 
 /*

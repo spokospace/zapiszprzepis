@@ -19,7 +19,8 @@ export function TextSizeControls({ level, onChange }: TextSizeControlsProps) {
       <span id="text-size-label" className="text-[16px] font-bold text-ink-soft">
         Wielkość tekstu
       </span>
-      <div role="group" aria-labelledby="text-size-label" className="flex gap-2">
+      {/* shrink-0: at 320 px the label wraps instead of "A++" splitting into letters. */}
+      <div role="group" aria-labelledby="text-size-label" className="flex shrink-0 gap-2">
         {TEXT_SCALE_LEVELS.map((l) => {
           const active = l === level
           return (

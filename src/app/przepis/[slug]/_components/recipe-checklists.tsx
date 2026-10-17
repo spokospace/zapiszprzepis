@@ -59,7 +59,7 @@ function IngredientRow({
           className="pointer-events-none absolute inset-0 m-auto hidden text-white peer-checked:block"
         />
       </span>
-      <span className={`text-scalable min-w-0 flex-1 break-words leading-snug ${text}`}>{name}</span>
+      <span className={`text-scalable min-w-0 flex-1 leading-snug ${text}`}>{name}</span>
       {/* Wraps (right-aligned) rather than nowrap: a long amount such as
           "1 i 1/2 szklanki (ok. 375 ml)" at A++ would scroll the page sideways. */}
       {amount && <b className={`text-scalable max-w-[45%] text-right ${text}`}>{amount}</b>}

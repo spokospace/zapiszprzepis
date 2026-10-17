@@ -180,7 +180,7 @@ export function AppMenu({
                         onClick={close}
                         aria-current={active ? 'page' : undefined}
                         className={[
-                          'flex h-full min-h-[56px] items-center rounded-field border-2 px-3 py-2 text-[17px] font-semibold break-words hover:bg-surface-2',
+                          'flex h-full min-h-[56px] items-center rounded-field border-2 px-3 py-2 text-[17px] font-semibold hover:bg-surface-2',
                           active ? 'border-action bg-surface-accent text-action-text' : 'border-field text-ink',
                         ].join(' ')}
                       >

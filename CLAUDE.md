@@ -18,6 +18,7 @@ Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelnoś
 
 - **WCAG 2.2 AA to standard każdego ekranu:** kontrast tekstu ≥ 4,5:1 (duże nagłówki 3:1), elementy UI i obramowania pól 3:1, cele dotyku ≥ 48 px, widoczny focus (`outline: 3px solid #1d4ed8; offset 2px`), linki podkreślone, ikony zawsze z podpisem.
 - **Czytelność dla starszych osób:** treść 19 px (mobile), tekst pomocniczy ≥ 16 px w kolorze `#374151`, przyciski główne 56 px, bez przewijania w poziomie.
+- **Reflow 320 px przy A++:** długie słowa łamie `body { overflow-wrap: anywhere }` w `globals.css`. Nie dodawaj `break-words`, bo nadpisuje tę regułę. Przed PR-em, który rusza layout lub treść przepisu, uruchom `pnpm test:e2e:reflow` ([docs/reflow-guard.md](docs/reflow-guard.md)).
 - **Pomarańcz z białym tekstem to `#c2410c`** — nigdy `#f97316` ani `#ea580c` z białym tekstem (2,8:1). Używaj tokenów (`bg-action`, `text-ink`, `border-field`…), nie surowych hexów.
 - **Model:** jeden przepis na dany link źródłowy (globalny dedup, bez duplikatów). Publiczny slug bez loginu: `/przepis/{nazwa}`. „Moje przepisy” = dodane przeze mnie jako pierwsza osoba; gdy ktoś doda link, który już jest, przepis trafia do jego Ulubionych. „Ulubione” = serce z podpisem, dowolne przepisy (nigdy gwiazdka).
 - **Źródło zamiast loginu** na kartach i przepisie (np. `aniagotuje.pl`, „YouTube · {kanał}”). „Kto dodał”: drobna linijka „Dodała/Dodał {nazwa}” z linkiem do `/u/{username}`.

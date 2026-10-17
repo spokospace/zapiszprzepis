@@ -22,14 +22,16 @@ const COPY = {
   compact: { off: 'Ulubione', on: 'W ulubionych' },
 } as const
 
-const BASE = 'inline-flex items-center justify-center gap-2 rounded-field border-action font-bold transition-colors'
+const BASE = 'inline-flex items-center justify-center rounded-field border-action font-bold transition-colors'
 const SIZE = {
-  full: `${BASE} min-h-[58px] w-full border-[2.5px] px-5 text-[18px] sm:w-auto`,
-  compact: `${BASE} min-h-[48px] w-full border-2 px-3 text-[16px]`,
+  full: `${BASE} min-h-[58px] w-full gap-2 border-[2.5px] px-5 text-[18px] sm:w-auto`,
+  // A 2-column card at 320 px leaves ~84 px inside px-3: too little for the heart
+  // plus "Ulubione", which would split mid-word. Tighter padding keeps the word whole.
+  compact: `${BASE} min-h-[48px] w-full gap-1.5 border-2 px-1.5 text-[16px] min-[360px]:gap-2 min-[360px]:px-3`,
 } as const
 const OFF = 'bg-white text-action-text hover:bg-surface-accent'
 const ON = 'bg-action text-white hover:bg-action-hover'
-const ICON = { full: 'h-6 w-6', compact: 'h-5 w-5' } as const
+const ICON = { full: 'h-6 w-6 shrink-0', compact: 'h-5 w-5 shrink-0' } as const
 
 /**
  * `?fav_added={recipeId}` (set by postLoginPath after a guest heart's login):

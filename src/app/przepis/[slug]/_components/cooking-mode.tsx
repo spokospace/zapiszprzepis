@@ -248,7 +248,7 @@ export function CookingMode({ title, steps }: CookingModeProps) {
             {/* Announced after every "Dalej" / "Wstecz". */}
             <div aria-live="polite" className="flex min-h-0 flex-col gap-5">
               <p className="text-[22px] font-bold text-accent-dark">{stepLabel(current, total)}</p>
-              <p className="min-h-0 overflow-y-auto text-[30px] leading-[1.45] font-semibold text-pretty break-words">
+              <p className="min-h-0 overflow-y-auto text-[30px] leading-[1.45] font-semibold text-pretty">
                 {steps[current]}
               </p>
             </div>

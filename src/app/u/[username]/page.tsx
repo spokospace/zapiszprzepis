@@ -175,7 +175,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
             size={88}
           />
           <div className="min-w-0">
-            <h1 className="break-words text-[30px] font-bold leading-tight text-ink">{profile.display_name}</h1>
+            <h1 className="text-[30px] font-bold leading-tight text-ink">{profile.display_name}</h1>
             {total > 0 && <p className="text-[19px] text-ink">Dodane przepisy: {total}</p>}
             <p className="text-[17px] text-ink-soft">W ZapiszPrzepis od {memberSinceLabel(profile.created_at, oldest)}</p>
           </div>

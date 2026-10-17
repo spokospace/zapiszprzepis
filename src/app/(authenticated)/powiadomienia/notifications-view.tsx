@@ -221,7 +221,7 @@ function Card({
         <span className="pt-px">{icon}</span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="text-[19px] leading-snug font-bold text-ink">{title}</p>
-          <p className="text-[17px] leading-normal break-words text-ink">{line}</p>
+          <p className="text-[17px] leading-normal text-ink">{line}</p>
           {reason && <p className="text-[17px] leading-normal text-ink-soft">{reason}</p>}
           {/* Relative to "now", which differs between the server render and hydration by a moment. */}
           <p suppressHydrationWarning className="text-[16px] text-ink-soft">
