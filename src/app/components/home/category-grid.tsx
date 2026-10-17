@@ -28,12 +28,15 @@ const TILE = {
   },
 } as const
 
-/** The guest's 9-column desktop row shows one category beyond the home eight, from lg only. */
-const DESKTOP_EXTRA = RECIPE_CATEGORIES[HOME_CATEGORIES.length]
+/**
+ * The guest grid shows one category beyond the home eight wherever it has three
+ * columns (A1's 3×3, A8's 9-column row); the 2-column grid below 360px keeps eight.
+ */
+const GUEST_EXTRA = RECIPE_CATEGORIES[HOME_CATEGORIES.length]
 
 /** "Kategorie" tiles (E01-S04): 3 columns for a guest (from 360px), 2 for a signed-in user. */
 export function CategoryGrid({ columns }: { columns: keyof typeof COLUMNS }) {
-  const categories = columns === 3 ? [...HOME_CATEGORIES, DESKTOP_EXTRA] : HOME_CATEGORIES
+  const categories = columns === 3 ? [...HOME_CATEGORIES, GUEST_EXTRA] : HOME_CATEGORIES
   const tile = TILE[columns]
   return (
     <section aria-labelledby="categories-heading">
@@ -44,7 +47,7 @@ export function CategoryGrid({ columns }: { columns: keyof typeof COLUMNS }) {
         {categories.map(({ value, label }) => {
           const Icon = CATEGORY_ICONS[value]
           return (
-            <li key={value} className={value === DESKTOP_EXTRA.value ? 'hidden min-w-0 lg:block' : 'min-w-0'}>
+            <li key={value} className={value === GUEST_EXTRA.value ? 'hidden min-w-0 min-[360px]:block' : 'min-w-0'}>
               <Link
                 href={categoryPath(value)}
                 className={`flex items-center font-bold break-words no-underline! ${tile.link}`}
