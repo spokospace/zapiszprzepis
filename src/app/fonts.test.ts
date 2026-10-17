@@ -11,7 +11,7 @@ import { join } from 'node:path'
  */
 const SRC = join(process.cwd(), 'src')
 const read = (f: string) => readFileSync(join(SRC, f), 'utf8')
-const sources = (readdirSync(SRC, { recursive: true }) as string[]).filter(
+const sources = readdirSync(SRC, { recursive: true, encoding: 'utf8' }).filter(
   (f) => /\.(ts|tsx)$/.test(f) && !f.endsWith('.test.ts'),
 )
 
@@ -23,6 +23,6 @@ describe('web fonts', () => {
   it('the theme maps no font token to a next/font variable', () => {
     // A leftover mapping would point `font-mono` at an undefined variable and the
     // access-code field would fall back to the body's Arial.
-    expect(read('app/globals.css').match(/^.*--font-(sans|mono)\s*:.*$/gm)).toBeNull()
+    expect(read('app/globals.css').match(/^.*--font-(sans|mono)\s*:\s*var\(.*$/gm)).toBeNull()
   })
 })
