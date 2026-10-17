@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getFavoriteIds } from '@/lib/favorites'
 import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
-import { parsePageParam, parseTagParam, tagFacets, tagSummary } from '@/lib/category-tags'
+import { categoryNoun, parsePageParam, parseTagParam, tagFacets, tagSummary } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
 import { recipeTotalMinutes } from '@/lib/recipe-meta'
 import { categoryPath } from '@/lib/routes'
@@ -119,7 +119,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           </div>
         </header>
 
-        {chips.length > 0 && <TagFilter chips={chips} question={`Jakie ${label.toLocaleLowerCase('pl')}?`} />}
+        {chips.length > 0 && <TagFilter chips={chips} question={`Jakie ${categoryNoun(label)}?`} />}
 
         {(filtered || list.length > 0) && (
           <div

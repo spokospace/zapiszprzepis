@@ -5,6 +5,7 @@ import {
   parseTagParam,
   rankSimilar,
   sharedTagsCaption,
+  categoryNoun,
   similarHeading,
   tagFacets,
   tagSummary,
@@ -53,6 +54,18 @@ describe('similarHeading', () => {
   it('skips capitalised tags and falls back to the category alone', () => {
     expect(similarHeading(['wielkanoc'], [{ tags: ['wielkanoc'] }], 'Ciasta')).toBe('Podobne: ciasta')
     expect(similarHeading(['kruche'], [{ tags: ['owocowe'] }], 'Ciasta')).toBe('Podobne: ciasta')
+  })
+
+  it('puts a phrase tag after the category and skips noun tags', () => {
+    expect(similarHeading(['na-zimno'], [{ tags: ['na-zimno'] }], 'Zupy')).toBe('Podobne: zupy na zimno')
+    expect(similarHeading(['dla-dzieci'], [{ tags: ['dla-dzieci'] }], 'Obiady')).toBe('Podobne: obiady dla dzieci')
+    expect(similarHeading(['grill', 'impreza'], [{ tags: ['grill', 'impreza'] }], 'Obiady')).toBe('Podobne: obiady')
+  })
+
+  it('reads "przepisy" for the Inne category', () => {
+    expect(similarHeading(['szybkie'], [{ tags: ['szybkie'] }], 'Inne')).toBe('Podobne: szybkie przepisy')
+    expect(categoryNoun('Inne')).toBe('przepisy')
+    expect(categoryNoun('Syropy i napary')).toBe('syropy i napary')
   })
 })
 

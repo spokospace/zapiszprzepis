@@ -110,27 +110,42 @@ export function sharedTagsCaption(own: readonly string[], other: readonly string
 }
 
 /**
+ * A category as the noun of a phrase ("Jakie ciasteczka?", "Podobne: kruche
+ * ciasteczka"). "Inne" is no noun, so it reads "przepisy" there.
+ */
+export function categoryNoun(categoryLabel: string): string {
+  const noun = categoryLabel.toLocaleLowerCase('pl')
+  return noun === 'inne' ? 'przepisy' : noun
+}
+
+/** A phrase-like tag goes after the noun: "zupy na zimno", "obiady dla dzieci", "ciasta bez pieczenia". */
+const POSTPOSITIVE_TAG = /^(z|ze|bez|na|dla) /
+
+/**
  * "Podobne: kruche ciasteczka" — the recipe's tag most of the shown recipes
- * share (the recipe's own order breaks a tie), in front of the category.
- * Only an adjective-like tag reads right there: a capitalised one (an occasion,
- * "Boże Narodzenie") or one nobody shares leaves "Podobne: ciasteczka".
+ * share (the recipe's own order breaks a tie), around the category: an
+ * adjective in front ("kruche ciasteczka"), a phrase after ("zupy na zimno").
+ * A tag that reads as neither (an occasion, "Boże Narodzenie"; a noun, "grill")
+ * or one nobody shares leaves "Podobne: ciasteczka".
  */
 export function similarHeading(
   own: readonly string[],
   similar: readonly { tags: readonly string[] | null }[],
   categoryLabel: string,
 ): string {
-  const category = categoryLabel.toLocaleLowerCase('pl')
+  const category = categoryNoun(categoryLabel)
   let best: string | null = null
   let bestCount = 0
   for (const tag of own) {
     const label = tagLabel(tag)
-    if (label !== label.toLocaleLowerCase('pl')) continue
+    const adjective = /^\p{Ll}+e$/u.test(label)
+    if (!adjective && !POSTPOSITIVE_TAG.test(label)) continue
     const count = similar.filter((r) => r.tags?.includes(tag)).length
     if (count > bestCount) {
       best = label
       bestCount = count
     }
   }
-  return best ? `Podobne: ${best} ${category}` : `Podobne: ${category}`
+  if (!best) return `Podobne: ${category}`
+  return POSTPOSITIVE_TAG.test(best) ? `Podobne: ${category} ${best}` : `Podobne: ${best} ${category}`
 }
