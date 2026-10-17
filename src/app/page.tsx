@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getFailedShares, NO_FAILED_SHARES, type FailedSharesResult } from '@/lib/failed-shares'
 import { getMenuSummary } from '@/lib/menu-summary'
@@ -5,8 +6,6 @@ import { homeGreeting } from '@/lib/home'
 import { getGreetingName } from '@/lib/first-name'
 import { vocative } from '@/lib/vocative'
 import { AppHeader } from '@/app/components/app-header'
-import { AddRecipeForm } from '@/app/components/add-recipe-form'
-import { AccessCodeGate } from '@/app/components/access-code-gate'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { PageContainer } from '@/app/components/page-container'
@@ -18,20 +17,23 @@ import { GuestCta } from '@/app/components/home/guest-cta'
 import { AttentionBanner } from '@/app/components/home/attention-banner'
 import { FavoriteAddedNotice } from '@/app/components/favorite-button'
 import { parseRecipeId } from '@/lib/favorites'
+import { ADD_RECIPE_PATH } from '@/lib/routes'
 
-type SearchParams = Promise<{ add_error?: string; fav_added?: string }>
+type SearchParams = Promise<{ fav_added?: string; tab?: string }>
 
 /** Recent public recipes on the guest home: 4 fills the 2-column grid (E01-S04). */
 const RECENT_LIMIT = 4
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
-  const { add_error, fav_added } = await searchParams
+  const { fav_added, tab } = await searchParams
+  // The add form left the home for /dodaj (E01-S10); old `/?tab=add` links follow it.
+  if (tab === 'add') redirect(ADD_RECIPE_PATH)
   const supabase = await createSupabaseServerClient()
   const user = await getCurrentUser()
 
   // Public since E01-S02: a guest sees the home too; the signed-in home (C1) has no feed.
   // The menu summary (E01-S09) also carries the E01-S11 full-access flag, which
-  // decides the "Moje przepisy" tile and add form vs the access-code gate (3c).
+  // decides the "Moje przepisy" tile and the locked "Dodaj przepis" one.
   const [failedShares, menu, recentRecipes, greetingName] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
     getMenuSummary(supabase, user),
@@ -46,7 +48,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         {user ? (
           <MemberHome
             failedShares={failedShares}
-            addError={add_error}
             hasFullAccess={menu?.hasFullAccess ?? false}
             vocative={vocative(greetingName)}
             favoriteAdded={parseRecipeId(fav_added)}
@@ -80,10 +81,13 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
       <section aria-labelledby="hero-heading" className="bg-surface-accent">
         {/* Desktop (E01-S17, A8): a centred hero with a 46 px H1 and the 760 px field. */}
         <PageContainer className="py-6 lg:py-14 lg:text-center">
-          <h1 id="hero-heading" className="mb-4 text-[30px] leading-tight font-bold text-ink lg:mb-5 lg:text-[46px] lg:leading-[1.1]">
+          <h1 id="hero-heading" className="text-[28px] leading-[1.15] font-bold text-ink lg:text-[46px] lg:leading-[1.1]">
             Czego dziś szukasz?
           </h1>
-          <HomeSearch id="home-search-guest" centered />
+          <p className="mt-3 mb-4 text-[18px] leading-normal text-ink-soft lg:mb-6 lg:text-[19px]">
+            Przepisy z Facebooka, YouTube i blogów, spisane po polsku i zapisane na stałe.
+          </p>
+          <HomeSearch id="home-search-guest" centered tone="action" placeholder="Danie lub składnik, np. dynia" />
         </PageContainer>
       </section>
       <PageContainer className="flex flex-col gap-8 pt-6">
@@ -129,14 +133,12 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
 
 function MemberHome({
   failedShares,
-  addError,
   hasFullAccess,
   vocative,
   favoriteAdded,
 }: {
   /** The header's result, reused for the E01-S15 banner (no extra query). */
   failedShares: FailedSharesResult
-  addError?: string
   hasFullAccess: boolean
   /** "Aniu" from the S13 first name (else the display name) via the S12 rule; null → "Dzień dobry!". */
   vocative: string | null
@@ -146,26 +148,14 @@ function MemberHome({
   return (
     <PageContainer className="flex flex-col gap-8 pt-6">
       <div>
-        <h1 className="mb-4 text-[30px] leading-tight font-bold text-ink">{homeGreeting(vocative)}</h1>
+        <h1 className="mb-[18px] text-[28px] leading-tight font-bold text-ink">{homeGreeting(vocative)}</h1>
         {/* E01-S15 (handoff C1): "N przepisów wymaga uwagi" sits under the greeting. */}
         <AttentionBanner failedShares={failedShares} className="mb-4" />
-        <HomeSearch id="home-search-member" />
+        <HomeSearch id="home-search-member" label="Czego szukasz?" strongLabel placeholder="np. zupa z dyni" submitLabel="Szukaj" />
       </div>
       {favoriteAdded !== null && <FavoriteAddedNotice recipeId={favoriteAdded} />}
       <MemberTiles hasFullAccess={hasFullAccess} />
       <CategoryGrid columns={2} />
-      {/* E01-S10 slot: adding moves to /dodaj; until then the form lives here (?tab=add focuses it).
-          Without full access (E01-S11) the access-code gate (3c) stands in its place. */}
-      {hasFullAccess ? (
-        <section aria-labelledby="add-heading">
-          <h2 id="add-heading" className="mb-3 text-[22px] font-bold text-ink">
-            Dodaj przepis z linku
-          </h2>
-          <AddRecipeForm addError={addError} />
-        </section>
-      ) : (
-        <AccessCodeGate notice={addError === 'no_access'} />
-      )}
     </PageContainer>
   )
 }

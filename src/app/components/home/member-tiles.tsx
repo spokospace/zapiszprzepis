@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Heart, Lock, Plus, type LucideIcon } from 'lucide-react'
+import { BookOpen, ChevronRight, Heart, Lock, Plus, type LucideIcon } from 'lucide-react'
 import { ADD_RECIPE_PATH } from '@/lib/routes'
 
 interface Tile {
@@ -18,8 +18,9 @@ const ADD_RECIPE: Tile = { href: ADD_RECIPE_PATH, title: 'Dodaj przepis', captio
 const ADD_RECIPE_LOCKED: Tile = { ...ADD_RECIPE, caption: 'Wymaga kodu lub pełnego dostępu', Icon: Lock }
 
 /**
- * Shortcut tiles on the signed-in home (E01-S04). "Moje przepisy" is for users
- * with full access only (E01-S11 supplies the flag).
+ * Shortcut rows on the signed-in home (E01-S04; the C1 look since E01-S20:
+ * 28 px icon, 20 px title, 16 px caption, chevron, the whole row is the link).
+ * "Moje przepisy" is for users with full access only (E01-S11 supplies the flag).
  */
 export function MemberTiles({ hasFullAccess }: { hasFullAccess: boolean }) {
   const tiles = hasFullAccess ? [MY_RECIPES, FAVORITES, ADD_RECIPE] : [FAVORITES, ADD_RECIPE_LOCKED]
@@ -30,18 +31,14 @@ export function MemberTiles({ hasFullAccess }: { hasFullAccess: boolean }) {
           <li key={href}>
             <Link
               href={href}
-              className="flex min-h-[72px] items-center gap-3 rounded-card border-2 border-border-card bg-white px-4 py-3 hover:border-border-card-2 hover:bg-surface-2"
+              className="flex min-h-16 items-center gap-3.5 rounded-card border-2 border-border-card bg-white p-4 no-underline! hover:border-border-card-2 hover:bg-surface-2"
             >
-              <span
-                aria-hidden="true"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-surface-accent-2 text-action-text"
-              >
-                <Icon className="h-5 w-5" />
+              <Icon aria-hidden="true" className="h-7 w-7 shrink-0 text-action-text" />
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[20px] leading-tight font-bold text-ink">{title}</span>
+                <span className="text-[16px] text-ink-soft">{caption}</span>
               </span>
-              <span className="min-w-0">
-                <span className="block text-[19px] font-bold text-ink">{title}</span>
-                <span className="block text-[16px] text-ink-soft">{caption}</span>
-              </span>
+              <ChevronRight aria-hidden="true" className="h-[26px] w-[26px] shrink-0 text-ink-soft" />
             </Link>
           </li>
         ))}

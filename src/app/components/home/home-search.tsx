@@ -25,7 +25,16 @@ interface HomeSearchProps {
   autoFocus?: boolean
   /** Centre the field row from lg (the guest hero, E01-S17). */
   centered?: boolean
+  /** The field frame: `field` grey (default), `action` orange for the guest hero (A1, E01-S20). */
+  tone?: 'field' | 'action'
+  placeholder?: string
+  /** A bold ink label (C1 "Czego szukasz?") instead of the soft hint style. */
+  strongLabel?: boolean
+  /** One submit label at every width; default "Szukaj przepisu", shortened to "Szukaj" from lg. */
+  submitLabel?: string
 }
+
+const FRAME = { field: 'border-field', action: 'border-action' } as const
 
 /**
  * The one search field (E01-S04 home, E01-S05 /szukaj and "Moje przepisy"): a
@@ -40,6 +49,10 @@ export function HomeSearch({
   label = 'Szukaj przepisu po nazwie lub składniku',
   autoFocus,
   centered,
+  tone = 'field',
+  placeholder = 'np. sernik, pierogi',
+  strongLabel,
+  submitLabel,
 }: HomeSearchProps) {
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -88,42 +101,55 @@ export function HomeSearch({
 
   return (
     <form ref={formRef} role="search" method="get" action={SEARCH_PATH}>
-      <label htmlFor={id} className="mb-2 block text-[18px] text-ink-soft">
+      <label htmlFor={id} className={`mb-2 block text-[18px] ${strongLabel ? 'font-bold text-ink' : 'text-ink-soft'}`}>
         {label}
       </label>
       {scope !== 'wszystkie' && <input type="hidden" name="zakres" value={scope} />}
       {/* Below lg the submit wraps to its own full-width line (gap-y = the old mt-3);
-          from lg (E01-S17, A8) it sits inline in a 760×64 row. */}
+          from lg (E01-S17, A8) it sits inline in a 760×64 row. The mic sits inside the
+          field frame (E01-S20), which takes the focus ring while the input is focused. */}
       <div className={`flex flex-wrap gap-x-2 gap-y-3 lg:max-w-[760px] ${centered ? 'lg:mx-auto' : ''}`}>
-        <input
-          ref={inputRef}
-          id={id}
-          type="search"
-          name="q"
-          required
-          defaultValue={defaultValue}
-          autoFocus={autoFocus}
-          enterKeyHint="search"
-          autoComplete="off"
-          onInput={() => setMicState((prev) => (prev === 'error' ? 'idle' : prev))}
-          placeholder="np. sernik, pierogi"
-          className="h-[60px] min-w-0 flex-1 rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink placeholder:text-ink-muted lg:h-16"
-        />
-        {micSupported && (
-          <button
-            type="button"
-            onClick={toggleMic}
-            aria-pressed={micState === 'listening'}
-            className="inline-flex h-[60px] shrink-0 items-center gap-1.5 rounded-field border-2 border-field bg-white px-3 text-[17px] font-bold text-ink hover:bg-surface-3 lg:h-16"
-          >
-            <Mic aria-hidden="true" className="h-5 w-5" />
-            Mów
-          </button>
-        )}
-        <button type="submit" className={`${buttonClasses('primary', 'lg')} w-full text-[19px] lg:h-16 lg:w-auto lg:px-8`}>
+        <div
+          className={`flex h-[60px] min-w-0 flex-1 basis-full items-center gap-2 rounded-field border-2 ${FRAME[tone]} bg-white pr-1 pl-3 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus lg:h-16 lg:basis-0`}
+        >
+          <Search aria-hidden="true" className="h-[22px] w-[22px] shrink-0 text-ink-soft" />
+          <input
+            ref={inputRef}
+            id={id}
+            type="search"
+            name="q"
+            required
+            defaultValue={defaultValue}
+            autoFocus={autoFocus}
+            enterKeyHint="search"
+            autoComplete="off"
+            onInput={() => setMicState((prev) => (prev === 'error' ? 'idle' : prev))}
+            placeholder={placeholder}
+            className="h-full min-w-0 flex-1 bg-transparent text-[19px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none"
+          />
+          {micSupported && (
+            <button
+              type="button"
+              onClick={toggleMic}
+              aria-pressed={micState === 'listening'}
+              className="inline-flex h-12 shrink-0 items-center gap-1 rounded-[10px] px-1.5 text-[16px] font-bold text-ink-soft hover:bg-surface-3 aria-pressed:bg-surface-accent-2 aria-pressed:text-action-text"
+            >
+              <Mic aria-hidden="true" className="h-[22px] w-[22px]" />
+              Mów
+            </button>
+          )}
+        </div>
+        <button
+          type="submit"
+          className={`${buttonClasses('primary', 'lg')} min-h-[58px] w-full text-[19px] lg:h-16 lg:w-auto lg:px-8`}
+        >
           <Search aria-hidden="true" className="h-5 w-5" />
-          <span className="lg:hidden">Szukaj przepisu</span>
-          <span className="hidden lg:inline">Szukaj</span>
+          {submitLabel ?? (
+            <>
+              <span className="lg:hidden">Szukaj przepisu</span>
+              <span className="hidden lg:inline">Szukaj</span>
+            </>
+          )}
         </button>
       </div>
       <p role="status" aria-live="polite" className="mt-2 text-[16px] text-ink-soft empty:sr-only">

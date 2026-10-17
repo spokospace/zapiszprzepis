@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { categoryLabel, HOME_CATEGORIES, isRecipeCategory, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
+import { CATEGORY_ICONS, categoryLabel, HOME_CATEGORIES, isRecipeCategory, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
+
+describe('CATEGORY_ICONS (E01-S20)', () => {
+  it('has an icon for every category', () => {
+    for (const { value } of RECIPE_CATEGORIES) expect(CATEGORY_ICONS[value]).toBeTruthy()
+  })
+})
 
 // recipes.category is a strict enum: whatever the LLM returns must be mapped
 // onto it, or the insert fails and the extraction is lost (#134).

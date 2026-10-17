@@ -1,3 +1,18 @@
+import {
+  Cake,
+  CakeSlice,
+  Coffee,
+  Cookie,
+  Croissant,
+  CupSoda,
+  GlassWater,
+  Salad,
+  Sandwich,
+  Soup,
+  Utensils,
+  UtensilsCrossed,
+  type LucideIcon,
+} from 'lucide-react'
 import type { Database } from '@/lib/supabase.types'
 
 export type RecipeCategory = Database['public']['Enums']['recipe_category']
@@ -48,6 +63,26 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'syropy', label: 'Syropy i napary' },
   { value: 'inne', label: 'Inne' },
 ]
+
+/**
+ * The tile icon per category (handoff C1/A1): the prototypes' lucide names
+ * where they give one, the closest lucide glyph for the rest. Always shown
+ * next to the label, never alone, so they are decorative (`aria-hidden`).
+ */
+export const CATEGORY_ICONS: Record<RecipeCategory, LucideIcon> = {
+  obiady: Utensils,
+  zupy: Soup,
+  desery: CakeSlice,
+  ciasta: Cake,
+  ciasteczka: Cookie,
+  sniadania: Coffee,
+  pieczywo: Croissant,
+  przekaski: Sandwich,
+  salatki: Salad,
+  napoje: GlassWater,
+  syropy: CupSoda,
+  inne: UtensilsCrossed,
+}
 
 /** Narrows a URL segment or query value to an enum member. */
 export function isRecipeCategory(value: string): value is RecipeCategory {
