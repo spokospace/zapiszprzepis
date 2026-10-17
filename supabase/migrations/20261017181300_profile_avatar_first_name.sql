@@ -12,13 +12,16 @@
 --    The S12 gender trigger only rejects a gender change, so it is unaffected;
 --    a row created here keeps gender = null ("not chosen yet" for /witaj).
 -- 3. The public `avatars` bucket, JPEG only (the browser re-encodes every
---    photo to a 512² JPEG): anyone reads, a signed-in user writes only under
---    '{auth.uid()}/'.
+--    photo to a 512² JPEG). Anyone fetches an object by its public URL (a
+--    public bucket bypasses RLS for that); a signed-in user lists, writes and
+--    deletes only under '{auth.uid()}/'. There is deliberately NO public SELECT
+--    policy: it would let anyone list the whole bucket, i.e. every user's
+--    folder, including replaced photos a failed best-effort delete left behind.
 --
 -- Idempotent: safe to re-run.
 --
 -- Rollback (loses uploaded pictures and stored first names):
---   drop policy if exists avatars_public_read on storage.objects;
+--   drop policy if exists avatars_owner_read on storage.objects;
 --   drop policy if exists avatars_owner_insert on storage.objects;
 --   drop policy if exists avatars_owner_update on storage.objects;
 --   drop policy if exists avatars_owner_delete on storage.objects;
@@ -101,11 +104,19 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('avatars', 'avatars', true, 1048576, array['image/jpeg'])
 on conflict (id) do nothing;
 
+-- Replaces the listing-enabling public read policy of earlier drafts.
 drop policy if exists avatars_public_read on storage.objects;
-create policy avatars_public_read
+
+-- Owner-only: storage remove() needs SELECT on the object it deletes.
+drop policy if exists avatars_owner_read on storage.objects;
+create policy avatars_owner_read
   on storage.objects
   for select
-  using (bucket_id = 'avatars');
+  to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
 
 drop policy if exists avatars_owner_insert on storage.objects;
 create policy avatars_owner_insert

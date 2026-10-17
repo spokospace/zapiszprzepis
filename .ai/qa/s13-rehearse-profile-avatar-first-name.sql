@@ -14,6 +14,7 @@
 --                    direct_write[ok] no_auth[ok] anon_read[ok] anon_rpc[ok]
 --                    color_ok[ok] color_range[ok] own_path[ok] foreign_path[ok]
 --                    bucket[ok] storage_own[ok] storage_foreign[ok] anon_profiles[ok]
+--                    owner_list[ok] other_list[ok] anon_list[ok]
 
 do $rehearsal$
 declare
@@ -28,6 +29,7 @@ declare
   t_noauth text; t_anon text; t_anon_rpc text; t_color text; t_color_range text;
   t_own_path text; t_foreign_path text; t_bucket text; t_st_own text; t_st_foreign text;
   t_anon_profiles text;
+  t_owner_list text; t_other_list text; t_anon_list text;
 begin
   select id into u1 from auth.users order by created_at limit 1;
   select id into u2 from auth.users where id <> u1 order by created_at limit 1;
@@ -119,11 +121,17 @@ begin
   exception when insufficient_privilege then
     t_st_foreign := 'ok';
   end;
+  -- The owner sees (and so can remove()) their own object.
+  select count(*) into n from storage.objects where bucket_id = 'avatars' and name = u1::text || '/1.jpg';
+  t_owner_list := case when n = 1 then 'ok' else 'FAIL:' || n end;
 
   -- Another user cannot read u1's private row.
   perform set_config('request.jwt.claims', json_build_object('sub', u2, 'role', 'authenticated')::text, true);
   select count(*) into n from public.profiles_private where id = u1;
   t_other := case when n = 0 then 'ok' else 'FAIL:' || n end;
+  -- ...nor list u1's avatar objects.
+  select count(*) into n from storage.objects where bucket_id = 'avatars' and name like u1::text || '/%';
+  t_other_list := case when n = 0 then 'ok' else 'FAIL:' || n end;
 
   -- No user at all → set_first_name raises.
   perform set_config('request.jwt.claims', '{}', true);
@@ -147,6 +155,13 @@ begin
   exception when insufficient_privilege then
     t_anon_rpc := 'ok';
   end;
+  -- No public SELECT policy: anon cannot list the bucket (public URLs bypass RLS).
+  begin
+    select count(*) into n from storage.objects where bucket_id = 'avatars';
+    t_anon_list := case when n = 0 then 'ok' else 'FAIL:listed(' || n || ')' end;
+  exception when insufficient_privilege then
+    t_anon_list := 'ok';
+  end;
   -- The picture is public by design: anon reads it from profiles.
   select avatar_color into n from public.profiles where id = u1;
   t_anon_profiles := case when n = 3 then 'ok' else 'FAIL:' || coalesce(n::text, 'null') end;
@@ -157,10 +172,10 @@ begin
   t_bucket := case when n = 1 then 'ok' else 'FAIL:' || n end;
 
   raise exception
-    'REHEARSAL_RESULT name_ok[%] polish[%] compound[%] digits[%] too_long[%] gender_untouched[%] clear[%] gender_after[%] other_read[%] direct_write[%] no_auth[%] anon_read[%] anon_rpc[%] color_ok[%] color_range[%] own_path[%] foreign_path[%] bucket[%] storage_own[%] storage_foreign[%] anon_profiles[%]',
+    'REHEARSAL_RESULT name_ok[%] polish[%] compound[%] digits[%] too_long[%] gender_untouched[%] clear[%] gender_after[%] other_read[%] direct_write[%] no_auth[%] anon_read[%] anon_rpc[%] color_ok[%] color_range[%] own_path[%] foreign_path[%] bucket[%] storage_own[%] storage_foreign[%] anon_profiles[%] owner_list[%] other_list[%] anon_list[%]',
     t_name, t_polish, t_compound, t_digits, t_long, t_gender, t_clear, t_gender_after, t_other, t_direct,
     t_noauth, t_anon, t_anon_rpc, t_color, t_color_range, t_own_path, t_foreign_path, t_bucket,
-    t_st_own, t_st_foreign, t_anon_profiles;
+    t_st_own, t_st_foreign, t_anon_profiles, t_owner_list, t_other_list, t_anon_list;
 end;
 $rehearsal$;
 

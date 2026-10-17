@@ -134,6 +134,28 @@ describe('saveProfileSettings — writes', () => {
     expect(remove).toHaveBeenCalledWith([`${USER}/1.jpg`])
   })
 
+  it('deletes the object before clearing the path, so removal is never claimed while it is still served', async () => {
+    maybeSingle.mockResolvedValue({ data: { avatar_path: `${USER}/1.jpg` }, error: null })
+    await saveProfileSettings(idle, form({ displayName: 'Ania K', removeAvatar: '1' }))
+    expect(calls).toEqual(['rpc', 'remove', 'update'])
+  })
+
+  it('fails on the photo field and keeps the path when the removal delete fails', async () => {
+    maybeSingle.mockResolvedValue({ data: { avatar_path: `${USER}/1.jpg` }, error: null })
+    remove.mockResolvedValue({ error: { message: 'storage down' } })
+    const res = await saveProfileSettings(idle, form({ displayName: 'Ania K', removeAvatar: '1' }))
+    expect(res).toMatchObject({ status: 'error', field: 'avatar' })
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('still succeeds when a replaced photo cannot be deleted (best effort)', async () => {
+    maybeSingle.mockResolvedValue({ data: { avatar_path: `${USER}/1.jpg` }, error: null })
+    remove.mockResolvedValue({ error: { message: 'storage down' } })
+    const res = await saveProfileSettings(idle, form({ displayName: 'Ania K', avatar: jpeg() }))
+    expect(res.status).toBe('success')
+    expect(calls).toEqual(['rpc', 'upload', 'update', 'remove'])
+  })
+
   it('keeps the current photo when only the name changes', async () => {
     maybeSingle.mockResolvedValue({ data: { avatar_path: `${USER}/1.jpg` }, error: null })
     await saveProfileSettings(idle, form({ displayName: 'Ania K' }))

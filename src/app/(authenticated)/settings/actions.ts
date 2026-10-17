@@ -74,6 +74,16 @@ export async function saveProfileSettings(
   if (nameError) return fail(SAVE_FAILED)
   if (nameResult === 'invalid') return fail('Tego imienia nie da się zapisać.', 'firstName')
 
+  // "Usuń zdjęcie": the bucket is public, so the object must really be gone
+  // before the screen says so — delete it first and fail the save if that
+  // fails (avatar_path is then left as it was). A missing object is not an
+  // error, so a retry after a failed profile update still goes through.
+  const removingOnly = removeAvatar && !photo
+  if (removingOnly && previousPath) {
+    const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove([previousPath])
+    if (removeError) return fail('Nie udało się usunąć zdjęcia. Spróbuj ponownie.', 'avatar')
+  }
+
   let uploadedPath: string | null = null
   if (photo) {
     uploadedPath = avatarObjectPath(user.id)
@@ -96,8 +106,9 @@ export async function saveProfileSettings(
     return fail(SAVE_FAILED)
   }
 
-  // The old picture is no longer referenced. Best effort: an orphan is harmless.
-  if (pictureChanged && previousPath) {
+  // A replaced picture is no longer referenced. Best effort: the orphan keeps a
+  // timestamped name in a bucket nobody can list, so it is not discoverable.
+  if (photo && previousPath) {
     await supabase.storage.from(AVATAR_BUCKET).remove([previousPath])
   }
 
