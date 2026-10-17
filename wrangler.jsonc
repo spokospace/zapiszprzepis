@@ -27,6 +27,10 @@
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://wvrlgddgdddwmgzbvtij.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2",
-    "NEXT_PUBLIC_SITE_URL": "https://zapiszprzepis.pl"
+    "NEXT_PUBLIC_SITE_URL": "https://zapiszprzepis.pl",
+    // E01-S12: OAuth sign-in buttons on /login (comma-separated: google,facebook).
+    // Empty/unset = off. Turn on ONLY after both providers are configured in the
+    // Supabase dashboard, or the buttons appear and fail. See oauth-providers.ts.
+    "AUTH_OAUTH_PROVIDERS": "google,facebook"
   }
 }
