@@ -8,10 +8,9 @@ const CHIP_WIDTHS = ['w-24', 'w-20', 'w-28', 'w-24', 'w-32', 'w-20', 'w-28', 'w-
  * "Moje przepisy" while the list renders (#227): RecipesContent's container, heading,
  * search field, category chips and grid, without data.
  *
- * It sits in the (list) route group so it wraps /recipes only. Placed in recipes/, it
- * would also wrap recipes/[slug]: a recipe opened from the home page would show this
- * list skeleton, since a navigation shows the first loading boundary below the layouts
- * it shares with the current page.
+ * A route nested under recipes/ would show this skeleton too: a navigation shows the
+ * first loading boundary below the layouts it shares with the current page. The recipe
+ * page lives at przepis/[slug] with its own skeleton, so nothing is nested here today.
  */
 export default function RecipesLoading() {
   return (
