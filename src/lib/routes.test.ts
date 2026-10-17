@@ -85,6 +85,12 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/przepisy/zupy/x')).toBe(false)
   })
 
+  it('allows a public profile /u/{username} (E01-S14)', () => {
+    expect(isPublicRoute('/u/tola')).toBe(true)
+    expect(isPublicRoute('/u')).toBe(false)
+    expect(isPublicRoute('/u/tola/x')).toBe(false)
+  })
+
   it('keeps the owner list and everything else gated', () => {
     expect(isPublicRoute('/recipes')).toBe(false)
     expect(isPublicRoute('/przepis')).toBe(false)

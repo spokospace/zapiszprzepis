@@ -11,6 +11,9 @@ export const PRZEPIS_PAGE_RE = /^\/przepis\/[^/]+$/
 /** A public category listing: /przepisy/{kategoria} (one segment) — E01-S09, extended by E01-S16. */
 const PRZEPISY_CATEGORY_RE = /^\/przepisy\/[^/]+$/
 
+/** A public profile: /u/{username} (one segment) — E01-S14. */
+export const PROFILE_PAGE_RE = /^\/u\/[^/]+$/
+
 /**
  * The public listing of one category (E01-S09), shared by the MENU drawer and
  * the home category tiles (E01-S04) so both link the same URL — the route
@@ -54,14 +57,16 @@ export function legacyRecipePathToCanonical(pathname: string): string {
  * job. Both the canonical /przepis/{slug} and the legacy /recipes/{slug} are
  * public: the legacy path must be reachable so middleware can issue its 301
  * instead of bouncing the visitor to /login first (E01-S03b). The category
- * listings are linked from the guest's MENU drawer (E01-S09).
+ * listings are linked from the guest's MENU drawer (E01-S09), the profiles
+ * from every recipe's author line (E01-S14).
  */
 export function isPublicRoute(pathname: string): boolean {
   return (
     pathname === '/' ||
     PRZEPIS_PAGE_RE.test(pathname) ||
     RECIPE_PAGE_RE.test(pathname) ||
-    PRZEPISY_CATEGORY_RE.test(pathname)
+    PRZEPISY_CATEGORY_RE.test(pathname) ||
+    PROFILE_PAGE_RE.test(pathname)
   )
 }
 
