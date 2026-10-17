@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { parseSearchParams, recipeTime, searchRecipes, searchResultsLabel, webSearchUrl } from './search'
+import { parseSearchParams, searchRecipes, searchResultsLabel, webSearchUrl } from './search'
 
 function client(rpc: ReturnType<typeof vi.fn>) {
   return { rpc } as any
@@ -51,14 +51,6 @@ describe('searchResultsLabel', () => {
 describe('webSearchUrl', () => {
   it('searches the web for the recipe, encoded', () => {
     expect(webSearchUrl('ciasto & kawa')).toBe('https://www.google.com/search?q=przepis%20ciasto%20%26%20kawa')
-  })
-})
-
-describe('recipeTime', () => {
-  it('prefers the total, else prep + cook, else nothing', () => {
-    expect(recipeTime({ total_time_minutes: 45, prep_time_minutes: 10, cook_time_minutes: 20 })).toBe(45)
-    expect(recipeTime({ total_time_minutes: null, prep_time_minutes: 10, cook_time_minutes: 20 })).toBe(30)
-    expect(recipeTime({ total_time_minutes: null, prep_time_minutes: null, cook_time_minutes: null })).toBeNull()
   })
 })
 

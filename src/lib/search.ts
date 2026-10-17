@@ -94,10 +94,3 @@ export async function searchRecipes(supabase: SupabaseClient, { q, scope, page }
   // Every row carries the same window count; it rides along unused on the rows.
   return { rows, total: rows.length ? Number(rows[0].total_count) : 0 }
 }
-
-/** "Kategoria · czas" under a result title; the time is left out when unknown. */
-export function recipeTime(row: Pick<SearchResult, 'total_time_minutes' | 'prep_time_minutes' | 'cook_time_minutes'>): number | null {
-  if (row.total_time_minutes) return row.total_time_minutes
-  const sum = (row.prep_time_minutes ?? 0) + (row.cook_time_minutes ?? 0)
-  return sum > 0 ? sum : null
-}
