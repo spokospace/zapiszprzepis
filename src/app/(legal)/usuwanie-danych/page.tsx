@@ -39,16 +39,16 @@ export default function DataDeletionPage() {
           <li>profil publiczny: nazwę wyświetlaną, nazwę użytkownika i zdjęcie profilowe,</li>
           <li>dane prywatne: imię z powitania i płeć,</li>
           <li>ulubione, historię dodawanych linków, powiadomienia i informację o pełnym dostępie,</li>
-          <li>przepisy, które dodajesz, z wyjątkiem opisanym niżej.</li>
+          <li>przepisy, które dodajesz, razem z ich zdjęciami, z wyjątkiem opisanym niżej.</li>
         </LegalList>
         <p>
           <strong>Przepisy, które inni mają w ulubionych.</strong> Jeśli przepis dodany przez Ciebie ktoś inny zapisał
           w ulubionych, nie znika z jego listy: przechodzi na osobę, która zapisała go najwcześniej, i od tej chwili
-          jest przypisany do niej, a nie do Ciebie.
+          jest przypisany do niej, a nie do Ciebie (przy przepisie widać wtedy jej nazwę). Zostają też jego zdjęcia.
         </p>
         <p>
-          <strong>Kopie zapasowe.</strong> Dane z historii dodawania przepisów mogą zostać w kopiach zapasowych
-          najdłużej 90 dni. Potem kopie są kasowane automatycznie.
+          <strong>Kopie zapasowe.</strong> Twoje przepisy i historia dodawania linków mogą zostać w kopiach
+          zapasowych najdłużej 90 dni. Potem kopie są kasowane automatycznie.
         </p>
       </LegalSection>
 
