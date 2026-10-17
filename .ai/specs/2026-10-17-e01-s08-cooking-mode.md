@@ -44,7 +44,7 @@ Alternatives considered:
   - on `visibilitychange` → `visible` while wanted and not held, it requests again. A sentinel's own `release` event (the system dropped it) clears the held reference, so the next `visible` takes it again.
 - **New:** `src/lib/cooking-mode.ts` (+ test) — pure step navigation: `clampStep(index, total)`, `stepLabel(index, total)` → "Krok N z M", `isLastStep`, and `progressSegments(index, total)` → done/current/todo per segment.
 - **New:** `src/app/przepis/[slug]/_components/cooking-mode.tsx` (`'use client'`) — entry button + `<dialog>`, fullscreen calls, keyboard (`←`/`→`), and the hook `useScreenWakeLock`.
-- **Edited (minimal):** `src/app/przepis/[slug]/_components/recipe-actions.tsx` — replaces the `{/* E01-S08 … */}` placeholder with `<CookingMode title steps />` and takes two new props. `src/app/przepis/[slug]/page.tsx` passes `steps` (already parsed there) and `title` to `RecipeActions`. One line each, no other section touched (S06's heart, S14's author line and S16's "Podobne" are untouched).
+- **Edited (minimal):** `recipe-checklists.tsx` renders `<CookingMode title steps />` under the text-size row (new `title` prop). `page.tsx` passes `title`. `recipe-actions.tsx` drops the S07 placeholder comment. `globals.css` gets one token, `--color-border-dark: #6b7280`. S06's heart, S14's author line and S16's "Podobne" are untouched.
 - **Reused:** `parseSteps` (already run by the page), `buttonClasses('primary'|'outline', 'lg'|'xl')`, tokens `bg-surface-dark`, `bg-progress`, `text-accent-dark`, `bg-action`, the global `:focus-visible` rule.
 
 ```mermaid
@@ -67,17 +67,21 @@ None. No schema change, no migration, no new query, no write. The steps are the 
 
 ## 📝 UI/UX
 
-Mockup: `.ai/specs/assets/e01-s08-cooking-mode/mockup.html` (rendered: `mockup-01-step.png` mid-recipe, `mockup-02-last.png` last step). Current recipe page: `current-01-recipe-actions.png`.
+Mockup (pre-handoff draft; the handoff's C4 supersedes its colours and placement): `.ai/specs/assets/e01-s08-cooking-mode/mockup.html` (rendered: `mockup-01-step.png` mid-recipe, `mockup-02-last.png` last step). Current recipe page: `current-01-recipe-actions.png`.
 
-**Entry** (recipe page, the action row under the header, next to the heart): primary button `lg` (56 px) with a `ChefHat` icon (`aria-hidden`) + "Tryb gotowania", full width on phones and auto width from `sm` (like the heart, which is full width on phones today, see `current-01-recipe-actions.png`). `aria-haspopup="dialog"`. Not rendered when the recipe has no steps.
+**Design authority:** the owner's handoff `.ai/design/przebudowa-handoff/` (1c), screens C3 item 7 and C4. It reached master after this spec was first written. Where the two differ, the handoff wins. Departures are listed under *Handoff alignment* below.
 
-**Cooking screen** (`bg-surface-dark` #111827, white text, no horizontal scroll at 320 px), top to bottom:
-1. **Top bar:** the recipe title, small (16 px, `text-border-card-2` #d1d5db, one line, ellipsis), and on the right "× Zakończ": an outline-on-dark button, 56 px high, 2 px `#d1d5db` border, white 18 px bold text, with an icon and its label.
-2. **Progress:** a segmented bar of M segments (`role="progressbar"`, `aria-valuemin=1`, `aria-valuemax=M`, `aria-valuenow=N`, `aria-label="Postęp przepisu"`). Done and current segments are `bg-progress` (#fb923c); to-do segments are `#4b5563` (3:1 against #111827 for the UI-component rule). 8 px high with 4 px gaps. Past 20 steps the segments merge into one continuous fill, so they never go thinner than a few pixels (A4).
-3. **"Krok N z M"** — 22 px bold, `text-accent-dark` (#fdba74, 10:1 on #111827).
-4. **Step text** — 30 px, line-height 1.4, white. The middle area scrolls vertically when a step is long, while the buttons stay pinned. It is wrapped in `aria-live="polite"` so a screen reader reads the new step after "Dalej".
-5. **Bottom buttons**, full width, two columns: "← Wstecz" (`outline` `xl` 72 px, white button) and "Dalej →" (`primary` `xl` 72 px, `#c2410c` + white, 5.2:1). On step 1 "← Wstecz" is `disabled`. On the last step "Dalej →" becomes "Gotowe ✓" and ends the mode.
-6. **Wake-lock note** — only when the lock was requested and refused, or the API is missing: one line above the buttons, 16 px `#d1d5db`: "Ekran może się wygasić — ta przeglądarka nie pozwala go podtrzymać." It is informational, with no alarm colour (A5).
+**Entry** (C3 item 7): directly under "Wielkość tekstu" and above "Składniki", a full-width 58 px button, white on `#111827` (`bg-ink`), with a `ChefHat` icon (`aria-hidden`) + "Tryb gotowania", `aria-haspopup="dialog"`. It is not rendered when the recipe has no steps. `RecipeChecklists` already owns the text-size row, so it renders the button (a new `title` prop), and `RecipeActions` keeps only the heart.
+
+**Cooking screen** (C4; `bg-surface-dark` #111827, white text, no horizontal scroll at 320 px), top to bottom:
+1. **Top bar:** the recipe name, 17 px bold `#e5e7eb` (one line, ellipsis), and "× Zakończ", a borderless 56 px button with a 26 px X icon and an 18 px bold label.
+2. **Progress:** a segmented bar of M segments, 8 px high with 6 px gaps (`role="progressbar"`, `aria-valuemin=1`, `aria-valuemax=M`, `aria-valuenow=N`, `aria-valuetext="Krok N z M"`, `aria-label="Postęp przepisu"`). Done and current segments are `#fb923c`; the rest are `#374151`. Past 20 steps it becomes one continuous fill (A4). The `#374151` track is below 3:1 against the background, but it is decorative: "Krok N z M" carries the same information as text.
+3. **"Krok N z M"**, 22 px bold `#fdba74`.
+4. **Step text**: 30 px, weight 600, line-height 1.45, white. It scrolls vertically when a step is long, and the buttons stay pinned. It sits in `aria-live="polite"` together with the step label.
+5. **Wake-lock line**, 17 px `#d1d5db`. While the lock is held: ☀ "Ekran nie wygaśnie podczas gotowania" (C4). When it is refused or unsupported: "Ekran może się wygasić — ta przeglądarka nie pozwala go podtrzymać." (A5). Nothing shows before the first answer.
+6. **Bottom buttons**, 72 px, in a 1 : 1.4 grid. "← Wstecz" has a 2 px `#6b7280` border (new token `border-dark`, 3.9:1) on the dark background, with white 20 px text and an arrow icon. "Dalej →" is `#ea580c` with **dark** `#111827` 22 px text (5.6:1; this orange never takes white text). On step 1 "Wstecz" is `disabled`. On the last step "Dalej" becomes "Gotowe ✓" and ends the mode.
+
+**Handoff alignment** (what this spec keeps that C4 does not show): the refused-lock line (C4 only shows the "won't dim" promise, which would be false there), "Gotowe ✓" on the last step (C4 shows only the middle state), and the merged bar past 20 steps.
 
 Keyboard: `→` / `←` move between steps (`PageDown`/`PageUp` too, for presentation clickers), Escape ends (native `cancel` on the dialog), Tab cycles inside the dialog. Focus moves to the dialog's heading on open, and returns to the trigger on close. On a touchscreen the buttons are the only navigation: no swipe gesture in this story (A6).
 
