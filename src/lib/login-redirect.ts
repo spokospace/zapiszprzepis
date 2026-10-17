@@ -1,4 +1,5 @@
 import { safeNext } from './safe-redirect'
+import { recipePath } from './routes'
 
 /** `/login`, carrying where to return afterwards when there is somewhere to go. */
 export function loginPath(next?: string | null): string {
@@ -17,5 +18,5 @@ export function resolveLoginNext(raw: unknown, origin: string, fallback: string)
 
 /** Where a guest who tapped the heart comes back to: the recipe, asking to add it. */
 export function favoriteReturnPath(slug: string): string {
-  return `/recipes/${encodeURIComponent(slug)}?fav=1`
+  return `${recipePath(slug)}?fav=1`
 }

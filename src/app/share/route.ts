@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { triggerRecipeExtraction } from './actions'
+import { recipePath } from '@/lib/routes'
 
 /**
  * Web Share Target API endpoint
@@ -65,13 +66,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.log('[share] Extraction triggered', result)
 
     if ('duplicate' in result && result.duplicate === 'completed') {
-      return NextResponse.redirect(new URL(`/recipes/${result.slug}?duplicate=1`, request.url), { status: 303 })
+      return NextResponse.redirect(new URL(`${recipePath(result.slug)}?duplicate=1`, request.url), { status: 303 })
     }
     if ('duplicate' in result && result.duplicate === 'pending') {
       return NextResponse.redirect(new URL('/recipes?duplicate=pending', request.url), { status: 303 })
     }
     if ('duplicate' in result && result.duplicate === 'in_favorites') {
-      return NextResponse.redirect(new URL(`/recipes/${result.slug}?in_favorites=1`, request.url), { status: 303 })
+      return NextResponse.redirect(new URL(`${recipePath(result.slug)}?in_favorites=1`, request.url), { status: 303 })
     }
 
     // Redirect to recipes list with shared flag (shows toast confirmation)

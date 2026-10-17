@@ -86,28 +86,29 @@ type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_fingerprint'
  * One guest-safe read of the recipe for this slug, shared by generateMetadata
  * and the page through React cache() so a single render hits the DB once.
  * Everyone reads through the public_recipes view (recipes itself is owner-only
- * RLS). Slugs are unique per user only, so one slug can resolve to several rows:
- * prefer the signed-in visitor's own, else the oldest. (A globally unique slug
- * arrives with E01-S03.)
+ * RLS). The slug resolves to the oldest row — the one that keeps the bare slug
+ * once E01-S03b's global-unique slug migration lands; until then two genuinely
+ * different recipes may still share a title, so the oldest (created_at, then id)
+ * is the deterministic, link-stable winner. `isOwner` is the signed-in visitor
+ * owning that row (refresh/delete are the owner's; others only read).
  */
 const loadRecipe = cache(async (slug: string) => {
   const supabase = await createSupabaseServerClient()
   const user = await getCurrentUser()
-  const [{ data: candidates, error }, { data: own }] = await Promise.all([
+  const [{ data: rows, error }, { data: own }] = await Promise.all([
     supabase
       .from('public_recipes')
       .select('*')
       .eq('slug', slug)
       .order('created_at', { ascending: true })
-      // A guest always takes the first row; only a signed-in visitor looks for their own.
-      .limit(user ? 10 : 1),
+      .order('id', { ascending: true })
+      .limit(1),
+    // (user_id, slug) is unique per user, so at most one own row for this slug.
     user
       ? supabase.from('recipes').select('id').eq('slug', slug).eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
-  const rows = (candidates ?? []) as PublicRecipe[]
-  const recipe = rows.find((r) => r.id === own?.id) ?? rows[0] ?? null
-  // Refresh/delete are the owner's; a guest or another user only reads.
+  const recipe = ((rows ?? []) as PublicRecipe[])[0] ?? null
   return { recipe, error, isOwner: own?.id != null && recipe?.id === own.id, user }
 })
 

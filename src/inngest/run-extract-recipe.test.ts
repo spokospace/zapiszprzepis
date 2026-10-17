@@ -117,6 +117,7 @@ function makeSupabaseMock() {
     },
     didInsert: (table: string) => calls.some(c => c.table === table && c.op === 'insert'),
     insertArgs: (table: string) => calls.find(c => c.table === table && c.op === 'insert')?.args,
+    insertArgsAll: (table: string) => calls.filter(c => c.table === table && c.op === 'insert').map(c => c.args),
     updateArgs: (table: string) => calls.filter(c => c.table === table && c.op === 'update').map(c => c.args),
     didUpdate: (table: string, partial?: Record<string, any>) =>
       calls.some(c => {
@@ -403,6 +404,25 @@ describe('runExtractRecipe — URL collision gap-fill', () => {
 
     expect(result.status).toBe('completed')
     expect(mock.didUpdate('recipes', { youtube_id: videoId })).toBe(true)
+    expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
+  })
+})
+
+describe('runExtractRecipe — global slug collision (E01-S03b)', () => {
+  it('retries with a -2 suffix when the global unique(slug) index rejects the insert', async () => {
+    const mock = makeSupabaseMock()
+    // First insert loses the global slug race; the retry with a suffix succeeds.
+    mock.queue('recipes', {
+      data: null,
+      error: { message: 'duplicate key value violates unique constraint "recipes_slug_uniq"' },
+    })
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(result.status).toBe('completed')
+    // The base slug, then the lowest free suffix — the backfill rule, at insert time.
+    expect(mock.insertArgsAll('recipes').map((a) => a.slug)).toEqual(['nalesniki', 'nalesniki-2'])
     expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
   })
 })

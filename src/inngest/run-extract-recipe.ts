@@ -664,11 +664,13 @@ Rules:
     }
 
     const baseSlug = slugify(title)
+    // Per-user unique keys now; global ones once the existing duplicates are
+    // collapsed (E01-S03a) and the slug migration lands (E01-S03b). Both
+    // generations are matched below, so the deploy gap is covered: the per-user
+    // key names the user's own row, the global one the single row for that key,
+    // whoever owns it.
     const SLUG_KEY = 'recipes_user_id_slug_key'
-    // Per-user unique indexes now; global ones once the existing duplicates
-    // are collapsed (E01-S03a migration B). Both are matched, so the deploy
-    // gap is covered. The per-user index always names the user's own row; the
-    // global one names the single row for that key, whoever owns it.
+    const GLOBAL_SLUG_KEY = 'recipes_slug_uniq'
     const URL_KEY = 'recipes_user_source_url_uniq'
     const GLOBAL_URL_KEY = 'recipes_source_url_uniq'
     const FINGERPRINT_KEY = 'recipes_user_source_fingerprint_uniq'
@@ -814,9 +816,10 @@ Rules:
         }
       }
 
-      // Slug collision against a different URL with the same title: retry
-      // with `-2`, `-3`, … suffix.
-      if (error?.message.includes(SLUG_KEY)) continue
+      // Slug collision against a different URL with the same title: retry with
+      // a `-2`, `-3`, … suffix. Global (E01-S03b) or per-user, same handling —
+      // the retry lands the lowest free suffix because the DB rejects taken ones.
+      if (error?.message.includes(SLUG_KEY) || error?.message.includes(GLOBAL_SLUG_KEY)) continue
 
       // Any other error is terminal.
       break
