@@ -2,6 +2,8 @@ import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/serve
 import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
 import { getMenuSummary } from '@/lib/menu-summary'
 import { homeGreeting } from '@/lib/home'
+import { getGreetingName } from '@/lib/first-name'
+import { vocative } from '@/lib/vocative'
 import { AppHeader } from '@/app/components/app-header'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
 import { AccessCodeGate } from '@/app/components/access-code-gate'
@@ -29,10 +31,11 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   // Public since E01-S02: a guest sees the home too; the signed-in home (C1) has no feed.
   // The menu summary (E01-S09) also carries the E01-S11 full-access flag, which
   // decides the "Moje przepisy" tile and add form vs the access-code gate (3c).
-  const [failedShares, menu, recentRecipes] = await Promise.all([
+  const [failedShares, menu, recentRecipes, greetingName] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
     getMenuSummary(supabase, user),
     user ? [] : getRecentPublicRecipes(supabase),
+    user ? getGreetingName(supabase, user.id) : null,
   ])
 
   return (
@@ -44,6 +47,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           <MemberHome
             addError={add_error}
             hasFullAccess={menu?.hasFullAccess ?? false}
+            vocative={vocative(greetingName)}
             favoriteAdded={parseRecipeId(fav_added)}
           />
         ) : (
@@ -124,16 +128,16 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
 function MemberHome({
   addError,
   hasFullAccess,
+  vocative,
   favoriteAdded,
 }: {
   addError?: string
   hasFullAccess: boolean
+  /** "Aniu" from the S13 first name (else the display name) via the S12 rule; null → "Dzień dobry!". */
+  vocative: string | null
   /** A guest-home card heart's login round-trip ends here (E01-S06); this page has no heart to show its toast. */
   favoriteAdded: number | null
 }) {
-  // Interim until E01-S12 lands: it supplies the vocative (null → "Dzień dobry!").
-  const vocative: string | null = null
-
   return (
     <PageContainer className="flex flex-col gap-8 pt-6">
       <div>

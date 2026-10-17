@@ -7,7 +7,8 @@ import { categoryLabel } from '@/lib/recipe-categories'
 import type { RecipeSource } from '@/lib/recipe-source'
 import { getSiteUrl } from '@/lib/site-url'
 import { profilePath } from '@/lib/routes'
-import { avatarColorIndex } from '@/lib/avatar'
+import { avatarColorIndex, avatarUrl } from '@/lib/avatar'
+import { SUPABASE_URL } from '@/lib/env'
 import {
   MAX_PROFILE_PAGE,
   PROFILE_PAGE_SIZE,
@@ -58,7 +59,7 @@ const loadProfile = cache(async (username: string) => {
   const supabase = await createSupabaseServerClient()
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, display_name, username, created_at')
+    .select('id, display_name, username, created_at, avatar_path, avatar_color')
     .eq('username', username)
     .maybeSingle()
   if (error) throw new Error(`[profile] Profile query failed: ${error.message}`)
@@ -166,9 +167,13 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
         )}
 
         <header className="mb-6 flex items-center gap-4">
-          {/* Letter on the id-derived colour, same as /settings (S13). S13 adds
-              profiles.avatar_path/avatar_color; pass them here once it has shipped. */}
-          <Avatar src={null} name={profile.display_name} colorIndex={avatarColorIndex(profile.id, null)} size={88} />
+          {/* The uploaded photo, else the letter on the chosen (or id-derived) colour — same as /settings (S13). */}
+          <Avatar
+            src={avatarUrl(SUPABASE_URL, profile.avatar_path)}
+            name={profile.display_name}
+            colorIndex={avatarColorIndex(profile.id, profile.avatar_color)}
+            size={88}
+          />
           <div className="min-w-0">
             <h1 className="break-words text-[30px] font-bold leading-tight text-ink">{profile.display_name}</h1>
             {total > 0 && <p className="text-[19px] text-ink">Dodane przepisy: {total}</p>}

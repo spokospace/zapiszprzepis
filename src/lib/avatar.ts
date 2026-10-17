@@ -45,3 +45,40 @@ export function avatarInitial(name: string | null | undefined): string {
   const first = Array.from(name?.trim() ?? '')[0]
   return first ? first.toLocaleUpperCase('pl-PL') : '?'
 }
+
+/**
+ * Public URL of a stored picture, or null for a letter avatar. `supabaseUrl`
+ * is passed in (server callers use SUPABASE_URL from '@/lib/env').
+ */
+export function avatarUrl(supabaseUrl: string, path: string | null | undefined): string | null {
+  if (!path) return null
+  const encoded = path.split('/').map(encodeURIComponent).join('/')
+  return `${supabaseUrl.replace(/\/+$/, '')}/storage/v1/object/public/${AVATAR_BUCKET}/${encoded}`
+}
+
+/** New object path inside the owner's folder; a fresh name busts the CDN cache. */
+export function avatarObjectPath(userId: string, now: number = Date.now()): string {
+  return `${userId}/${now}.jpg`
+}
+
+/** JPEG magic bytes (FF D8 FF) — the declared MIME type is client input. */
+function isJpeg(bytes: Uint8Array): boolean {
+  return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+}
+
+export type AvatarUploadResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * Validate an uploaded picture by size and real format (magic bytes). Only JPEG is
+ * accepted: the browser always re-encodes the chosen photo to a 512² JPEG, and
+ * the stored path ends in .jpg (enforced by a DB check).
+ */
+export function validateAvatarUpload(bytes: Uint8Array): AvatarUploadResult {
+  const size = bytes.byteLength
+  if (size <= 0) return { ok: false, error: 'Wybrany plik jest pusty.' }
+  if (size > AVATAR_MAX_BYTES) return { ok: false, error: 'Zdjęcie jest za duże. Wybierz inne.' }
+  if (!isJpeg(bytes)) {
+    return { ok: false, error: 'Nie udało się odczytać zdjęcia. Wybierz zdjęcie JPG lub PNG.' }
+  }
+  return { ok: true }
+}

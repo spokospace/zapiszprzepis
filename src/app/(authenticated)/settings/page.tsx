@@ -1,22 +1,25 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { SUPABASE_URL } from '@/lib/env'
+import { avatarColorIndex, avatarUrl } from '@/lib/avatar'
+import { profilePath } from '@/lib/routes'
+import { signOut } from '@/app/(actions)/sign-out'
 import { PageContainer } from '@/app/components/page-container'
-import { DisplayNameForm } from './display-name-form'
+import { Button } from '@/app/components/ui/button'
+import { SettingsForm } from './settings-form'
 
 export const metadata: Metadata = { title: 'Ustawienia · ZapiszPrzepis' }
 
-const dateFormat = new Intl.DateTimeFormat('pl-PL', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'Europe/Warsaw',
-})
-
-function formatDate(value: string | undefined): string {
-  return value ? dateFormat.format(new Date(value)) : '—'
+type ProfileRow = {
+  display_name: string
+  username: string
+  avatar_path?: string | null
+  avatar_color?: number | null
 }
 
+// Screen 2a (E01-S13). Deliberately shows neither gender (chosen once, not
+// editable — S12) nor the username (immutable — S18).
 export default async function SettingsPage() {
   const supabase = await createSupabaseServerClient()
   const {
@@ -24,43 +27,60 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Both reads are scoped to the signed-in user explicitly.
-  const [{ count: recipeCount }, { data: profile }] = await Promise.all([
-    // Explicit owner scope (defense in depth on top of owner-only RLS).
-    supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-    supabase.from('profiles').select('display_name, username').eq('id', user.id).maybeSingle(),
+  const [profile, priv] = await Promise.all([
+    readProfile(supabase, user.id),
+    // Owner-only RLS; a read error just means "no first name yet".
+    supabase
+      .from('profiles_private')
+      .select('first_name')
+      .eq('id', user.id)
+      .maybeSingle<{ first_name: string | null }>(),
   ])
-
-  const rows: { label: string; value: string }[] = [
-    { label: 'Nazwa użytkownika', value: profile?.username ? `@${profile.username}` : '—' },
-    { label: 'Adres email', value: user.email ?? '—' },
-    { label: 'Konto założone', value: formatDate(user.created_at) },
-    { label: 'Ostatnie logowanie', value: formatDate(user.last_sign_in_at) },
-    { label: 'Zapisane przepisy', value: String(recipeCount ?? 0) },
-  ]
 
   return (
     <main className="min-h-screen bg-white">
       <PageContainer narrow className="py-6 sm:py-12">
-        <h1 className="mb-6 text-2xl font-semibold text-gray-900">Ustawienia</h1>
-        <section aria-labelledby="profile-heading" className="rounded-xl border border-gray-200">
-          <h2
-            id="profile-heading"
-            className="border-b border-gray-100 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-gray-500"
-          >
-            Profil
-          </h2>
-          <DisplayNameForm initialDisplayName={profile?.display_name ?? ''} />
-          <dl className="divide-y divide-gray-100 border-t border-gray-100">
-            {rows.map(({ label, value }) => (
-              <div key={label} className="flex flex-col gap-0.5 px-5 py-4 sm:flex-row sm:justify-between">
-                <dt className="text-sm text-gray-500">{label}</dt>
-                <dd className="break-all text-base font-medium text-gray-900 sm:text-right">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        <h1 className="mb-6 text-[30px] leading-tight font-bold text-ink">Ustawienia</h1>
+        <SettingsForm
+          initialDisplayName={profile?.display_name ?? ''}
+          initialFirstName={priv.data?.first_name ?? ''}
+          avatarSrc={avatarUrl(SUPABASE_URL, profile?.avatar_path)}
+          colorIndex={avatarColorIndex(user.id, profile?.avatar_color)}
+          profileHref={profilePath(profile?.username)}
+        />
+        <dl className="mt-8 border-t border-border-card pt-5">
+          <dt className="text-[16px] text-ink-soft">Adres email</dt>
+          <dd className="mt-1 text-[19px] font-semibold break-all text-ink">{user.email ?? '—'}</dd>
+        </dl>
+        <form action={signOut} className="mt-8 border-t border-border-card pt-5">
+          <Button type="submit" variant="outline" size="md" className="w-full">
+            Wyloguj
+          </Button>
+        </form>
       </PageContainer>
     </main>
   )
+}
+
+/**
+ * The public profile row. Falls back to the pre-S13 columns while the
+ * 20261017181300 migration is not applied, so the page still renders (letter
+ * avatar) instead of losing the display name.
+ */
+async function readProfile(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  userId: string,
+): Promise<ProfileRow | null> {
+  const full = await supabase
+    .from('profiles')
+    .select('display_name, username, avatar_path, avatar_color')
+    .eq('id', userId)
+    .maybeSingle<ProfileRow>()
+  if (!full.error) return full.data
+  const legacy = await supabase
+    .from('profiles')
+    .select('display_name, username')
+    .eq('id', userId)
+    .maybeSingle<ProfileRow>()
+  return legacy.data
 }
