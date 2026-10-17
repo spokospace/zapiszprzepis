@@ -18,8 +18,8 @@ export default function PrivacyPolicyPage() {
 
       <LegalSection id="administrator" title="1. Kto odpowiada za Twoje dane">
         <p>
-          Administratorem danych jest Szymon Berski, spoko.space (<Fill>pełna nazwa firmy z CEIDG</Fill>), <Fill>adres firmy</Fill>,{' '}
-          NIP <Fill>NIP</Fill>.
+          Administratorem danych jest SPOKO SPACE Szymon Berski, Bielsko-Biała,{' '}
+          NIP 5472125993.
         </p>
         <p>
           W sprawach danych osobowych pisz na adres: <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>.

@@ -13,8 +13,8 @@ export default function TermsPage() {
     <LegalPage title="Regulamin">
       <LegalSection id="uslugodawca" title="1. Kto prowadzi serwis">
         <p>
-          Serwis ZapiszPrzepis (zapiszprzepis.pl) prowadzi Szymon Berski, spoko.space (<Fill>pełna nazwa firmy z CEIDG</Fill>),{' '}
-          <Fill>adres firmy</Fill>, NIP <Fill>NIP</Fill>. Kontakt: <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>.
+          Serwis ZapiszPrzepis (zapiszprzepis.pl) prowadzi SPOKO SPACE Szymon Berski,{' '}
+          Bielsko-Biała, NIP 5472125993. Kontakt: <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>.
         </p>
       </LegalSection>
 
