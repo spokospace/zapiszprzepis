@@ -46,17 +46,28 @@ export function parseRecipeYield(value: unknown): number | null {
   return null
 }
 
-/** Servings from the Recipe node of a page's JSON-LD, or null. */
+// "Recipe", "schema:Recipe" or the full IRI "https://schema.org/Recipe": JSON-LD
+// allows every spelling of the type.
+const isRecipeType = (record: Record<string, unknown>) =>
+  ldType(record)
+    .split(' ')
+    .some((t) => t === 'recipe' || t.endsWith('/recipe') || t.endsWith(':recipe'))
+
+/**
+ * Servings from the Recipe node of a page's JSON-LD, or null. A page that lists
+ * a related recipe beside its own can carry several Recipe nodes; when their
+ * yields disagree there is no telling which one is the page's, so the answer is
+ * null and the extraction falls back to the LLM's reading of the primary recipe.
+ */
 export function jsonLdServings(html: string): number | null {
-  let found: number | null = null
+  const yields = new Set<number>()
   const visit = (node: unknown): void => {
-    if (found != null) return
     if (Array.isArray(node)) return node.forEach(visit)
     if (!node || typeof node !== 'object') return
     const record = node as Record<string, unknown>
-    if (ldType(record).split(' ').includes('recipe') && record.recipeYield != null) {
-      found = parseRecipeYield(record.recipeYield)
-      if (found != null) return
+    if (isRecipeType(record) && record.recipeYield != null) {
+      const n = parseRecipeYield(record.recipeYield)
+      if (n != null) yields.add(n)
     }
     for (const value of Object.values(record)) if (value && typeof value === 'object') visit(value)
   }
@@ -66,7 +77,6 @@ export function jsonLdServings(html: string): number | null {
     } catch {
       // A malformed block just contributes nothing.
     }
-    if (found != null) break
   }
-  return found
+  return yields.size === 1 ? [...yields][0] : null
 }

@@ -91,8 +91,22 @@ describe('jsonLdServings', () => {
     expect(jsonLdServings('<p>no json-ld</p>')).toBeNull()
   })
 
-  it('takes the first usable block', () => {
+  it('skips a malformed block and reads the usable one', () => {
     const html = '<script type="application/ld+json">{ broken</script>' + ld({ '@type': 'Recipe', recipeYield: 5 })
     expect(jsonLdServings(html)).toBe(5)
+  })
+
+  it('accepts the prefixed and full-IRI Recipe type', () => {
+    expect(jsonLdServings(ld({ '@type': 'https://schema.org/Recipe', recipeYield: 4 }))).toBe(4)
+    expect(jsonLdServings(ld({ '@type': 'schema:Recipe', recipeYield: '3 porcje' }))).toBe(3)
+    expect(jsonLdServings(ld({ '@type': 'RecipeCollection', recipeYield: 4 }))).toBeNull()
+  })
+
+  it('returns null when several Recipe nodes disagree, so a related recipe never wins', () => {
+    const related = ld({ '@type': 'Recipe', recipeYield: '2 porcje' })
+    const primary = ld({ '@type': 'Recipe', recipeYield: '6 porcji' })
+    expect(jsonLdServings(related + primary)).toBeNull()
+    // The same count stated twice (a plugin's node plus the theme's) still counts.
+    expect(jsonLdServings(primary + primary)).toBe(6)
   })
 })
