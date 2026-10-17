@@ -68,7 +68,7 @@ export function RecipeCard({
           </h3>
           {description && <p className="mt-1 line-clamp-2 text-[16px] text-ink-soft">{description}</p>}
           <p className="mt-1 text-[16px] break-words text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
-          <span className="mt-2 inline-block rounded-pill bg-surface-accent-2 px-2.5 py-0.5 text-[14px] font-bold text-action-text">
+          <span className="mt-2 inline-block rounded-pill bg-surface-accent-2 px-2.5 py-0.5 text-[16px] font-bold text-action-text">
             {categoryLabel(category)}
           </span>
         </div>

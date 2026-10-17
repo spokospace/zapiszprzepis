@@ -32,12 +32,14 @@ export function HomeSearch({ id }: { id: string }) {
     // without desyncing hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMicSupported(isSpeechRecognitionSupported(window))
-    return () => recognitionRef.current?.stop()
+    return () => recognitionRef.current?.abort()
   }, [])
 
   function toggleMic() {
     if (micState === 'listening') {
-      recognitionRef.current?.stop()
+      // abort, not stop: stop() would still deliver the partial phrase and submit it.
+      recognitionRef.current?.abort()
+      setMicState('idle')
       return
     }
     const SR = speechRecognitionCtor(window)
@@ -73,6 +75,7 @@ export function HomeSearch({ id }: { id: string }) {
           required
           enterKeyHint="search"
           autoComplete="off"
+          onInput={() => setMicState((prev) => (prev === 'error' ? 'idle' : prev))}
           placeholder="np. sernik, pierogi"
           className="h-[60px] min-w-0 flex-1 rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink placeholder:text-ink-muted"
         />
@@ -84,11 +87,11 @@ export function HomeSearch({ id }: { id: string }) {
             className="inline-flex h-[60px] shrink-0 items-center gap-1.5 rounded-field border-2 border-field bg-white px-3 text-[17px] font-bold text-ink hover:bg-surface-3"
           >
             <Mic aria-hidden="true" className="h-5 w-5" />
-            {micState === 'listening' ? 'Stop' : 'Mów'}
+            Mów
           </button>
         )}
       </div>
-      <p role="status" aria-live="polite" className="mt-2 text-[16px] text-ink-soft empty:hidden">
+      <p role="status" aria-live="polite" className="mt-2 text-[16px] text-ink-soft empty:sr-only">
         {MIC_STATUS[micState]}
       </p>
       <button type="submit" className={`${buttonClasses('primary', 'lg')} mt-3 w-full text-[19px]`}>

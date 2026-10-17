@@ -8,6 +8,8 @@ export interface SpeechRecognitionLike {
   onend: (() => void) | null
   start(): void
   stop(): void
+  /** Ends recognition without delivering a result. */
+  abort(): void
 }
 
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike

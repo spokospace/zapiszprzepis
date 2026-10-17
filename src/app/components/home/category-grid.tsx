@@ -2,12 +2,14 @@ import Link from 'next/link'
 import { HOME_CATEGORIES } from '@/lib/recipe-categories'
 import { categoryPath } from '@/lib/routes'
 
+// On the narrowest phones (320px) three columns leave ~70px per tile, which
+// splits "Ciasteczka" mid-word at 17px bold, so below 360px the guest grid is two columns.
 const COLUMNS = {
   2: 'grid-cols-2',
-  3: 'grid-cols-3',
+  3: 'grid-cols-2 min-[360px]:grid-cols-3',
 } as const
 
-/** "Kategorie" tiles (E01-S04): 3 columns for a guest, 2 for a signed-in user. */
+/** "Kategorie" tiles (E01-S04): 3 columns for a guest (from 360px), 2 for a signed-in user. */
 export function CategoryGrid({ columns }: { columns: keyof typeof COLUMNS }) {
   return (
     <section aria-labelledby="categories-heading">
