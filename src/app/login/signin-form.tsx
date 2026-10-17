@@ -16,6 +16,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   user_not_found: 'Użytkownik z takim emailem nie istnieje. Zarejestruj się.',
   no_account: 'Nie znaleziono konta. Zarejestruj się z kodem zaproszenia.',
   unknown: 'Coś poszło nie tak. Spróbuj ponownie.',
+  // E01-S12 — Google/Facebook sign-in (mapped in /auth/callback and the action).
+  oauth_cancelled: 'Logowanie zostało przerwane. Spróbuj ponownie.',
+  oauth_no_email: 'Twoje konto Facebook nie ma adresu email. Zaloguj się przez Google albo linkiem email.',
+  oauth_email_exists: 'Masz już konto z tym adresem email. Zaloguj się linkiem email.',
+  oauth_verify_email: 'Wysłaliśmy email z potwierdzeniem — kliknij link, a potem zaloguj się ponownie.',
+  oauth_unavailable: 'Logowanie przez tę usługę jest chwilowo niedostępne.',
+  oauth_failed: 'Nie udało się rozpocząć logowania. Spróbuj ponownie.',
 }
 
 interface SignInFormProps {

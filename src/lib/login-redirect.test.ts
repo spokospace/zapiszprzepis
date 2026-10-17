@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { loginPath, resolveLoginNext, favoriteReturnPath } from './login-redirect'
+import { loginPath, loginErrorPath, resolveLoginNext, favoriteReturnPath } from './login-redirect'
+
+describe('loginErrorPath', () => {
+  it('carries the error and a non-root next', () => {
+    expect(loginErrorPath('oauth_cancelled', '/przepis/sernik?fav=1')).toBe(
+      '/login?error=oauth_cancelled&next=%2Fprzepis%2Fsernik%3Ffav%3D1',
+    )
+  })
+
+  it('drops a root or missing next', () => {
+    expect(loginErrorPath('oauth_no_email', '/')).toBe('/login?error=oauth_no_email')
+    expect(loginErrorPath('oauth_no_email')).toBe('/login?error=oauth_no_email')
+  })
+})
 
 const ORIGIN = 'https://zapiszprzepis.pl'
 
