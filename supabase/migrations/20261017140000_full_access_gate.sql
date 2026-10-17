@@ -46,7 +46,7 @@ create index if not exists idx_access_code_attempts_user_time
 -- already has access gets 'already'), so no separate redemptions table.
 create table if not exists public.user_full_access (
   user_id uuid primary key references auth.users(id) on delete cascade,
-  source text not null check (source in ('code', 'grandfathered', 'payment')),
+  source text not null check (source in ('code', 'invite', 'grandfathered', 'payment')),
   code_id bigint references public.access_codes(id) on delete set null,
   granted_at timestamp with time zone not null default now()
 );
@@ -291,12 +291,43 @@ where exists (select 1 from auth.identities i where i.user_id = u.id and i.provi
    or exists (select 1 from public.recipe_shares s where s.user_id = u.id)
 on conflict (user_id) do nothing;
 
+-- ── Invited sign-ups keep full access ──────────────────────────────────────
+-- An email identity is only ever created by the S-07 /signup, which demands
+-- INVITE_CODE (/login magic links use shouldCreateUser: false; S12 OAuth creates
+-- google/facebook identities). So an invite still means "may add", for people
+-- invited after this migration too, without the owner handing out a second code.
+create or replace function public.grant_full_access_to_invited()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.provider = 'email' then
+    insert into public.user_full_access (user_id, source)
+    values (new.user_id, 'invite')
+    on conflict (user_id) do nothing;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.grant_full_access_to_invited() from public, anon, authenticated;
+
+drop trigger if exists on_auth_identity_grant_full_access on auth.identities;
+create trigger on_auth_identity_grant_full_access
+  after insert on auth.identities
+  for each row
+  execute function public.grant_full_access_to_invited();
+
 -- ── Down (manual, owner-run) ────────────────────────────────────────────────
 -- drop policy recipe_shares_owner_select, recipe_shares_owner_insert,
 --   recipe_shares_owner_update, recipe_shares_owner_delete on public.recipe_shares;
 -- create policy recipe_shares_user_isolation on public.recipe_shares for all
 --   using (user_id = public.current_user_id()) with check (user_id = public.current_user_id());
 -- (same for recipes → recipes_user_isolation)
+-- drop trigger on_auth_identity_grant_full_access on auth.identities;
+-- drop function public.grant_full_access_to_invited();
 -- drop function public.create_access_code(text, integer, timestamp with time zone, text),
 --   public.redeem_access_code(text), public.has_full_access(), public.access_code_hash(text),
 --   public.access_code_normalize(text);

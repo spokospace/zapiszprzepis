@@ -76,3 +76,18 @@ describe('AccessCodeGateView — screen 3c (E01-S11)', () => {
     expect(html).toMatch(/<button[^>]*disabled/)
   })
 })
+
+describe('AccessCodeGateView — repeated wrong codes (E01-S11)', () => {
+  it('drops the alert while checking, so the next rejection is announced again', () => {
+    const html = renderToStaticMarkup(
+      createElement(AccessCodeGateView, {
+        state: { status: 'invalid' },
+        pending: true,
+        formAction: vi.fn(),
+        code: 'ABCD1234',
+        onCodeChange: vi.fn(),
+      }),
+    )
+    expect(html).not.toContain('role="alert"')
+  })
+})

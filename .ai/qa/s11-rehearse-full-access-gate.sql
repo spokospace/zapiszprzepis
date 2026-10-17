@@ -7,7 +7,7 @@
 -- throwaway auth users, the codes and every write roll back. Expected:
 --   T1[invalid] T2[42501] T3[ok] T4[t] T5[insert-ok] T6[invalid] T7[invalid]
 --   T8[rate_limited] T9[42501] T10[own_rows=1] T11[42501] T12[already]
---   T13[uses=1 used_by_b=1] T14[recipes 42501] T15[short refused]
+--   T13[uses=1 used_by_b=1] T14[recipes 42501] T15[short refused] T16[invite]
 --   grandfathered=<n> email_users=<n> users=<n>
 -- (Per-user concurrency — the advisory lock — needs two sessions and is not
 -- exercised here; it is a plain pg_advisory_xact_lock.)
@@ -18,7 +18,8 @@ declare
   c uuid := gen_random_uuid();
   code_one bigint;
   t1 text; t2 text; t3 text; t4 text; t5 text; t6 text; t7 text;
-  t8 text; t9 text; t10 text; t11 text; t12 text; t13 text; t14 text; t15 text;
+  t8 text; t9 text; t10 text; t11 text; t12 text; t13 text; t14 text; t15 text; t16 text;
+  d uuid := gen_random_uuid();
   email_users int;
   i int;
   n int;
@@ -36,6 +37,13 @@ begin
   select count(*) into grandfathered from public.user_full_access where source = 'grandfathered';
   select count(*) into users from auth.users;
   select count(distinct user_id) into email_users from auth.identities where provider = 'email';
+
+  -- T16: a new invited (email-identity) account gets full access on its own.
+  insert into auth.users (id, email, aud, role)
+  values (d, 'rehearsal-s11-d@example.invalid', 'authenticated', 'authenticated');
+  insert into auth.identities (provider_id, user_id, identity_data, provider)
+  values (d::text, d, json_build_object('sub', d::text)::jsonb, 'email');
+  select coalesce((select source from public.user_full_access where user_id = d), 'none') into t16;
 
   -- T15: codes shorter than 10 normalized characters are refused.
   begin
@@ -133,8 +141,8 @@ begin
     into t13
   from public.access_codes ac where ac.id = code_one;
 
-  raise exception 'REHEARSAL_RESULT T1[%] T2[%] T3[%] T4[%] T5[%] T6[%] T7[%] T8[%] T9[%] T10[%] T11[%] T12[%] T13[%] T14[%] T15[%] grandfathered=% email_users=% users=%',
-    t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, grandfathered, email_users, users;
+  raise exception 'REHEARSAL_RESULT T1[%] T2[%] T3[%] T4[%] T5[%] T6[%] T7[%] T8[%] T9[%] T10[%] T11[%] T12[%] T13[%] T14[%] T15[%] T16[%] grandfathered=% email_users=% users=%',
+    t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, grandfathered, email_users, users;
 end;
 $rehearsal$;
 

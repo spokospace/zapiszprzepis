@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useEffect, useRef, useState, type RefObject } from 'react'
 import { Check } from 'lucide-react'
 import { redeemAccessCode, type RedeemState } from '@/app/(actions)/redeem-access-code'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
@@ -23,10 +23,11 @@ type ViewProps = {
   onCodeChange: (value: string) => void
   /** Arrived from a blocked add (Share Target, stale tab): ?add_error=no_access. */
   notice?: boolean
+  inputRef?: RefObject<HTMLInputElement | null>
 }
 
 /** Screen 3c, pure view (rendered by AccessCodeGate; split out for tests). */
-export function AccessCodeGateView({ state, pending, formAction, code, onCodeChange, notice }: ViewProps) {
+export function AccessCodeGateView({ state, pending, formAction, code, onCodeChange, notice, inputRef }: ViewProps) {
   if (state.status === 'ok') {
     return (
       <div>
@@ -42,7 +43,9 @@ export function AccessCodeGateView({ state, pending, formAction, code, onCodeCha
     )
   }
 
-  const error = ERROR_MESSAGES[state.status]
+  // Hidden while checking, so a repeated wrong code re-mounts the alert and
+  // screen readers announce it again instead of staying silent.
+  const error = pending ? undefined : ERROR_MESSAGES[state.status]
   const invalid = state.status === 'invalid'
 
   return (
@@ -59,6 +62,7 @@ export function AccessCodeGateView({ state, pending, formAction, code, onCodeCha
           Kod dostępu
         </label>
         <input
+          ref={inputRef}
           id="access-code"
           name="code"
           type="text"
@@ -101,6 +105,13 @@ export function AccessCodeGate({ notice }: { notice?: boolean }) {
   // Controlled on purpose: React 19 resets uncontrolled fields after a form action,
   // which would wipe the code the user typed when it is rejected.
   const [code, setCode] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // The disabled button drops focus to <body> while checking; put it back in the
+  // field after a rejection so the user can correct the code right away.
+  useEffect(() => {
+    if (state.status !== 'idle' && state.status !== 'ok') inputRef.current?.focus()
+  }, [state])
 
   useEffect(() => {
     if (notice) stripSearchParam('add_error')
@@ -114,6 +125,7 @@ export function AccessCodeGate({ notice }: { notice?: boolean }) {
       code={code}
       onCodeChange={setCode}
       notice={notice}
+      inputRef={inputRef}
     />
   )
 }
