@@ -28,12 +28,34 @@ export function sourceLabel(
     const author = sourceAuthor || (sourceUrl ? facebookAuthorName(sourceUrl) : null)
     return author ? `${author} · ${platform}` : platform
   }
-  if (sourceUrl) {
-    try {
-      return new URL(sourceUrl).hostname.replace(/^www\./, '')
-    } catch {
-      // Not a URL — fall through to the generic label.
-    }
-  }
+  const host = sourceUrl ? siteHost(sourceUrl) : null
+  if (host) return host
   return sourceType === 'web_blog' ? 'Blog' : 'Inny'
+}
+
+/** The platform in the locative, for "Otwórz oryginał na {…}" (design handoff C3, item 11). */
+const PLATFORM_LOCATIVE: Partial<Record<RecipeSource, string>> = {
+  facebook_text: 'Facebooku',
+  facebook_reel: 'Facebooku',
+  youtube: 'YouTube',
+}
+
+/**
+ * The bottom "Otwórz oryginał" button's label: "na YouTube" / "na Facebooku" for
+ * a platform, "na aniagotuje.pl" for a site, plain "Otwórz oryginał" when the
+ * URL does not parse.
+ */
+export function originalLinkLabel(sourceType: RecipeSource, sourceUrl: string): string {
+  const platform = PLATFORM_LOCATIVE[sourceType]
+  const where = platform ?? siteHost(sourceUrl)
+  return where ? `Otwórz oryginał na ${where}` : 'Otwórz oryginał'
+}
+
+/** The site's domain without "www.", or null when the URL does not parse. */
+function siteHost(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return null
+  }
 }

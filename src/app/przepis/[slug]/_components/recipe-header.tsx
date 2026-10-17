@@ -5,7 +5,7 @@ import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine } from '@/lib/recipe-meta'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
-import { categoryPath, profilePath } from '@/lib/routes'
+import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 
 export interface RecipeHeaderData {
   title: string
@@ -29,8 +29,9 @@ interface RecipeHeaderProps {
 }
 
 /**
- * The recipe page header (E01-S07): 4:3 photo, breadcrumbs, 32 px title,
- * "Kategoria · czas", source with "Otwórz oryginał", and who added it. The tags
+ * The recipe page header (E01-S07, S07b): 4:3 photo, "Przepisy › {Kategoria}"
+ * breadcrumbs, 32 px title, "Kategoria · czas", source (with "Otwórz oryginał"
+ * from lg), and who added it. The tags
  * render at the bottom of the page, in "Ten przepis jest" (E01-S16).
  */
 export function RecipeHeader({ recipe }: RecipeHeaderProps) {
@@ -59,8 +60,9 @@ export function RecipeHeader({ recipe }: RecipeHeaderProps) {
         <nav aria-label="Okruszki" className="mb-2 text-[16px] text-ink-soft">
           <ol className="flex flex-wrap items-center gap-x-2">
             <li>
-              <Link href="/" className="underline hover:text-action-hover">
-                Strona główna
+              {/* "Przepisy" goes where the desktop header's "Przepisy" goes (E01-S17). */}
+              <Link href={SEARCH_PATH} className="underline hover:text-action-hover">
+                Przepisy
               </Link>
             </li>
             <li aria-hidden="true">›</li>
@@ -68,10 +70,6 @@ export function RecipeHeader({ recipe }: RecipeHeaderProps) {
               <Link href={categoryPath(recipe.category)} className="underline hover:text-action-hover">
                 {category}
               </Link>
-            </li>
-            <li aria-hidden="true">›</li>
-            <li aria-current="page" className="line-clamp-1">
-              {recipe.title}
             </li>
           </ol>
         </nav>
@@ -92,8 +90,10 @@ export function RecipeHeader({ recipe }: RecipeHeaderProps) {
         <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[17px] text-ink">
           <Globe aria-hidden="true" size={20} className="shrink-0 text-ink-soft" />
           <span>Źródło: {sourceLabel(recipe.source_type, recipe.source_url, recipe.source_author)}</span>
+          {/* From lg only (A9: "Oryginał" by the title); below lg the original is the
+              outlined button at the end of the recipe (C3, item 11). */}
           {recipe.source_url && (
-            <>
+            <span className="hidden lg:contents">
               <span aria-hidden="true">·</span>
               <a
                 href={recipe.source_url}
@@ -104,7 +104,7 @@ export function RecipeHeader({ recipe }: RecipeHeaderProps) {
                 Otwórz oryginał
                 <span className="sr-only"> (otwiera nową kartę)</span>
               </a>
-            </>
+            </span>
           )}
         </p>
 

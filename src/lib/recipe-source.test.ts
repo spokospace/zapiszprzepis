@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sourceLabel } from '@/lib/recipe-source'
+import { originalLinkLabel, sourceLabel } from '@/lib/recipe-source'
 import { publicFacebookAuthor } from '@/lib/facebook-authors'
 
 describe('publicFacebookAuthor', () => {
@@ -72,5 +72,20 @@ describe('sourceLabel', () => {
   it('falls back to a generic label without a usable URL', () => {
     expect(sourceLabel('web_blog', null)).toBe('Blog')
     expect(sourceLabel('other', 'not a url')).toBe('Inny')
+  })
+})
+
+describe('originalLinkLabel', () => {
+  it('names the platform in the locative', () => {
+    expect(originalLinkLabel('youtube', 'https://www.youtube.com/watch?v=abc')).toBe('Otwórz oryginał na YouTube')
+    expect(originalLinkLabel('facebook_reel', 'https://www.facebook.com/reel/1')).toBe('Otwórz oryginał na Facebooku')
+  })
+
+  it('names a site by its domain, without www', () => {
+    expect(originalLinkLabel('web_blog', 'https://www.aniagotuje.pl/przepis/zupa')).toBe('Otwórz oryginał na aniagotuje.pl')
+  })
+
+  it('falls back to a plain label for an unparseable URL', () => {
+    expect(originalLinkLabel('web_blog', 'not a url')).toBe('Otwórz oryginał')
   })
 })
