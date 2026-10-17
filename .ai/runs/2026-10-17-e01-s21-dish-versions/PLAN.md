@@ -13,7 +13,7 @@
 | 1 | 1.2 | `src/lib/recipe-dish.ts` pure helpers (`normalizeDish`/`resolveDishAccusative`/`resolveVariantNote`/`dishVocabularyFor`) + tests | inline | done | this commit |
 | 1 | 1.3 | Export `postChatJson`; add `classifyDish`/`writeVariantNote` (never throw) + tests | inline | done | this commit |
 | 1 | 1.4 | Wire into `run-extract-recipe.ts` (vocab RPC ∥ existing query; dish ∥ labelRecipe; note after; insert / own-row gap-fill / refresh, all guarded on `dish_classified_at is null`) + tests | inline | done | this commit |
-| 1 | 1.5 | `src/lib/dish-versions.ts` render helpers (`ingredientKey`/`ingredientDiff`/`versionBadges`/`versionsBarLabel`/`versionsHeading`/`sortVersions`/`parseVersionsSort`) + tests | inline | todo | |
+| 1 | 1.5 | `src/lib/dish-versions.ts` render helpers (`ingredientKey`/`ingredientDiff`/`versionBadges`/`versionsBarLabel`/`versionsHeading`/`sortVersions`/`parseVersionsSort`) + tests | inline | done | this commit |
 | 1 | 1.6 | Recipe-page UI: `dish-versions-bar.tsx`, `dish-versions.tsx`, `dish-versions-sort.tsx`; `RecipeHeader` `versionsBar` slot; `page.tsx` RPC only when `recipe.dish` non-null + tests | inline | todo | |
 | 1 | 1.7 | `SimilarRecipes` `dish` prop + `.or('dish.is.null,dish.neq."<dish>"')` filter + test | inline | todo | |
 | 1 | 1.8 | Reflow: confirm recipe page covered at 320 px / A++ (empty-data shell already in `e2e/reflow.spec.ts`); final gate | inline | todo | |
