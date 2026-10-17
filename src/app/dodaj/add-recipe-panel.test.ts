@@ -10,11 +10,10 @@ vi.mock('./add-from-link-form', () => ({
 import { AddRecipePanel } from './add-recipe-panel'
 
 describe('AddRecipePanel — A7 (E01-S10)', () => {
-  it('shows "Z linku" as the chosen source and "Ze zdjęcia" as coming soon, both in words', () => {
+  it('shows "Z linku" as the live source and "Ze zdjęcia" as coming soon, in words', () => {
     const html = renderToStaticMarkup(createElement(AddRecipePanel))
     expect(html).toContain('Skąd dodajesz przepis?')
     expect(html).toContain('Z linku')
-    expect(html).toContain('Wybrane')
     expect(html).toContain('Ze zdjęcia')
     expect(html).toContain('wkrótce')
     // Status tiles, not a fake toggle: the only control is the link form.
@@ -25,7 +24,9 @@ describe('AddRecipePanel — A7 (E01-S10)', () => {
     const html = renderToStaticMarkup(createElement(AddRecipePanel))
     expect(html).toContain('Jak to działa')
     expect(html.match(/<li>/g)).toHaveLength(3)
-    expect(html.indexOf('Skopiuj link')).toBeLessThan(html.indexOf('Wklej go'))
+    expect(html.indexOf('Wklejasz link')).toBeLessThan(html.indexOf('1–3 minuty'))
+    expect(html).toContain('dzwonek da znać o problemie')
+    expect(html).toContain('Udostępnij → ZapiszPrzepis')
   })
 
   it('passes the error and focus through to the link form', () => {

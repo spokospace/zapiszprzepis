@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronLeft, Link as LinkIcon } from 'lucide-react'
+import { ChevronLeft, Plus } from 'lucide-react'
 import { AppMenu } from './app-menu'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
@@ -54,12 +54,14 @@ export function AppHeader({
         <div className="flex items-center gap-1">
           {isAuthenticated ? (
             <>
+              {/* 1c header (E01-S10): icon over label, 64x56, #c2410c. Shown without full
+                  access too: /dodaj then shows the access-code gate (3c). */}
               <Link
                 href={ADD_RECIPE_PATH}
-                aria-label="Dodaj przepis z linku"
-                className="mr-1 inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+                aria-label="Dodaj przepis"
+                className="mr-1 inline-flex h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] bg-action text-[13px] leading-none font-bold text-white no-underline transition-colors hover:bg-action-hover"
               >
-                <LinkIcon aria-hidden="true" className="h-4 w-4" />
+                <Plus aria-hidden="true" className="h-6 w-6" />
                 Dodaj
               </Link>
               <NotificationBell failedShares={failedShares} />

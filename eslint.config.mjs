@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     ".claude/**",
     // OpenNext build output (git-ignored), same category as .next/**.
     ".open-next/**",
+    // Design handoff and specs: vendored prototype JS (support.js), not app code.
+    ".ai/**",
   ]),
   {
     // Test doubles stub partial shapes of third-party objects (Inngest steps,
