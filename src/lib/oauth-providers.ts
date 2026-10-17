@@ -5,7 +5,8 @@
 // off until the owner lists providers in AUTH_OAUTH_PROVIDERS (server env) —
 // after E01-S11's "full access" gate on adding recipes is live in production.
 
-export const OAUTH_PROVIDERS = ['google', 'facebook'] as const
+// Facebook first: screen 3a lists it above Google (E01-S12b).
+export const OAUTH_PROVIDERS = ['facebook', 'google'] as const
 export type OAuthProvider = (typeof OAUTH_PROVIDERS)[number]
 
 /**

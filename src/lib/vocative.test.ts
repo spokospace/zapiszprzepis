@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { firstNameOf, greeting, vocative } from './vocative'
+import { firstNameOf, greeting, vocative, welcome } from './vocative'
 
 describe('vocative', () => {
   it.each([
@@ -103,5 +103,17 @@ describe('greeting', () => {
     expect(greeting('Użytkownik')).toBe('Dzień dobry!')
     expect(greeting('Xawery Z.')).toBe('Dzień dobry!')
     expect(greeting(null)).toBe('Dzień dobry!')
+  })
+})
+
+describe('welcome', () => {
+  it('welcomes with the vocative when known (screen 3b)', () => {
+    expect(welcome('Antonina K.')).toBe('Witamy, Antonino!')
+    expect(welcome('Piotr N.')).toBe('Witamy, Piotrze!')
+  })
+
+  it('falls back to a plain welcome', () => {
+    expect(welcome('Xawery Z.')).toBe('Witamy!')
+    expect(welcome(undefined)).toBe('Witamy!')
   })
 })

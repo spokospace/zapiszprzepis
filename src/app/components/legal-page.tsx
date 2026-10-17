@@ -45,8 +45,8 @@ export function LegalList({ children }: { children: ReactNode }) {
 }
 
 /**
- * Links to the three legal pages, for the login screen and the legal pages
- * themselves. E01-S12b's login footer (3a) can reuse this or the path constants.
+ * Links to the three legal pages, for /signup and the legal pages themselves.
+ * /login (3a) has its own one-line footer built from the same path constants.
  */
 export function LegalLinks({ className }: { className?: string }) {
   return (

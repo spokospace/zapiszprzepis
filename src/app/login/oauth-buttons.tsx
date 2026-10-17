@@ -5,7 +5,8 @@ import { buttonClasses } from '@/app/components/ui/button'
 import { OAUTH_LABELS, type OAuthProvider } from '@/lib/oauth-providers'
 import { signInWithOAuthProvider } from './actions'
 
-// Brand marks are decorative — the visible text label names the provider.
+// Brand marks are decorative — the visible text label names the provider. On the
+// blue Facebook button the mark is white, per Meta's brand rules.
 function ProviderIcon({ provider }: { provider: OAuthProvider }) {
   if (provider === 'google') {
     return (
@@ -20,7 +21,7 @@ function ProviderIcon({ provider }: { provider: OAuthProvider }) {
   return (
     <svg aria-hidden="true" focusable="false" width="24" height="24" viewBox="0 0 24 24">
       <path
-        className="fill-facebook"
+        className="fill-white"
         d="M24 12a12 12 0 1 0-13.9 11.9v-8.4h-3V12h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12z"
       />
     </svg>
@@ -30,7 +31,7 @@ function ProviderIcon({ provider }: { provider: OAuthProvider }) {
 function ProviderButton({ provider }: { provider: OAuthProvider }) {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" disabled={pending} className={`${buttonClasses('outline', 'lg')} w-full text-[19px]`}>
+    <button type="submit" disabled={pending} className={`${buttonClasses(provider === 'facebook' ? 'facebook' : 'outline', 'lg')} min-h-[60px] w-full gap-3 text-[19px]`}>
       <ProviderIcon provider={provider} />
       {pending ? 'Przekierowuję…' : OAUTH_LABELS[provider]}
     </button>
@@ -42,7 +43,7 @@ interface OAuthButtonsProps {
   next?: string
 }
 
-/** "Zaloguj przez Google / Facebooka" (E01-S12); renders nothing when OAuth is off. */
+/** "Zaloguj przez Facebooka / Google" (E01-S12, 3a in E01-S12b); renders nothing when OAuth is off. */
 export function OAuthButtons({ providers, next }: OAuthButtonsProps) {
   if (providers.length === 0) return null
   return (
@@ -54,9 +55,6 @@ export function OAuthButtons({ providers, next }: OAuthButtonsProps) {
           <ProviderButton provider={provider} />
         </form>
       ))}
-      <p className="mt-2 flex items-center gap-3 text-base text-ink-soft before:h-px before:flex-1 before:bg-ink-muted after:h-px after:flex-1 after:bg-ink-muted">
-        lub emailem
-      </p>
     </div>
   )
 }

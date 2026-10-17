@@ -1,14 +1,14 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
-import { Check } from 'lucide-react'
+import { Check, CircleAlert, Lock } from 'lucide-react'
 import { redeemAccessCode, type RedeemState } from '@/app/(actions)/redeem-access-code'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
 import { Button } from '@/app/components/ui/button'
 import { stripSearchParam } from '@/lib/strip-search-param'
 
 const ERROR_MESSAGES: Partial<Record<RedeemState['status'], string>> = {
-  invalid: 'Ten kod nie działa. Sprawdź, czy wpisano go bez błędów.',
+  invalid: 'Ten kod nie działa. Sprawdź litery i spróbuj jeszcze raz.',
   rate_limited: 'Za dużo prób. Spróbuj ponownie za kwadrans.',
   error: 'Coś poszło nie tak. Spróbuj ponownie.',
 }
@@ -32,14 +32,16 @@ type ViewProps = {
 export function AccessCodeGateView({ state, pending, formAction, code, onCodeChange, notice, inputRef, unlocked }: ViewProps) {
   if (state.status === 'ok') {
     return (
-      <div>
-        <p
-          role="status"
-          className="mb-4 flex items-center gap-2 rounded-field bg-success-bg px-4 py-3 text-[19px] font-bold text-success"
-        >
-          <Check aria-hidden="true" className="h-6 w-6 shrink-0" />
-          Gotowe — możesz dodawać przepisy.
-        </p>
+      <div className="flex flex-col gap-[18px]">
+        <div role="status" className="flex flex-col gap-[18px]">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-success-bg text-success">
+            <Check aria-hidden="true" className="h-[34px] w-[34px]" />
+          </span>
+          <p className="text-[28px] leading-tight font-bold text-ink">Gotowe! Możesz dodawać przepisy.</p>
+          <p className="text-[18px] leading-normal text-ink-soft">
+            Kod został przypisany do Twojego konta. Nie trzeba go wpisywać ponownie.
+          </p>
+        </div>
         {unlocked ?? <AddRecipeForm autoFocus />}
       </div>
     )
@@ -51,17 +53,24 @@ export function AccessCodeGateView({ state, pending, formAction, code, onCodeCha
   const invalid = state.status === 'invalid'
 
   return (
-    <section aria-labelledby="access-code-heading" className="rounded-card bg-surface-accent px-4 py-5 sm:px-5">
-      <h2 id="access-code-heading" className="text-[24px] font-bold text-ink">
-        Dodawanie przepisów
+    <section
+      aria-labelledby="access-code-heading"
+      className="flex flex-col gap-[18px] rounded-card border-2 border-border-card bg-white px-4 py-6 sm:px-5"
+    >
+      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-accent text-action-text">
+        <Lock aria-hidden="true" className="h-[30px] w-[30px]" />
+      </span>
+      <h2 id="access-code-heading" className="text-[28px] leading-tight font-bold text-ink">
+        Dodawanie własnych przepisów
       </h2>
-      {notice && <p className="mt-2 text-[19px] font-bold text-ink">Dodawanie przepisów wymaga kodu dostępu.</p>}
-      <p className="mt-2 text-[19px] leading-normal text-ink-soft">
-        Żeby dodawać własne przepisy, wpisz kod dostępu. Ulubione i galeria działają bez kodu.
+      {notice && <p className="text-[19px] font-bold text-ink">Dodawanie przepisów wymaga kodu dostępu.</p>}
+      <p className="text-[18px] leading-normal text-ink-soft">
+        Wklejasz link z Facebooka, YouTube lub bloga, a my spisujemy przepis po polsku. Ta funkcja jest w pełnym
+        dostępie.
       </p>
-      <form action={formAction} className="mt-4 flex flex-col gap-3">
+      <form action={formAction} className="flex flex-col gap-2">
         <label htmlFor="access-code" className="text-[19px] font-bold text-ink">
-          Kod dostępu
+          Masz kod?
         </label>
         <input
           ref={inputRef}
@@ -74,23 +83,27 @@ export function AccessCodeGateView({ state, pending, formAction, code, onCodeCha
           autoCapitalize="characters"
           spellCheck={false}
           maxLength={200}
+          placeholder="np. ABCD1234"
           required
           aria-invalid={invalid || undefined}
           aria-describedby={error ? ERROR_ID : undefined}
-          className={`min-h-[56px] w-full rounded-field border-2 bg-white px-4 text-[19px] text-ink ${
+          // Uppercase is display only: the server normalizes case, spaces and dashes.
+          className={`min-h-[60px] w-full rounded-field border-2 bg-white px-[14px] font-mono text-[20px] font-bold tracking-[.06em] text-ink uppercase placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-muted ${
             invalid ? 'border-danger' : 'border-field'
           }`}
         />
         {error && (
-          <p id={ERROR_ID} role="alert" className="text-[17px] font-bold text-danger">
+          <p id={ERROR_ID} role="alert" className="flex items-center gap-2 text-[17px] font-bold text-danger">
+            <CircleAlert aria-hidden="true" className="h-5 w-5 shrink-0" />
             {error}
           </p>
         )}
-        <Button type="submit" disabled={pending} className="w-full sm:w-auto sm:self-start">
+        <Button type="submit" disabled={pending} className="min-h-[58px] w-full text-[19px]">
           {pending ? 'Sprawdzam…' : 'Odblokuj'}
         </Button>
       </form>
-      <p className="mt-4 text-[16px] text-ink-soft">Pełny dostęp płatny — wkrótce.</p>
+      {/* "albo / Zobacz pełny dostęp" stays out until payments exist (owner decision, #281). */}
+      <p className="text-[16px] leading-normal text-ink-soft">Ulubione działają bez ograniczeń, z kodem i bez.</p>
     </section>
   )
 }

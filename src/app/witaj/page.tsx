@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { requireUser } from '@/lib/supabase/server'
 import { getSiteUrl } from '@/lib/site-url'
 import { resolveLoginNext } from '@/lib/login-redirect'
-import { greeting } from '@/lib/vocative'
+import { welcome } from '@/lib/vocative'
+import { avatarColorIndex, avatarUrl } from '@/lib/avatar'
+import { SUPABASE_URL } from '@/lib/env'
+import { Avatar } from '@/app/components/ui/avatar'
 import { GenderForm } from './gender-form'
 
 export const metadata: Metadata = {
@@ -24,7 +26,11 @@ export default async function WelcomePage({ searchParams }: { searchParams: Sear
   const { supabase, user } = await requireUser()
   const [{ data: priv }, { data: profile }] = await Promise.all([
     supabase.from('profiles_private').select('gender').eq('id', user.id).maybeSingle<{ gender: string | null }>(),
-    supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle<{ display_name: string }>(),
+    supabase
+      .from('profiles')
+      .select('display_name, avatar_path, avatar_color')
+      .eq('id', user.id)
+      .maybeSingle<{ display_name: string; avatar_path: string | null; avatar_color: number | null }>(),
   ])
 
   // Already chosen — the choice is final, so there is nothing to do here.
@@ -34,18 +40,15 @@ export default async function WelcomePage({ searchParams }: { searchParams: Sear
 
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-10">
-      <div className="flex w-full max-w-md flex-col gap-5">
-        <Image
-          src="/logo.svg"
-          alt="ZapiszPrzepis"
-          width={1970}
-          height={668}
-          priority
-          unoptimized
-          className="block h-auto w-40"
+      <div className="flex w-full max-w-sm flex-1 flex-col gap-5">
+        <Avatar
+          src={avatarUrl(SUPABASE_URL, profile?.avatar_path)}
+          name={profile?.display_name ?? ''}
+          colorIndex={avatarColorIndex(user.id, profile?.avatar_color)}
+          size={80}
         />
-        <h1 className="text-[32px] font-bold leading-tight text-ink">{greeting(profile?.display_name)}</h1>
-        <p className="text-[19px] text-ink">Jedno pytanie na start.</p>
+        <h1 className="text-[30px] font-bold leading-tight text-ink">{welcome(profile?.display_name)}</h1>
+        <p className="text-[18px] leading-normal text-ink-soft">Jeszcze jedno pytanie, żeby dobrze się do Ciebie zwracać.</p>
         <GenderForm next={next} error={error} />
       </div>
     </main>

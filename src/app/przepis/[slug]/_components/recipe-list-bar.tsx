@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useSyncExternalStore } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { useHydrated } from '@/app/components/ui/use-hydrated'
 import { useSessionStorage } from '@/app/components/ui/use-session-storage'
 import { listStorageKey, locate, parseSnapshot, type ListItem, type ListKey, type ListPosition } from '@/lib/recipe-list-context'
 import { recipePath } from '@/lib/routes'
@@ -21,13 +22,6 @@ const BAR = 'mb-6 flex min-h-[74px] items-center justify-between gap-3 rounded-c
 
 // A button-shaped link: bordered, so no underline (as in the header's "Dodaj").
 const NAV = 'flex min-h-[64px] items-center gap-3 rounded-field border-2 px-4 py-2 leading-tight no-underline!'
-
-const noop = () => () => {}
-
-/** false during SSR and hydration, true afterwards — without a setState-in-effect. */
-function useHydrated(): boolean {
-  return useSyncExternalStore(noop, () => true, () => false)
-}
 
 type ListState =
   | { kind: 'pending' }

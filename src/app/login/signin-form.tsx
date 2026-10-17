@@ -1,9 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+import { buttonClasses } from '@/app/components/ui/button'
 import { signInWithEmail, signInWithPassword } from './actions'
 
 type TabType = 'link' | 'password'
+
+// Design tokens (WCAG 2.2 AA, E01-S12b): 2px field border at 3:1, 56px fields, 48px tabs.
+const tabClass = (active: boolean) =>
+  `min-h-[48px] px-4 text-[17px] font-bold transition-colors ${active ? '-mb-0.5 border-b-4 border-ink text-ink' : 'text-ink-soft hover:text-ink'}`
+const LABEL = 'text-[17px] font-bold text-ink'
+const INPUT =
+  'min-h-[56px] w-full rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink placeholder:text-ink-muted disabled:bg-surface-3 disabled:text-ink-muted'
+const SUBMIT = `${buttonClasses('primary', 'lg')} mt-2 w-full text-[19px]`
+const NOTICE = 'mt-4 rounded-field border-2 px-4 py-3 text-[17px]'
 
 const ERROR_MESSAGES: Record<string, string> = {
   expired: 'Link wygasł lub został już użyty. Wyślij sobie nowy.',
@@ -66,19 +76,15 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="flex gap-2 border-b border-zinc-200" role="tablist">
+    <div className="w-full">
+      <div className="flex gap-2 border-b-2 border-border-card" role="tablist">
         <button
           type="button"
           role="tab"
           aria-selected={tab === 'link'}
           aria-controls="tab-link"
           onClick={() => setTab('link')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            tab === 'link'
-              ? 'border-b-2 border-zinc-900 text-zinc-900'
-              : 'text-zinc-500 hover:text-zinc-700'
-          }`}
+          className={tabClass(tab === 'link')}
         >
           Link
         </button>
@@ -88,11 +94,7 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
           aria-selected={tab === 'password'}
           aria-controls="tab-password"
           onClick={() => setTab('password')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            tab === 'password'
-              ? 'border-b-2 border-zinc-900 text-zinc-900'
-              : 'text-zinc-500 hover:text-zinc-700'
-          }`}
+          className={tabClass(tab === 'password')}
         >
           Hasło
         </button>
@@ -101,13 +103,13 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
       {errorMessage && (
         <div
           role="alert"
-          className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+          className={`${NOTICE} border-danger bg-danger-bg font-bold text-danger`}
         >
           <p>{errorMessage}</p>
           {tab === 'password' && error === 'invalid_credentials' && (
-            <p className="mt-2 text-xs text-red-700">
+            <p className="mt-2 font-normal">
               Nie masz hasła?{' '}
-              <a href="/forgot-password" className="font-medium underline hover:no-underline">
+              <a href="/forgot-password" className="font-bold text-danger">
                 Resetuj je tutaj
               </a>
             </p>
@@ -118,7 +120,7 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
       {sentMessage && (
         <div
           role="status"
-          className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+          className={`${NOTICE} border-success bg-success-bg font-bold text-success`}
         >
           {sentMessage}
         </div>
@@ -127,7 +129,7 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
       {successMessage && (
         <div
           role="status"
-          className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+          className={`${NOTICE} border-success bg-success-bg font-bold text-success`}
         >
           {successMessage}
         </div>
@@ -136,7 +138,7 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
       {tab === 'link' ? (
         <form id="tab-link" action={handleLinkSubmit} className="mt-6 flex flex-col gap-3">
           <input type="hidden" name="next" value={next ?? ''} />
-          <label htmlFor="email-link" className="text-sm font-medium text-zinc-700">
+          <label htmlFor="email-link" className={LABEL}>
             Email
           </label>
           <input
@@ -150,12 +152,12 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
             disabled={isLoading}
             defaultValue={formEmail}
             placeholder="ty@example.com"
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+            className={INPUT}
           />
           <button
             type="submit"
             disabled={isLoading}
-            className="mt-2 rounded-md bg-zinc-900 px-4 py-2.5 text-base font-medium text-white hover:bg-zinc-800 disabled:bg-zinc-400"
+            className={SUBMIT}
           >
             {isLoading ? 'Wysyłanie...' : 'Wyślij link'}
           </button>
@@ -164,7 +166,7 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
         <form id="tab-password" action={handlePasswordSubmit} className="mt-6 flex flex-col gap-3">
           <input type="hidden" name="next" value={next ?? ''} />
           <div>
-            <label htmlFor="email-pass" className="text-sm font-medium text-zinc-700">
+            <label htmlFor="email-pass" className={LABEL}>
               Email
             </label>
             <input
@@ -178,11 +180,11 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
               disabled={isLoading}
               defaultValue={formEmail}
               placeholder="ty@example.com"
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+              className={`mt-1 ${INPUT}`}
             />
           </div>
           <div>
-            <label htmlFor="password" className="text-sm font-medium text-zinc-700">
+            <label htmlFor="password" className={LABEL}>
               Hasło
             </label>
             <input
@@ -193,38 +195,38 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
               required
               disabled={isLoading}
               placeholder="••••••••"
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+              className={`mt-1 ${INPUT}`}
             />
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="mt-2 rounded-md bg-zinc-900 px-4 py-2.5 text-base font-medium text-white hover:bg-zinc-800 disabled:bg-zinc-400"
+            className={SUBMIT}
           >
             {isLoading ? 'Logowanie...' : 'Zaloguj się'}
           </button>
 
-          <p className="mt-3 rounded-md bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
+          <p className="mt-3 rounded-field bg-surface-2 px-4 py-3 text-[16px] text-ink-soft">
             Logujesz się po raz pierwszy? Możesz użyć{' '}
             <button
               type="button"
               onClick={() => setTab('link')}
-              className="font-medium text-zinc-900 underline hover:no-underline"
+              className="font-bold text-ink underline"
             >
               linku email
             </button>
             {' '}zamiast hasła, lub{' '}
-            <a href="/forgot-password" className="font-medium text-zinc-900 underline hover:no-underline">
+            <a href="/forgot-password" className="font-bold text-ink underline">
               ustaw hasło
             </a>
             .
           </p>
 
-          <div className="flex items-center justify-between text-sm">
-            <a href="/forgot-password" className="font-medium text-zinc-900 hover:underline">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 text-[16px]">
+            <a href="/forgot-password" className="inline-flex min-h-[48px] items-center font-bold text-ink">
               Zapomniałem hasła
             </a>
-            <a href="/signup" className="text-zinc-600 hover:text-zinc-900">
+            <a href="/signup" className="inline-flex min-h-[48px] items-center text-ink-soft hover:text-ink">
               Rejestracja
             </a>
           </div>
