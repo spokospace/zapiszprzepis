@@ -3,7 +3,7 @@
 > Backlog: `.ai/specs/backlog-przebudowa.md` (E01-S09, refs C5 / A6 / 3d). Issue: #212. Risk: **low** (UI + read-only counts, one new public read-only route, no schema change). Depends on S01 (tokens, live). The lock state is fed by S11 (#214, in flight) through a single seam defined here.
 
 ## 📝 TLDR
-Today the MENU drawer (`app-menu.tsx`) is a flat list: Ulubione + Ustawienia + Wyloguj for a signed-in user, Zaloguj / Załóż konto for a guest. There is no way to browse recipes by category from the menu, no counters, and no notion of "full access". *Proposed (future behavior):* the drawer gets three blocks — **"Moje"** (Moje przepisy with a counter — full access only, Ulubione with a counter, Dodaj przepis, locked with a padlock and a caption without full access), **"Wszystkie przepisy według kategorii"** (a 2-column grid of every category from `recipe-categories.ts`, for guests too) and a footer **"Ustawienia | Wyloguj"**. A guest sees "Zaloguj się / Załóż konto" instead of "Moje". Category tiles open a new **public** listing `/kategoria/{value}`, so no menu link bounces a guest to `/login`.
+Today the MENU drawer (`app-menu.tsx`) is a flat list: Ulubione + Ustawienia + Wyloguj for a signed-in user, Zaloguj / Załóż konto for a guest. There is no way to browse recipes by category from the menu, no counters, and no notion of "full access". *Proposed (future behavior):* the drawer gets three blocks — **"Moje"** (Moje przepisy with a counter — full access only, Ulubione with a counter, Dodaj przepis, locked with a padlock and a caption without full access), **"Wszystkie przepisy według kategorii"** (a 2-column grid of every category from `recipe-categories.ts`, for guests too) and a footer **"Ustawienia | Wyloguj"**. A guest sees "Zaloguj się / Załóż konto" instead of "Moje". Category tiles open a minimal **public** listing at `/przepisy/{kategoria}` (the route E01-S16 owns and later extends with tag chips), so no menu link bounces a guest to `/login`.
 
 ## 📝 Problem Statement
 - The rebuild's navigation structure (variant 1a) puts everything behind MENU; without categories there, a guest has no way to browse beyond the home feed.
@@ -14,24 +14,25 @@ Today the MENU drawer (`app-menu.tsx`) is a flat list: Ulubione + Ustawienia + W
 ## 📝 Proposed Solution
 1. **Drawer rebuild** (`src/app/components/app-menu.tsx`), still on the native `<dialog>` + `showModal()` (keeps Escape, focus trap, inert background with no extra code). Content derived from a pure, unit-tested model builder so every access state is testable without a DOM.
 2. **Menu summary** loaded server-side next to the existing failed-shares query in `AppShell`: `{ hasFullAccess, myRecipesCount, favoritesCount }` via two `count: 'exact', head: true` queries (no rows transferred), passed `AppShell → AppHeader → AppMenu` as one optional prop.
-3. **Full-access seam**: `getFullAccess(supabase): Promise<boolean>` in `src/lib/full-access.ts`. That is S11's (#214) exact signature: the RPC-backed `has_full_access()` reads `auth.uid()` and fails closed. Callers pass `false` for a guest instead of calling it. Until S11 merges, this branch ships a same-signature stub returning `true`, which is today's capability, so the two changes merge in either order. The locked branch is built and tested now.
-4. **Public category listing** `/kategoria/[category]`: newest recipes in that category from the guest-safe `public_recipes` view, rendered with the existing `RecipeCard` grid. One helper, `categoryPath(category)` in `src/lib/routes.ts` (the seam S04 also uses for its home tiles), owns the URL, so S05 (`/szukaj`) can later redirect or retarget it in one place.
+3. **Full-access seam**: `getFullAccess(supabase): Promise<boolean>` in `src/lib/full-access.ts`. That is S11's (#214) exact signature: the RPC-backed `has_full_access()` reads `auth.uid()` and fails closed. Callers pass `false` for a guest instead of calling it. Until S11 merges, this branch ships a same-signature stub returning `true`, which is today's capability, so the drawer works before and after S11. Both branches add the same file (an add/add conflict): **S11's file wins**. Whichever lands second rebases and keeps S11's RPC version. The locked branch is built and tested now.
+4. **Public category listing** `/przepisy/[kategoria]` (backlog: E01-S16 owns this route and adds tag chips + "podobne" on top; S09 ships only the minimal listing): newest recipes in that category from the guest-safe `public_recipes` view, rendered with the existing `RecipeCard` grid. One helper, `categoryPath(category)` in `src/lib/routes.ts` (the seam S04 also uses for its home tiles), owns the URL, so S04's home tiles and the drawer link the same URL.
 
 **Alternatives considered**
 - *Link categories to `/recipes?category=`* — rejected: owner-only, scoped to *my* recipes, bounces guests.
-- *Link categories to `/szukaj?kategoria=`* (S05) — rejected for now: the route does not exist yet; S05 is not a dependency of S09. `categoryPath` makes the later switch a one-line change.
+- *A separate `/kategoria/{value}` route* — rejected: it would duplicate S16's planned `/przepisy/{kategoria}` (an SEO-visible URL needing a 301 later).
+- *Link categories to `/szukaj?kategoria=`* (S05) — rejected: the route does not exist yet, and the backlog puts category browsing on S16's route.
 - *Fetch counters client-side when the drawer opens* (server action) — rejected: "Moje przepisy" visibility depends on full access, so the "Moje" block would reflow after opening, which is disorienting for the target group and for screen readers. Two head-count queries per page render are cheap and run in parallel with the existing failed-shares query.
 
 ## 📝 Architecture
 - `src/lib/full-access.ts` *(new)* — `getFullAccess(supabase)`; S11's implementation, stubbed here until it merges.
 - `src/lib/menu-summary.ts` *(new)* — `getMenuSummary(supabase, user): Promise<MenuSummary | null>` (null for a guest). Counts: `recipes` where `user_id = me` (exactly the set `/recipes` lists) and `favorites` where `user_id = me` (owner-only RLS already scopes both; the explicit `eq` is defence in depth, matching `/recipes`).
 - `src/lib/recipe-categories.ts` — adds `isRecipeCategory(value)`.
-- `src/lib/routes.ts` — `categoryPath(category)` (shared with S04) returns `/kategoria/{value}`; `isPublicRoute` allows it.
+- `src/lib/routes.ts` — `categoryPath(category)` (shared with S04) returns `/przepisy/{kategoria}`; `isPublicRoute` allows exactly one segment under `/przepisy/`. **Ordering:** S04 (#249) has an interim `categoryPath` pointing at owner-only `/recipes?category=`; S09 lands first and S04 rebases onto it, dropping its interim.
 - `src/app/components/app-menu-model.ts` *(new)* — pure `buildMenuModel({ isAuthenticated, summary })` → which "Moje" entries show, their counters, the lock state, guest CTA vs footer.
 - `src/app/components/app-menu.tsx` — renders the model.
 - `src/app/components/app-shell.tsx` — adds `getMenuSummary` to its `Promise.all`; passes `menu` to `AppHeader`.
 - `src/app/components/app-header.tsx` — **one optional prop** (`menu?: MenuSummary | null`) forwarded to `AppMenu`. No other header change (other sessions edit the header's neighbours in parallel).
-- `src/app/kategoria/[category]/page.tsx` + `layout.tsx` *(new)* — public, wrapped in `AppShell` like `/przepis/[slug]`.
+- `src/app/przepisy/[kategoria]/page.tsx` + `src/app/przepisy/layout.tsx` *(new)* — public, wrapped in `AppShell` like `/przepis/[slug]`.
 - **Not touched:** `src/app/page.tsx` (home, owned by S04 in parallel). It renders `AppHeader` without `menu`; the drawer degrades gracefully (see Edge Cases). S04 can pass `getMenuSummary` (or move to `AppShell`) when it lands.
 
 ## 📝 Data Model
@@ -48,11 +49,11 @@ export type MenuSummary = {
 export function getMenuSummary(supabase, user: User | null): Promise<MenuSummary | null>
 
 // src/lib/routes.ts
-export function categoryPath(category: string): string  // '/kategoria/{value}'
+export function categoryPath(category: string): string  // '/przepisy/{kategoria}'
 // src/lib/recipe-categories.ts
 export function isRecipeCategory(value: string): value is RecipeCategory
 ```
-`/kategoria/{value}`: `value` must be a member of the `recipe_category` enum, otherwise `notFound()`. Lists up to 48 newest recipes (`created_at desc`); pagination is S05's concern.
+`/przepisy/{kategoria}`: `kategoria` must be a member of the `recipe_category` enum, otherwise `notFound()`. Lists up to 48 newest recipes (`created_at desc`); pagination and tag filters are S16's concern.
 
 ## 📝 UI/UX
 Layout (variant 1c style, 1a structure):
@@ -68,11 +69,11 @@ Layout (variant 1c style, 1a structure):
 - **Footer** (signed-in): "Ustawienia" (link → `/settings`) and "Wyloguj" (form submit, existing `signOut` action) side by side, separated by a divider, each ≥ 48 px, icon + label.
 - **Active route:** `aria-current="page"` + `text-action-text` (#9a3412) and a left bar; never colour alone.
 - **Focus / keyboard:** `showModal()` moves focus into the dialog; the first focusable element is "Zamknij". Escape closes; focus returns to the MENU button (native `<dialog>` behaviour). Backdrop click closes. Any navigation closes the drawer (existing `pathname` effect). Global `:focus-visible` outline (3 px #1d4ed8, offset 2 px) applies; nothing overrides it.
-- **Category page `/kategoria/{value}`:** `h1` = category label, the `RecipeCard` grid used by `/ulubione`, empty state "W tej kategorii nie ma jeszcze przepisów." plus a link back to `/`.
+- **Category page `/przepisy/{kategoria}`:** `h1` = category label, the `RecipeCard` grid used by `/ulubione`, empty state "W tej kategorii nie ma jeszcze przepisów." plus a link back to `/`.
 
 ## 📝 Edge Cases & Failure Scenarios
 - **Count query fails** → that counter is `null` and hidden; the entry still shows. Errors are logged server-side (`console.error`), never surfaced as "0".
-- **`menu` prop absent** (home page until S04 passes it) → signed-in drawer shows "Moje przepisy" (full access is the default today), "Ulubione", "Dodaj przepis" without counters. No crash, no lock shown.
+- **`menu` prop absent** (home page until S04 passes it) → signed-in drawer shows "Moje przepisy" (full access is the default today), "Ulubione", "Dodaj przepis" without counters. No crash, no lock shown. **Known gap after S11 lands:** a user without access opening the drawer on the home page sees an unlocked "Dodaj przepis" and reaches the gate without the caption. Follow-up for S04: pass `menu` (`getMenuSummary`) on the home page.
 - **Favorites pointing at a recipe no longer in `public_recipes`** → counter may be one higher than the grid on `/ulubione`. Acceptable; the dedup collapse (S03a) keeps favorites consistent in practice.
 - **Unknown category in the URL** → 404, not an empty page.
 - **Category with zero recipes** → empty state, not a 404.
@@ -81,13 +82,13 @@ Layout (variant 1c style, 1a structure):
 
 ## 📝 Risks & Impact Review
 - **Per-render cost:** two extra head-count queries on every `AppShell` page for signed-in users (none for guests), run in parallel with failed-shares. Reversible by dropping the call.
-- **Public route `/kategoria/*`** is a new public URL (SEO-visible). It reads only the guest-safe view already exposed on `/` and `/przepis/*`; no new data exposure. If S05 supersedes it, keep it as a 301 to `/szukaj?kategoria=` rather than deleting it.
+- **Public route `/przepisy/{kategoria}`** is a new public URL (SEO-visible), S16's planned URL, so it needs no later redirect. It reads only the guest-safe view already exposed on `/` and `/przepis/*`; no new data exposure. The query filters `category` and sorts by `created_at desc` without a covering index; that is acceptable at current volume, and S16 can add `recipes (category, created_at desc)` if needed. `/przepisy` with no segment stays gated (nothing links to it).
 - **S11 seam:** until S11 lands, the `getFullAccess` stub returns `true` for every signed-in user — the same capability they have today. No user loses access because of this story.
 
 ## 📝 Resolved assumptions (autonomous defaults)
 | # | Question | Default applied | Rationale |
 |---|----------|-----------------|-----------|
-| Q1 | Where do category tiles link, given `/recipes?category=` is owner-only? | New public route `/kategoria/{value}` behind `categoryPath()` (shared with S04) | Guests must not bounce to `/login`; `/szukaj` (S05) does not exist yet; one helper makes retargeting a one-liner. |
+| Q1 | Where do category tiles link, given `/recipes?category=` is owner-only? | Minimal public listing at `/przepisy/{kategoria}` (S16's planned route) behind `categoryPath()`, shared with S04 | Guests must not bounce to `/login`; reusing S16's URL avoids a second, SEO-visible URL and a later 301. Spec review of #243 changed this from `/kategoria/{value}`. |
 | Q2 | What decides "full access" before S11 ships? | S11's `getFullAccess(supabase)`; a same-signature stub returning `true` until S11 merges, `false` for a guest without calling it | Agreed with the S11 session; matches today's capability; merge order does not matter. |
 | Q3 | Where does the locked "Dodaj przepis" lead? | `/` (S11's 3c `AccessCodeGate` replaces the add form there); `/dodaj` after S10 | Agreed with the S11 session; the gate's real location today. |
 | Q4 | Counters: server-side per render or client-side on open? | Server-side in `AppShell`, head-count queries | No reflow inside an open dialog; cheap; parallel with an existing query. |
@@ -103,7 +104,7 @@ Single implementation PR (`Refs #212`, `Source doc:` this file).
 3. `src/lib/menu-summary.ts`: `getMenuSummary` (two head counts, null on error) + unit tests with a stubbed Supabase client (guest → null; error → null counter; happy path).
 
 **Phase 2 — public category listing**
-4. `src/app/kategoria/layout.tsx` (AppShell) + `src/app/kategoria/[category]/page.tsx` (validate, query `public_recipes`, grid, empty state, `generateMetadata`).
+4. `src/app/przepisy/layout.tsx` (AppShell) + `src/app/przepisy/[kategoria]/page.tsx` (validate, query `public_recipes`, grid, empty state, `generateMetadata`).
 
 **Phase 3 — drawer**
 5. `app-menu-model.ts` `buildMenuModel` + unit tests for guest / signed-in full access / signed-in without access / missing summary / null counters.
