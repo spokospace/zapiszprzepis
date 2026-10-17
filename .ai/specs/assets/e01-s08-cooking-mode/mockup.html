@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E01-S08 — Tryb gotowania (mockup)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: #e5e7eb; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; display: flex; gap: 32px; flex-wrap: wrap; }
+  figure { margin: 0; }
+  figcaption { font: 600 15px system-ui; color: #374151; margin-bottom: 8px; }
+  .phone { width: 390px; height: 780px; background: #111827; color: #fff; border-radius: 28px; display: flex; flex-direction: column; padding: 20px 16px 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .title { font-size: 16px; color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .close { min-height: 56px; padding: 0 16px; border: 2px solid #d1d5db; border-radius: 14px; background: transparent; color: #fff; font: 700 18px system-ui; white-space: nowrap; }
+  .bar { display: flex; gap: 4px; margin: 20px 0 18px; }
+  .seg { flex: 1; height: 8px; border-radius: 999px; background: #4b5563; }
+  .seg.on { background: #fb923c; }
+  .step-n { font-size: 22px; font-weight: 700; color: #fdba74; margin: 0 0 12px; }
+  .step { flex: 1; overflow: auto; font-size: 30px; line-height: 1.4; margin: 0; }
+  .note { font-size: 16px; color: #d1d5db; margin: 12px 0 0; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .btn { min-height: 72px; border-radius: 14px; font: 700 20px system-ui; border: 0; }
+  .back { background: #fff; color: #111827; border: 2px solid #4b5563; }
+  .back[disabled] { opacity: .5; }
+  .next { background: #c2410c; color: #fff; }
+  .focus { outline: 3px solid #fdba74; outline-offset: 2px; }
+  .page { width: 390px; height: 780px; background: #fff; border-radius: 28px; padding: 24px 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25); color: #111827; }
+  .page h1 { font-size: 30px; margin: 0 0 6px; }
+  .page .src { font-size: 16px; color: #374151; margin: 0 0 20px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .heart { min-height: 58px; padding: 0 20px; border: 2.5px solid #c2410c; border-radius: 14px; background: #fff; color: #9a3412; font: 700 18px system-ui; }
+  .cook { min-height: 56px; padding: 0 20px; border-radius: 14px; background: #c2410c; color: #fff; font: 700 18px system-ui; border: 0; }
+  .ph { margin-top: 28px; height: 380px; border-radius: 16px; background: repeating-linear-gradient(0deg,#f3f4f6 0 22px,#fff 22px 44px); }
+</style>
+</head>
+<body>
+  <figure>
+    <figcaption>Entry — recipe page action row</figcaption>
+    <div class="page">
+      <h1>Pierogi ruskie</h1>
+      <p class="src">aniagotuje.pl</p>
+      <div class="row">
+        <button class="heart">♡ Dodaj do ulubionych</button>
+        <button class="cook">🍳 Tryb gotowania</button>
+      </div>
+      <div class="ph" aria-hidden="true"></div>
+    </div>
+  </figure>
+
+  <figure>
+    <figcaption>01 — step 3 of 7</figcaption>
+    <div class="phone" id="step">
+      <div class="top">
+        <span class="title">Pierogi ruskie</span>
+        <button class="close">× Zakończ</button>
+      </div>
+      <div class="bar" role="progressbar" aria-valuemin="1" aria-valuemax="7" aria-valuenow="3">
+        <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+      </div>
+      <p class="step-n">Krok 3 z 7</p>
+      <p class="step">Ugotowane ziemniaki przeciśnij przez praskę, dodaj twaróg i zeszkloną cebulę. Dopraw solą i pieprzem, wymieszaj na gładki farsz.</p>
+      <div class="btns">
+        <button class="btn back">← Wstecz</button>
+        <button class="btn next focus">Dalej →</button>
+      </div>
+    </div>
+  </figure>
+
+  <figure>
+    <figcaption>02 — last step, no Wake Lock (note shown)</figcaption>
+    <div class="phone" id="last">
+      <div class="top">
+        <span class="title">Pierogi ruskie</span>
+        <button class="close">× Zakończ</button>
+      </div>
+      <div class="bar">
+        <span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span><span class="seg on"></span>
+      </div>
+      <p class="step-n">Krok 7 z 7</p>
+      <p class="step">Gotuj pierogi partiami w osolonym wrzątku 2–3 minuty od wypłynięcia. Podawaj z podsmażoną cebulką.</p>
+      <p class="note">Ekran może się wygasić — ta przeglądarka nie pozwala go podtrzymać.</p>
+      <div class="btns">
+        <button class="btn back">← Wstecz</button>
+        <button class="btn next">Gotowe ✓</button>
+      </div>
+    </div>
+  </figure>
+</body>
+</html>
