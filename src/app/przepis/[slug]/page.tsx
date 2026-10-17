@@ -106,7 +106,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   const listKey = parseListKey(from)
 
   return (
-    <div className="min-h-screen bg-white py-6 sm:py-8">
+    <main className="min-h-screen bg-white py-6 sm:py-8">
       {duplicate === '1' && (
         <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
       )}
@@ -219,6 +219,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           </div>
         )}
       </PageContainer>
-    </div>
+    </main>
   )
 }

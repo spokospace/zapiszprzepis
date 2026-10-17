@@ -13,7 +13,7 @@ export function chipClasses(selected = false): string {
   const look = selected
     ? 'bg-ink text-white border-ink'
     : 'bg-white text-ink border-border-card-2 hover:bg-surface-3'
-  return `inline-flex min-h-[48px] items-center gap-2 rounded-pill border-2 px-4 text-[17px] font-bold leading-tight no-underline! transition-colors ${look}`
+  return `inline-flex min-h-[48px] items-center gap-2 rounded-pill border-2 px-4 text-[17px] font-bold leading-tight wrap-anywhere no-underline! transition-colors ${look}`
 }
 
 /**
