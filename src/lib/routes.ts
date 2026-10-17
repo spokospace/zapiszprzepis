@@ -70,9 +70,22 @@ export function isPublicRoute(pathname: string): boolean {
     RECIPE_PAGE_RE.test(pathname) ||
     PRZEPISY_CATEGORY_RE.test(pathname) ||
     PROFILE_PAGE_RE.test(pathname) ||
-    pathname === SEARCH_PATH
+    pathname === SEARCH_PATH ||
+    LEGAL_PATHS.includes(pathname)
   )
 }
+
+/** Terms of service — public; linked from the login screen (3a, footer redesign in E01-S12b). */
+export const TERMS_PATH = '/regulamin'
+
+/** Privacy policy — public; Meta's Facebook Login requires a public URL for it. */
+export const PRIVACY_POLICY_PATH = '/polityka-prywatnosci'
+
+/** Data deletion instructions — public; the "Data Deletion Instructions URL" for Facebook Login. */
+export const DATA_DELETION_PATH = '/usuwanie-danych'
+
+/** The legal pages a guest must reach without a session (and that crawlers may index). */
+export const LEGAL_PATHS: readonly string[] = [TERMS_PATH, PRIVACY_POLICY_PATH, DATA_DELETION_PATH]
 
 /** The public search results page (E01-S05); the home form submits a GET here with `q`. */
 export const SEARCH_PATH = '/szukaj'

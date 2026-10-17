@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { SignUpForm } from './signup-form'
+import { LegalLinks } from '@/app/components/legal-page'
 
 type SearchParams = Promise<{
   error?: string
@@ -29,6 +30,7 @@ export default async function SignUpPage({
           />
         </h1>
         <SignUpForm error={error} email={email} sent={sent} />
+        <LegalLinks />
       </div>
     </main>
   )
