@@ -4,8 +4,25 @@ import {
   resolveDishAccusative,
   resolveVariantNote,
   dishVocabularyFor,
+  classifyDish,
+  writeVariantNote,
   type DishVocabularyEntry,
 } from './recipe-dish'
+
+/** A fetch that returns one OpenAI chat completion whose content is `body`. */
+function mockFetch(body: unknown, { ok = true, status = 200 } = {}): typeof globalThis.fetch {
+  return (async () => ({
+    ok,
+    status,
+    json: async () => ({ choices: [{ message: { content: typeof body === 'string' ? body : JSON.stringify(body) } }] }),
+  })) as unknown as typeof globalThis.fetch
+}
+
+const rejectingFetch = (async () => {
+  throw new Error('network down')
+}) as unknown as typeof globalThis.fetch
+
+const RECIPE = { title: 'Sernik nowojorski', category: 'ciasta', ingredients: [{ name: 'twaróg' }], steps: ['Piecz'] }
 
 const high = (dish: unknown, dishAccusative: unknown = null) => ({ dish, dishAccusative, confidence: 'high' })
 
@@ -150,5 +167,67 @@ describe('dishVocabularyFor', () => {
 
   it('caps the result at max', () => {
     expect(dishVocabularyFor('Sernik', vocab, 1)).toHaveLength(1)
+  })
+})
+
+describe('classifyDish', () => {
+  const deps = { apiKey: 'sk-test' }
+
+  it('returns the normalized dish + accusative on success', async () => {
+    const fetch = mockFetch({ dish: 'Sernik', dishAccusative: 'sernik', confidence: 'high' })
+    expect(await classifyDish(RECIPE, [], { fetch, ...deps })).toEqual({
+      dish: 'sernik',
+      dishAccusative: 'sernik',
+      classified: true,
+    })
+  })
+
+  it('classified: true with null dish when confidence is low (a successful "no dish")', async () => {
+    const fetch = mockFetch({ dish: 'sernik', dishAccusative: 'sernik', confidence: 'low' })
+    expect(await classifyDish(RECIPE, [], { fetch, ...deps })).toEqual({
+      dish: null,
+      dishAccusative: null,
+      classified: true,
+    })
+  })
+
+  it('classified: false (nulls, no throw) on a non-2xx response', async () => {
+    const fetch = mockFetch({}, { ok: false, status: 500 })
+    expect(await classifyDish(RECIPE, [], { fetch, ...deps })).toEqual({
+      dish: null,
+      dishAccusative: null,
+      classified: false,
+    })
+  })
+
+  it('classified: false on unparseable JSON content', async () => {
+    const fetch = mockFetch('not json at all')
+    expect((await classifyDish(RECIPE, [], { fetch, ...deps })).classified).toBe(false)
+  })
+
+  it('classified: false on a network / timeout error', async () => {
+    expect((await classifyDish(RECIPE, [], { fetch: rejectingFetch, ...deps })).classified).toBe(false)
+  })
+})
+
+describe('writeVariantNote', () => {
+  const deps = { apiKey: 'sk-test' }
+  const target = { dish: 'sernik', title: 'Sernik nowojorski', ingredients: [{ name: 'twaróg' }], steps: ['Piecz'] }
+
+  it('returns the resolved note on success', async () => {
+    const fetch = mockFetch({ variantNote: 'na spodzie z herbatników' })
+    expect(await writeVariantNote(target, [], { fetch, ...deps })).toBe('Na spodzie z herbatników')
+  })
+
+  it('returns null when the note duplicates a sibling note', async () => {
+    const fetch = mockFetch({ variantNote: 'Z rodzynkami' })
+    const siblings = [{ title: 'Sernik', ingredients: [], variant_note: 'Z rodzynkami' }]
+    expect(await writeVariantNote(target, siblings, { fetch, ...deps })).toBeNull()
+  })
+
+  it('returns null (no throw) on any error', async () => {
+    expect(await writeVariantNote(target, [], { fetch: rejectingFetch, ...deps })).toBeNull()
+    const bad = mockFetch({}, { ok: false, status: 429 })
+    expect(await writeVariantNote(target, [], { fetch: bad, ...deps })).toBeNull()
   })
 })
