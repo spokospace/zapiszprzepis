@@ -120,23 +120,20 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     notFound()
   }
 
-  // The gallery is a login perk (decision Q3). recipe_gallery_images is granted to
-  // signed-in users only, so a guest cannot read it through the API either.
-  // The gallery is a login perk (decision Q3); favorites are private (owner-only
-  // RLS). Both reads need a session, so they share one client and one round trip.
-  // The list bar's category context (E01-S07) is guest-safe and runs alongside.
+  // The gallery is a login perk (decision Q3) and favorites are private (owner-only
+  // RLS): both need a session. The list bar's category context (E01-S07) is
+  // guest-safe. All three run in parallel on one client.
   const supabase = await createSupabaseServerClient()
-  const [categoryContext, [{ data: gallery }, { data: favorite }]] = await Promise.all([
+  const [categoryContext, gallery, favorite] = await Promise.all([
     loadCategoryContext(supabase, typedRecipe),
+    user ? supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle() : null,
     user
-      ? Promise.all([
-          supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle(),
-          supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle(),
-        ])
-      : Promise.resolve([{ data: null }, { data: null }] as const),
+      ? supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle()
+      : null,
   ])
-  const galleryImages: string[] = gallery?.image_urls ?? []
-  const isFavorite = Boolean(favorite)
+  const galleryImages: string[] = gallery?.data?.image_urls ?? []
+  const isFavorite = Boolean(favorite?.data)
+  const galleryCount = typedRecipe.gallery_count ?? 0
 
   // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
   // exception is a full page crash, which would also hide the delete button);
@@ -198,8 +195,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           <RecipeGallery images={galleryImages} title={typedRecipe.title} />
         )}
         {/* A guest gets a locked teaser with the count only (E01-S07). */}
-        {!user && (typedRecipe.gallery_count ?? 0) > 1 && (
-          <LockedGallery count={typedRecipe.gallery_count ?? 0} loginHref={loginPath(recipePath(typedRecipe.slug))} />
+        {!user && galleryCount > 1 && (
+          <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
         )}
 
         {/* E01-S16: <SimilarRecipes … /> ("Ten przepis jest" + "Podobne") */}

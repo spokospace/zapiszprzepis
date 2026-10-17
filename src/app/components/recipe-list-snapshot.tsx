@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { writeSessionStorage } from '@/app/components/ui/use-session-storage'
+import { readSessionStorage, writeSessionStorage } from '@/app/components/ui/use-session-storage'
 import { listStorageKey, type ListItem, type ListKey } from '@/lib/recipe-list-context'
 
 interface RecipeListSnapshotProps {
@@ -19,7 +19,8 @@ interface RecipeListSnapshotProps {
 export function RecipeListSnapshot({ listKey, label, href, items }: RecipeListSnapshotProps) {
   const serialized = JSON.stringify({ label, href, items })
   useEffect(() => {
-    writeSessionStorage(listStorageKey(listKey), serialized)
+    const key = listStorageKey(listKey)
+    if (readSessionStorage(key) !== serialized) writeSessionStorage(key, serialized)
   }, [listKey, serialized])
   return null
 }
