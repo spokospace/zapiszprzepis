@@ -84,7 +84,7 @@ Mockup: `assets/e01-s17-desktop-layouts/mockup.png` (illustrative). Current stat
 - **Dodaj button:** today it uses raw `bg-orange-500` with white text (2.8:1, which violates the COLOR rule). It switches to `bg-action` (#c2410c, 5.2:1) at all widths. This is the only intended mobile pixel change, and it is a WCAG fix (A3).
 - **Guest home.** Centred hero, H1 46 px. The field is 760×64 with „Mów” and „Szukaj” inline, all 64 px. Categories are in 9 columns: 64 px tiles at 17 px bold, about 112 px each (1088/9), so „Ciasteczka” fits. „Ostatnio dodane” has 4 columns, so the 4 recipes fill one row.
 - **Recipe (A9).** A 16:10 photo | text header puts the title (44 px) above the fold. Text size (A/A+/A++) spans the full width. Below it, the ingredients panel sits next to the steps. Gallery 4 columns, „Podobne” 4 columns. The prototype's prev/next sits at the bottom. Ours stays in the top list bar (S07), now on one row, side by side (A9).
-- **No horizontal scroll** at 1024, 1280 and 1440, and at 320/390 (`scrollWidth == clientWidth`, asserted in QA).
+- **No horizontal scroll** at 1024, 1280 and 1440, and at 320/375/390 (`scrollWidth == clientWidth`, asserted in QA).
 - Focus: the global `:focus-visible` outline (3 px #1d4ed8, offset 2 px) applies. The categories panel's links are in DOM order after its button.
 
 ## 📝 Edge Cases & Failure Scenarios
@@ -93,6 +93,7 @@ Mockup: `assets/e01-s17-desktop-layouts/mockup.png` (illustrative). Current stat
 - **Text-size A++ on the recipe:** the ingredients column is ~400 px. Long ingredient names wrap (`break-words`), and checkboxes stay 32 px.
 - **Recipe without ingredients/steps/gallery:** the grid columns collapse naturally. An empty steps column shows „Brak kroków przygotowania.” as today.
 - **Recipe without cover:** the header grid gets a single child, so the text sits in the 1fr column. Mitigation: the grid applies only when `image_url` is set.
+- **Header items owned by other stories:** S10 (#269) turns the mobile Dodaj into a 64×56 stacked button (icon over a 13 px label) and S15 (#273) turns the bell into a 100 px icon-plus-caption link. At `lg` the Dodaj becomes the A9 inline chip („+ Dodaj przepis”, 18 px bold, 48 px tall), and the bell and MENU keep their mobile shape. This story changes only `lg:` classes on those items, so whichever PR merges second keeps the other's mobile markup and re-applies the `lg:` classes.
 - **List bar hydration placeholder:** both the placeholder and the bar share `BAR`, so the `lg:min-h` applies to both and there is no jump.
 - **No JS:** the header search is a plain GET form. „Kategorie ▾” needs JS to open, but the same categories stay in the MENU drawer and on the home grid.
 
@@ -100,7 +101,7 @@ Mockup: `assets/e01-s17-desktop-layouts/mockup.png` (illustrative). Current stat
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| Mobile regression from structural wrappers (HomeSearch row, header text wrapper, checklists column) | Medium | Before/after full-page screenshots at 390 px for the guest home, member home, `/szukaj`, and the recipe (guest + member), diffed pixel-wise. |
+| Mobile regression from structural wrappers (HomeSearch row, header text wrapper, checklists column) | Medium | Before/after full-page screenshots at 390, 375 and 320 px for the guest home, member home, `/szukaj`, and the recipe (guest + member), diffed pixel-wise. |
 | Merge conflicts with S08 (cooking mode, `recipe-actions`/checklists), S10 (`/dodaj` header link) and S15 (home banner slot) | Medium | Class-only edits where possible; keep the S08/S10/S15 slot comments in place; merge `master` before review and before hand-off. |
 | Header row overflow 1024–1100 px | Low | `min-w-0` search; QA at 1024. |
 | Two `role="search"` landmarks on home and `/szukaj` | Low | Distinct accessible names. |
@@ -116,7 +117,7 @@ One PR, one phase: the changes are cross-cutting classes and verified together b
 2. `home-search.tsx` row restructure (wrap + inline submit at `lg`, 760×64); `page.tsx` hero 46 px + feed 4 cols; `category-grid.tsx` 9 cols / member 4 cols.
 3. `search-results.tsx` 2 cols at `lg`.
 4. Recipe: `page.tsx` (drop `narrow`, children slot), `recipe-header.tsx`, `recipe-checklists.tsx`, `recipe-list-bar.tsx`, `recipe-gallery.tsx`, `similar-recipes.tsx`.
-5. Gate (`pnpm typecheck`, `pnpm lint`, `pnpm test`); full-page screenshots at 1440/1024/390 before and after; horizontal-scroll assertion; keyboard check of „Kategorie ▾”.
+5. Gate (`pnpm typecheck`, `pnpm lint`, `pnpm test`); full-page screenshots at 1440/1024/390/375/320 before and after; horizontal-scroll assertion; keyboard check of „Kategorie ▾”.
 
 ## Resolved assumptions (autonomous defaults)
 
