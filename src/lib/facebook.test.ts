@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   buildFacebookPhotoPluginUrl,
   buildFacebookPluginUrl,
-  extractGroupPostPhotoIds,
+  extractGroupPostPhotos,
   extractGroupPostText,
   extractOgTag,
   extractPluginAuthor,
@@ -265,17 +265,33 @@ describe('extractPluginAuthor', () => {
   })
 })
 
-describe('extractGroupPostPhotoIds', () => {
-  it("lists the post's own photos in order, each once, without comment photos", () => {
-    expect(extractGroupPostPhotoIds(GROUP_PHOTOS_HTML, '2685730571747766')).toEqual([
-      '2534992233268516',
-      '2534992403268499',
+describe('extractGroupPostPhotos', () => {
+  it("lists the post's own set=gm photos in order, each once, without comment photos", () => {
+    expect(extractGroupPostPhotos(GROUP_PHOTOS_HTML, '2685730571747766')).toEqual([
+      { fbid: '2534992233268516', set: 'gm.2685730571747766' },
+      { fbid: '2534992403268499', set: 'gm.2685730571747766' },
     ])
   })
 
   it('finds nothing for another post or a post without photos', () => {
-    expect(extractGroupPostPhotoIds(GROUP_PHOTOS_HTML, '1')).toEqual([])
-    expect(extractGroupPostPhotoIds(GROUP_POST_HTML, '2685730571747766')).toEqual([])
+    expect(extractGroupPostPhotos(GROUP_PHOTOS_HTML, '1')).toEqual([])
+    expect(extractGroupPostPhotos(GROUP_POST_HTML, '2685730571747766')).toEqual([])
+  })
+
+  it('reads a photo the author added to an album (set=a), pinned to the post by the preloaded media', () => {
+    // A single-photo post whose photo sits in the author's album, not set=gm —
+    // what the set=gm-only reader missed (tort-black-and-white). The album id
+    // is not the post id, so the permalink query's preloaded media is what
+    // tells the post's photo from a related post's album photo on the page.
+    const html =
+      GROUP_POST_HTML +
+      String.raw`<link rel="preload" href="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=1429281574083754" as="image" data-preloader="adp_GroupsCometLoggedOutPermalinkQueryRelayPreloader_{N}" />` +
+      String.raw`<a href="https://www.facebook.com/photo.php?fbid=1429281574083754&set=a.421684474843474&type=3">photo</a>` +
+      // A related post's album photo (not preloaded for this permalink) must be ignored.
+      String.raw`<a href="https://www.facebook.com/photo.php?fbid=9999&set=a.888&type=3">related</a>`
+    expect(extractGroupPostPhotos(html, '2685730571747766')).toEqual([
+      { fbid: '1429281574083754', set: 'a.421684474843474' },
+    ])
   })
 })
 
@@ -293,7 +309,7 @@ describe('extractPluginPhoto', () => {
 
 describe('buildFacebookPhotoPluginUrl', () => {
   it("embeds the photo's group-post viewer link", () => {
-    const url = new URL(buildFacebookPhotoPluginUrl('25', '26'))
+    const url = new URL(buildFacebookPhotoPluginUrl('25', 'gm.26'))
     expect(url.pathname).toBe('/plugins/post.php')
     expect(url.searchParams.get('href')).toBe('https://www.facebook.com/photo.php?fbid=25&set=gm.26&type=3')
   })
@@ -553,9 +569,35 @@ describe('fetchFacebookPost', () => {
     expect(post?.image).toBe('https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/2534992233268516_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1')
     const pluginUrls = vi.mocked(fetch).mock.calls.map((c) => String(c[0])).filter((u) => u.includes('/plugins/post.php'))
     expect(pluginUrls).toEqual([
-      buildFacebookPhotoPluginUrl('2534992233268516', '2685730571747766'),
-      buildFacebookPhotoPluginUrl('2534992403268499', '2685730571747766'),
+      buildFacebookPhotoPluginUrl('2534992233268516', 'gm.2685730571747766'),
+      buildFacebookPhotoPluginUrl('2534992403268499', 'gm.2685730571747766'),
     ])
+  })
+
+  it("recovers a post's cover when its photo sits in an album (set=a), not set=gm", async () => {
+    // The tort-black-and-white case: a single-photo group post whose photo the
+    // author added to an album. set=gm finds nothing; the preloaded media pins
+    // the album photo to the post, and the plugin renders it with set=a.
+    const albumHtml =
+      GROUP_POST_HTML +
+      String.raw`<link rel="preload" href="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=1429281574083754" as="image" data-preloader="adp_GroupsCometLoggedOutPermalinkQueryRelayPreloader_{N}" />` +
+      String.raw`<a href="https://www.facebook.com/photo.php?fbid=1429281574083754&set=a.421684474843474&type=3">photo</a>`
+    const fetch = vi.fn(async (input: string, init?: RequestInit) => {
+      const ua = new Headers(init?.headers).get('User-Agent') ?? ''
+      const photo = /fbid=(\d+)/.exec(decodeURIComponent(input))?.[1]
+      const html = input.includes('/plugins/post.php')
+        ? photoPluginHtml(`${photo}_n.jpg`)
+        : ua.includes('Googlebot') ? albumHtml : PLUGIN_HTML
+      return { ok: true, status: 200, url: input, text: async () => html } as Response
+    }) as unknown as typeof globalThis.fetch
+
+    const post = await fetchFacebookPost('https://www.facebook.com/groups/1539133879740780/posts/2685730571747766/', {
+      fetch,
+    })
+
+    expect(post?.image).toBe('https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/1429281574083754_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1')
+    const pluginUrls = vi.mocked(fetch).mock.calls.map((c) => String(c[0])).filter((u) => u.includes('/plugins/post.php'))
+    expect(pluginUrls).toEqual([buildFacebookPhotoPluginUrl('1429281574083754', 'a.421684474843474')])
   })
 
   it("reads a Page photo post the video plugin refuses off its permalink page", async () => {

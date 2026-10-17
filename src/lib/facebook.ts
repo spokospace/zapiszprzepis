@@ -421,22 +421,44 @@ export function extractPostAuthor(html: string): string | null {
   return body ? decodeJsonString(body)?.trim() || null : null
 }
 
-// A photo of the post links to its viewer as photo.php?fbid=<photo>&set=gm.<post>.
-// Photos in members' comments sit in other sets, so the set pins the post's own.
-const POST_PHOTO_LINK = /fbid=(\d+)(?:&|&amp;|\\u0026)set=gm\.(\d+)/g
+// A photo of the post links to its viewer as photo.php?fbid=<photo>&set=<set>:
+// `gm.<post>` for a photo posted straight to the group, or `a.<album>` when the
+// author added it to one of their albums (which the set=gm reader missed, so an
+// album-shared post ended up with no cover). Photos in members' comments sit in
+// other sets.
+const POST_PHOTO_LINK = /fbid=(\d+)(?:&|&amp;|\\u0026)set=(gm|a)\.(\d+)/g
+// The crawler-media links the permalink query preloads — the post's own media
+// (its photos, and the author's avatar, which carries no photo viewer link).
+// They pin an album photo to this post, since the album id alone cannot: the
+// permalink page also lists related posts' album photos.
+const PRELOADED_MEDIA = /crawler\/media\/\?media_id=(\d+)"[^>]*?PermalinkQueryRelayPreloader/g
 
-/** Ids of a group post's own photos, in post order, each once. */
-export function extractGroupPostPhotoIds(html: string, postId: string): string[] {
-  const ids = new Set<string>()
-  for (const [, photoId, setId] of html.matchAll(POST_PHOTO_LINK)) {
-    if (setId === postId) ids.add(photoId)
+/** A photo of a group post: its id and the `set=` the plugin needs to render it. */
+export type GroupPostPhoto = { fbid: string; set: string }
+
+/**
+ * A group post's own photos, in post order, each once. A `set=gm.<post>` photo
+ * is the post's when the set is this post's id; a `set=a.<album>` photo is the
+ * post's when the permalink query preloaded it — the only signal that tells it
+ * from a related post's album photo on the same page. When neither kind is
+ * found (a private group, the login wall) the list is empty.
+ */
+export function extractGroupPostPhotos(html: string, postId: string): GroupPostPhoto[] {
+  const preloaded = new Set(Array.from(html.matchAll(PRELOADED_MEDIA), (m) => m[1]))
+  const seen = new Set<string>()
+  const photos: GroupPostPhoto[] = []
+  for (const [, fbid, kind, setId] of html.matchAll(POST_PHOTO_LINK)) {
+    const ownedByPost = kind === 'gm' ? setId === postId : preloaded.has(fbid)
+    if (!ownedByPost || seen.has(fbid)) continue
+    seen.add(fbid)
+    photos.push({ fbid, set: `${kind}.${setId}` })
   }
-  return [...ids]
+  return photos
 }
 
 /** The embedded-post plugin page for one photo of a group post. */
-export function buildFacebookPhotoPluginUrl(photoId: string, postId: string): string {
-  const photo = `https://www.facebook.com/photo.php?fbid=${photoId}&set=gm.${postId}&type=3`
+export function buildFacebookPhotoPluginUrl(fbid: string, set: string): string {
+  const photo = `https://www.facebook.com/photo.php?fbid=${fbid}&set=${set}&type=3`
   return `https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(photo)}&show_text=false&width=500`
 }
 
@@ -462,16 +484,15 @@ export function extractPluginPhoto(html: string): string | null {
  * A group post photo's image URL. Its viewer page is behind the login wall
  * from Cloudflare's addresses for every user-agent (it only answers
  * link-preview bots from residential ones), but the embedded-post plugin
- * renders the photo for a crawler from anywhere — at 394px, the plugin's only
- * size. Never throws.
+ * renders the photo for a crawler from anywhere — at a few hundred px, the
+ * plugin's only size. Never throws.
  */
 async function fetchGroupPhoto(
-  photoId: string,
-  postId: string,
+  photo: GroupPostPhoto,
   fetch: typeof globalThis.fetch,
 ): Promise<string | null> {
   try {
-    const response = await fetch(buildFacebookPhotoPluginUrl(photoId, postId), {
+    const response = await fetch(buildFacebookPhotoPluginUrl(photo.fbid, photo.set), {
       headers: { 'User-Agent': CRAWLER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
       signal: AbortSignal.timeout(15_000),
     })
@@ -526,9 +547,9 @@ async function fetchPostPageCaption(
       caption == null || groupPostId == null
         ? []
         : await Promise.all(
-            extractGroupPostPhotoIds(html, groupPostId)
+            extractGroupPostPhotos(html, groupPostId)
               .slice(0, GALLERY_LIMIT)
-              .map((photoId) => fetchGroupPhoto(photoId, groupPostId, fetch)),
+              .map((photo) => fetchGroupPhoto(photo, fetch)),
           )
     // No text at all means Facebook served the login wall: a private post.
     return {
