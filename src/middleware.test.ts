@@ -60,3 +60,10 @@ describe('middleware — E01-S09 public category listing /przepisy/{kategoria}',
     expect(res.headers.get('location')).toBe('http://localhost/login?next=%2Fprzepisy')
   })
 })
+
+describe('middleware — dev-only QA sign-in /api/dev/login', () => {
+  it('lets a guest reach the route (it opens the session itself; the route gates itself)', async () => {
+    const res = await middleware(get('/api/dev/login?as=free'))
+    expect(res.headers.get('location')).toBeNull()
+  })
+})
