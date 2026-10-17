@@ -109,7 +109,7 @@ helper, so the S04/S05/S16 rebuilds can adopt it without touching the recipe pag
 
 ## 📝 Data Model
 
-One additive, owner-gated migration, `supabase/migrations/20261017130000_public_recipes_author_username_gallery_count.sql`:
+One additive, owner-gated migration, `supabase/migrations/20261017150000_public_recipes_author_username_gallery_count.sql`:
 `create or replace view public.public_recipes` keeps every current column in its current
 order and **appends** two columns:
 
