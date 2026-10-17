@@ -29,6 +29,10 @@ export function safeNext(rawNext: string | null, origin: string): string {
   try {
     const url = new URL(rawNext, origin)
     if (url.origin !== origin) return '/'
+    // Dot segments survive the origin check but collapse to a protocol-relative
+    // path: new URL('/.//evil.com', origin).pathname === '//evil.com', which a
+    // browser then follows off-site. The returned path must not start with '//'.
+    if (url.pathname.startsWith('//')) return '/'
     return `${url.pathname}${url.search}${url.hash}`
   } catch {
     return '/'
@@ -49,6 +53,33 @@ export function safeNext(rawNext: string | null, origin: string): string {
 export function inboundAuthError(errorCode: string | null, error: string | null): string | null {
   if (!errorCode && !error) return null
   return mapAuthError(errorCode ?? undefined)
+}
+
+// Exact text GoTrue sends (as `error_description`, with error=server_error)
+// when the provider returned no email — a Facebook account without a confirmed
+// address. There is no dedicated error code for it, so match the whole string.
+const NO_EMAIL_DESCRIPTION = 'Error getting user email from external provider'
+const OAUTH_UNAVAILABLE_CODES = new Set(['provider_disabled', 'oauth_provider_not_supported'])
+
+/**
+ * Classify the error Supabase puts on the callback URL after an OAuth sign-in
+ * (E01-S12). Returns null when the URL carries no OAuth-specific error, so the
+ * caller falls back to inboundAuthError (email-link errors). Exact matches
+ * only — an unknown code must reach the generic branch, not be guessed at.
+ */
+export function inboundOAuthError(
+  errorCode: string | null,
+  error: string | null,
+  description: string | null,
+): string | null {
+  if (errorCode === 'email_exists') return 'oauth_email_exists'
+  if (errorCode === 'provider_email_needs_verification') return 'oauth_verify_email'
+  if (errorCode && OAUTH_UNAVAILABLE_CODES.has(errorCode)) return 'oauth_unavailable'
+  if (error === 'server_error' && description === NO_EMAIL_DESCRIPTION) return 'oauth_no_email'
+  // The user pressed "Cancel" at the provider: access_denied WITHOUT a code.
+  // (Email-link failures carry access_denied WITH a code such as otp_expired.)
+  if (error === 'access_denied' && !errorCode) return 'oauth_cancelled'
+  return null
 }
 
 export function mapAuthError(code: string | undefined): string {

@@ -6,7 +6,7 @@ import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine } from '@/lib/recipe-meta'
 import { tagLabel } from '@/lib/recipe-tags'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
-import { categoryListPath, profilePath } from '@/lib/routes'
+import { categoryPath, profilePath } from '@/lib/routes'
 
 export interface RecipeHeaderData {
   title: string
@@ -41,7 +41,6 @@ const TAG_CHIP =
  */
 export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
   const category = categoryLabel(recipe.category)
-  const categoryHref = categoryListPath(recipe.category)
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
 
@@ -70,13 +69,9 @@ export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
           </li>
           <li aria-hidden="true">›</li>
           <li>
-            {categoryHref ? (
-              <Link href={categoryHref} className="underline hover:text-action-hover">
-                {category}
-              </Link>
-            ) : (
-              category
-            )}
+            <Link href={categoryPath(recipe.category)} className="underline hover:text-action-hover">
+              {category}
+            </Link>
           </li>
           <li aria-hidden="true">›</li>
           <li aria-current="page" className="line-clamp-1">

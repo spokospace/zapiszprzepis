@@ -8,6 +8,19 @@ export const RECIPE_PAGE_RE = /^\/recipes\/[^/]+$/
 /** The canonical public recipe page: /przepis/{slug} (one segment) — E01-S03b. */
 export const PRZEPIS_PAGE_RE = /^\/przepis\/[^/]+$/
 
+/** A public category listing: /przepisy/{kategoria} (one segment) — E01-S09, extended by E01-S16. */
+const PRZEPISY_CATEGORY_RE = /^\/przepisy\/[^/]+$/
+
+/**
+ * The public listing of one category (E01-S09), shared by the MENU drawer and
+ * the home category tiles (E01-S04) so both link the same URL — the route
+ * E01-S16 later extends with tag chips. Public on purpose: /recipes?category=
+ * is owner-only and would bounce a guest to /login.
+ */
+export function categoryPath(category: string): string {
+  return `/przepisy/${encodeURIComponent(category)}`
+}
+
 /**
  * The canonical path to a recipe. Encodes the slug once; the single place every
  * link builder goes through, so the URL shape changes in one spot (E01-S03b).
@@ -18,18 +31,8 @@ export function recipePath(slug: string, opts?: { from?: string | null }): strin
   return opts?.from ? `${path}?from=${encodeURIComponent(opts.from)}` : path
 }
 
-/** E01-S16 flips this when the category page /przepisy/{kategoria} ships. */
-const CATEGORY_PAGES_LIVE = false
 /** E01-S14 flips this when the public profile /u/{username} ships. */
 const PROFILE_PAGES_LIVE = false
-
-/**
- * The public list of one category, or null while that page does not exist yet,
- * so the recipe page never links to a 404 (E01-S07).
- */
-export function categoryListPath(category: string): string | null {
-  return CATEGORY_PAGES_LIVE ? `/przepisy/${encodeURIComponent(category)}` : null
-}
 
 /** A user's public profile, or null while profiles do not exist yet (E01-S07). */
 export function profilePath(username: string | null | undefined): string | null {
@@ -50,8 +53,14 @@ export function legacyRecipePathToCanonical(pathname: string): string {
  * Routes a guest may open without a session (E01-S02). Data visibility is RLS's
  * job. Both the canonical /przepis/{slug} and the legacy /recipes/{slug} are
  * public: the legacy path must be reachable so middleware can issue its 301
- * instead of bouncing the visitor to /login first (E01-S03b).
+ * instead of bouncing the visitor to /login first (E01-S03b). The category
+ * listings are linked from the guest's MENU drawer (E01-S09).
  */
 export function isPublicRoute(pathname: string): boolean {
-  return pathname === '/' || PRZEPIS_PAGE_RE.test(pathname) || RECIPE_PAGE_RE.test(pathname)
+  return (
+    pathname === '/' ||
+    PRZEPIS_PAGE_RE.test(pathname) ||
+    RECIPE_PAGE_RE.test(pathname) ||
+    PRZEPISY_CATEGORY_RE.test(pathname)
+  )
 }

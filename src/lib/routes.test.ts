@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
+  categoryPath,
   recipePath,
-  categoryListPath,
   profilePath,
   isPublicRoute,
   RECIPE_PAGE_RE,
@@ -26,9 +26,8 @@ describe('recipePath', () => {
   })
 })
 
-describe('categoryListPath / profilePath', () => {
-  it('stay null until E01-S16 / E01-S14 ship their routes, so nothing links to a 404', () => {
-    expect(categoryListPath('ciasta')).toBeNull()
+describe('profilePath', () => {
+  it('stays null until E01-S14 ships /u/{username}, so nothing links to a 404', () => {
     expect(profilePath('ania')).toBeNull()
     expect(profilePath(null)).toBeNull()
   })
@@ -74,6 +73,14 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/przepis/tiramisu')).toBe(true)
     // kept public so middleware can 301 it instead of bouncing to /login
     expect(isPublicRoute('/recipes/tiramisu')).toBe(true)
+  })
+
+  it('allows the category listing categoryPath builds (E01-S09)', () => {
+    expect(categoryPath('sniadania')).toBe('/przepisy/sniadania')
+    expect(isPublicRoute(categoryPath('sniadania'))).toBe(true)
+    // the bare listing root and deeper paths stay gated
+    expect(isPublicRoute('/przepisy')).toBe(false)
+    expect(isPublicRoute('/przepisy/zupy/x')).toBe(false)
   })
 
   it('keeps the owner list and everything else gated', () => {

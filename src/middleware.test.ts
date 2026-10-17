@@ -48,3 +48,15 @@ describe('middleware — E01-S03b legacy /recipes/{slug} → /przepis/{slug} 301
     expect(res.headers.get('location')).not.toContain('/przepis')
   })
 })
+
+describe('middleware — E01-S09 public category listing /przepisy/{kategoria}', () => {
+  it('lets a guest open a category listing without a redirect', async () => {
+    const res = await middleware(get('/przepisy/zupy'))
+    expect(res.headers.get('location')).toBeNull()
+  })
+
+  it('still sends a guest on the bare /przepisy to /login', async () => {
+    const res = await middleware(get('/przepisy'))
+    expect(res.headers.get('location')).toBe('http://localhost/login?next=%2Fprzepisy')
+  })
+})

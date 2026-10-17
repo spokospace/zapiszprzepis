@@ -1,6 +1,6 @@
 import type { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { categoryListPath } from '@/lib/routes'
+import { categoryPath } from '@/lib/routes'
 import type { ListItem, ListPosition } from '@/lib/recipe-list-context'
 
 type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>
@@ -46,7 +46,7 @@ export async function loadCategoryContext(supabase: Supabase, recipe: ContextRec
     }
     return {
       label: categoryLabel(recipe.category),
-      href: categoryListPath(recipe.category),
+      href: categoryPath(recipe.category),
       index: before.count + 1,
       total: total.count,
       prev: ((prev.data ?? []) as ListItem[])[0] ?? null,

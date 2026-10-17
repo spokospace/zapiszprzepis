@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — strona przepisu (E01-S07)</title>
+<style>
+  :root { --ink:#111827; --soft:#374151; --action:#c2410c; --accent:#fff7ed; --border:#d1d5db; --focus:#1d4ed8; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; color:var(--ink); background:#fff; font-size:19px; line-height:1.5; }
+  .wrap { max-width: 420px; margin: 0 auto; padding: 0 16px 48px; }
+  .note { background:#fef3c7; font-size:14px; padding:8px 16px; }
+  a { color: var(--ink); text-decoration: underline; }
+  .bar { border:1px solid var(--border); border-radius:16px; padding:12px; margin:16px 0; }
+  .bar-top { display:flex; justify-content:space-between; align-items:center; min-height:48px; font-weight:700; }
+  .bar-nav { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .navbtn { min-height:56px; border:2px solid var(--border); border-radius:14px; padding:8px 12px; background:#fff; text-align:left; font:inherit; font-size:16px; }
+  .navbtn b { display:block; font-size:17px; }
+  .navbtn small { display:block; color:var(--soft); font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .photo { aspect-ratio:4/3; border-radius:16px; background:linear-gradient(135deg,#fdba74,#c2410c); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; }
+  .crumbs { font-size:16px; color:var(--soft); margin:12px 0 4px; }
+  h1 { font-size:32px; line-height:1.2; margin:4px 0 8px; }
+  .meta { font-size:17px; color:var(--soft); }
+  .src { margin:8px 0; font-size:17px; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; min-height:56px; padding:0 20px; border-radius:14px; font:inherit; font-weight:700; border:2px solid var(--ink); background:#fff; }
+  .btn.primary { background:var(--action); color:#fff; border-color:var(--action); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+  .size { display:flex; gap:8px; align-items:center; margin:20px 0 8px; font-size:16px; font-weight:700; color:var(--soft); }
+  .size button { min-height:48px; min-width:52px; border-radius:14px; border:2px solid var(--border); background:#fff; font-weight:700; }
+  .size button[aria-pressed=true] { background:var(--ink); color:#fff; border-color:var(--ink); }
+  h2 { font-size:24px; margin:24px 0 8px; }
+  label.check { display:flex; gap:12px; align-items:flex-start; min-height:48px; padding:6px 0; }
+  label.check input { width:32px; height:32px; flex-shrink:0; accent-color: var(--action); }
+  label.check.done span { text-decoration: line-through; color: var(--soft); }
+  .step-n { font-size:16px; font-weight:700; color:var(--soft); }
+  .locked { border:2px dashed var(--border); border-radius:16px; padding:20px; text-align:center; background:var(--accent); }
+  .slot { border:2px dashed #93c5fd; color:#1e3a8a; border-radius:14px; padding:10px; font-size:16px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="note">Mockup (illustrative, not code) — guest who came from „Ulubione” · 375 px</div>
+<div class="wrap">
+  <section class="bar" aria-label="Nawigacja po liście">
+    <div class="bar-top"><a href="#">← Ulubione</a><span>3 z 12</span></div>
+    <div class="bar-nav">
+      <button class="navbtn"><b>← Poprzedni</b><small>Sernik na zimno</small></button>
+      <button class="navbtn" style="text-align:right"><b>Następny →</b><small>Szarlotka babci</small></button>
+    </div>
+  </section>
+
+  <div class="photo">zdjęcie 4:3</div>
+  <nav class="crumbs" aria-label="Okruszki">Strona główna › Ciasta › <span aria-current="page">Murzynek</span></nav>
+  <h1>Murzynek</h1>
+  <div class="meta">Ciasta · 1 godz. 10 min</div>
+  <div class="src">🌐 Źródło: aniagotuje.pl · <a href="#">Otwórz oryginał</a></div>
+  <div class="meta">Dodane przez <a href="#">Ania</a></div>
+
+  <div class="row">
+    <button class="btn">♡ Dodaj do ulubionych</button>
+  </div>
+  <div class="slot">slot: „Tryb gotowania” (E01-S08)</div>
+
+  <div class="size">Wielkość tekstu <button aria-pressed="true">A</button><button style="font-size:19px">A+</button><button style="font-size:22px">A++</button></div>
+
+  <h2>Składniki</h2>
+  <label class="check done"><input type="checkbox" checked><span>mąka pszenna — 250 g</span></label>
+  <label class="check"><input type="checkbox"><span>kakao — 3 łyżki</span></label>
+  <label class="check"><input type="checkbox"><span>masło — 200 g</span></label>
+
+  <h2>Przygotowanie</h2>
+  <div class="step-n">Krok 1 z 4</div>
+  <label class="check done"><input type="checkbox" checked><span>Masło roztop z cukrem i kakao.</span></label>
+  <div class="step-n">Krok 2 z 4</div>
+  <label class="check"><input type="checkbox"><span>Odlej szklankę polewy, resztę wymieszaj z mąką i jajkami.</span></label>
+
+  <h2>Zdjęcia</h2>
+  <div class="locked">
+    <div style="font-size:32px">🔒</div>
+    <p style="margin:8px 0 12px"><b>Galeria 6 zdjęć po zalogowaniu</b></p>
+    <a class="btn primary" href="#" style="text-decoration:none">Zaloguj się</a>
+  </div>
+
+  <div class="slot" style="margin-top:24px">slot: „Ten przepis jest” + „Podobne” (E01-S16)</div>
+</div>
+</body>
+</html>

@@ -23,8 +23,8 @@ export interface ListSnapshot {
 
 export interface ListPosition {
   label: string
-  /** null: no list page to link back to (the category page arrives with E01-S16). */
-  href: string | null
+  /** Where "← {label}" goes back to: the source list, or the category page. */
+  href: string
   /** 1-based. */
   index: number
   total: number

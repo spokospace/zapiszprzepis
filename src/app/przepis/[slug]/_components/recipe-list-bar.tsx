@@ -78,13 +78,9 @@ export function RecipeListBar({ slug, from, fallback }: RecipeListBarProps) {
   return (
     <nav aria-label="Nawigacja po liście" className={BAR}>
       <div className="mb-2 flex min-h-[48px] items-center justify-between gap-3 text-[17px] font-bold text-ink">
-        {position.href ? (
-          <Link href={position.href} className="inline-flex min-h-[48px] items-center underline hover:text-action-hover">
-            ← {position.label}
-          </Link>
-        ) : (
-          <span>{position.label}</span>
-        )}
+        <Link href={position.href} className="inline-flex min-h-[48px] items-center underline hover:text-action-hover">
+          ← {position.label}
+        </Link>
         <span>
           <span aria-hidden="true">
             {position.index} z {position.total}
