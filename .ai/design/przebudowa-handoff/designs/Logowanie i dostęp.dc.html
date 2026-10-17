@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}input:focus-visible,button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}</style>
+</helmet>
+<section id="3" style="padding:48px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:600px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">3</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Logowanie i poziomy dostępu</span></div>
+      <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Logowanie przez Facebooka lub Google, dodawanie przepisów po odblokowaniu</div>
+      <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekrany 3b i 3c są klikalne. Wpisz kod <b style="font-family:monospace;color:#111827">BABCIA2026</b>, żeby zobaczyć odblokowanie.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:0;background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;font-size:15px;color:#111827">
+      <span style="padding:12px 14px;background:#f9fafb"></span>
+      <b style="padding:12px 14px;background:#f9fafb">Gość</b>
+      <b style="padding:12px 14px;background:#f9fafb">Zalogowany</b>
+      <b style="padding:12px 14px;background:#fff7ed;color:#7c2d12">Pełny dostęp</b>
+      <sc-for list="{{ matrix }}" as="m" hint-placeholder-count="5">
+        <span style="padding:11px 14px;border-top:1px solid #e5e7eb;font-weight:700">{{ m.l }}</span>
+        <span style="padding:11px 14px;border-top:1px solid #e5e7eb;color:#374151">{{ m.g }}</span>
+        <span style="padding:11px 14px;border-top:1px solid #e5e7eb;color:#374151">{{ m.u }}</span>
+        <span style="padding:11px 14px;border-top:1px solid #e5e7eb;color:#374151;background:#fffaf5">{{ m.p }}</span>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+
+    <!-- 3a login -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">3a</b> · Logowanie</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 8px;display:flex;align-items:center">
+          <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Wróć</span>
+        </div>
+        <div style="flex:1;padding:32px 20px;display:flex;flex-direction:column;gap:20px">
+          <img src="public/logo-lettering.svg" width="160" height="40" alt="ZapiszPrzepis">
+          <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.2">Zaloguj się</div>
+          <div style="font-size:18px;color:#374151;line-height:1.5">Bez nowego hasła. Użyj konta, które już masz.</div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+            <button style="height:60px;border-radius:14px;border:none;background:#1877f2;color:#fff;font:700 19px Arial;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer"><span style="width:30px;height:30px;border-radius:999px;background:#fff;color:#1877f2;font:700 22px Arial;display:flex;align-items:center;justify-content:center">f</span>Zaloguj przez Facebooka</button>
+            <button style="height:60px;border-radius:14px;border:2px solid #4b5563;background:#fff;color:#111827;font:700 19px Arial;display:flex;align-items:center;justify-content:center;gap:12px;cursor:pointer"><span style="width:30px;height:30px;border-radius:999px;border:1.5px solid #d1d5db;color:#111827;font:700 18px Arial;display:flex;align-items:center;justify-content:center">G</span>Zaloguj przez Google</button>
+          </div>
+          <div style="font-size:16px;color:#374151;line-height:1.5">Pierwsze logowanie od razu zakłada konto. Nic nie publikujemy na Twoim Facebooku.</div>
+          <div style="flex:1"></div>
+          <div style="font-size:16px;color:#374151;line-height:1.5">Logując się, akceptujesz <a href="#">regulamin</a> i <a href="#">politykę prywatności</a>.</div>
+        </div>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">Dwa duże przyciski i nic więcej. Litery „f” i „G” to miejsca na oficjalne logo, bo Meta i Google wymagają swoich znaków. Zdanie o niepublikowaniu odpowiada na częstą obawę przy logowaniu Facebookiem.</div>
+    </div>
+
+    <!-- 3b first login -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">3b</b> · Pierwsze logowanie</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="flex:1;padding:40px 20px 24px;display:flex;flex-direction:column;gap:20px">
+          <span style="width:80px;height:80px;border-radius:999px;background:#fed7aa;color:#111827;font-size:34px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #9ca3af">A</span>
+          <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.2">Witamy, Antonino!</div>
+          <div style="font-size:18px;color:#374151;line-height:1.5">Jeszcze jedno pytanie, żeby dobrze się do Ciebie zwracać.</div>
+          <div role="radiogroup" aria-labelledby="g3" style="display:flex;flex-direction:column;gap:10px">
+            <span id="g3" style="font-size:19px;font-weight:700;color:#111827">Jestem</span>
+            <sc-for list="{{ genders }}" as="o" hint-placeholder-count="2">
+              <button role="radio" aria-checked="{{ o.on }}" onClick="{{ o.pick }}" style="height:60px;border-radius:14px;border:2px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }};font:700 19px Arial;cursor:pointer">{{ o.l }}</button>
+            </sc-for>
+          </div>
+          <div style="font-size:16px;color:#374151;line-height:1.5">Tego nie można później zmienić w ustawieniach.</div>
+          <div style="flex:1"></div>
+          <button style="height:60px;border-radius:14px;border:none;background:#c2410c;color:#fff;font:700 19px Arial;cursor:pointer">Dalej</button>
+        </div>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">Imię i zdjęcie bierzemy z Facebooka lub Google, więc pytamy tylko o płeć. Jeden ekran, jeden wybór.</div>
+    </div>
+
+    <!-- 3c locked add -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">3c</b> · „Dodaj przepis” bez pełnego dostępu, klikalny</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 12px 4px 8px;display:flex;align-items:center;justify-content:space-between">
+          <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Wróć</span>
+          <span style="width:60px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span>
+        </div>
+        <sc-if value="{{ locked }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;padding:28px 20px;display:flex;flex-direction:column;gap:18px">
+            <span style="width:64px;height:64px;border-radius:999px;background:#fff7ed;color:#9a3412;display:flex;align-items:center;justify-content:center"><i data-lucide="lock" width="30" height="30"></i></span>
+            <div style="font-size:28px;font-weight:700;color:#111827;line-height:1.2">Dodawanie własnych przepisów</div>
+            <div style="font-size:18px;color:#374151;line-height:1.5">Wklejasz link z Facebooka, YouTube lub bloga, a my spisujemy przepis po polsku. Ta funkcja jest w pełnym dostępie.</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label for="code" style="font-size:19px;font-weight:700;color:#111827">Masz kod?</label>
+              <input id="code" aria-describedby="code-err" value="{{ code }}" onChange="{{ onCode }}" placeholder="np. ABCD1234" style="height:60px;border:2px solid {{ codeBorder }};border-radius:14px;padding:0 14px;font:700 20px monospace;letter-spacing:.06em;text-transform:uppercase;color:#111827;box-sizing:border-box;width:100%">
+              <sc-if value="{{ codeError }}" hint-placeholder-val="{{ false }}"><span id="code-err" role="alert" style="font-size:17px;color:#b91c1c;font-weight:700;display:flex;gap:8px;align-items:center"><i data-lucide="circle-alert" width="20" height="20"></i>Ten kod nie działa. Sprawdź litery i spróbuj jeszcze raz.</span></sc-if>
+              <button onClick="{{ redeem }}" style="height:58px;border-radius:14px;border:none;background:#c2410c;color:#fff;font:700 19px Arial;cursor:pointer">Odblokuj</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;color:#374151;font-size:16px"><span style="flex:1;border-top:2px solid #e5e7eb"></span>albo<span style="flex:1;border-top:2px solid #e5e7eb"></span></div>
+            <button style="height:58px;border-radius:14px;border:2px solid #4b5563;background:#fff;color:#111827;font:700 19px Arial;cursor:pointer">Zobacz pełny dostęp</button>
+            <div style="font-size:16px;color:#374151;line-height:1.5">Ulubione działają bez ograniczeń, z kodem i bez.</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ unlocked }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="flex:1;padding:28px 20px;display:flex;flex-direction:column;gap:18px">
+            <span style="width:64px;height:64px;border-radius:999px;background:#dcfce7;color:#15803d;display:flex;align-items:center;justify-content:center"><i data-lucide="check" width="34" height="34"></i></span>
+            <div style="font-size:28px;font-weight:700;color:#111827;line-height:1.2">Gotowe! Możesz dodawać przepisy.</div>
+            <div style="font-size:18px;color:#374151;line-height:1.5">Kod został przypisany do Twojego konta. Nie trzeba go wpisywać ponownie.</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label for="lnk" style="font-size:19px;font-weight:700;color:#111827">Link do przepisu</label>
+              <div style="display:flex;align-items:center;gap:8px;border:2px solid #4b5563;border-radius:14px;padding:0 6px 0 14px;height:60px"><span style="flex:1;font-size:19px;color:#4b5563">https://…</span><span style="display:inline-flex;align-items:center;gap:6px;height:48px;padding:0 12px;border-radius:10px;background:#f3f4f6;font-size:17px;font-weight:700;color:#111827"><i data-lucide="clipboard-paste" width="20" height="20"></i>Wklej</span></div>
+            </div>
+            <button style="height:58px;border-radius:14px;border:none;background:#c2410c;color:#fff;font:700 19px Arial;cursor:pointer">Dodaj przepis</button>
+            <button onClick="{{ reset }}" style="height:48px;border:none;background:none;color:#111827;font:700 16px Arial;text-decoration:underline;cursor:pointer;align-self:flex-start;padding:0">Pokaż ponownie ekran z kodem</button>
+          </div>
+        </sc-if>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">Kod na pierwszym planie, bo na start to główna droga (np. dla znajomych i testerów). Płatność jako druga opcja, szczegóły do ustalenia. Błąd podany słowami, nie tylko czerwoną ramką.</div>
+    </div>
+
+    <!-- 3d where add appears -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">3d</b> · Menu zalogowanego bez pełnego dostępu</div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 8px 4px 20px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:22px;font-weight:700;color:#111827">Menu</span>
+          <span style="height:56px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="x" width="26" height="26"></i>Zamknij</span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:8px 0">
+          <div style="padding:12px 20px 4px;font-size:16px;font-weight:700;color:#374151">Moje</div>
+          <div style="display:flex;align-items:center;gap:14px;height:58px;padding:0 20px;font-size:20px;font-weight:700;color:#111827"><i data-lucide="heart" width="26" height="26"></i><span style="flex:1">Ulubione</span><span style="font-size:17px;color:#374151;font-weight:400">12</span></div>
+          <div style="display:flex;align-items:center;gap:14px;min-height:58px;padding:6px 20px;color:#111827"><i data-lucide="plus" width="26" height="26"></i><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:700">Dodaj przepis</span><span style="font-size:16px;color:#374151">Wymaga kodu lub pełnego dostępu</span></span><span style="display:inline-flex;color:#374151"><i data-lucide="lock" width="22" height="22"></i></span></div>
+          <div style="margin:10px 20px;border-top:2px solid #e5e7eb"></div>
+          <div style="padding:4px 20px 8px;font-size:16px;font-weight:700;color:#374151">Wszystkie przepisy według kategorii</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px">
+            <sc-for list="{{ cats }}" as="c" hint-placeholder-count="9"><div style="display:flex;align-items:center;gap:10px;padding:0 12px;height:54px;border-radius:12px;background:#fff7ed;border:1.5px solid #fed7aa"><span style="display:inline-flex;color:#9a3412"><i data-lucide="{{ c.i }}" width="22" height="22"></i></span><span style="font-size:18px;font-weight:700;color:#111827">{{ c.l }}</span></div></sc-for>
+          </div>
+        </div>
+        <div style="border-top:2px solid #e5e7eb;display:grid;grid-template-columns:1fr 1fr">
+          <span style="height:64px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="user" width="24" height="24"></i>Mój profil</span>
+          <span style="height:64px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:700;color:#111827;border-left:2px solid #e5e7eb"><i data-lucide="log-out" width="24" height="24"></i>Wyloguj</span>
+        </div>
+      </div>
+      <div style="font-size:15px;color:#374151;line-height:1.5">„Moje przepisy” pojawia się dopiero po odblokowaniu. „Dodaj przepis” zostaje widoczne z kłódką i wyjaśnieniem, więc ludzie wiedzą, że taka funkcja istnieje. Kliknięcie prowadzi do 3c.</div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { gender: null, code: '', err: false, unlocked: false };
+  componentDidMount() { this.icons(); }
+  componentDidUpdate() { this.icons(); }
+  icons() { setTimeout(() => window.lucide && window.lucide.createIcons(), 0); }
+  renderVals() {
+    const s = this.state;
+    const g = (v, l) => ({ l, on: String(s.gender === v), border: s.gender === v ? '#111827' : '#4b5563', bg: s.gender === v ? '#111827' : '#fff', fg: s.gender === v ? '#fff' : '#111827', pick: () => this.setState({ gender: v }) });
+    return {
+      matrix: [
+        { l: 'Przeglądanie i szukanie', g: 'tak', u: 'tak', p: 'tak' },
+        { l: 'Galeria zdjęć', g: '—', u: 'tak', p: 'tak' },
+        { l: 'Ulubione', g: '—', u: 'tak', p: 'tak' },
+        { l: 'Dodawanie przepisów', g: '—', u: '—', p: 'tak' },
+        { l: 'Jak uzyskać', g: '', u: 'Facebook / Google', p: 'kod lub płatność' },
+      ],
+      genders: [g('f', 'Kobietą'), g('m', 'Mężczyzną')],
+      cats: [['Obiady','utensils'],['Zupy','soup'],['Desery','cake-slice'],['Ciasteczka','cookie'],['Śniadania','coffee'],['Przekąski','sandwich'],['Sałatki','salad'],['Napoje','glass-water'],['Inne','utensils-crossed']].map(([l,i]) => ({ l, i })),
+      locked: !s.unlocked, unlocked: s.unlocked,
+      code: s.code, codeError: s.err, codeBorder: s.err ? '#b91c1c' : '#4b5563',
+      onCode: e => this.setState({ code: e.target.value, err: false }),
+      redeem: () => s.code.trim().toUpperCase() === 'BABCIA2026' ? this.setState({ unlocked: true, err: false }) : this.setState({ err: true }),
+      reset: () => this.setState({ unlocked: false, code: '', err: false }),
+    };
+  }
+}
+</script>
+</body>
+</html>
