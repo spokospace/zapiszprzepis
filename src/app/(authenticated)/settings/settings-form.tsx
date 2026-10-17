@@ -26,10 +26,19 @@ interface SettingsFormProps {
   colorIndex: number
   /** /u/{username} once E01-S14 is live (profilePath()), else null. */
   profileHref: string | null
+  /** "Dodałaś 3 przepisy." by the owner's gender (E01-S23); null → neutral preview sentence. */
+  addedLine?: string | null
 }
 
 /** Screen 2a (E01-S13, S13b): picture, public name, private first name, live preview, one save. */
-export function SettingsForm({ initialDisplayName, initialFirstName, avatarSrc, colorIndex, profileHref }: SettingsFormProps) {
+export function SettingsForm({
+  initialDisplayName,
+  initialFirstName,
+  avatarSrc,
+  colorIndex,
+  profileHref,
+  addedLine = null,
+}: SettingsFormProps) {
   // Controlled on purpose: React 19 resets uncontrolled fields after a form
   // action, which would wipe what the user typed whenever validation rejects it.
   const [displayName, setDisplayName] = useState(initialDisplayName)
@@ -215,12 +224,13 @@ export function SettingsForm({ initialDisplayName, initialFirstName, avatarSrc, 
         <h2 id="preview-heading" className="sr-only">
           Podgląd
         </h2>
-        {/* Neutral wording until the gender-form story adds "Dodałaś/Dodałeś". */}
+        {/* "Dzień dobry, Antonino! Dodałaś 3 przepisy." (2a); neutral sentence when the
+            gender is not chosen or nothing was added yet. */}
         <p
           aria-live="polite"
           className="rounded-[14px] border-[1.5px] border-border-accent bg-surface-accent px-4 py-3.5 text-[18px] leading-normal text-ink"
         >
-          {greetingText} Tak przywitamy Cię na stronie głównej.
+          {greetingText} {addedLine ?? 'Tak przywitamy Cię na stronie głównej.'}
         </p>
         {profileHref && (
           <p className="text-[17px]">
