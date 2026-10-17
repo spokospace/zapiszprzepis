@@ -29,9 +29,9 @@ export function RecipeCard({
 }: RecipeCardProps) {
   return (
     <Link href={recipePath(slug)}>
-      <div className="group cursor-pointer rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+      <div className="group h-full cursor-pointer overflow-hidden rounded-card border border-border-card bg-white transition-shadow hover:shadow-lg">
         {/* Image container */}
-        <div className="relative w-full aspect-[4/3] bg-gray-100">
+        <div className="relative aspect-[4/3] w-full bg-surface-3">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -42,9 +42,10 @@ export function RecipeCard({
               unoptimized={!isArchivedImageUrl(imageUrl)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-100 to-yellow-100">
+            <div className="flex h-full w-full items-center justify-center bg-surface-accent-2">
               <svg
-                className="w-12 h-12 text-orange-400"
+                aria-hidden="true"
+                className="h-12 w-12 text-action-text"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -61,17 +62,15 @@ export function RecipeCard({
         </div>
 
         {/* Card content */}
-        <div className="p-4">
-          <h3 className="font-medium text-gray-900 line-clamp-2 group-hover:text-orange-600">
+        <div className="p-3">
+          <h3 className="line-clamp-3 text-[19px] leading-snug font-bold break-words text-ink group-hover:text-action-text">
             {title}
           </h3>
-          {description && <p className="mt-1 text-sm text-gray-500 line-clamp-1">{description}</p>}
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <span className="inline-block px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
-              {categoryLabel(category)}
-            </span>
-            <span className="truncate text-xs text-gray-400">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</span>
-          </div>
+          {description && <p className="mt-1 line-clamp-2 text-[16px] text-ink-soft">{description}</p>}
+          <p className="mt-1 text-[16px] break-words text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
+          <span className="mt-2 inline-block rounded-pill bg-surface-accent-2 px-2.5 py-0.5 text-[14px] font-bold text-action-text">
+            {categoryLabel(category)}
+          </span>
         </div>
       </div>
     </Link>
