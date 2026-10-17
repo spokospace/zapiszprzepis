@@ -6,24 +6,25 @@ import { categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { PageContainer } from '@/app/components/page-container'
 import { RecipeCard } from '@/app/components/recipe-card'
 
-type Params = Promise<{ category: string }>
+type Params = Promise<{ kategoria: string }>
 
-// Newest first; paging belongs to the search results page (E01-S05).
+// Newest first; paging and tag filters arrive with E01-S16.
 const LIMIT = 48
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { category } = await params
+  const { kategoria: category } = await params
   if (!isRecipeCategory(category)) return {}
   return { title: `${categoryLabel(category)} · ZapiszPrzepis` }
 }
 
 /**
  * Every recipe in one category, for guests too (E01-S09: the MENU category
- * grid lands here). Reads the guest-safe public_recipes view; an unknown
- * category is a 404, an empty one an empty state.
+ * grid and the home tiles land here). A minimal listing on the route E01-S16
+ * later extends with tag chips. Reads the guest-safe public_recipes view; an
+ * unknown category is a 404, an empty one an empty state.
  */
 export default async function CategoryPage({ params }: { params: Params }) {
-  const { category } = await params
+  const { kategoria: category } = await params
   if (!isRecipeCategory(category)) notFound()
 
   const supabase = await createSupabaseServerClient()
@@ -36,7 +37,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
 
   if (error) {
     // Let the route error boundary say so instead of a misleading empty state.
-    throw new Error(`[kategoria] Query failed: ${error.message}`)
+    throw new Error(`[przepisy] Query failed: ${error.message}`)
   }
 
   return (

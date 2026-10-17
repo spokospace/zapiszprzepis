@@ -8,17 +8,17 @@ export const RECIPE_PAGE_RE = /^\/recipes\/[^/]+$/
 /** The canonical public recipe page: /przepis/{slug} (one segment) — E01-S03b. */
 export const PRZEPIS_PAGE_RE = /^\/przepis\/[^/]+$/
 
-/** A public category listing: /kategoria/{value} (one segment) — E01-S09. */
-const KATEGORIA_PAGE_RE = /^\/kategoria\/[^/]+$/
+/** A public category listing: /przepisy/{kategoria} (one segment) — E01-S09, extended by E01-S16. */
+const PRZEPISY_CATEGORY_RE = /^\/przepisy\/[^/]+$/
 
 /**
  * The public listing of one category (E01-S09), shared by the MENU drawer and
- * the home category tiles (E01-S04), so both move together if the listing
- * moves (e.g. onto /szukaj, E01-S05). Public on purpose: /recipes?category=
+ * the home category tiles (E01-S04) so both link the same URL — the route
+ * E01-S16 later extends with tag chips. Public on purpose: /recipes?category=
  * is owner-only and would bounce a guest to /login.
  */
 export function categoryPath(category: string): string {
-  return `/kategoria/${encodeURIComponent(category)}`
+  return `/przepisy/${encodeURIComponent(category)}`
 }
 
 /**
@@ -51,6 +51,6 @@ export function isPublicRoute(pathname: string): boolean {
     pathname === '/' ||
     PRZEPIS_PAGE_RE.test(pathname) ||
     RECIPE_PAGE_RE.test(pathname) ||
-    KATEGORIA_PAGE_RE.test(pathname)
+    PRZEPISY_CATEGORY_RE.test(pathname)
   )
 }

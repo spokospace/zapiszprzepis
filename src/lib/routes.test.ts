@@ -55,11 +55,11 @@ describe('isPublicRoute', () => {
   })
 
   it('allows the category listing categoryPath builds (E01-S09)', () => {
-    expect(categoryPath('sniadania')).toBe('/kategoria/sniadania')
+    expect(categoryPath('sniadania')).toBe('/przepisy/sniadania')
     expect(isPublicRoute(categoryPath('sniadania'))).toBe(true)
-    expect(isPublicRoute('/kategoria/zupy')).toBe(true)
-    expect(isPublicRoute('/kategoria')).toBe(false)
-    expect(isPublicRoute('/kategoria/zupy/x')).toBe(false)
+    // the bare listing root and deeper paths stay gated
+    expect(isPublicRoute('/przepisy')).toBe(false)
+    expect(isPublicRoute('/przepisy/zupy/x')).toBe(false)
   })
 
   it('keeps the owner list and everything else gated', () => {
