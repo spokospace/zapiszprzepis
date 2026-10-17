@@ -6,9 +6,8 @@ import RootError from './error'
 /**
  * Last-resort fallback for an exception in the root layout itself, which
  * app/error.tsx cannot catch (#135). It replaces the root layout, so it renders
- * its own <html>/<body> (classes mirrored from layout.tsx, minus the Geist font
- * variables) and imports the global styles, then shows the same page as
- * app/error.tsx.
+ * its own <html>/<body> (classes mirrored from layout.tsx) and imports the global
+ * styles, then shows the same page as app/error.tsx.
  */
 export default function GlobalError({
   error,
