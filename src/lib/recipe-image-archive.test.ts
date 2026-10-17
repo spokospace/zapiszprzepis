@@ -6,6 +6,7 @@ import {
   pickGalleryImages,
   buildGallery,
   coverImage,
+  jsonLdImage,
   archiveGallery,
   GALLERY_LIMIT,
   isArchivedImageUrl,
@@ -252,6 +253,53 @@ describe('coverImage — og:image vs the in-content photo', () => {
       <img role="presentation" class="absolute" src="https://v.wpimg.pl/ZXJfd3AudTkrBBIA" loading="lazy">
       <img src="https://v.wpimg.pl/NmFhYjU2YQwnCi9ZeklsGWRS">`
     expect(coverImage(og, html, PAGE)).toBe(og)
+  })
+
+  it('uses the schema.org JSON-LD image when the page ships no og:image (marta-gotuje)', () => {
+    // marta-gotuje.pl/orzechowiec names the dish only in JSON-LD: no og:image,
+    // and Firecrawl's main-content scrape returned no usable <img>. Before this,
+    // the recipe fell back to the Facebook group's unrelated cover.
+    const PAGE = 'https://www.marta-gotuje.pl/orzechowiec/'
+    const html = `<script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+      {"@type":"WebSite","name":"marta-gotuje.pl"},
+      {"@type":"Recipe","name":"Orzechowiec","image":{"@type":"ImageObject","url":"https://www.marta-gotuje.pl/wp-content/uploads/2014/12/Orzechowiec.jpg","width":450,"height":675}}]}</script>
+      <p>no usable img tags here</p>`
+    expect(coverImage(undefined, html, PAGE)).toBe('https://www.marta-gotuje.pl/wp-content/uploads/2014/12/Orzechowiec.jpg')
+  })
+
+  it('lets the JSON-LD dish image unseat a stale site-wide og:image', () => {
+    const og = 'https://kulinarnapolska.org/wp-content/uploads/2019/09/falszywe-flaczki-z-boczniakow.jpg'
+    const html = `<script type="application/ld+json">{"@type":"Recipe","image":"https://kulinarnapolska.org/wp-content/uploads/x/szaszlyki-z-piekarnika.jpg"}</script>`
+    expect(coverImage(og, html, PAGE)).toBe('https://kulinarnapolska.org/wp-content/uploads/x/szaszlyki-z-piekarnika.jpg')
+  })
+})
+
+describe('jsonLdImage — the schema.org dish photo', () => {
+  it('reads an ImageObject url and resolves it against the page', () => {
+    const html = `<script type="application/ld+json">{"@type":"Recipe","image":{"url":"/uploads/tort.jpg"}}</script>`
+    expect(jsonLdImage(html, 'https://blog.example/tort/')).toBe('https://blog.example/uploads/tort.jpg')
+  })
+
+  it('reads a bare string and an array of images, taking the first', () => {
+    expect(jsonLdImage(`<script type="application/ld+json">{"@type":"Recipe","image":"https://x/a.jpg"}</script>`)).toBe('https://x/a.jpg')
+    expect(jsonLdImage(`<script type="application/ld+json">{"@type":"Recipe","image":["https://x/a.jpg","https://x/b.jpg"]}</script>`)).toBe('https://x/a.jpg')
+  })
+
+  it("prefers the Recipe node's image over an Article's or a WebPage's", () => {
+    const html = `<script type="application/ld+json">{"@graph":[
+      {"@type":"WebPage","image":"https://x/page.jpg"},
+      {"@type":"Recipe","image":"https://x/dish.jpg"}]}</script>`
+    expect(jsonLdImage(html)).toBe('https://x/dish.jpg')
+  })
+
+  it('ignores an avatar or logo under an unrelated node, and survives malformed JSON', () => {
+    const html = `<script type="application/ld+json">{"@type":"Person","image":"https://x/avatar.jpg"}</script>
+      <script type="application/ld+json">{ broken json</script>`
+    expect(jsonLdImage(html)).toBeUndefined()
+  })
+
+  it('returns undefined when the page carries no JSON-LD image', () => {
+    expect(jsonLdImage('<p>nothing here</p>')).toBeUndefined()
   })
 })
 

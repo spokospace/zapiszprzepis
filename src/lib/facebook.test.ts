@@ -524,6 +524,9 @@ describe('fetchFacebookPost', () => {
       canonicalUrl: 'https://www.facebook.com/groups/1467531384889794/posts/1667590364883894/',
       embedStatus: 'rendered',
       recipeLink: null,
+      // The permalink carried an og:image (the GROUP's representative photo),
+      // but a text-only group post has no cover of its own — never the group's.
+      image: null,
     })
     expect(post?.caption).toContain('300 g mąki pszennej')
   })
@@ -546,6 +549,8 @@ describe('fetchFacebookPost', () => {
       'https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/2534992233268516_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1',
       'https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/2534992403268499_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1',
     ])
+    // The cover is the post's own first photo, not the group's og:image.
+    expect(post?.image).toBe('https://scontent-waw2-1.xx.fbcdn.net/v/t1.6435-9/2534992233268516_n.jpg?stp=dst-jpg_p394x394_tt6&oe=6AF8B613&oh=1')
     const pluginUrls = vi.mocked(fetch).mock.calls.map((c) => String(c[0])).filter((u) => u.includes('/plugins/post.php'))
     expect(pluginUrls).toEqual([
       buildFacebookPhotoPluginUrl('2534992233268516', '2685730571747766'),

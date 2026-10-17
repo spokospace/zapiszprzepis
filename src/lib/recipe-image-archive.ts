@@ -356,6 +356,66 @@ function sharesDistinctiveWord(url: string, slugWords: Set<string>): boolean {
   return false
 }
 
+const LD_JSON_RE = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+// Nodes whose schema.org image is the dish, best first: the recipe's own, then
+// the article's; a WebPage's primary image is a weaker last resort.
+const LD_IMAGE_TYPES = [/recipe/i, /article|blogposting/i, /webpage/i]
+
+/** The first URL in a schema.org `image` value — a string, an ImageObject, or
+ *  an array of either. Kept as found (absolute or page-relative); jsonLdImage
+ *  resolves it against the page. */
+function ldImageHref(image: unknown): string | undefined {
+  for (const value of Array.isArray(image) ? image : [image]) {
+    const href = typeof value === 'string' ? value : (value as { url?: unknown } | null)?.url
+    if (typeof href === 'string' && href.trim()) return href.trim()
+  }
+  return undefined
+}
+
+/** The @type of a JSON-LD node as a lower-case string, however it is spelled. */
+function ldType(node: { '@type'?: unknown }): string {
+  const type = node['@type']
+  return (Array.isArray(type) ? type.join(' ') : typeof type === 'string' ? type : '').toLowerCase()
+}
+
+/**
+ * The dish photo a page declares in its schema.org JSON-LD, resolved against
+ * `base`. Many WordPress recipe blogs (marta-gotuje.pl) ship no og:image at
+ * all and name the photo only here, so it is the cover when the og:image and
+ * the in-content scan come up empty. The Recipe node's image wins over an
+ * Article's over a WebPage's; a logo or author avatar under some other node is
+ * ignored.
+ */
+export function jsonLdImage(html: string, pageUrl?: string): string | undefined {
+  const base = parseBase(pageUrl)
+  const found: string[] = ['', '', ''] // one slot per LD_IMAGE_TYPES rank
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) return node.forEach(visit)
+    if (!node || typeof node !== 'object') return
+    const record = node as Record<string, unknown>
+    const href = ldImageHref(record.image)
+    if (href) {
+      const rank = LD_IMAGE_TYPES.findIndex((re) => re.test(ldType(record)))
+      if (rank >= 0 && !found[rank]) found[rank] = href
+    }
+    for (const value of Object.values(record)) if (value && typeof value === 'object') visit(value)
+  }
+  for (const [, body] of html.matchAll(LD_JSON_RE)) {
+    try {
+      visit(JSON.parse(body.trim()))
+    } catch {
+      // A malformed block just contributes no candidate.
+    }
+  }
+  const best = found.find(Boolean)
+  if (!best) return undefined
+  try {
+    return new URL(best, base).href
+  } catch {
+    return undefined
+  }
+}
+
 /**
  * The cover for a rendered blog page: the page's declared og:image, resolved
  * against the page when it is given relative. A misconfigured SEO plugin can
@@ -363,8 +423,9 @@ function sharesDistinctiveWord(url: string, slugWords: Set<string>): boolean {
  * (kulinarnapolska.org points them all at one "flaczki" image) — so when the
  * og:image shares none of the page's distinctive slug words while the best
  * in-content photo (taken outside the page's noise sections, so not a
- * related-recipe card) does, the in-content photo wins. With no og:image it is
- * the in-content pick; with neither, undefined.
+ * related-recipe card) does, the in-content photo wins. The page's schema.org
+ * JSON-LD image stands in for a missing og:image (a blog that ships none) and
+ * can likewise unseat a stale one. With none of the three, undefined.
  */
 export function coverImage(ogImage: string | undefined, html: string, pageUrl?: string): string | undefined {
   const base = parseBase(pageUrl)
@@ -379,15 +440,15 @@ export function coverImage(ogImage: string | undefined, html: string, pageUrl?: 
 
   const slugWords = slugWordsOf(base)
   const pageImage = pickRecipeImage(withoutNoiseSections(html), pageUrl)
-  if (
-    resolvedOg &&
-    pageImage &&
-    !sharesDistinctiveWord(resolvedOg, slugWords) &&
-    sharesDistinctiveWord(pageImage, slugWords)
-  ) {
-    return pageImage
+  const ldImage = jsonLdImage(html, pageUrl)
+  // A stale site-wide og:image (shares none of the page's distinctive slug
+  // words) loses to a content image that does name the dish — the in-content
+  // photo, else the schema.org image.
+  const distinctive = [pageImage, ldImage].find((url) => url && sharesDistinctiveWord(url, slugWords))
+  if (resolvedOg && distinctive && !sharesDistinctiveWord(resolvedOg, slugWords)) {
+    return distinctive
   }
-  return resolvedOg ?? pageImage
+  return resolvedOg ?? pageImage ?? ldImage
 }
 
 /** Most photos a recipe keeps. A step-by-step post runs to about a dozen. */

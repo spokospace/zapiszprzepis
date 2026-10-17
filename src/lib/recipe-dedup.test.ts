@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { classifyExisting, findExistingRecipeForUrl, findSameRecipe, sameIngredients } from './recipe-dedup'
+import { classifyExisting, findExistingRecipeForUrl, findSameRecipe, ingredientsSubsume, sameIngredients } from './recipe-dedup'
 
 describe('findSameRecipe — the preferred user’s own copy', () => {
   const NALESNIKI = { title: 'Naleśniki', ingredients: [{ name: 'mąka' }] }
@@ -53,6 +53,35 @@ describe('sameIngredients', () => {
   it('tells apart a variant that adds or swaps an ingredient', () => {
     expect(sameIngredients([{ name: 'mąka' }, { name: 'masło' }], [{ name: 'mąka' }, { name: 'margaryna' }])).toBe(false)
     expect(sameIngredients([{ name: 'mąka' }], [{ name: 'mąka' }, { name: 'cukier' }])).toBe(false)
+  })
+})
+
+describe('ingredientsSubsume — one recipe extracted twice at different completeness', () => {
+  // The real miodownik dup: the Facebook caption caught only the cake base; the
+  // fuller post added the kasza-manna cream the title names.
+  const base = [{ name: 'mąka' }, { name: 'jajka' }, { name: 'cukier' }, { name: 'miód' }, { name: 'soda oczyszczona' }, { name: 'margaryna lub masło' }]
+  const full = [...base, { name: 'mleko' }, { name: 'kasza manna' }]
+
+  it('matches when the shorter list is contained in the longer, either way round', () => {
+    expect(ingredientsSubsume(base, full)).toBe(true)
+    expect(ingredientsSubsume(full, base)).toBe(true)
+  })
+
+  it('ignores casing, spacing and repeats like sameIngredients', () => {
+    expect(ingredientsSubsume([{ name: 'Mąka' }, { name: 'Cukier ' }, { name: 'Jajka' }], [{ name: 'mąka' }, { name: 'cukier' }, { name: 'jajka' }, { name: 'masło' }])).toBe(true)
+  })
+
+  it('rejects a variant that swaps an ingredient (not a subset)', () => {
+    expect(ingredientsSubsume([{ name: 'mąka' }, { name: 'masło' }, { name: 'cukier' }], [{ name: 'mąka' }, { name: 'margaryna' }, { name: 'cukier' }, { name: 'jajka' }])).toBe(false)
+  })
+
+  it('refuses a STRICT subset from a near-empty list, however well it is contained', () => {
+    expect(ingredientsSubsume([{ name: 'mąka' }, { name: 'cukier' }], [{ name: 'mąka' }, { name: 'cukier' }, { name: 'jajka' }, { name: 'masło' }])).toBe(false)
+  })
+
+  it('still matches two equal short lists at any size (keeps the old same-ingredients linking)', () => {
+    expect(ingredientsSubsume([{ name: ' mąka' }], [{ name: 'Mąka' }])).toBe(true)
+    expect(ingredientsSubsume([{ name: 'mąka' }, { name: 'kefir' }], [{ name: 'kefir' }, { name: 'mąka' }])).toBe(true)
   })
 })
 

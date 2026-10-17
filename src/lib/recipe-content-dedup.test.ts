@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest'
+import { buildContentDuplicateGroups, type ContentRow } from './recipe-content-dedup'
+
+const ing = (...names: string[]) => names.map((name) => ({ name }))
+
+function row(partial: Partial<ContentRow> & { id: number }): ContentRow {
+  return {
+    user_id: 'user-1',
+    title: 'Miodownik z kaszą manną',
+    ingredients: ing('mąka', 'jajka', 'cukier'),
+    created_at: '2026-10-16T23:00:00Z',
+    ...partial,
+  }
+}
+
+describe('buildContentDuplicateGroups', () => {
+  it('folds a partial extraction into the fuller one under the same title', () => {
+    // The real case: #749 (cake base only) is a subset of #752 (base + cream).
+    const base = ing('mąka', 'jajka', 'cukier', 'miód', 'soda oczyszczona', 'margaryna lub masło')
+    const full = [...base, { name: 'mleko' }, { name: 'kasza manna' }]
+    const rows = [
+      row({ id: 749, ingredients: base, created_at: '2026-10-16T23:03:27Z' }),
+      row({ id: 752, ingredients: full, created_at: '2026-10-16T23:04:53Z' }),
+    ]
+    // The fuller copy (#752) is kept even though it is the newer one.
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([{ canonicalId: 752, loserIds: [749] }])
+  })
+
+  it('leaves two same-titled but genuinely different recipes apart', () => {
+    const rows = [
+      row({ id: 1, title: 'Szarlotka', ingredients: ing('mąka', 'jabłka', 'cukier', 'masło', 'cynamon') }),
+      row({ id: 2, title: 'Szarlotka', ingredients: ing('mąka', 'jabłka', 'budyń', 'kwaśna śmietana', 'drożdże') }),
+    ]
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([])
+  })
+
+  it('never groups across different titles', () => {
+    const rows = [
+      row({ id: 1, title: 'Makowiec', ingredients: ing('mąka', 'mak', 'cukier') }),
+      row({ id: 2, title: 'Sernik', ingredients: ing('mąka', 'mak', 'cukier', 'ser') }),
+    ]
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([])
+  })
+
+  it('keeps the preferred owner, then the oldest, when completeness ties', () => {
+    const same = ing('mąka', 'jajka', 'cukier', 'masło')
+    const rows = [
+      row({ id: 10, user_id: 'user-2', ingredients: same, created_at: '2026-01-01T00:00:00Z' }),
+      row({ id: 11, user_id: 'main', ingredients: same, created_at: '2026-02-01T00:00:00Z' }),
+      row({ id: 12, user_id: 'user-3', ingredients: same, created_at: '2026-03-01T00:00:00Z' }),
+    ]
+    expect(buildContentDuplicateGroups(rows, 'main')).toEqual([{ canonicalId: 11, loserIds: [10, 12] }])
+  })
+
+  it('merges a chain transitively through the fullest copy', () => {
+    const rows = [
+      row({ id: 1, ingredients: ing('mąka', 'jajka', 'cukier') }),
+      row({ id: 2, ingredients: ing('mąka', 'jajka', 'cukier', 'miód') }),
+      row({ id: 3, ingredients: ing('mąka', 'jajka', 'cukier', 'miód', 'soda') }),
+    ]
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([{ canonicalId: 3, loserIds: [1, 2] }])
+  })
+})
