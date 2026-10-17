@@ -275,7 +275,7 @@ export function CookingMode({ title, steps }: CookingModeProps) {
               <ArrowLeft aria-hidden="true" className="h-6 w-6" />
               Wstecz
             </button>
-            {/* #ea580c only ever with dark text (5.6:1), never white. */}
+            {/* #ea580c only ever with dark text (5.0:1), never white. */}
             <button
               type="button"
               ref={nextRef}
