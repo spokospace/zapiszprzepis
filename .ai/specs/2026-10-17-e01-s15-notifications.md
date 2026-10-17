@@ -10,7 +10,7 @@ Today notifications are a 320 px dropdown under the header bell that lists only 
 
 - The header bell becomes **"Powiadomienia"**: bell icon over a 13 px caption, min 100 px wide, 56 px high, a 22 px `#b91c1c` count badge with a 2 px white ring, `aria-label="Powiadomienia (N)"`. It links to a new full-screen page **`/powiadomienia`**.
 - The page has four sections: **"Wymaga uwagi"** (Problem cards), **"W trakcie"** (spinner cards), **"Nowe"** (unread Gotowe cards) and **"Wcześniej"** (read Gotowe cards), plus **"Usuń przeczytane"** at the bottom.
-- **Count = problems + unread ready recipes.** Opening a ready recipe marks it read.
+- **Count = problems + unread ready recipes**, counted per recipe (as the cards are). Opening a ready recipe marks every unread share of it read.
 - The signed-in home shows a red banner **under the greeting**: "1 przepis wymaga uwagi" + "Zobacz".
 - One additive migration: `recipe_shares.read_at` and `cleared_at` (owner-gated, not applied).
 
@@ -26,7 +26,7 @@ Today notifications are a 320 px dropdown under the header bell that lists only 
 1. **Route `/powiadomienia`** (server component under `src/app/(authenticated)/powiadomienia/`, so `AppShell` and the owner-only redirect apply). A page, not an overlay: it has a URL, survives a refresh, works without JS, and the browser back button closes it.
 2. **Bell → labelled link** (`NotificationBell`). Icon 24 px over "Powiadomienia" 13 px bold, `min-w-[100px] h-14`, badge 22 px `bg-danger` white 13 px bold with a 2 px white border, `aria-current="page"` on `/powiadomienia`. Accessible name: "Powiadomienia (N)", "Powiadomienia (nie udało się sprawdzić)" in the error state (amber dot), "Powiadomienia" at zero. Props stay `failedShares: FailedSharesResult`; the `ok` variant gains `unreadReady: number`, so `AppHeader` (shared with S10/S17) needs no change.
 3. **Read state (migration).** `recipe_shares.read_at timestamptz` (a ready recipe was opened) and `cleared_at timestamptz` ("Usuń przeczytane" hid it). Existing completed rows are backfilled as read, so nobody gets a burst of old "Nowe" items on deploy. Completed rows are never deleted (the S03a merge rollback restores from them).
-4. **Summary for every page: `getFailedShares()`** keeps its rules (auto-resolve, dedupe, plus: a URL re-added and still `pending` is not a problem) and additionally returns `unreadReady`, a head-only `count` of the user's `completed` shares with `read_at is null and cleared_at is null` in the last 14 days. It runs in parallel with the failed-rows query. If it fails (e.g. migration not applied yet), it counts 0 and logs — the badge never fails because of it.
+4. **Summary for every page: `getFailedShares()`** keeps its rules (auto-resolve, dedupe, plus: a URL re-added and still `pending` is not a problem) and additionally returns `unreadReady`, the number of distinct recipes among the user's `completed` shares with a recipe, `read_at is null and cleared_at is null`, in the last 14 days (only `recipe_id` is fetched, capped at 100 rows). Per recipe, because the page shows one card per recipe: a link shared twice or repointed by an S03a merge must not leave a badge number no card can clear. It runs in parallel with the failed-rows query. If it fails (e.g. migration not applied yet), it counts 0 and logs — the badge never fails because of it.
 5. **Feed for the page: `src/lib/notifications.ts`** `getNotifications(supabase, userId)`:
    - **problems** = `getFailedShares()` rows (one rule for page, badge and banner), with `domain`, plain-language `reason` and `created_at`.
    - **inProgress** = own `pending` shares, newest first, limit 20, deduped by URL; `slow` when older than 15 minutes.
@@ -36,7 +36,7 @@ Today notifications are a 320 px dropdown under the header bell that lists only 
 7. **Time line** (`notificationTime(iso, now)`, Europe/Warsaw): "przed chwilą" (< 2 min), "dziś o 9:40", "wczoraj o 18:12", else "14 października".
 8. **Actions** (server, `src/app/(authenticated)/powiadomienia/actions.ts` + existing ones):
    - `retryShare` / `dismissShare` (existing; labels "Spróbuj ponownie" / "Usuń"); `revalidatePath('/', 'layout')` so badge, banner and page agree.
-   - `openReadyShare(formData)` — sets `read_at = now()` on the user's share (if unset) and redirects to `/przepis/{slug}`. A `<form>` post, so it works without JS.
+   - `openReadyShare(formData)` — sets `read_at = now()` on every unread `completed` share of the user for that share's recipe and redirects to `/przepis/{slug}`. A `<form>` post, so it works without JS.
    - `clearReadShares()` — sets `cleared_at = now()` on the user's completed shares with `read_at is not null`.
 9. **Home banner** (`AttentionBanner`) **under the greeting** in `MemberHome` (handoff C1), from the result the page already loads for the header: the whole strip is one link to `/powiadomienia` — min 64 px, `border-2 border-danger`, `bg-danger-bg` (`#fef2f2`), circle-alert icon 28 px in `danger`, text 18 px bold `ink` "1 przepis wymaga uwagi" / "2 przepisy wymagają uwagi" / "5 przepisów wymaga uwagi", "Zobacz" 17 px bold underlined. Shown only when there is ≥ 1 problem.
 
@@ -65,7 +65,7 @@ AppShell / HomePage (existing call site)
         actions: retryShare, dismissShare, openReadyShare (form), clearReadShares
 ```
 
-**#226:** not addressed; impact kept minimal. Shared pages keep one awaited call; it gains one parallel, index-backed head-count query (no extra round trip on the critical path). The banner reuses the result. Streaming the bell behind Suspense (#226) applies unchanged later.
+**#226:** not addressed; impact kept minimal. Shared pages keep one awaited call; it gains one parallel, index-backed query returning a few recipe ids (no extra round trip on the critical path). The banner reuses the result. Streaming the bell behind Suspense (#226) applies unchanged later.
 
 ## 📝 Data Model
 
@@ -85,7 +85,7 @@ create index if not exists idx_recipe_shares_user_unread
   where status = 'completed' and read_at is null and cleared_at is null;
 ```
 
-- RLS: the existing `recipe_shares_user_isolation` (`for all`, owner only) already allows the owner to set both columns; no new policy.
+- RLS: the existing `recipe_shares_owner_update` / `recipe_shares_owner_select` (owner only, split by 20261017140000_full_access_gate) already let the owner set and read both columns; no new policy.
 - The pipeline needs no change: `completed` rows start with `read_at = null` (unread). A retry resets the row to `pending`; when it completes it is unread again.
 - Rollback (in the header): drop the index and both columns.
 - Rehearsal: `.ai/qa/s15-rehearse-recipe-shares-read-state.sql`, a `do` block ending in `raise exception 'REHEARSAL_RESULT …'` (rolled back), asserting: columns exist, the backfill left no unread completed row, the owner can set `read_at` on their own share, another user's update touches 0 rows, anon touches 0 rows, and the unread index is used.
@@ -107,7 +107,7 @@ No new endpoints. Server actions:
 |---|---|---|
 | `retryShare(shareId)` | positive int | existing; revalidates `/` layout |
 | `dismissShare(shareId)` / `dismissAllFailedShares()` | positive int / — | existing; revalidates `/` layout |
-| `openReadyShare(formData)` | `shareId` (positive int) | `read_at = now()` where own, `completed`, `read_at is null`; redirect to `recipePath(slug)` (slug looked up via the share's `recipe_id` in `public_recipes`; missing → back to `/powiadomienia`) |
+| `openReadyShare(formData)` | `shareId` (positive int) | `read_at = now()` where own, `completed`, same `recipe_id` as the share, `read_at is null`; redirect to `recipePath(slug)` (slug looked up via the share's `recipe_id` in `public_recipes`; missing → back to `/powiadomienia`) |
 | `clearReadShares()` | — | `cleared_at = now()` on own `completed` rows with `read_at is not null and cleared_at is null` |
 
 ## 📝 UI/UX
@@ -147,11 +147,11 @@ WCAG 2.2 AA: text ≥ 4.5:1 (`ink` on `#fef2f2` 16:1, white on `#c2410c` 5.2:1, 
 
 ## 📝 Risks & Impact Review
 
-- **Deploy order: migration first, then the code** (merging to master deploys). The migration is additive and the backfill only marks old rows read, so the live code is unaffected by it.
+- **Deploy order: migration first, then the code** (merging to master deploys via Workers Builds). The migration is additive and the backfill only marks old rows read, so the live code is unaffected by it; the new code without it shows the page's error state.
 - **Shared header (S10 #213, S17 #219).** Only `notification-bell.tsx` changes; its props are unchanged. S10/S17 own the rest of the header row; the bell's 100 px minimum width is the handoff's.
 - **Home (S04).** The banner moves from the S04 top-of-main slot to under the greeting, as the handoff places it; the guest home is untouched.
 - **Mapping drift.** A new technical error string falls to the generic sentence, never raw text; tests pin every current pipeline string.
-- **#226.** One parallel head-count query added to the shared summary; noted on the PR.
+- **#226.** One parallel small query added to the shared summary; noted on the PR.
 
 ## Deviations from the handoff
 
