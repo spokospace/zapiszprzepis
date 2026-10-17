@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useRef, useState, type RefObject } from 'react'
+import { useActionState, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { Check } from 'lucide-react'
 import { redeemAccessCode, type RedeemState } from '@/app/(actions)/redeem-access-code'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
@@ -24,10 +24,12 @@ type ViewProps = {
   /** Arrived from a blocked add (Share Target, stale tab): ?add_error=no_access. */
   notice?: boolean
   inputRef?: RefObject<HTMLInputElement | null>
+  /** What replaces the gate once a code is accepted; the home's add form by default. */
+  unlocked?: ReactNode
 }
 
 /** Screen 3c, pure view (rendered by AccessCodeGate; split out for tests). */
-export function AccessCodeGateView({ state, pending, formAction, code, onCodeChange, notice, inputRef }: ViewProps) {
+export function AccessCodeGateView({ state, pending, formAction, code, onCodeChange, notice, inputRef, unlocked }: ViewProps) {
   if (state.status === 'ok') {
     return (
       <div>
@@ -38,7 +40,7 @@ export function AccessCodeGateView({ state, pending, formAction, code, onCodeCha
           <Check aria-hidden="true" className="h-6 w-6 shrink-0" />
           Gotowe — możesz dodawać przepisy.
         </p>
-        <AddRecipeForm autoFocus />
+        {unlocked ?? <AddRecipeForm autoFocus />}
       </div>
     )
   }
@@ -100,7 +102,7 @@ const initialState: RedeemState = { status: 'idle' }
  * signed-in user without full access. The server re-checks access on every add
  * (getFullAccess + RLS); this screen is only the way in.
  */
-export function AccessCodeGate({ notice }: { notice?: boolean }) {
+export function AccessCodeGate({ notice, unlocked }: { notice?: boolean; unlocked?: ReactNode }) {
   const [state, formAction, pending] = useActionState(redeemAccessCode, initialState)
   // Controlled on purpose: React 19 resets uncontrolled fields after a form action,
   // which would wipe the code the user typed when it is rejected.
@@ -126,6 +128,7 @@ export function AccessCodeGate({ notice }: { notice?: boolean }) {
       onCodeChange={setCode}
       notice={notice}
       inputRef={inputRef}
+      unlocked={unlocked}
     />
   )
 }

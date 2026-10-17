@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { triggerRecipeExtraction } from './actions'
-import { recipePath } from '@/lib/routes'
+import { addRecipeErrorPath, recipePath } from '@/lib/routes'
 import { NO_FULL_ACCESS } from '@/lib/full-access'
+import { extractFirstUrl } from '@/lib/extract-url'
 
 /**
  * Web Share Target API endpoint
@@ -24,16 +25,6 @@ import { NO_FULL_ACCESS } from '@/lib/full-access'
  * @see https://web.dev/web-share-target/
  */
 
-// First http(s) URL found in any of the candidate strings, trimmed of trailing
-// punctuation the sharing app may have appended.
-function firstUrl(...candidates: (string | null)[]): string | null {
-  for (const candidate of candidates) {
-    const match = candidate?.match(/https?:\/\/[^\s<>"']+/i)
-    if (match) return match[0].replace(/[)\].,;!?]+$/, '')
-  }
-  return null
-}
-
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const formData = await request.formData()
@@ -42,7 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const sharedText = formData.get('text') as string | null
 
     // Prefer the dedicated url field; fall back to a URL embedded in text/title.
-    const sharedUrl = firstUrl(urlField, sharedText, sharedTitle)
+    const sharedUrl = extractFirstUrl(urlField, sharedText, sharedTitle)
 
     console.log('[share] Received share intent', {
       urlField,
@@ -54,7 +45,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!sharedUrl) {
       console.warn('[share] No URL found in url/text/title')
       // Visible feedback instead of a silent bounce to home.
-      return NextResponse.redirect(new URL('/?add_error=invalid_url', request.url), { status: 303 })
+      return NextResponse.redirect(new URL(addRecipeErrorPath('invalid_url'), request.url), { status: 303 })
     }
 
     // Trigger recipe extraction (server action handles auth check)
@@ -88,12 +79,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.redirect(new URL('/login', request.url), { status: 303 })
     }
 
-    // Signed in but without full access (E01-S11): the home shows the code gate.
+    // Signed in but without full access (E01-S11): /dodaj shows the code gate (E01-S10).
     if (errorMsg === NO_FULL_ACCESS) {
-      return NextResponse.redirect(new URL('/?add_error=no_access', request.url), { status: 303 })
+      return NextResponse.redirect(new URL(addRecipeErrorPath('no_access'), request.url), { status: 303 })
     }
 
-    // On other errors, surface a recoverable error on the recipes page.
-    return NextResponse.redirect(new URL('/?add_error=server', request.url), { status: 303 })
+    // On other errors, surface a recoverable error next to the add form.
+    return NextResponse.redirect(new URL(addRecipeErrorPath('server'), request.url), { status: 303 })
   }
 }
