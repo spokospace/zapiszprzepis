@@ -7,7 +7,9 @@ import { categoryLabel } from '@/lib/recipe-categories'
 import type { RecipeSource } from '@/lib/recipe-source'
 import { getSiteUrl } from '@/lib/site-url'
 import { profilePath } from '@/lib/routes'
+import { avatarColorIndex } from '@/lib/avatar'
 import {
+  MAX_PROFILE_PAGE,
   PROFILE_PAGE_SIZE,
   categoryCounts,
   isProfileOwner,
@@ -21,7 +23,7 @@ import {
   profileRobots,
 } from '@/lib/public-profile'
 import { PageContainer } from '@/app/components/page-container'
-import { ProfileAvatar } from '@/app/components/profile-avatar'
+import { Avatar } from '@/app/components/ui/avatar'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { buttonClasses } from '@/app/components/ui/button'
 
@@ -142,7 +144,8 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
     if (error) throw new Error(`[profile] Recipe query failed: ${error.message}`)
     recipes = list ?? []
   }
-  const hasMore = recipes.length > shown
+  // At the page cap a further link would render the same list again.
+  const hasMore = recipes.length > shown && page < MAX_PROFILE_PAGE
   const visible = recipes.slice(0, shown)
   // The first card of the newest page, where "Pokaż kolejne" lands (#wiecej).
   const firstNewIndex = page > 1 ? (page - 1) * PROFILE_PAGE_SIZE : -1
@@ -163,7 +166,9 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
         )}
 
         <header className="mb-6 flex items-center gap-4">
-          <ProfileAvatar username={profile.username} displayName={profile.display_name} size={88} />
+          {/* Letter on the id-derived colour, same as /settings (S13). S13 adds
+              profiles.avatar_path/avatar_color; pass them here once it has shipped. */}
+          <Avatar src={null} name={profile.display_name} colorIndex={avatarColorIndex(profile.id, null)} size={88} />
           <div className="min-w-0">
             <h1 className="break-words text-[30px] font-bold leading-tight text-ink">{profile.display_name}</h1>
             {total > 0 && <p className="text-[19px] text-ink">Dodane przepisy: {total}</p>}

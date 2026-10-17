@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  AVATAR_COLOR_COUNT,
-  avatarColorIndex,
-  avatarLetter,
+  MAX_PROFILE_PAGE,
+  PROFILE_PAGE_SIZE,
   categoryCounts,
   isProfileOwner,
   isUsernameShape,
@@ -41,7 +40,14 @@ describe('parseProfilePage', () => {
   })
 
   it('clamps huge pages', () => {
-    expect(parseProfilePage('9999')).toBe(50)
+    expect(parseProfilePage('9999')).toBe(MAX_PROFILE_PAGE)
+  })
+
+  it('caps at the deepest page one PostgREST response (1000 rows) can fill, plus the look-ahead row', () => {
+    expect(MAX_PROFILE_PAGE * PROFILE_PAGE_SIZE + 1).toBeLessThanOrEqual(1000)
+    expect((MAX_PROFILE_PAGE + 1) * PROFILE_PAGE_SIZE + 1).toBeGreaterThan(1000)
+    // The biggest profile (~670 recipes) must be reachable to its last card.
+    expect(MAX_PROFILE_PAGE * PROFILE_PAGE_SIZE).toBeGreaterThan(670)
   })
 })
 
@@ -129,22 +135,5 @@ describe('profileRobots', () => {
   it('is noindex only for an empty profile', () => {
     expect(profileRobots(0)).toEqual({ index: false })
     expect(profileRobots(1)).toBeUndefined()
-  })
-})
-
-describe('avatar helpers', () => {
-  it('picks a stable colour in range', () => {
-    for (const name of ['tola', 'uzytkownik', 'uzytkownik-2', 'a']) {
-      const idx = avatarColorIndex(name)
-      expect(idx).toBeGreaterThanOrEqual(1)
-      expect(idx).toBeLessThanOrEqual(AVATAR_COLOR_COUNT)
-      expect(avatarColorIndex(name)).toBe(idx)
-    }
-  })
-
-  it('uses the first letter, Polish-aware, with a fallback', () => {
-    expect(avatarLetter('tola')).toBe('T')
-    expect(avatarLetter(' łucja ')).toBe('Ł')
-    expect(avatarLetter('   ')).toBe('?')
   })
 })

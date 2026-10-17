@@ -3,8 +3,13 @@ import { RECIPE_CATEGORIES, isRecipeCategory, type RecipeCategory } from '@/lib/
 /** Recipes per "Pokaż kolejne" step on /u/{username} (E01-S14). */
 export const PROFILE_PAGE_SIZE = 12
 
-/** ?strona beyond this is clamped, so a hand-edited URL cannot ask for thousands of cards. */
-const MAX_PROFILE_PAGE = 50
+/**
+ * ?strona beyond this is clamped. The list asks for page × 12 + 1 rows in one
+ * request and PostgREST returns at most 1000, so 83 (997 rows) is the deepest
+ * page that is never silently truncated. The biggest profile already has
+ * hundreds of recipes, so a lower cap would hide its oldest ones.
+ */
+export const MAX_PROFILE_PAGE = Math.floor((1000 - 1) / PROFILE_PAGE_SIZE)
 
 /**
  * The shape the S18 username generator produces (lowercase ASCII words joined
@@ -17,7 +22,7 @@ export function isUsernameShape(raw: string): boolean {
   return raw.length <= 64 && USERNAME_RE.test(raw)
 }
 
-/** ?strona=N → an integer 1..50; anything unparseable is page 1. */
+/** ?strona=N → an integer 1..MAX_PROFILE_PAGE; anything unparseable is page 1. */
 export function parseProfilePage(raw: unknown): number {
   if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return 1
   const page = Number(raw)
@@ -109,20 +114,4 @@ export function isProfileOwner(userId: string | null | undefined, profileId: str
 /** An empty profile is noindex (E01-S14 AC); one with recipes uses the site default. */
 export function profileRobots(total: number): { index: false } | undefined {
   return total === 0 ? { index: false } : undefined
-}
-
-/** Number of avatar colour tokens (--color-avatar-1 … -6 in globals.css). */
-export const AVATAR_COLOR_COUNT = 6
-
-/** A stable 1-based avatar colour for a username (same name → same colour everywhere). */
-export function avatarColorIndex(username: string): number {
-  let hash = 0
-  for (const ch of username) hash = (hash * 31 + ch.codePointAt(0)!) >>> 0
-  return (hash % AVATAR_COLOR_COUNT) + 1
-}
-
-/** The avatar letter: the display name's first letter, uppercased; "?" when blank. */
-export function avatarLetter(displayName: string): string {
-  const first = [...displayName.trim()][0]
-  return first ? first.toLocaleUpperCase('pl') : '?'
 }
