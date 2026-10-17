@@ -4,6 +4,7 @@ import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
 import { AppHeader } from '@/app/components/app-header'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
 import { RecipeCard } from '@/app/components/recipe-card'
+import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { PageContainer } from '@/app/components/page-container'
 
 type SearchParams = Promise<{ add_error?: string }>
@@ -71,10 +72,17 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
                 Ostatnio dodane
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <RecipeListSnapshot
+                  listKey="home"
+                  label="Ostatnio dodane"
+                  href="/"
+                  items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
+                />
                 {recentRecipes.map((r) => (
                   <RecipeCard
                     // id, not slug: slugs are unique per user only, and this feed spans users.
                     key={r.id}
+                    from="home"
                     slug={r.slug}
                     title={r.title}
                     imageUrl={r.image_url}

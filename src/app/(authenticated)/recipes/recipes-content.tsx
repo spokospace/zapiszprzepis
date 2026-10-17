@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react'
 import { RecipeCard } from '@/app/components/recipe-card'
+import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { CategoryFilter } from '@/app/components/category-filter'
 import { RecipeSearch } from '@/app/components/recipe-search'
 import { ActiveTagFilter } from '@/app/components/active-tag-filter'
@@ -11,6 +12,16 @@ import type { Database } from '@/lib/supabase.types'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
 type RecipeCategory = Database['public']['Enums']['recipe_category']
+
+/** "Moje przepisy" with the filters the visitor had on, for the list bar's back link. */
+function myRecipesHref(category?: string | null, tag?: string | null, q?: string): string {
+  const params = new URLSearchParams()
+  if (category) params.set('category', category)
+  if (tag) params.set('tag', tag)
+  if (q) params.set('q', q)
+  const query = params.toString()
+  return query ? `/recipes?${query}` : '/recipes'
+}
 
 interface RecipesContentProps {
   recipes: Recipe[]
@@ -113,9 +124,16 @@ export function RecipesContent({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <RecipeListSnapshot
+              listKey="moje"
+              label="Moje przepisy"
+              href={myRecipesHref(activeCategory, activeTag, searchQuery)}
+              items={recipes.map((r) => ({ slug: r.slug, title: r.title }))}
+            />
             {recipes.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
+                from="moje"
                 slug={recipe.slug}
                 title={recipe.title}
                 imageUrl={recipe.image_url}

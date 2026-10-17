@@ -16,6 +16,9 @@ import type { Database } from '@/lib/supabase.types'
 import { RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
 import { RecipeChecklists } from './_components/recipe-checklists'
+import { RecipeListBar } from './_components/recipe-list-bar'
+import { loadCategoryContext } from './category-context'
+import { parseListKey } from '@/lib/recipe-list-context'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
 
@@ -96,12 +99,14 @@ interface RecipeDetailPageProps {
     in_favorites?: string
     /** The delete was refused: others have this recipe as a favorite (E01-S03a). */
     delete_error?: string
+    /** The list the visitor came from, for the list bar (E01-S07); whitelisted. */
+    from?: string
   }>
 }
 
 export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
-  const { duplicate, refreshing, refresh_error, fav, in_favorites, delete_error } = await searchParams
+  const { duplicate, refreshing, refresh_error, fav, in_favorites, delete_error, from } = await searchParams
 
   const { recipe: typedRecipe, error, isOwner, user } = await loadRecipe(slug)
 
@@ -114,17 +119,19 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // signed-in users only, so a guest cannot read it through the API either.
   // The gallery is a login perk (decision Q3); favorites are private (owner-only
   // RLS). Both reads need a session, so they share one client and one round trip.
-  let galleryImages: string[] = []
-  let isFavorite = false
-  if (user) {
-    const supabase = await createSupabaseServerClient()
-    const [{ data: gallery }, { data: favorite }] = await Promise.all([
-      supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle(),
-      supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle(),
-    ])
-    galleryImages = gallery?.image_urls ?? []
-    isFavorite = Boolean(favorite)
-  }
+  // The list bar's category context (E01-S07) is guest-safe and runs alongside.
+  const supabase = await createSupabaseServerClient()
+  const [categoryContext, [{ data: gallery }, { data: favorite }]] = await Promise.all([
+    loadCategoryContext(supabase, typedRecipe),
+    user
+      ? Promise.all([
+          supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle(),
+          supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle(),
+        ])
+      : Promise.resolve([{ data: null }, { data: null }] as const),
+  ])
+  const galleryImages: string[] = gallery?.image_urls ?? []
+  const isFavorite = Boolean(favorite)
 
   // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
   // exception is a full page crash, which would also hide the delete button);
@@ -152,6 +159,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         <Toast message="Nie można odświeżyć — przepis nie ma źródłowego adresu." type="error" duration={5000} clearParam="refresh_error" />
       )}
       <PageContainer narrow>
+        <RecipeListBar slug={typedRecipe.slug} from={parseListKey(from)} fallback={categoryContext} />
         <RecipeHeader recipe={typedRecipe} isAuthenticated={Boolean(user)} />
         <RecipeActions
           recipeId={typedRecipe.id}
