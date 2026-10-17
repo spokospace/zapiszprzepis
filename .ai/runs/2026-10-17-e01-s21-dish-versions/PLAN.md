@@ -9,7 +9,7 @@
 
 | Phase | Step | Title | Exec | Status | Commit |
 |---|---|---|---|---|---|
-| 1 | 1.1 | Migration `…_recipe_dish_versions.sql` (view append + order assertion, index, `dish_versions`/`dish_vocabulary` RPCs, grants) + `.ai/qa/s21-rehearse-dish-versions.sql` | inline | todo | |
+| 1 | 1.1 | Migration `…_recipe_dish_versions.sql` (view append + order assertion, index, `dish_versions`/`dish_vocabulary` RPCs, grants) + `.ai/qa/s21-rehearse-dish-versions.sql` | inline | done | this commit |
 | 1 | 1.2 | `src/lib/recipe-dish.ts` pure helpers (`normalizeDish`/`resolveDishAccusative`/`resolveVariantNote`/`dishVocabularyFor`) + prompts + tests | inline | todo | |
 | 1 | 1.3 | Export `postChatJson`; add `classifyDish`/`writeVariantNote` (never throw) + tests | inline | todo | |
 | 1 | 1.4 | Wire into `run-extract-recipe.ts` (vocab RPC ∥ existing query; dish ∥ labelRecipe; note after; insert / own-row gap-fill / refresh, all guarded on `dish_classified_at is null`) + tests | inline | todo | |
