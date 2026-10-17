@@ -21,7 +21,7 @@ const ADD_ERROR_MESSAGES: Record<string, string> = {
   no_access: 'Dodawanie przepisów wymaga kodu dostępu.',
 }
 
-function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: () => void }) {
+export function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: () => void }) {
   return (
     <div className="mt-3 rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">

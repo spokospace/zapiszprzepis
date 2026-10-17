@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Mic, Search } from 'lucide-react'
+import Link from 'next/link'
+import { Mic, Search, X } from 'lucide-react'
 import { buttonClasses } from '@/app/components/ui/button'
-import { SEARCH_PATH } from '@/lib/routes'
+import { SEARCH_PATH, searchPath, type SearchScope } from '@/lib/routes'
 import { isSpeechRecognitionSupported, speechRecognitionCtor, type SpeechRecognitionLike } from '@/lib/speech'
 
 type MicState = 'idle' | 'listening' | 'error'
@@ -14,13 +15,29 @@ const MIC_STATUS: Record<MicState, string> = {
   error: 'Nie udało się rozpoznać mowy. Wpisz nazwę przepisu.',
 }
 
+interface HomeSearchProps {
+  id: string
+  /** The current query on /szukaj (E01-S05); shows "× Wyczyść". Remount with `key={q}` when it changes. */
+  defaultValue?: string
+  /** Searches stay in this scope; `wszystkie` adds no field. */
+  scope?: SearchScope
+  label?: string
+  autoFocus?: boolean
+}
+
 /**
- * The home search (E01-S04): a plain GET form to SEARCH_PATH, so it works
- * before hydration and without JS. The mic button is progressive enhancement,
- * rendered only where the Web Speech API exists; the recognised phrase fills
- * the field and submits it.
+ * The one search field (E01-S04 home, E01-S05 /szukaj and "Moje przepisy"): a
+ * plain GET form to SEARCH_PATH, so it works before hydration and without JS.
+ * The mic button is progressive enhancement, rendered only where the Web Speech
+ * API exists; the recognised phrase fills the field and submits it.
  */
-export function HomeSearch({ id }: { id: string }) {
+export function HomeSearch({
+  id,
+  defaultValue,
+  scope = 'wszystkie',
+  label = 'Szukaj przepisu po nazwie lub składniku',
+  autoFocus,
+}: HomeSearchProps) {
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
@@ -69,8 +86,9 @@ export function HomeSearch({ id }: { id: string }) {
   return (
     <form ref={formRef} role="search" method="get" action={SEARCH_PATH}>
       <label htmlFor={id} className="mb-2 block text-[18px] text-ink-soft">
-        Szukaj przepisu po nazwie lub składniku
+        {label}
       </label>
+      {scope !== 'wszystkie' && <input type="hidden" name="zakres" value={scope} />}
       <div className="flex gap-2">
         <input
           ref={inputRef}
@@ -78,6 +96,8 @@ export function HomeSearch({ id }: { id: string }) {
           type="search"
           name="q"
           required
+          defaultValue={defaultValue}
+          autoFocus={autoFocus}
           enterKeyHint="search"
           autoComplete="off"
           onInput={() => setMicState((prev) => (prev === 'error' ? 'idle' : prev))}
@@ -103,6 +123,17 @@ export function HomeSearch({ id }: { id: string }) {
         <Search aria-hidden="true" className="h-5 w-5" />
         Szukaj przepisu
       </button>
+      {defaultValue && (
+        <div className="mt-1 flex justify-end">
+          <Link
+            href={searchPath('', scope)}
+            className="inline-flex min-h-[48px] items-center gap-1.5 px-1 text-[18px] text-ink underline underline-offset-4"
+          >
+            <X aria-hidden="true" className="h-5 w-5" />
+            Wyczyść
+          </Link>
+        </div>
+      )}
     </form>
   )
 }

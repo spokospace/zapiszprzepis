@@ -1,0 +1,42 @@
+import Link from 'next/link'
+import { searchPath, SEARCH_SCOPES, type SearchScope } from '@/lib/routes'
+
+const LABELS: Record<SearchScope, string> = {
+  wszystkie: 'Wszystkich',
+  moje: 'Moich',
+  ulubione: 'Ulubionych',
+}
+
+/**
+ * "Szukaj w: Wszystkich / Moich / Ulubionych" (E01-S05) — signed-in users only.
+ * Plain links, so a switch is a new search from page 1 that works without JS.
+ */
+export function SearchScopeSwitch({ q, scope }: { q: string; scope: SearchScope }) {
+  return (
+    <nav aria-labelledby="search-scope-label">
+      <p id="search-scope-label" className="mb-1.5 text-[16px] text-ink-soft">
+        Szukaj w:
+      </p>
+      <ul className="grid grid-cols-3 gap-1.5">
+        {SEARCH_SCOPES.map((value) => {
+          const active = value === scope
+          return (
+            <li key={value}>
+              <Link
+                href={searchPath(q, value)}
+                aria-current={active ? 'page' : undefined}
+                className={`flex h-full min-h-[48px] items-center justify-center rounded-field border-2 px-1 text-center text-[18px] leading-tight font-bold ${
+                  active
+                    ? 'border-surface-dark bg-surface-dark text-white'
+                    : 'border-field bg-white text-ink hover:bg-surface-3'
+                }`}
+              >
+                {LABELS[value]}
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </nav>
+  )
+}
