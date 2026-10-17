@@ -17,6 +17,7 @@ const ADD_ERROR_MESSAGES: Record<string, string> = {
   empty: 'Wklej adres URL lub wpisz nazwę przepisu.',
   invalid_url: 'To nie wygląda jak prawidłowy URL.',
   server: 'Coś poszło nie tak. Spróbuj ponownie.',
+  no_access: 'Dodawanie przepisów wymaga kodu dostępu.',
 }
 
 function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: () => void }) {
@@ -88,7 +89,7 @@ function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: 
   )
 }
 
-export function AddRecipeForm({ addError }: { addError?: string | null }) {
+export function AddRecipeForm({ addError, autoFocus }: { addError?: string | null; autoFocus?: boolean }) {
   // `?tab=add` comes from the header's quick-add button.
   const wantsAddTab = useSearchParams().get('tab') === 'add'
   const inputRef = useRef<HTMLInputElement>(null)
@@ -221,6 +222,8 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
             }
             <input
               ref={inputRef}
+              // Set right after the access-code gate unlocks (E01-S11), so focus lands on the link field.
+              autoFocus={autoFocus}
               name="url"
               type="text"
               aria-label={activeTab === 'search' ? 'Szukaj przepisu' : 'URL przepisu'}

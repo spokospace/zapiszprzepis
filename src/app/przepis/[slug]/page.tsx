@@ -207,6 +207,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {refresh_error === '1' && (
         <Toast message="Nie można odświeżyć — przepis nie ma źródłowego adresu." type="error" duration={5000} clearParam="refresh_error" />
       )}
+      {refresh_error === 'no_access' && (
+        <Toast message="Odświeżanie przepisów wymaga kodu dostępu." type="error" duration={5000} clearParam="refresh_error" />
+      )}
       <PageContainer narrow>
         {typedRecipe.image_url && (
           <div className="relative w-full aspect-[4/3] sm:aspect-video rounded-lg overflow-hidden mb-8">

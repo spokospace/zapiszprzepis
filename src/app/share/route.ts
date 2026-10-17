@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { triggerRecipeExtraction } from './actions'
 import { recipePath } from '@/lib/routes'
+import { NO_FULL_ACCESS } from '@/lib/full-access'
 
 /**
  * Web Share Target API endpoint
@@ -85,6 +86,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // If auth error, redirect to login with return URL
     if (errorMsg.includes('Not authenticated')) {
       return NextResponse.redirect(new URL('/login', request.url), { status: 303 })
+    }
+
+    // Signed in but without full access (E01-S11): the home shows the code gate.
+    if (errorMsg === NO_FULL_ACCESS) {
+      return NextResponse.redirect(new URL('/?add_error=no_access', request.url), { status: 303 })
     }
 
     // On other errors, surface a recoverable error on the recipes page.

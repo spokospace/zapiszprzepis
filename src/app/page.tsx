@@ -3,6 +3,8 @@ import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/serve
 import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
 import { AppHeader } from '@/app/components/app-header'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
+import { AccessCodeGate } from '@/app/components/access-code-gate'
+import { getFullAccess } from '@/lib/full-access'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { PageContainer } from '@/app/components/page-container'
 
@@ -16,8 +18,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   // Public since E01-S02: a guest sees the home too. "Ostatnio dodane" is the
   // public feed across all users, read through the guest-safe public_recipes view
   // (recipes itself is owner-only), not the visitor's own list.
-  const [failedShares, { data: recentRecipes }] = await Promise.all([
+  // E01-S11: only full-access users get the add form; the rest see screen 3c.
+  const [failedShares, hasFullAccess, { data: recentRecipes }] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : Promise.resolve(NO_FAILED_SHARES),
+    user ? getFullAccess(supabase) : Promise.resolve(false),
     supabase
       .from('public_recipes')
       .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
@@ -32,8 +36,14 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         <PageContainer className="py-6 sm:py-12">
           {user ? (
             <>
-              <p className="mb-6 text-sm text-gray-500">Znajdź przepis i zapisz go jednym kliknięciem.</p>
-              <AddRecipeForm addError={add_error} />
+              {hasFullAccess ? (
+                <>
+                  <p className="mb-6 text-sm text-gray-500">Znajdź przepis i zapisz go jednym kliknięciem.</p>
+                  <AddRecipeForm addError={add_error} />
+                </>
+              ) : (
+                <AccessCodeGate notice={add_error === 'no_access'} />
+              )}
               <Link
                 href="/recipes"
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 px-6 py-4 text-base font-semibold text-orange-700 shadow-sm hover:bg-orange-100 hover:border-orange-300 transition-colors"

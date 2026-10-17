@@ -18,11 +18,13 @@ vi.mock('@/lib/intake-favorite', () => ({
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }))
+vi.mock('@/lib/full-access', () => ({ getFullAccess: vi.fn().mockResolvedValue(true), NO_FULL_ACCESS: 'No full access' }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { inngest } from '@/inngest/client'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
+import { getFullAccess } from '@/lib/full-access'
 import { triggerRecipeExtraction } from '@/app/share/actions'
 
 describe('triggerRecipeExtraction — a link someone else added first (E01-S03a)', () => {
@@ -119,5 +121,26 @@ describe('triggerRecipeExtraction — send-failure marks share failed (Risk 3)',
     const result = await triggerRecipeExtraction('https://example.com/recipe')
 
     expect(result).toMatchObject({ shareId: 99 })
+  })
+})
+
+describe('triggerRecipeExtraction — full-access gate (E01-S11)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('refuses a user without full access before any dedup or insert', async () => {
+    const from = vi.fn()
+    vi.mocked(createSupabaseServerClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from,
+    } as any)
+    vi.mocked(getFullAccess).mockResolvedValueOnce(false)
+
+    await expect(triggerRecipeExtraction('https://example.com/tiramisu')).rejects.toThrow('No full access')
+
+    expect(findExistingRecipeForUrl).not.toHaveBeenCalled()
+    expect(from).not.toHaveBeenCalled()
+    expect(inngest.send).not.toHaveBeenCalled()
   })
 })

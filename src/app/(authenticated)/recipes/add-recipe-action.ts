@@ -7,6 +7,7 @@ import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
 import { recipePath } from '@/lib/routes'
+import { getFullAccess } from '@/lib/full-access'
 import { revalidatePath } from 'next/cache'
 
 export async function addRecipeFromUrl(formData: FormData): Promise<void> {
@@ -24,6 +25,10 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  // E01-S11: adding needs full access. Checked before dedup so a user without it
+  // cannot even favorite-by-link through this path (RLS refuses the insert too).
+  if (!(await getFullAccess(supabase))) redirect('/?add_error=no_access')
 
   const dedup = await findExistingRecipeForUrl(supabase, user.id, url)
   if (dedup.status === 'completed') redirect(`${recipePath(dedup.slug)}?duplicate=1`)
