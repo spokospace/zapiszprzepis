@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}input:focus-visible,button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}</style>
+</helmet>
+<section id="2a" style="padding:48px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">2a</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Ustawienia · Mój profil</span></div>
+    <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Jeden ekran, trzy rzeczy, jeden przycisk</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekran jest klikalny. Wybierz obrazek z komputera albo wpisz imię, a linijka pod spodem pokaże, jak będziemy się zwracać. Płeć wybiera się raz, przy rejestracji.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+    <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+      <div style="border-bottom:2px solid #e5e7eb;padding:4px 12px 4px 8px;display:flex;align-items:center;justify-content:space-between">
+        <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Wróć</span>
+        <div style="display:flex;align-items:stretch;gap:4px"><span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span><span style="position:relative;min-width:100px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia<span style="position:absolute;top:0;right:26px;min-width:22px;height:22px;border-radius:999px;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">1</span></span><span style="width:60px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span></div>
+      </div>
+      <div style="padding:24px 16px;display:flex;flex-direction:column;gap:24px">
+        <div style="font-size:30px;font-weight:700;color:#111827">Mój profil</div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <span style="font-size:18px;font-weight:700;color:#111827">Twój obrazek</span>
+          <span style="font-size:16px;color:#374151;line-height:1.45">Widać go przy Twoich przepisach. Może to być zdjęcie, kartka albo dowolny obrazek z telefonu.</span>
+          <div style="display:flex;align-items:center;gap:16px">
+            <span role="img" aria-label="Twój obrazek" style="width:96px;height:96px;flex-shrink:0;border-radius:999px;background:{{ photoBg }};color:#111827;font-size:40px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #9ca3af">{{ previewLetter }}</span>
+            <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+              <label for="ph" style="height:56px;border-radius:14px;border:2px solid #4b5563;background:#fff;color:#111827;font:700 18px Arial;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><i data-lucide="image-plus" width="22" height="22"></i>{{ pickLabel }}</label>
+              <input id="ph" type="file" accept="image/*" onChange="{{ onPhoto }}" style="position:absolute;width:1px;height:1px;opacity:0">
+              <sc-if value="{{ hasPhoto }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ removePhoto }}" style="height:48px;border:none;background:none;color:#111827;font:700 17px Arial;text-decoration:underline;cursor:pointer">Usuń obrazek</button>
+              </sc-if>
+            </div>
+          </div>
+          <sc-if value="{{ noPhoto }}" hint-placeholder-val="{{ true }}">
+            <div role="radiogroup" aria-labelledby="av-l" style="display:flex;flex-direction:column;gap:8px;padding-top:4px">
+              <span id="av-l" style="font-size:16px;color:#374151">Bez obrazka pokażemy kółko z literą. Wybierz jego kolor:</span>
+              <div style="display:grid;grid-template-columns:repeat(6,48px);gap:8px">
+                <sc-for list="{{ colors }}" as="c" hint-placeholder-count="6">
+                  <button role="radio" aria-checked="{{ c.on }}" aria-label="{{ c.name }}" onClick="{{ c.pick }}" style="width:48px;height:48px;border-radius:999px;background:{{ c.hex }};border:{{ c.border }};cursor:pointer;color:#111827;font:700 20px Arial;display:flex;align-items:center;justify-content:center">{{ c.mark }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label for="dn" style="font-size:18px;font-weight:700;color:#111827">Nazwa przy przepisach</label>
+          <input id="dn" value="{{ displayName }}" onChange="{{ onDisplay }}" style="height:60px;border:2px solid #4b5563;border-radius:14px;padding:0 14px;font:19px Arial;color:#111827;box-sizing:border-box;width:100%">
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label for="fn" style="font-size:18px;font-weight:700;color:#111827">Imię</label>
+          <input id="fn" value="{{ firstName }}" onChange="{{ onName }}" style="height:60px;border:2px solid #4b5563;border-radius:14px;padding:0 14px;font:19px Arial;color:#111827;box-sizing:border-box;width:100%">
+        </div>
+
+        <div aria-live="polite" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:14px;padding:14px 16px;font-size:18px;line-height:1.5;color:#111827">{{ preview }}</div>
+
+        <button onClick="{{ save }}" style="height:58px;border-radius:14px;border:none;background:#c2410c;color:#fff;font:700 19px Arial;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">{{ saveLabel }}</button>
+
+        <div style="border-top:2px solid #e5e7eb;padding-top:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;color:#374151">Adres email</span><span style="font-size:19px;font-weight:700;color:#111827">antonina@example.pl</span></div>
+          <span style="height:56px;border-radius:14px;border:2px solid #4b5563;display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="log-out" width="22" height="22"></i>Wyloguj</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:15px;color:#374151;line-height:1.5">Zamiast „avatara” jest „Twój obrazek”: obejmuje zdjęcia, kartki i grafiki, a nie tylko zdjęcie twarzy. Na telefonie przycisk otwiera galerię albo aparat. Kto nic nie wgra, ma kolorowe kółko z literą. Formę zwracania się (Antonino, Kasiu, Marku) wyliczamy sami z imienia. Gdy nie jesteśmy pewni, piszemy po prostu „Dzień dobry!”. Płeć (do odmiany „dodałaś / dodałeś”) i nazwa użytkownika do adresów przepisów są ustawiane przy rejestracji i nie zmienia się ich tutaj.</div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { firstName: 'Antonina', displayName: 'Antonina K.', gender: 'f', avatar: 0, photo: null, saved: false };
+  componentDidMount() { this.icons(); }
+  componentDidUpdate() { this.icons(); }
+  icons() { setTimeout(() => window.lucide && window.lucide.createIcons(), 0); }
+  vocative(n) {
+    const k = (n || '').trim().toLowerCase(); if (!k) return null;
+    const dict = { marek:'Marku', paweł:'Pawle', piotr:'Piotrze', tomasz:'Tomaszu', jan:'Janie', michał:'Michale', adam:'Adamie', krzysztof:'Krzysztofie', andrzej:'Andrzeju', kuba:'Kubo', jacek:'Jacku', łukasz:'Łukaszu', ola:'Olu', ala:'Alu' };
+    if (dict[k]) return dict[k];
+    const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    if (/(si|ni|ci|zi)a$/.test(k)) return cap(k.slice(0, -1) + 'u');
+    if (/a$/.test(k)) return cap(k.slice(0, -1) + 'o');
+    return null;
+  }
+  renderVals() {
+    const s = this.state;
+    const voc = this.vocative(s.firstName);
+    const hi = voc ? `Dzień dobry, ${voc}!` : 'Dzień dobry!';
+    const verb = s.gender === 'f' ? 'Dodałaś' : 'Dodałeś';
+    const palette = [['Pomarańczowy','#fed7aa'],['Niebieski','#bfdbfe'],['Zielony','#bbf7d0'],['Różowy','#fbcfe8'],['Żółty','#fef08a'],['Fioletowy','#ddd6fe']];
+    return {
+      firstName: s.firstName, displayName: s.displayName,
+      initial: (s.displayName.trim()[0] || '?').toUpperCase(), avatarBg: palette[s.avatar][1],
+      photoBg: s.photo ? 'url(' + s.photo + ') center/cover' : palette[s.avatar][1], previewLetter: s.photo ? '' : (s.displayName.trim()[0] || '?').toUpperCase(), hasPhoto: !!s.photo, noPhoto: !s.photo,
+      pickLabel: s.photo ? 'Wybierz inny' : 'Wybierz obrazek',
+      onPhoto: e => { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => this.setState({ photo: r.result, saved: false }); r.readAsDataURL(f); e.target.value = ''; },
+      removePhoto: () => this.setState({ photo: null, saved: false }),
+      colors: palette.map(([name, hex], i) => ({ name, hex, on: String(s.avatar === i), mark: s.avatar === i ? '✓' : '', border: s.avatar === i ? '3px solid #111827' : '2px solid #9ca3af', pick: () => this.setState({ avatar: i, saved: false }) })),
+      onName: e => this.setState({ firstName: e.target.value, saved: false }),
+      onDisplay: e => this.setState({ displayName: e.target.value, saved: false }),
+      preview: `${hi} ${verb} 3 nowe przepisy.`,
+      save: () => this.setState({ saved: true }),
+      saveLabel: s.saved ? '✓ Zapisano' : 'Zapisz zmiany',
+    };
+  }
+}
+</script>
+</body>
+</html>
