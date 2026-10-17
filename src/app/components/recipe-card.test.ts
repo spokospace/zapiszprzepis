@@ -40,6 +40,10 @@ describe('RecipeCard image sizes (#253)', () => {
     for (const sizes of [TILE_SIZES_2_TO_4, TILE_SIZES_2_TO_3]) expect(sizes).toMatch(/, 50vw$/)
   })
 
+  it('uses rem like the grids, so a larger browser font moves both together', () => {
+    for (const sizes of [TILE_SIZES_2_TO_4, TILE_SIZES_2_TO_3]) expect(sizes).not.toMatch(/\dpx/)
+  })
+
   it("leaves the list card's fixed thumbnail alone", () => {
     expect(imgSizes({ variant: 'list', sizes: TILE_SIZES_2_TO_4 })).toBe('96px')
   })
