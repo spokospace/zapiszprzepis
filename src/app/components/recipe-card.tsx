@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { recipePath } from '@/lib/routes'
 
 interface RecipeCardProps {
   slug: string
@@ -27,7 +28,7 @@ export function RecipeCard({
   sourceAuthor,
 }: RecipeCardProps) {
   return (
-    <Link href={`/recipes/${slug}`}>
+    <Link href={recipePath(slug)}>
       <div className="group cursor-pointer rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
         {/* Image container */}
         <div className="relative w-full aspect-[4/3] bg-gray-100">

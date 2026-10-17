@@ -11,7 +11,7 @@ describe('loginPath', () => {
   })
 
   it('encodes the destination, including its own query', () => {
-    expect(loginPath('/recipes/tiramisu?fav=1')).toBe('/login?next=%2Frecipes%2Ftiramisu%3Ffav%3D1')
+    expect(loginPath('/przepis/tiramisu?fav=1')).toBe('/login?next=%2Fprzepis%2Ftiramisu%3Ffav%3D1')
   })
 })
 
@@ -23,7 +23,7 @@ describe('resolveLoginNext', () => {
   })
 
   it('keeps a same-origin path with its query', () => {
-    expect(resolveLoginNext('/recipes/tiramisu?fav=1', ORIGIN, '/recipes')).toBe('/recipes/tiramisu?fav=1')
+    expect(resolveLoginNext('/przepis/tiramisu?fav=1', ORIGIN, '/recipes')).toBe('/przepis/tiramisu?fav=1')
   })
 
   it('refuses other origins and normalisation tricks (safeNext → /)', () => {
@@ -39,10 +39,10 @@ describe('resolveLoginNext', () => {
 
 describe('favoriteReturnPath', () => {
   it('returns to the recipe asking to add it', () => {
-    expect(favoriteReturnPath('tiramisu')).toBe('/recipes/tiramisu?fav=1')
+    expect(favoriteReturnPath('tiramisu')).toBe('/przepis/tiramisu?fav=1')
   })
 
   it('encodes an unexpected slug instead of breaking the path', () => {
-    expect(favoriteReturnPath('a b?c')).toBe('/recipes/a%20b%3Fc?fav=1')
+    expect(favoriteReturnPath('a b?c')).toBe('/przepis/a%20b%3Fc?fav=1')
   })
 })

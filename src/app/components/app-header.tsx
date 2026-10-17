@@ -8,7 +8,7 @@ import { AppMenu } from './app-menu'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
 import type { FailedSharesResult } from '@/lib/failed-shares'
-import { RECIPE_PAGE_RE } from '@/lib/routes'
+import { PRZEPIS_PAGE_RE } from '@/lib/routes'
 
 export function AppHeader({
   failedShares,
@@ -19,8 +19,9 @@ export function AppHeader({
   isAuthenticated: boolean
 }) {
   const pathname = usePathname()
-  // The back link targets "/recipes" (Moje przepisy), which is owner-only.
-  const showBackToList = isAuthenticated && RECIPE_PAGE_RE.test(pathname)
+  // Shown on the canonical recipe page (/przepis/{slug}, E01-S03b); the back link
+  // targets "/recipes" (Moje przepisy), which is owner-only.
+  const showBackToList = isAuthenticated && PRZEPIS_PAGE_RE.test(pathname)
 
   return (
     <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">

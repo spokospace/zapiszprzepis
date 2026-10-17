@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { inngest } from '@/inngest/client'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
+import { recipePath } from '@/lib/routes'
 
 /**
  * "Odśwież przepis" — re-run extraction for an existing recipe and overwrite it
@@ -31,7 +32,7 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
 
   if (!recipe?.source_url) {
     // Nothing to re-extract from (e.g. a manually-created recipe without a URL).
-    redirect(`/recipes/${slug}?refresh_error=1`)
+    redirect(`${recipePath(slug)}?refresh_error=1`)
   }
 
   const { data: share } = await supabase
@@ -63,5 +64,5 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
     }
   }
 
-  redirect(`/recipes/${slug}?refreshing=1`)
+  redirect(`${recipePath(slug)}?refreshing=1`)
 }
