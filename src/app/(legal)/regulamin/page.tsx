@@ -13,8 +13,8 @@ export default function TermsPage() {
     <LegalPage title="Regulamin">
       <LegalSection id="uslugodawca" title="1. Kto prowadzi serwis">
         <p>
-          Serwis ZapiszPrzepis (zapiszprzepis.pl) prowadzi <Fill>imię i nazwisko lub nazwa firmy</Fill>,{' '}
-          <Fill>adres</Fill>, <Fill>NIP / REGON, jeśli dotyczy</Fill>. Kontakt: <Fill>adres e-mail do kontaktu</Fill>.
+          Serwis ZapiszPrzepis (zapiszprzepis.pl) prowadzi firma spoko.space (<Fill>pełna nazwa firmy z CEIDG</Fill>),{' '}
+          <Fill>adres firmy</Fill>, NIP <Fill>NIP</Fill>. Kontakt: <Fill>adres e-mail do kontaktu</Fill>.
         </p>
       </LegalSection>
 

@@ -18,8 +18,8 @@ export default function PrivacyPolicyPage() {
 
       <LegalSection id="administrator" title="1. Kto odpowiada za Twoje dane">
         <p>
-          Administratorem danych jest <Fill>imię i nazwisko lub nazwa firmy</Fill>, <Fill>adres</Fill>,{' '}
-          <Fill>NIP / REGON, jeśli dotyczy</Fill>.
+          Administratorem danych jest firma spoko.space (<Fill>pełna nazwa firmy z CEIDG</Fill>), <Fill>adres firmy</Fill>,{' '}
+          NIP <Fill>NIP</Fill>.
         </p>
         <p>
           W sprawach danych osobowych pisz na adres: <Fill>adres e-mail do kontaktu</Fill>.
