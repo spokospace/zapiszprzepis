@@ -75,11 +75,12 @@ export function RecipeCard({
     })
     // No overflow-hidden on the frame: it would clip the focus outline of the link and the bar.
     return (
-      <article className="flex h-full flex-col rounded-card border-2 border-border-card bg-white">
+      <article className="@container flex h-full flex-col rounded-card border-2 border-border-card bg-white">
         {/* Only the title is underlined: it names the link; the meta lines would just be noise. */}
         <Link href={recipePath(slug, { from })} className="group flex flex-1 gap-3 rounded-[14px] p-3 no-underline!">
+          {/* Under 280 px of card (320 px at 130 % zoom) a smaller thumbnail leaves the title room for whole words. */}
           <div
-            className={`relative shrink-0 overflow-hidden rounded-[12px] bg-surface-3 ${thumb === 84 ? 'h-[84px] w-[84px]' : 'h-24 w-24'}`}
+            className={`relative shrink-0 overflow-hidden rounded-[12px] bg-surface-3 @max-[280px]:h-16 @max-[280px]:w-16 ${thumb === 84 ? 'h-[84px] w-[84px]' : 'h-24 w-24'}`}
           >
             {imageUrl ? (
               // The title sits right beside it, so the image is decorative here.
@@ -89,9 +90,10 @@ export function RecipeCard({
             )}
           </div>
           <div className="flex min-w-0 flex-col gap-1.5">
-            {/* Two lines at most; words wrap whole and only an over-long word breaks (no h-scroll at 320 px). */}
+            {/* Two lines at most (C2), words wrapped whole. A tiny card gets 18 px and a third line,
+                so a long word still fits instead of being cut; only a word wider than that breaks. */}
             <h3
-              className={`line-clamp-2 leading-[1.25] font-bold break-words text-ink underline underline-offset-4 group-hover:text-action-text ${thumb === 84 ? 'text-[19px]' : 'text-[20px]'}`}
+              className={`line-clamp-2 leading-[1.25] font-bold break-words text-ink underline underline-offset-4 group-hover:text-action-text @max-[280px]:line-clamp-3 @max-[280px]:text-[18px] ${thumb === 84 ? 'text-[19px]' : 'text-[20px]'}`}
             >
               {title}
             </h3>

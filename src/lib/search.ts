@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { SEARCH_SCOPES, type SearchScope } from '@/lib/routes'
-import { isRecipeCategory, RECIPE_CATEGORIES, type RecipeCategory } from '@/lib/recipe-categories'
+import { isRecipeCategory, type RecipeCategory } from '@/lib/recipe-categories'
+import { categoryCounts, type CategoryCount } from '@/lib/public-profile'
 import type { Database } from '@/lib/supabase.types'
 
 /** Results per "Pokaż kolejne" step (E01-S05: „Pokaż kolejne 14”). */
@@ -76,11 +77,7 @@ export interface SearchResult {
 type SearchRow = SearchResult & { total_count: number }
 
 /** One option of the "Kategoria" filter: a category among the matches, with how many. */
-export interface SearchCategoryFacet {
-  value: RecipeCategory
-  label: string
-  count: number
-}
+export type SearchCategoryFacet = CategoryCount
 
 export type SearchOutcome =
   | {
@@ -134,9 +131,5 @@ export async function searchRecipes(
 
 /** The categories among `rows`, most matches first, then the RECIPE_CATEGORIES order. */
 export function categoryFacets(rows: readonly { category: string }[]): SearchCategoryFacet[] {
-  const counts = new Map<string, number>()
-  for (const r of rows) counts.set(r.category, (counts.get(r.category) ?? 0) + 1)
-  return RECIPE_CATEGORIES.filter((c) => counts.has(c.value))
-    .map((c) => ({ value: c.value, label: c.label, count: counts.get(c.value) ?? 0 }))
-    .sort((a, b) => b.count - a.count) // stable: ties keep the RECIPE_CATEGORIES order
+  return categoryCounts(rows).sort((a, b) => b.count - a.count) // stable: ties keep category order
 }
