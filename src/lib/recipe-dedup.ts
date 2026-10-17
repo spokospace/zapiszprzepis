@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { normalizeUrl, sourceUrlPattern } from './url-normalize'
+import { sha256Hex } from './sha256'
 
 export type DedupResult =
   | { status: 'new'; normalizedUrl: string }
@@ -31,6 +32,9 @@ export function matchKey<Q extends { eq(column: string, value: string): Q; like(
 
 type SavedRecipe = { id: number; slug: string; title: string; category: string; user_id: string }
 
+/** The columns a SavedRecipe is read from — shared by the by-URL, by-fingerprint and by-ingredient lookups. */
+const SAVED_RECIPE_COLUMNS = 'id, slug, title, category, user_id'
+
 /**
  * The recipe stored under `key`, or under another key of the same post: the
  * user's own when `userId` is given, else anyone's. The site-wide form needs a
@@ -42,7 +46,7 @@ export async function findRecipeBySourceUrl(
   userId: string | null,
   key: string,
 ): Promise<SavedRecipe | null> {
-  const query = supabase.from('recipes').select('id, slug, title, category, user_id')
+  const query = supabase.from('recipes').select(SAVED_RECIPE_COLUMNS)
   const scoped = userId ? query.eq('user_id', userId) : query
   const { data } = await matchKey(scoped, 'source_url', key).limit(1).maybeSingle()
   return data
@@ -85,6 +89,56 @@ export async function findExistingRecipeForUrl(
 /** Unique, trimmed, lower-cased ingredient names — the set two extractions are compared on. */
 export function ingredientNames(list: { name: string }[]): Set<string> {
   return new Set(list.map((i) => i.name.trim().toLowerCase()).filter((n) => n.length > 0))
+}
+
+// Title-independent same-recipe signal. Two shares of one dish added seconds
+// apart — a page reposting another's video, two videos of the same recipe —
+// carry different links and different caption text (so the URL and fingerprint
+// rules miss them) AND the LLM names them differently from the two captions
+// ("Kanapki z jajkiem i szynką" vs "Zapiekanka z szynką i serem" — the real
+// #835/#836 pair), so the title+ingredient path below misses them too. Their
+// one shared signal is an identical ingredient set. A set this size of specific
+// names is a strong duplicate signal; a shorter list is pantry staples ("jajka,
+// masło, sól") too generic to merge two differently-titled recipes on.
+export const MIN_FINGERPRINT_NAMES = 5
+
+/**
+ * The canonical string for a recipe's ingredient set — distinct, normalized
+ * names, sorted, newline-joined — or null when the set is too small to identify
+ * a recipe across titles (see MIN_FINGERPRINT_NAMES). The in-memory grouping
+ * key for the offline collapse; its hash (ingredientFingerprint) is what the
+ * database stores and the intake looks up.
+ */
+export function ingredientKey(list: { name: string }[]): string | null {
+  const names = [...ingredientNames(list)].sort()
+  if (names.length < MIN_FINGERPRINT_NAMES) return null
+  return names.join('\n')
+}
+
+/**
+ * SHA-256 (hex) of ingredientKey, stored in recipes.ingredient_fingerprint so
+ * the same ingredient set can be found by an indexed equality lookup. Null when
+ * ingredientKey is (too few names).
+ */
+export async function ingredientFingerprint(list: { name: string }[]): Promise<string | null> {
+  const key = ingredientKey(list)
+  return key == null ? null : sha256Hex(key)
+}
+
+/**
+ * The recipe with the same ingredient set (see ingredientFingerprint): the
+ * user's own when `userId` is given, else anyone's, preferring `preferUserId`'s.
+ */
+export async function findRecipeByIngredientFingerprint(
+  supabase: SupabaseClient,
+  userId: string | null,
+  fingerprint: string,
+  preferUserId?: string,
+): Promise<SavedRecipe | null> {
+  const query = supabase.from('recipes').select(SAVED_RECIPE_COLUMNS)
+  const { data } = await (userId ? query.eq('user_id', userId) : query).eq('ingredient_fingerprint', fingerprint).limit(50)
+  const rows = (data ?? []) as SavedRecipe[]
+  return rows.find((r) => r.user_id === preferUserId) ?? rows[0] ?? null
 }
 
 /**
@@ -135,6 +189,16 @@ export async function findSameRecipe(
   recipe: { title: string; ingredients: { name: string }[] },
   preferUserId?: string,
 ): Promise<SavedRecipe | null> {
+  // The same ingredient set, whatever the title: two shares of one dish added
+  // close together that the LLM named differently (see MIN_FINGERPRINT_NAMES).
+  // Checked first — it is one indexed lookup and catches what the title path
+  // below cannot.
+  const fingerprint = await ingredientFingerprint(recipe.ingredients)
+  if (fingerprint) {
+    const byIngredients = await findRecipeByIngredientFingerprint(supabase, userId, fingerprint, preferUserId)
+    if (byIngredients) return byIngredients
+  }
+
   // ilike, not eq, for the casing; its wildcards in the title are escaped.
   const title = recipe.title.trim().replace(/[\\%_]/g, (c) => '\\' + c)
   const sameIn = async (ownerId: string | null) => {
@@ -160,7 +224,7 @@ export async function findRecipeBySourceFingerprint(
   userId: string | null,
   fingerprint: string,
 ): Promise<SavedRecipe | null> {
-  const query = supabase.from('recipes').select('id, slug, title, category, user_id')
+  const query = supabase.from('recipes').select(SAVED_RECIPE_COLUMNS)
   const { data } = await (userId ? query.eq('user_id', userId) : query)
     .eq('source_fingerprint', fingerprint)
     .limit(1)

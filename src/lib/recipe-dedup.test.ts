@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { classifyExisting, findExistingRecipeForUrl, findSameRecipe, ingredientsSubsume, sameIngredients } from './recipe-dedup'
+import {
+  classifyExisting,
+  findExistingRecipeForUrl,
+  findSameRecipe,
+  ingredientFingerprint,
+  ingredientKey,
+  ingredientsSubsume,
+  sameIngredients,
+} from './recipe-dedup'
+
+// A set of five distinct names — the smallest that fingerprints (MIN_FINGERPRINT_NAMES).
+const FIVE = [{ name: 'chleb' }, { name: 'jajka' }, { name: 'szynka' }, { name: 'ser' }, { name: 'masło' }]
 
 describe('findSameRecipe — the preferred user’s own copy', () => {
   const NALESNIKI = { title: 'Naleśniki', ingredients: [{ name: 'mąka' }] }
@@ -42,6 +53,66 @@ describe('findSameRecipe — the preferred user’s own copy', () => {
     const client = makeRecipesClient([recipeRow(5, 'user-2')])
 
     expect(await findSameRecipe(client, null, NALESNIKI, 'user-1')).toMatchObject({ id: 5, user_id: 'user-2' })
+  })
+})
+
+describe('ingredientKey / ingredientFingerprint', () => {
+  it('is null for a set below the floor, order- and case-insensitive above it', () => {
+    expect(ingredientKey([{ name: 'a' }, { name: 'b' }, { name: 'c' }, { name: 'd' }])).toBeNull()
+    expect(ingredientKey(FIVE)).toBe(ingredientKey([...FIVE].reverse()))
+    expect(ingredientKey([{ name: 'Chleb' }, { name: 'JAJKA' }, { name: 'szynka' }, { name: 'ser' }, { name: ' masło ' }])).toBe(
+      ingredientKey(FIVE),
+    )
+  })
+
+  it('hashes equal sets to the same fingerprint and is null below the floor', async () => {
+    expect(await ingredientFingerprint([{ name: 'a' }, { name: 'b' }, { name: 'c' }, { name: 'd' }])).toBeNull()
+    const fp = await ingredientFingerprint(FIVE)
+    expect(fp).toMatch(/^[0-9a-f]{64}$/)
+    expect(await ingredientFingerprint([...FIVE].reverse())).toBe(fp)
+    // One swapped ingredient is a different set — a different fingerprint.
+    expect(await ingredientFingerprint([...FIVE.slice(1), { name: 'cebula' }])).not.toBe(fp)
+  })
+})
+
+describe('findSameRecipe — same ingredient set, whatever the title', () => {
+  type Row = { id: number; user_id: string; slug: string; title: string; category: string; ingredient_fingerprint: string | null }
+  /** A client that filters recipes by the eq() columns and the ilike title, like the database. */
+  function client(rows: Row[]) {
+    return {
+      from: () => {
+        const eqs: Record<string, string> = {}
+        let title: string | null = null
+        const chain = {
+          select: () => chain,
+          eq: (column: string, value: string) => ((eqs[column] = value), chain),
+          ilike: (_c: string, value: string) => ((title = value), chain),
+          limit: async (n: number) => ({
+            data: rows
+              .filter((r) => (eqs.user_id == null || r.user_id === eqs.user_id))
+              .filter((r) => (eqs.ingredient_fingerprint == null || r.ingredient_fingerprint === eqs.ingredient_fingerprint))
+              .filter((r) => (title == null || r.title.toLowerCase() === title.toLowerCase()))
+              .slice(0, n),
+          }),
+        }
+        return chain
+      },
+    } as never
+  }
+
+  it('links a differently-titled recipe with the identical ingredient set (#835/#836)', async () => {
+    const fp = (await ingredientFingerprint(FIVE))!
+    const rows: Row[] = [{ id: 835, user_id: 'u1', slug: 'kanapki', title: 'Kanapki z jajkiem i szynką', category: 'przekaski', ingredient_fingerprint: fp }]
+    const incoming = { title: 'Zapiekanka z szynką i serem', ingredients: FIVE }
+
+    expect(await findSameRecipe(client(rows), null, incoming, 'u1')).toMatchObject({ id: 835 })
+  })
+
+  it('does not match on a set below the fingerprint floor', async () => {
+    const small = [{ name: 'jajka' }, { name: 'masło' }, { name: 'sól' }]
+    const rows: Row[] = [{ id: 1, user_id: 'u1', slug: 'jajecznica', title: 'Jajecznica', category: 'sniadania', ingredient_fingerprint: null }]
+
+    expect(await findSameRecipe(client(rows), null, { title: 'Omlet', ingredients: small }, 'u1')).toBeNull()
   })
 })
 

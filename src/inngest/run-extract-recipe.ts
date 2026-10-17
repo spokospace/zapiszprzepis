@@ -12,7 +12,7 @@ import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutu
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { publicFacebookAuthor } from '@/lib/facebook-authors'
-import { classifyExisting, findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe } from '@/lib/recipe-dedup'
+import { classifyExisting, findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe, ingredientFingerprint } from '@/lib/recipe-dedup'
 import { insertFavorite } from '@/lib/favorites'
 import { fingerprintText } from '@/lib/source-fingerprint'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
@@ -666,6 +666,9 @@ Rules:
       : {}
 
     const sourceAuthor = await sourceAuthorPromise
+    // The ingredient-set fingerprint persisted for the title-independent dedup
+    // (findSameRecipe above already read it to catch a near-simultaneous twin).
+    const ingredientFp = await ingredientFingerprint(recipeJSON.ingredients)
 
     // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
     // this (user, source_url) in place. The normal path below dedups and
@@ -697,6 +700,7 @@ Rules:
           description,
           meta_description: metaDescription,
           tags,
+          ingredient_fingerprint: ingredientFp,
           source_type: sourceType,
           youtube_id: youtubeId,
           // Keep the author a previous run found when this one saw none.
@@ -776,6 +780,7 @@ Rules:
           image_url: durableImageUrl,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
+          ingredient_fingerprint: ingredientFp,
           source_type: sourceType,
           source_url: sourceUrl,
           source_fingerprint: sourceFingerprint,
@@ -834,7 +839,7 @@ Rules:
       if (ownUrl || error?.message.includes(GLOBAL_URL_KEY)) {
         const existingQuery = supabase
           .from('recipes')
-          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags, dish_classified_at')
+          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags, ingredient_fingerprint, dish_classified_at')
         const { data: existing } = await (ownUrl ? existingQuery.eq('user_id', userId) : existingQuery)
           .eq('source_url', sourceUrl)
           .single()
@@ -877,6 +882,11 @@ Rules:
           }
           if (!existing.tags?.length && tags.length > 0) {
             gapFill.tags = tags
+          }
+          // Only backfill a missing fingerprint — gap-fill never rewrites the
+          // existing row's `ingredients`, so its stored fingerprint stays valid.
+          if (existing.ingredient_fingerprint == null && ingredientFp != null) {
+            gapFill.ingredient_fingerprint = ingredientFp
           }
           // Archive flow: when archiveImage returns a Storage URL, always
           // overwrite image_url — even if it's already populated with an
