@@ -29,6 +29,10 @@ export function safeNext(rawNext: string | null, origin: string): string {
   try {
     const url = new URL(rawNext, origin)
     if (url.origin !== origin) return '/'
+    // Dot segments survive the origin check but collapse to a protocol-relative
+    // path: new URL('/.//evil.com', origin).pathname === '//evil.com', which a
+    // browser then follows off-site. The returned path must not start with '//'.
+    if (url.pathname.startsWith('//')) return '/'
     return `${url.pathname}${url.search}${url.hash}`
   } catch {
     return '/'

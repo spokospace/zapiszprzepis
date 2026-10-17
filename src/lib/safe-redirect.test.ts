@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { safeNext, mapAuthError, inboundAuthError, inboundOAuthError, parseEmailOtpType } from '@/lib/safe-redirect'
 
+describe('safeNext — dot-segment protocol-relative bypass', () => {
+  it.each(['/.//evil.com', '/a/..//evil.com', '/%2e//evil.com', '/x/../..//evil.com'])(
+    'rejects %s',
+    (raw) => {
+      expect(safeNext(raw, 'https://zapiszprzepis.pl')).toBe('/')
+    },
+  )
+})
+
 describe('inboundOAuthError — OAuth errors on the callback URL (E01-S12)', () => {
   it('maps the email-collision codes', () => {
     expect(inboundOAuthError('email_exists', 'access_denied', null)).toBe('oauth_email_exists')

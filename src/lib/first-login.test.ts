@@ -11,10 +11,6 @@ describe('firstLoginTarget', () => {
     expect(firstLoginTarget('female', '/recipes')).toBe('/recipes')
   })
 
-  it('fails open when gender could not be read', () => {
-    expect(firstLoginTarget('error', '/recipes')).toBe('/recipes')
-  })
-
   it('never wraps /witaj in itself', () => {
     expect(firstLoginTarget(null, '/witaj?next=%2F')).toBe('/witaj?next=%2F')
     expect(firstLoginTarget(null, '/witaj')).toBe('/witaj')

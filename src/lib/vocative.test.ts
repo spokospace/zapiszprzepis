@@ -34,6 +34,31 @@ describe('vocative', () => {
     expect(vocative(name)).toBe(expected)
   })
 
+  it.each([
+    ['Ala', 'Alu'],
+    ['Pola', 'Polu'],
+    ['Nela', 'Nelu'],
+    ['Jadzia', 'Jadziu'],
+    ['Marysia', 'Marysiu'],
+    ['Hania', 'Haniu'],
+  ])('inflects the diminutive %s with -u', (name, expected) => {
+    expect(vocative(name)).toBe(expected)
+  })
+
+  it.each([
+    ['Antonia', 'Antonio'],
+    ['Stefania', 'Stefanio'],
+    ['Melania', 'Melanio'],
+    ['Ksenia', 'Ksenio'],
+    ['Kamila', 'Kamilo'],
+  ])('inflects the full name %s with -o, not a diminutive -iu', (name, expected) => {
+    expect(vocative(name)).toBe(expected)
+  })
+
+  it('returns null for an unknown short -la name', () => {
+    expect(vocative('Mila')).toBeNull()
+  })
+
   it('is case-insensitive and capitalises the result', () => {
     expect(vocative('ANIA')).toBe('Aniu')
     expect(vocative('  łukasz ')).toBe('Łukaszu')

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   // missing-code branch.
   const inbound = inboundAuthError(searchParams.get('error_code'), searchParams.get('error'))
   if (inbound) {
-    return NextResponse.redirect(new URL(`/login?error=${inbound}`, origin))
+    return NextResponse.redirect(new URL(loginErrorPath(inbound, next), origin))
   }
 
   if (!code) {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   if (error) {
     const mapped = mapAuthError(error.code)
-    return NextResponse.redirect(new URL(`/login?error=${mapped}`, origin))
+    return NextResponse.redirect(new URL(loginErrorPath(mapped, next), origin))
   }
 
   // First login (no gender chosen yet) detours once through /witaj (E01-S12).

@@ -16,12 +16,14 @@ const ERRORS: Record<string, string> = {
   unknown: 'Nie udało się zapisać. Spróbuj ponownie.',
 }
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+// Never disabled for "nothing chosen yet": without JS the form must still
+// submit, and the server answers an empty choice with the `invalid` message.
+function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <button
       type="submit"
-      disabled={disabled || pending}
+      disabled={pending}
       className={`${buttonClasses('primary', 'lg')} w-full text-[19px]`}
     >
       {pending ? 'Zapisuję…' : 'Zapisz i przejdź dalej'}
@@ -50,7 +52,7 @@ export function GenderForm({ next, error }: { next: string; error?: string }) {
           return (
             <label
               key={option.value}
-              className={`flex min-h-[56px] cursor-pointer items-center gap-3 rounded-field border-2 px-4 py-2 text-[19px] font-semibold text-ink has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus ${
+              className={`flex min-h-[56px] cursor-pointer items-center gap-3 rounded-field border-2 px-4 py-2 text-[19px] font-semibold text-ink ${
                 selected ? 'border-focus ring-3 ring-inset ring-focus' : 'border-field'
               }`}
             >
@@ -60,7 +62,7 @@ export function GenderForm({ next, error }: { next: string; error?: string }) {
                 value={option.value}
                 checked={selected}
                 onChange={() => setGender(option.value)}
-                className="size-6 accent-focus focus-visible:outline-none"
+                className="size-6 accent-focus"
               />
               {option.label}
               {selected && (
@@ -78,7 +80,7 @@ export function GenderForm({ next, error }: { next: string; error?: string }) {
         <strong>Tego wyboru nie można później zmienić.</strong>
       </p>
 
-      <SubmitButton disabled={gender === null} />
+      <SubmitButton />
     </form>
   )
 }

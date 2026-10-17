@@ -54,6 +54,7 @@ grant select on public.profiles_private to authenticated;
 create or replace function public.enforce_gender_immutable()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   if old.gender is not null and new.gender is distinct from old.gender then
@@ -77,7 +78,7 @@ create or replace function public.set_gender(p_gender text)
 returns text
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   uid uuid := auth.uid();

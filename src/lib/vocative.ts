@@ -82,10 +82,15 @@ const DICTIONARY: Record<string, string> = {
   zbigniew: 'Zbigniewie',
   zdzisław: 'Zdzisławie',
   // Feminine / diminutive names where the -a → -o fallback would be wrong.
+  ala: 'Alu',
   ela: 'Elu',
   hela: 'Helu',
+  lola: 'Lolu',
   mela: 'Melu',
+  nela: 'Nelu',
   ola: 'Olu',
+  pola: 'Polu',
+  tola: 'Tolu',
   ula: 'Ulu',
   // Feminine names that do not end in -a.
   beatrycze: 'Beatrycze',
@@ -120,9 +125,15 @@ export function vocative(firstName: string | null | undefined): string | null {
   if (known) return known
 
   // Fallback rules for names in -a (backlog E01-S12): diminutives in
-  // -sia/-nia/-cia/-zia take -iu (Ania → Aniu, Zuzia → Zuziu); any other -a
-  // takes -o (Magda → Magdo, Agnieszka → Agnieszko, Kuba → Kubo).
-  if (/(si|ni|ci|zi)a$/.test(name)) return capitalize(name.slice(0, -1) + 'u')
+  // -sia/-cia/-zia take -iu (Kasia → Kasiu, Jadzia → Jadziu); -nia only in
+  // short diminutives (Ania → Aniu, Hania → Haniu) — full names such as
+  // Antonia/Stefania/Melania take -o. Short -la names are diminutives with -u
+  // (Ola → Olu); those not in the dictionary are too uncertain → null. Any
+  // other -a takes -o (Magda → Magdo, Agnieszka → Agnieszko, Kuba → Kubo).
+  if (/(si|ci|zi)a$/.test(name) || (name.endsWith('nia') && name.length <= 5)) {
+    return capitalize(name.slice(0, -1) + 'u')
+  }
+  if (name.endsWith('la') && name.length <= 4) return null
   if (name.endsWith('a')) return capitalize(name.slice(0, -1) + 'o')
 
   return null

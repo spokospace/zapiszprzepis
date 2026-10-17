@@ -19,11 +19,10 @@ export function welcomePath(next: string, error?: string): string {
 }
 
 /**
- * Pure decision: `gender` is the stored value (null = not chosen yet), or
- * 'error' when it could not be read.
+ * Pure decision: `gender` is the stored value (null = not chosen yet).
  */
-export function firstLoginTarget(gender: string | null | 'error', next: string): string {
-  if (gender === 'error' || gender) return next
+export function firstLoginTarget(gender: string | null, next: string): string {
+  if (gender) return next
   // Never wrap /witaj in itself.
   if (next === WELCOME_PATH || next.startsWith(`${WELCOME_PATH}?`)) return next
   return welcomePath(next)
@@ -44,7 +43,7 @@ export async function postLoginPath(supabase: SupabaseClient, next: string): Pro
 
   if (error) {
     console.error('first-login gender read failed', { code: error.code })
-    return firstLoginTarget('error', next)
+    return next
   }
   return firstLoginTarget(data?.gender ?? null, next)
 }
