@@ -77,11 +77,12 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
   return (
     <>
       <section aria-labelledby="hero-heading" className="bg-surface-accent">
-        <PageContainer className="py-6">
-          <h1 id="hero-heading" className="mb-4 text-[30px] leading-tight font-bold text-ink">
+        {/* Desktop (E01-S17, A8): a centred hero with a 46 px H1 and the 760 px field. */}
+        <PageContainer className="py-6 lg:py-14 lg:text-center">
+          <h1 id="hero-heading" className="mb-4 text-[30px] leading-tight font-bold text-ink lg:mb-5 lg:text-[46px] lg:leading-[1.1]">
             Czego dziś szukasz?
           </h1>
-          <HomeSearch id="home-search-guest" />
+          <HomeSearch id="home-search-guest" centered />
         </PageContainer>
       </section>
       <PageContainer className="flex flex-col gap-8 pt-6">
@@ -92,7 +93,7 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
             <h2 id="recent-heading" className="mb-3 text-[22px] font-bold text-ink">
               Ostatnio dodane
             </h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
               {/* E01-S07: lets the recipe page show "← Ostatnio dodane" + prev/next. */}
               <RecipeListSnapshot
                 listKey="home"

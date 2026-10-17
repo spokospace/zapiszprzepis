@@ -101,8 +101,8 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
           <h2 id="podobne" className="mb-4 text-[26px] font-bold text-ink">
             Podobne
           </h2>
-          {/* The page column is narrow: two cards a row on every width. */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Two cards a row, four from lg (E01-S17, A9). */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
             {similar.map((r) => (
               <RecipeCard
                 key={r.id}

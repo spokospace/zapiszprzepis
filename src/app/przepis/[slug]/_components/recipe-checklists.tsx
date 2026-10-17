@@ -22,6 +22,8 @@ interface RecipeChecklistsProps {
   recipeId: number
   ingredientGroups: IngredientGroup[]
   steps: string[]
+  /** Rendered under the steps: in the steps column from lg (video, gallery; E01-S17). */
+  children?: React.ReactNode
 }
 
 /**
@@ -58,8 +60,10 @@ function CheckRow({
 /**
  * Składniki + Przygotowanie for the recipe page (E01-S07): ticks are kept per tab in
  * sessionStorage, steps read "Krok N z M", and "Wielkość tekstu" scales both lists.
+ * From lg (E01-S17, A9) a `1fr 1.6fr` grid: the ingredients in a panel | the steps
+ * plus `children`. Below lg it is one column, in the same order.
  */
-export function RecipeChecklists({ recipeId, ingredientGroups, steps }: RecipeChecklistsProps) {
+export function RecipeChecklists({ recipeId, ingredientGroups, steps, children }: RecipeChecklistsProps) {
   const { level, setLevel, scaleStyle } = useTextScale()
   const [raw, setRaw] = useSessionStorage(checklistStorageKey(recipeId))
   const state = useMemo(() => parseChecklist(raw), [raw])
@@ -73,8 +77,8 @@ export function RecipeChecklists({ recipeId, ingredientGroups, steps }: RecipeCh
   )
 
   return (
-    <div style={scaleStyle}>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div style={scaleStyle} className="lg:grid lg:grid-cols-[1fr_1.6fr] lg:items-start lg:gap-x-12">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 lg:col-span-2">
         <TextSizeControls level={level} onChange={setLevel} />
         {hasChecked(state) && (
           <button
@@ -87,7 +91,10 @@ export function RecipeChecklists({ recipeId, ingredientGroups, steps }: RecipeCh
         )}
       </div>
 
-      <section aria-labelledby="ingredients-heading" className="mb-10">
+      <section
+        aria-labelledby="ingredients-heading"
+        className="mb-10 lg:rounded-card lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"
+      >
         <h2 id="ingredients-heading" className="mb-3 text-[26px] font-bold text-ink">
           Składniki
         </h2>
@@ -120,33 +127,36 @@ export function RecipeChecklists({ recipeId, ingredientGroups, steps }: RecipeCh
         ))}
       </section>
 
-      <section aria-labelledby="steps-heading" className="mb-10">
-        <h2 id="steps-heading" className="mb-3 text-[26px] font-bold text-ink">
-          Przygotowanie
-        </h2>
-        {steps.length === 0 ? (
-          <p className="text-[19px] text-ink-soft">Brak kroków przygotowania.</p>
-        ) : (
-          <ol className="space-y-4">
-            {steps.map((step, i) => (
-              <li key={i}>
-                <p id={`step-${i}-label`} className="text-[16px] font-bold text-ink-soft">
-                  Krok {i + 1} z {steps.length}
-                </p>
-                <div className="text-scalable text-[19px]">
-                  <CheckRow
-                    checked={state.steps.includes(i)}
-                    onToggle={() => toggle('steps', i)}
-                    describedBy={`step-${i}-label`}
-                  >
-                    {step}
-                  </CheckRow>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+      <div>
+        <section aria-labelledby="steps-heading" className="mb-10">
+          <h2 id="steps-heading" className="mb-3 text-[26px] font-bold text-ink">
+            Przygotowanie
+          </h2>
+          {steps.length === 0 ? (
+            <p className="text-[19px] text-ink-soft">Brak kroków przygotowania.</p>
+          ) : (
+            <ol className="space-y-4">
+              {steps.map((step, i) => (
+                <li key={i}>
+                  <p id={`step-${i}-label`} className="text-[16px] font-bold text-ink-soft">
+                    Krok {i + 1} z {steps.length}
+                  </p>
+                  <div className="text-scalable text-[19px]">
+                    <CheckRow
+                      checked={state.steps.includes(i)}
+                      onToggle={() => toggle('steps', i)}
+                      describedBy={`step-${i}-label`}
+                    >
+                      {step}
+                    </CheckRow>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+        {children}
+      </div>
     </div>
   )
 }

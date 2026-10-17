@@ -15,8 +15,10 @@ interface RecipeListBarProps {
 }
 
 // Fixed height for both rows (48 + 56 px) plus padding, so the placeholder and the
-// filled bar occupy the same space and nothing below jumps on hydration.
-const BAR = 'mb-6 min-h-[146px] rounded-card border border-border-card-2 p-3'
+// filled bar occupy the same space and nothing below jumps on hydration. From lg
+// (E01-S17, A9) both rows share one line: 56 px + padding.
+const BAR =
+  'mb-6 min-h-[146px] rounded-card border border-border-card-2 p-3 lg:flex lg:min-h-[82px] lg:items-center lg:justify-between lg:gap-4'
 
 const NAV =
   'flex min-h-[56px] flex-col justify-center rounded-field border-2 px-3 py-1.5 leading-tight'
@@ -77,7 +79,7 @@ export function RecipeListBar({ slug, from, fallback }: RecipeListBarProps) {
 
   return (
     <nav aria-label="Nawigacja po liście" className={BAR}>
-      <div className="mb-2 flex min-h-[48px] items-center justify-between gap-3 text-[17px] font-bold text-ink">
+      <div className="mb-2 flex min-h-[48px] items-center justify-between gap-3 text-[17px] font-bold text-ink lg:mb-0">
         <Link href={position.href} className="inline-flex min-h-[48px] items-center underline hover:text-action-hover">
           ← {position.label}
         </Link>
@@ -90,7 +92,7 @@ export function RecipeListBar({ slug, from, fallback }: RecipeListBarProps) {
           </span>
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 lg:w-[540px] lg:shrink-0">
         <NavLink item={position.prev} from={linkFrom} direction="prev" />
         <NavLink item={position.next} from={linkFrom} direction="next" />
       </div>

@@ -3,10 +3,12 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronLeft, Link as LinkIcon } from 'lucide-react'
+import { ChevronLeft, Link as LinkIcon, Plus } from 'lucide-react'
 import { AppMenu } from './app-menu'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
+import { HeaderNav } from './header-nav'
+import { HeaderSearch } from './header-search'
 import type { FailedSharesResult } from '@/lib/failed-shares'
 import type { MenuSummary } from '@/lib/menu-summary'
 import { PRZEPIS_PAGE_RE } from '@/lib/routes'
@@ -29,8 +31,10 @@ export function AppHeader({
 
   return (
     <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
-      <PageContainer className="flex items-center justify-between py-3">
-        <div className="flex items-center gap-2">
+      {/* Desktop (E01-S17, A8/A9) from lg: a guest gets Przepisy + Kategorie and
+          Zaloguj się + Załóż konto; a signed-in user gets the search field. */}
+      <PageContainer className="flex items-center justify-between py-3 lg:gap-6">
+        <div className="flex items-center gap-2 lg:gap-6">
           {showBackToList && (
             <Link
               href="/recipes"
@@ -40,7 +44,7 @@ export function AppHeader({
               <ChevronLeft className="h-5 w-5" />
             </Link>
           )}
-          <Link href="/">
+          <Link href="/" className="lg:shrink-0">
             <Image
               src="/logo-lettering.svg"
               alt="ZapiszPrzepis"
@@ -48,31 +52,48 @@ export function AppHeader({
               height={30}
               unoptimized
               priority
+              className="lg:h-[35px] lg:w-[140px]"
             />
           </Link>
+          {!isAuthenticated && <HeaderNav className="hidden lg:flex" />}
         </div>
-        <div className="flex items-center gap-1">
+        {isAuthenticated && <HeaderSearch className="hidden lg:flex" />}
+        <div className="flex items-center gap-1 lg:ml-auto lg:gap-2">
           {isAuthenticated ? (
             <>
               <Link
                 href="/?tab=add"
                 aria-label="Dodaj przepis z linku"
-                className="mr-1 inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
+                className="mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-action px-3 py-1.5 text-sm font-medium text-white hover:bg-action-hover transition-colors lg:mr-0 lg:min-h-[48px] lg:rounded-field lg:px-4 lg:text-[18px] lg:font-bold"
               >
-                <LinkIcon aria-hidden="true" className="h-4 w-4" />
-                Dodaj
+                <LinkIcon aria-hidden="true" className="h-4 w-4 lg:hidden" />
+                <Plus aria-hidden="true" className="hidden h-5 w-5 lg:block" />
+                Dodaj<span className="-ml-1.5 hidden lg:inline">&nbsp;przepis</span>
               </Link>
               <NotificationBell failedShares={failedShares} />
             </>
           ) : (
-            <Link
-              href="/login"
-              className="mr-1 inline-flex min-h-[44px] items-center rounded-lg border-2 border-gray-500 px-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
-            >
-              Zaloguj się
-            </Link>
+            <>
+              <Link
+                href="/login"
+                className="mr-1 inline-flex min-h-[44px] items-center whitespace-nowrap rounded-lg border-2 border-gray-500 px-3 text-sm font-semibold text-gray-900 hover:bg-gray-50 lg:mr-0 lg:min-h-[48px] lg:rounded-field lg:border-field lg:px-4 lg:text-[18px]"
+              >
+                Zaloguj się
+              </Link>
+              {/* One OAuth screen both signs in and creates the account. */}
+              <Link
+                href="/login"
+                className="hidden min-h-[48px] items-center whitespace-nowrap rounded-field bg-action px-4 text-[18px] font-bold text-white hover:bg-action-hover lg:inline-flex"
+              >
+                Załóż konto
+              </Link>
+            </>
           )}
-          <AppMenu isAuthenticated={isAuthenticated} summary={menu} />
+          {/* The guest drawer holds only the sign-in CTA and the categories, which the
+              desktop header already shows. */}
+          <div className={isAuthenticated ? 'flex' : 'flex lg:hidden'}>
+            <AppMenu isAuthenticated={isAuthenticated} summary={menu} />
+          </div>
         </div>
       </PageContainer>
     </header>

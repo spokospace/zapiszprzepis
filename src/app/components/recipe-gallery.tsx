@@ -31,7 +31,7 @@ export function RecipeGallery({ images, title }: RecipeGalleryProps) {
   return (
     <section className="mb-12">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Zdjęcia</h2>
-      <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+      <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
         {images.map((src, i) => (
           <li key={src}>
             <button
