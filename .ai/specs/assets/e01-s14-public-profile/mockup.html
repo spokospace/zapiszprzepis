@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E01-S14 public profile mockup</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: #e5e7eb; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #111827; }
+  .row { display: flex; gap: 24px; align-items: flex-start; }
+  .col { width: 390px; }
+  .cap { font: 700 15px system-ui; color: #374151; margin: 0 0 8px; }
+  .phone { background: #fff; border: 1px solid #d1d5db; border-radius: 16px; overflow: hidden; }
+  .hdr { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; }
+  .logo { font-weight: 800; font-size: 19px; }
+  .logo b { color: #9a3412; }
+  .menu { border: 2px solid #4b5563; border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 16px; }
+  main { padding: 20px 16px 28px; }
+  .owner { background: #fff7ed; border: 2px solid #fed7aa; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
+  .owner p { margin: 0 0 12px; font-size: 19px; }
+  .btn2 { display: flex; justify-content: center; align-items: center; min-height: 56px; border: 2px solid #4b5563; border-radius: 12px; font-weight: 700; font-size: 18px; color: #111827; text-decoration: none; background: #fff; }
+  .head { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
+  .av { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 40px; font-weight: 800; flex: none; }
+  h1 { margin: 0 0 4px; font-size: 30px; line-height: 1.15; }
+  .count { margin: 0; font-size: 19px; }
+  .since { margin: 2px 0 0; font-size: 17px; color: #374151; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 16px; border: 2px solid #d1d5db; border-radius: 999px; font-weight: 700; font-size: 17px; color: #111827; text-decoration: none; background: #fff; }
+  .chip.on { background: #111827; border-color: #111827; color: #fff; }
+  .chip span { font-weight: 400; font-size: 16px; opacity: .8; }
+  h2 { font-size: 22px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .card { border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+  .img { aspect-ratio: 4/3; background: linear-gradient(135deg,#fdba74,#c2410c); }
+  .img.b { background: linear-gradient(135deg,#bbf7d0,#15803d); }
+  .img.c { background: linear-gradient(135deg,#fde68a,#b45309); }
+  .img.d { background: linear-gradient(135deg,#e9d5ff,#7e22ce); }
+  .card div.t { padding: 10px; }
+  .card strong { display: block; font-size: 17px; line-height: 1.25; }
+  .card small { display: block; margin-top: 4px; font-size: 16px; color: #374151; }
+  .empty { font-size: 19px; color: #374151; }
+  .empty a { color: #9a3412; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="col">
+    <p class="cap">Guest / other user — /u/tola</p>
+    <div class="phone">
+      <div class="hdr"><span class="logo">Zapisz<b>Przepis</b></span><span class="menu">☰ MENU</span></div>
+      <main>
+        <div class="head">
+          <div class="av" style="background:#15803d" aria-hidden="true">T</div>
+          <div>
+            <h1>Tola</h1>
+            <p class="count">Dodane przepisy: 27</p>
+            <p class="since">W ZapiszPrzepis od października 2026</p>
+          </div>
+        </div>
+        <nav class="chips" aria-label="Kategorie przepisów">
+          <a class="chip on" href="#">✓ Wszystkie <span>27</span></a>
+          <a class="chip" href="#">Obiady <span>9</span></a>
+          <a class="chip" href="#">Ciasta <span>12</span></a>
+          <a class="chip" href="#">Przekąski <span>6</span></a>
+        </nav>
+        <h2>Przepisy</h2>
+        <div class="grid">
+          <div class="card"><div class="img"></div><div class="t"><strong>Sernik baskijski</strong><small>aniagotuje.pl</small></div></div>
+          <div class="card"><div class="img b"></div><div class="t"><strong>Pesto z bazylii</strong><small>YouTube · Kuchnia Lidla</small></div></div>
+          <div class="card"><div class="img c"></div><div class="t"><strong>Placki ziemniaczane</strong><small>kwestiasmaku.com</small></div></div>
+          <div class="card"><div class="img d"></div><div class="t"><strong>Ciasto ze śliwkami</strong><small>Facebook · Wypieki</small></div></div>
+        </div>
+        <a class="btn2" href="#">Pokaż kolejne</a>
+      </main>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="cap">Owner viewing own profile</p>
+    <div class="phone">
+      <div class="hdr"><span class="logo">Zapisz<b>Przepis</b></span><span class="menu">☰ MENU</span></div>
+      <main>
+        <div class="owner">
+          <p>Tak widzą Twój profil inni.</p>
+          <a class="btn2" href="#">Zmień nazwę lub obrazek</a>
+        </div>
+        <div class="head">
+          <div class="av" style="background:#15803d" aria-hidden="true">T</div>
+          <div>
+            <h1>Tola</h1>
+            <p class="count">Dodane przepisy: 27</p>
+            <p class="since">W ZapiszPrzepis od października 2026</p>
+          </div>
+        </div>
+        <nav class="chips" aria-label="Kategorie przepisów">
+          <a class="chip" href="#">Wszystkie <span>27</span></a>
+          <a class="chip on" href="#" aria-current="page">✓ Ciasta <span>12</span></a>
+          <a class="chip" href="#">Obiady <span>9</span></a>
+        </nav>
+        <h2>Ciasta</h2>
+        <div class="grid">
+          <div class="card"><div class="img"></div><div class="t"><strong>Sernik baskijski</strong><small>aniagotuje.pl</small></div></div>
+          <div class="card"><div class="img d"></div><div class="t"><strong>Ciasto ze śliwkami</strong><small>Facebook · Wypieki</small></div></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="col">
+    <p class="cap">Empty profile (noindex)</p>
+    <div class="phone">
+      <div class="hdr"><span class="logo">Zapisz<b>Przepis</b></span><span class="menu">☰ MENU</span></div>
+      <main>
+        <div class="head">
+          <div class="av" style="background:#1d4ed8" aria-hidden="true">U</div>
+          <div>
+            <h1>Użytkownik</h1>
+            <p class="since">W ZapiszPrzepis od października 2026</p>
+          </div>
+        </div>
+        <p class="empty">Na tym profilu nie ma jeszcze przepisów. <a href="#">Wróć na stronę główną</a></p>
+      </main>
+    </div>
+  </div>
+</div>
+</body>
+</html>
