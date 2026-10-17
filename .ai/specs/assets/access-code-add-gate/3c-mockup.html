@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3c — bramka kodu (mockup)</title>
+<style>
+  :root { --ink:#111827; --ink-soft:#374151; --field:#4b5563; --action:#c2410c; --danger:#b91c1c; --success:#15803d; --success-bg:#dcfce7; --focus:#1d4ed8; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:24px 16px; font-family: system-ui, sans-serif; color:var(--ink); background:#f3f4f6; }
+  .row { display:flex; flex-wrap:wrap; gap:24px; }
+  .state { flex:1 1 340px; max-width:400px; }
+  .tag { font-size:14px; font-weight:700; color:var(--ink-soft); margin:0 0 8px; text-transform:uppercase; letter-spacing:.04em; }
+  .card { background:#fff; border-radius:12px; padding:20px 16px; }
+  h2 { font-size:24px; margin:0 0 8px; }
+  p { font-size:19px; line-height:1.5; margin:0 0 16px; color:var(--ink-soft); }
+  label { display:block; font-size:19px; font-weight:700; margin-bottom:6px; }
+  input { width:100%; min-height:56px; font-size:19px; padding:0 14px; border:2px solid var(--field); border-radius:10px; }
+  input[aria-invalid="true"] { border-color:var(--danger); }
+  input:focus { outline:3px solid var(--focus); outline-offset:2px; }
+  button { margin-top:12px; width:100%; min-height:56px; font-size:18px; font-weight:700; color:#fff; background:var(--action); border:0; border-radius:10px; }
+  .alert { margin-top:8px; font-size:17px; color:var(--danger); font-weight:600; }
+  .status { display:flex; gap:8px; align-items:center; background:var(--success-bg); color:var(--success); font-weight:700; font-size:19px; padding:12px 14px; border-radius:10px; margin-bottom:16px; }
+  .note { font-size:16px; margin:16px 0 0; }
+</style>
+</head>
+<body>
+<div class="row">
+  <section class="state" aria-label="Stan domyślny">
+    <p class="tag">1 · Brak dostępu</p>
+    <div class="card">
+      <h2>Dodawanie przepisów</h2>
+      <p>Żeby dodawać własne przepisy, wpisz kod dostępu. Ulubione i galeria działają bez kodu.</p>
+      <label for="c1">Kod dostępu</label>
+      <input id="c1" autocomplete="off" spellcheck="false">
+      <button type="button">Odblokuj</button>
+      <p class="note">Pełny dostęp płatny — wkrótce.</p>
+    </div>
+  </section>
+  <section class="state" aria-label="Zły kod">
+    <p class="tag">2 · Zły kod</p>
+    <div class="card">
+      <h2>Dodawanie przepisów</h2>
+      <p>Żeby dodawać własne przepisy, wpisz kod dostępu. Ulubione i galeria działają bez kodu.</p>
+      <label for="c2">Kod dostępu</label>
+      <input id="c2" value="ABCD1234" aria-invalid="true" aria-describedby="e2">
+      <p id="e2" role="alert" class="alert">Ten kod nie działa. Sprawdź, czy wpisano go bez błędów.</p>
+      <button type="button">Odblokuj</button>
+      <p class="note">Pełny dostęp płatny — wkrótce.</p>
+    </div>
+  </section>
+  <section class="state" aria-label="Sukces">
+    <p class="tag">3 · Odblokowane</p>
+    <div class="card">
+      <div role="status" class="status"><span aria-hidden="true">✓</span> Gotowe — możesz dodawać przepisy.</div>
+      <label for="c3">Link do przepisu</label>
+      <input id="c3" placeholder="Wklej link do przepisu">
+      <button type="button">Dodaj przepis</button>
+    </div>
+  </section>
+</div>
+</body>
+</html>
