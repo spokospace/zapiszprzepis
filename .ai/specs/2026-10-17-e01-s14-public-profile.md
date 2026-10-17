@@ -29,15 +29,15 @@ Alternatives considered:
 - **Route:** `src/app/u/layout.tsx` (wraps children in `AppShell`, like `src/app/przepisy/layout.tsx`) and `src/app/u/[username]/page.tsx` (server). Unknown username → `notFound()`.
 - **Pure helpers (new, unit-tested):** `src/lib/public-profile.ts`
   - `PROFILE_PAGE_SIZE = 12`;
-  - `parseProfilePage(raw)` → integer ≥ 1 (garbage, negatives, arrays → 1; capped at 50);
+  - `parseProfilePage(raw)` → integer ≥ 1 (garbage, negatives, arrays → 1; capped at `MAX_PROFILE_PAGE` = 83, the deepest page whose `page × 12 + 1` rows fit one 1000-row PostgREST response — the largest profile already has ~670 recipes, so a lower cap hides its oldest ones; "Pokaż kolejne" is hidden at the cap);
   - `categoryCounts(rows)` → `{ value, label, count }[]` in `RECIPE_CATEGORIES` order, only non-zero, unknown values dropped;
   - `memberSinceLabel(profileCreatedAt, oldestRecipeCreatedAt)` → "października 2026" (Polish genitive month + year) from the **earlier** of the two dates (see Data Model);
   - `profileCategoryHref(username, category | null)` and `profileMoreHref(username, category, page)`;
   - `isUsernameShape(raw)` — the S18 generator's shape (`^[a-z0-9]+(-[a-z0-9]+)*$`, ≤ 64 chars), checked before any query;
   - `isProfileOwner(userId, profileId)` and `profileRobots(total)` (`{ index: false }` when 0), so owner gating and `noindex` are unit-tested rather than only checked by hand.
-- **New component:** `src/app/components/profile-avatar.tsx` — the first letter of `display_name` (uppercase, `?` when empty) in white on one of six avatar colours, picked by a stable hash of `username`. 88 px on this page, `size` prop for reuse. `aria-hidden` (the name is printed next to it). S13 (settings, in flight) adds photo upload and colour choice; it extends this component rather than adding a second one (coordination note in the shared notes folder).
+- **Avatar — reuse S13's API, no second avatar:** `src/lib/avatar.ts` (`AVATAR_COLORS`, `avatarColorIndex(userId, stored)`, `avatarInitial`) and `src/app/components/ui/avatar.tsx` (`<Avatar src name colorIndex size>`), copied byte-for-byte from S13 (#263) so whichever story merges second takes S13's superset with a trivial add/add resolution. The colour is derived from the **user id** (same as /settings), not the username. Until S13 ships, the profile passes `src={null}` and `stored=null`; once `profiles.avatar_path` / `avatar_color` exist, the profile selects and passes them (follow-up). 88 px, decorative (`aria-hidden`).
 - **Reused:** `RecipeCard` (links through `recipePath()`, shows `sourceLabel()` — never a login), `PageContainer`, `categoryLabel` / `RECIPE_CATEGORIES` / `isRecipeCategory`, `buttonClasses()`, `getCurrentUser()` (React-cached; owner check only), design tokens.
-- **Edited:** `src/lib/routes.ts` (`profilePath`, `PROFILE_PAGE_RE`, `isPublicRoute`), `src/app/globals.css` (six `--color-avatar-N` tokens), `src/app/przepis/[slug]/_components/recipe-header.tsx` — **comment only** (the "until E01-S14" note becomes stale). S06 and S16 edit that file in parallel; this story touches no markup there.
+- **Edited:** `src/lib/routes.ts` (`profilePath`, `PROFILE_PAGE_RE`, `isPublicRoute`), `src/app/przepis/[slug]/_components/recipe-header.tsx` — **comment only** (the "until E01-S14" note becomes stale). S06 and S16 edit that file in parallel; this story touches no markup there.
 
 ```mermaid
 flowchart TD
@@ -45,7 +45,7 @@ flowchart TD
   U --> P[(profiles - anon read, existing)]
   U --> V[(public_recipes view - existing)]
   U --> H[public-profile.ts helpers - new]
-  U --> A[ProfileAvatar - new]
+  U --> A[Avatar - shared with S13]
   U --> C[RecipeCard - existing]
   U -.->|owner only| S[/settings - S13, planned/]
   MW[middleware] -->|isPublicRoute adds /u/x| U
@@ -72,7 +72,7 @@ Prototype: `.ai/specs/assets/e01-s14-public-profile/mockup.html` (rendered: `moc
 
 Order of the page (mobile first, one column, `PageContainer`):
 1. **Owner block** (owner only, top): bordered panel `bg-surface-accent` / `border-border-accent`, text "Tak widzą Twój profil inni." (19 px) and a secondary link-button "Zmień nazwę lub obrazek" → `/settings` (`buttonClasses`, min 56 px).
-2. **Header:** `ProfileAvatar` 88 px; `h1` display name (28–32 px, `text-ink`); "Dodane przepisy: N" (19 px); "W ZapiszPrzepis od października 2026" (17 px, `text-ink-soft`). See A1 for the wording.
+2. **Header:** `Avatar` 88 px; `h1` display name (28–32 px, `text-ink`); "Dodane przepisy: N" (19 px); "W ZapiszPrzepis od października 2026" (17 px, `text-ink-soft`). See A1 for the wording.
 3. **Category chips** (only when the person has recipes in 2+ categories): `nav aria-label="Kategorie przepisów"`, links styled like `Chip` (min 48 px, pill, 2 px border); first chip "Wszystkie · N". The active chip is dark (`bg-ink text-white`, "✓ " prefix) with `aria-current="page"`. Links, not toggle buttons, because each one is a URL (`?kategoria=obiady`) and works without JS.
 4. **List:** `h2` "Przepisy" (or the category label when filtered), grid `grid-cols-2 sm:grid-cols-3` of `RecipeCard`, newest first.
 5. **"Pokaż kolejne"** — a full-width secondary link-button (56 px) to `?strona=N+1` (keeps `?kategoria`), shown only when more recipes exist. The link carries the fragment `#wiecej`, and the first newly shown card is preceded by an element with that id, so after navigation the page scrolls to the new content instead of the top.
@@ -80,7 +80,7 @@ Order of the page (mobile first, one column, `PageContainer`):
 
 Metadata: title `{display_name} · ZapiszPrzepis`; description "Przepisy dodane przez {display_name} w ZapiszPrzepis."; `robots: { index: false }` when the profile has no recipes; `alternates.canonical` without `?strona` / `?kategoria` (the filtered and paged variants are not separate documents for search engines). Unknown username → the app's 404.
 
-Accessibility (WCAG 2.2 AA per CLAUDE.md): text contrast ≥ 4.5:1 (the six avatar colours are all ≥ 4.5:1 with white: `#c2410c`, `#1d4ed8`, `#15803d`, `#7e22ce`, `#be123c`, `#0f766e`), chip and button targets ≥ 48 px / 56 px, visible focus from the global `:focus-visible` rule, links underlined (text links) or shaped as buttons, no horizontal scroll at 320 px (chips wrap).
+Accessibility (WCAG 2.2 AA per CLAUDE.md): text contrast ≥ 4.5:1 (S13's six avatar colours are all ≥ 4.5:1 with white: `#c2410c`, `#1d4ed8`, `#15803d`, `#7e22ce`, `#be185d`, `#0f766e`), chip and button targets ≥ 48 px / 56 px, visible focus from the global `:focus-visible` rule, links underlined (text links) or shaped as buttons, no horizontal scroll at 320 px (chips wrap).
 
 ## 📝 Edge Cases & Failure Scenarios
 
@@ -109,11 +109,11 @@ Phase 2 — the page, layout and avatar; switch `profilePath` on and admit the r
 ## 📋 Implementation Plan
 
 ### Phase 1 — helpers and routing seam
-1. `src/lib/public-profile.ts` + `public-profile.test.ts`: `PROFILE_PAGE_SIZE`, `parseProfilePage`, `categoryCounts`, `memberSinceLabel`, `profileCategoryHref`, `profileMoreHref`, `avatarColorIndex`, `isUsernameShape`, `isProfileOwner`, `profileRobots`. Tests cover garbage page params, category order and unknown values, genitive months for all 12 months, the earlier-date rule (an account without recipes shows its profile date, approximate for pre-S18 accounts), username shapes (`%00`, upper case, slashes), owner vs guest vs other user, and `noindex` only at 0.
+1. `src/lib/public-profile.ts` + `public-profile.test.ts`: `PROFILE_PAGE_SIZE`, `parseProfilePage`, `categoryCounts`, `memberSinceLabel`, `profileCategoryHref`, `profileMoreHref`, `isUsernameShape`, `isProfileOwner`, `profileRobots`. Tests cover garbage page params, category order and unknown values, genitive months for all 12 months, the earlier-date rule (an account without recipes shows its profile date, approximate for pre-S18 accounts), username shapes (`%00`, upper case, slashes), owner vs guest vs other user, and `noindex` only at 0.
 2. `src/lib/routes.ts`: export `PROFILE_PAGE_RE = /^\/u\/[^/]+$/` and add it to `isPublicRoute`; tests in `routes.test.ts` (`/u/tola` public, `/u` and `/u/tola/x` not).
 
 ### Phase 2 — the page
-3. `src/app/globals.css`: `--color-avatar-1` … `--color-avatar-6`. `src/app/components/profile-avatar.tsx` (letter, size prop, colour by `avatarColorIndex(username)`).
+3. Avatar: `src/lib/avatar.ts` + `src/app/components/ui/avatar.tsx`, identical to S13's (#263); colour `avatarColorIndex(profile.id, null)`.
 4. `src/app/u/layout.tsx` (AppShell) and `src/app/u/[username]/page.tsx` with `generateMetadata` (title, description, canonical, `noindex` when empty), queries per Data Model, owner block, header, chips, grid, "Pokaż kolejne", empty state.
 5. In the same commit as step 4 (the link and its target ship together): `src/lib/routes.ts`: remove `PROFILE_PAGES_LIVE`; `profilePath(username)` returns `/u/{encoded}` or `null` for a missing username. Update `routes.test.ts`. Update the stale comment in `recipe-header.tsx` (comment only).
 6. Verify on the dev server (against the production DB, read-only): `/u/tola` (many recipes, chips, paging), `/u/uzytkownik` (empty → `noindex`), `/u/nie-ma` (404), a recipe page author link, guest vs owner. Full gate: `pnpm typecheck`, `pnpm lint`, `pnpm test`.
@@ -123,7 +123,7 @@ Phase 2 — the page, layout and avatar; switch `profilePath` on and admit the r
 | # | Question | Default applied | Why |
 |---|----------|-----------------|-----|
 | A1 | The backlog says "Dodała/Dodał N przepisów", but gender lives in `profiles_private`, owner-only by S12's design. Expose a gendered verb publicly? | **No.** Neutral wording: "Dodane przepisy: N" (matches S07's "Dodane przez"). Empty state also neutral. | Showing "Dodała" to strangers discloses the gender the issue itself says not to show; it would need a new public projection and a migration (owner-gated). A follow-up can add it if the owner decides the verb form is acceptable to publish. |
-| A2 | Avatar: S13 (photo upload + colour) is not merged. | Letter on one of six colours chosen by a stable hash of `username`; shared `ProfileAvatar` component S13 extends. | No schema change; renders for every account today. |
+| A2 | Avatar: S13 (photo upload + colour) is not merged. | Reuse S13's `Avatar` + `avatarColorIndex(userId, null)` (identical files); photo/stored colour wired in once S13 lands. | One avatar system; the same colour on /settings and the profile; no schema change. |
 | A3 | "Pokaż kolejne" mechanism. | Server link `?strona=N` showing the first `N × 12` recipes. | Works without JS, keeps earlier cards, shareable, no API route. |
 | A4 | Recipe page list bar ("← Profil Toli", prev/next) for cards opened from a profile? | **Deferred.** No `from` key. | `LIST_KEYS` is being edited by S05/S16 in parallel; adding a key is a small follow-up. |
 | A5 | Category chips: filter in place or link to `/przepisy/{kategoria}`? | Filter the profile in place (`?kategoria=`). | The backlog places the chips on the profile list; leaving the profile would show other people's recipes. |
