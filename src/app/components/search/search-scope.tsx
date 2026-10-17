@@ -14,7 +14,7 @@ const LABELS: Record<SearchScope, string> = {
 export function SearchScopeSwitch({ q, scope }: { q: string; scope: SearchScope }) {
   return (
     <nav aria-labelledby="search-scope-label">
-      <p id="search-scope-label" className="mb-1.5 text-[16px] text-ink-soft">
+      <p id="search-scope-label" className="mb-1.5 text-[16px] font-bold text-ink">
         Szukaj w:
       </p>
       <ul className="grid grid-cols-3 gap-1.5">
@@ -25,7 +25,7 @@ export function SearchScopeSwitch({ q, scope }: { q: string; scope: SearchScope 
               <Link
                 href={searchPath(q, value)}
                 aria-current={active ? 'page' : undefined}
-                className={`flex h-full min-h-[48px] items-center justify-center rounded-field border-2 px-1 text-center text-[18px] leading-tight font-bold ${
+                className={`flex h-full min-h-[52px] items-center justify-center rounded-field border-2 px-1 text-center text-[18px] leading-tight font-bold ${
                   active
                     ? 'border-surface-dark bg-surface-dark text-white'
                     : 'border-field bg-white text-ink hover:bg-surface-3'

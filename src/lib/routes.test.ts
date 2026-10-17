@@ -157,6 +157,12 @@ describe('searchPath', () => {
   it('keeps the scope on a cleared search', () => {
     expect(searchPath('', 'moje')).toBe('/szukaj?zakres=moje')
   })
+
+  it('adds the category filter (E01-S22)', () => {
+    expect(searchPath('dynia', 'wszystkie', 1, 'zupy')).toBe('/szukaj?q=dynia&kategoria=zupy')
+    expect(searchPath('dynia', 'moje', 2, 'zupy')).toBe('/szukaj?q=dynia&zakres=moje&kategoria=zupy&strona=2')
+    expect(searchPath('dynia', 'wszystkie', 1, null)).toBe('/szukaj?q=dynia')
+  })
 })
 
 describe('addRecipeErrorPath (E01-S10)', () => {
