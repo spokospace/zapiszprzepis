@@ -1,6 +1,6 @@
 # HANDOFF — E01-S21 Phase 1
 
-**Resume point:** Step 1.6 (recipe-page UI). Steps 1.1–1.5 committed and pushed; full gate green at checkpoint 1 (1071 tests pass). PR #301 (draft).
+**Resume point:** COMPLETE. All Tasks 1.1–1.8 done + review fixes. PR #301 **ready** (non-draft), reviewed (2 adversarial passes, findings fixed), gate green (1086 tests, typecheck clean, 0 lint errors), UI verified behind empty data. Labels: feature, priority-medium, risk-high, needs-qa, qa-self-verified. Awaiting owner: apply migration (Management API) + merge + Phase 2 (#298 backfill).
 
 **Remaining:** 1.6 UI components (`dish-versions-bar.tsx`, `dish-versions.tsx`, `dish-versions-sort.tsx`), `RecipeHeader` `versionsBar` slot, `page.tsx` RPC-only-when-`recipe.dish`; 1.7 `SimilarRecipes` `dish` prop + `.or()`; 1.8 reflow confirm + final gate. Then labels, review, QA, ready.
 
