@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getSiteUrl } from '@/lib/site-url'
 import { resolveLoginNext } from '@/lib/login-redirect'
+import { enabledProvider, parseOAuthProviders } from '@/lib/oauth-providers'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -65,6 +66,36 @@ export async function signInWithEmail(formData: FormData): Promise<void> {
   }
 
   redirect(backToLogin({ sent: '1', email }, keep))
+}
+
+/**
+ * Start a Google/Facebook sign-in (E01-S12). The first OAuth login creates the
+ * account. The provider must be listed in AUTH_OAUTH_PROVIDERS — the page only
+ * renders enabled buttons, and this re-check stops a hand-crafted POST from
+ * opening a provider the owner has not switched on. The SSR client keeps the
+ * PKCE verifier in a cookie; /auth/callback exchanges the code and re-validates
+ * `next`.
+ */
+export async function signInWithOAuthProvider(formData: FormData): Promise<void> {
+  const { siteUrl, next, keep } = await readNext(formData, '/')
+  const provider = enabledProvider(formData.get('provider'), parseOAuthProviders(process.env.AUTH_OAUTH_PROVIDERS))
+
+  if (!provider) {
+    redirect(backToLogin({ error: 'oauth_unavailable' }, keep))
+  }
+
+  const supabase = await createSupabaseServerClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}` },
+  })
+
+  if (error || !data.url) {
+    console.error('signInWithOAuth failed', { provider, code: error?.code, status: error?.status })
+    redirect(backToLogin({ error: 'oauth_failed' }, keep))
+  }
+
+  redirect(data.url)
 }
 
 export async function signInWithPassword(formData: FormData): Promise<void> {
