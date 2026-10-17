@@ -61,7 +61,12 @@ export function RecipeListBar(props: RecipeListProps) {
   const { position } = state
   return (
     <nav aria-label="Lista przepisów" className={`${BAR} text-[17px] font-bold text-ink`}>
-      <Link href={position.href} className="inline-flex min-h-[48px] items-center underline hover:text-action-hover">
+      {/* min-w-0 + wrap-anywhere: a long search query in "Wyniki: „…”" wraps at 320 px
+          instead of pushing "N z M" off screen (WCAG 1.4.10). */}
+      <Link
+        href={position.href}
+        className="inline-flex min-h-[48px] min-w-0 items-center underline wrap-anywhere hover:text-action-hover"
+      >
         ← {position.label}
       </Link>
       <span className="shrink-0">
@@ -100,7 +105,7 @@ function NavLink({
       className={`${NAV} ${prev ? '' : 'justify-between'} border-field bg-white text-ink hover:bg-surface-3`}
     >
       {prev && <Arrow aria-hidden="true" size={24} className="shrink-0" />}
-      <span className="flex flex-col">
+      <span className="flex min-w-0 flex-col">
         {/* "Poprzedni przepis" on mobile; from lg the list is named (A9: "Poprzedni w wynikach „dynia”"). */}
         <span className="text-[14px] font-bold text-ink-soft">
           <span className="lg:hidden">{word} przepis</span>
