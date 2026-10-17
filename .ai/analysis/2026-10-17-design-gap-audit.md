@@ -89,7 +89,7 @@ Kod: `app/przepis/[slug]/*`, `favorite-button.tsx`, `ui/text-size-controls.tsx`.
 | major | Dolny przycisk „Otwórz oryginał na YouTube” | link „Otwórz oryginał” tylko w wierszu źródła na górze | obramowany przycisk 48 px przed prev/next, z nazwą serwisu |
 | minor | Wielkość tekstu | działa (A / A+ / A++ = 1 / 1.15 / 1.3, `localStorage`) — zgodne; przyciski 52×48 zgodne | – (zgodne, bez luki) |
 | minor | Toast „Dodano do ulubionych · Cofnij” | `role="status"`, ~5 s, `Cofnij` — **zgodne**; widoczny `fixed bottom` | zgodne; sprawdzić tylko kolor (`bg-ink`) i że pozostaje czytelny nad ewentualnym dolnym UI |
-| minor | Autor | „Dodane przez {nazwa}” (neutralnie, świadoma decyzja S14: płeć prywatna) | README: „Dodała/Dodał {nazwa}” wg płci — **sprzeczne z decyzją prywatności**; wymaga decyzji właściciela (patrz „Do decyzji”) |
+| minor | Autor | „Dodane przez {nazwa}” (neutralnie, świadoma decyzja S14: płeć prywatna) | README: „Dodała/Dodał {nazwa}” wg płci — właściciel zdecydował: wdrożyć formę wg płci z profilu (patrz „Do decyzji” pkt 1) |
 | minor | Okruszki | „Strona główna › Zupy › tytuł” | „Przepisy › Zupy” |
 | minor | Ulubione u gościa | przycisk-link do logowania (OK) | – |
 | minor | Podobne | siatka 2 kolumny kart-kafli, link „Wszystkie przepisy: {kat} (N) →” | 4 karty, „Wszystkie zupy (96) →” 56 px |
@@ -201,7 +201,7 @@ Zakres z README: kolumny `dish` (znormalizowana nazwa dania) i `variant_note` z 
 
 ## Do decyzji właściciela
 
-1. **Płeć w tekstach publicznych.** README chce „Dodała/Dodał {nazwa}” i „…nie dodała jeszcze przepisów”, ale S12/S14 uznały płeć za prywatną i użyły formy neutralnej („Dodane przez”). Zostawić neutralnie (zmienić README) czy ujawnić formę gramatyczną (nie samą płeć)?
+1. ~~Płeć w tekstach publicznych~~ — **rozstrzygnięte przez właściciela (2026-10-17):** teksty mają odmieniać się według płci z profilu użytkownika, wybranej przy rejestracji (ekran 3b). Skutek: „Dodane przez” → „Dodała/Dodał {nazwa}” (przepis, profil publiczny, pusty profil), podgląd w ustawieniach też z formą płci. Wymaga nowej historyjki technicznej: widok `public_recipes`/`profiles` musi wystawiać gościom **tylko formę gramatyczną** (np. `author_gender_form`), nie surową płeć ani `profiles_private` — do zaprojektowania w S07b/S14 (zmiana decyzji z S12/S14).
 2. **Logowanie e-mail/hasło** obok Facebook/Google — zostaje czy znika z ekranu 3a?
 3. **Płatność („Zobacz pełny dostęp”)** — co ma być celem linku w 3c?
 4. **Sekcja „Wideo”** na przepisie (decyzja S-04) — zostaje obok „Otwórz oryginał na YouTube”?
