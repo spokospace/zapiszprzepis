@@ -7,6 +7,8 @@ import { PageContainer } from '@/app/components/page-container'
 import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
+import { originalLinkLabel } from '@/lib/recipe-source'
+import { ExternalLink } from 'lucide-react'
 import { getSiteUrl } from '@/lib/site-url'
 import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
@@ -16,7 +18,7 @@ import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
 import { RecipeChecklists } from './_components/recipe-checklists'
-import { RecipeListBar } from './_components/recipe-list-bar'
+import { RecipeListBar, RecipeListNav } from './_components/recipe-list-bar'
 import { LockedGallery } from './_components/locked-gallery'
 import { SimilarRecipes } from './_components/similar-recipes'
 import { loginPath } from '@/lib/login-redirect'
@@ -101,6 +103,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // groupBySection splits ingredients by optional `section`.
   const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
   const steps = parseSteps(typedRecipe.steps)
+  const listKey = parseListKey(from)
 
   return (
     <div className="min-h-screen bg-white py-6 sm:py-8">
@@ -127,7 +130,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {/* Not `narrow`: the desktop layout (E01-S17, A9) uses the full 1152 px; below lg
           both widths are the viewport anyway. */}
       <PageContainer>
-        <RecipeListBar slug={typedRecipe.slug} from={parseListKey(from)} fallback={categoryContext} />
+        <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
         <RecipeHeader recipe={typedRecipe} />
         <RecipeActions
           recipeId={typedRecipe.id}
@@ -169,6 +172,22 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
           )}
         </RecipeChecklists>
+
+        {/* The end of the recipe (handoff C3, items 11–13): the original, then
+            Poprzedni / Następny, then the tags and similar recipes. */}
+        {typedRecipe.source_url && (
+          <a
+            href={typedRecipe.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${buttonClasses('outline', 'md')} mb-6 w-full no-underline! sm:w-auto`}
+          >
+            <ExternalLink aria-hidden="true" size={20} className="shrink-0" />
+            {originalLinkLabel(typedRecipe.source_type, typedRecipe.source_url)}
+            <span className="sr-only"> (otwiera nową kartę)</span>
+          </a>
+        )}
+        <RecipeListNav slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
 
         <SimilarRecipes recipe={typedRecipe} />
 

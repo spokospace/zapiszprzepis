@@ -3,8 +3,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronLeft, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { AppMenu } from './app-menu'
+import { HeaderBackLink } from './header-back-link'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
 import { HeaderNav } from './header-nav'
@@ -25,37 +26,47 @@ export function AppHeader({
   menu?: MenuSummary | null
 }) {
   const pathname = usePathname()
-  // Shown on the canonical recipe page (/przepis/{slug}, E01-S03b); the back link
-  // targets "/recipes" (Moje przepisy), which is owner-only.
-  const showBackToList = isAuthenticated && PRZEPIS_PAGE_RE.test(pathname)
+  // Recipe page (/przepis/{slug}): below lg "← Wróć" to the source list replaces the
+  // logo (E01-S19); the desktop header (E01-S17) keeps the logo.
+  const recipeSlug = PRZEPIS_PAGE_RE.test(pathname) ? safeDecode(pathname.slice('/przepis/'.length)) : null
+  // The 120x30 lettering where the right-hand buttons leave room for it (signed in:
+  // 64+100+60 px of buttons), the compact icon below that, so nothing overflows at 320 px.
+  const lettering = isAuthenticated ? 'min-[390px]:block' : 'min-[360px]:block'
+  const compactIcon = isAuthenticated ? 'min-[390px]:hidden' : 'min-[360px]:hidden'
 
   return (
-    <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
-      {/* Desktop (E01-S17, A8/A9) from lg: a guest gets Przepisy + Kategorie and
-          Zaloguj się + Załóż konto; a signed-in user gets the search field. */}
-      <PageContainer className="flex items-center justify-between py-3 lg:gap-6">
-        <div className="flex items-center gap-2 lg:gap-6">
-          {showBackToList && (
-            <Link
-              href="/recipes"
-              aria-label="Wróć do listy przepisów"
-              className="text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
-          )}
-          <Link href="/" aria-label="ZapiszPrzepis — strona główna" className="flex items-center gap-2 no-underline! lg:shrink-0">
+    <header className="sticky top-0 z-20 border-b-2 border-border-card bg-white/95 backdrop-blur lg:border-b">
+      {/* Mobile 1c (E01-S19): ~64 px, padding 4/12/4/16. Desktop (E01-S17, A8/A9)
+          from lg: a guest gets Przepisy + Kategorie and Zaloguj się + Załóż konto;
+          a signed-in user gets the search field. */}
+      <PageContainer className="flex min-h-16 items-center justify-between gap-2 py-1 pr-3 pl-4 sm:px-6 lg:min-h-0 lg:gap-6 lg:px-8 lg:py-3">
+        <div className="flex min-w-0 items-center gap-2 lg:gap-6">
+          {recipeSlug !== null && <HeaderBackLink slug={recipeSlug} crowded={isAuthenticated} className="lg:hidden" />}
+          <Link
+            href="/"
+            aria-label="ZapiszPrzepis — strona główna"
+            className={`${recipeSlug !== null ? 'hidden lg:flex' : 'flex'} min-h-12 shrink-0 items-center gap-2 no-underline!`}
+          >
+            <Image
+              src="/logo-lettering.svg"
+              alt=""
+              width={120}
+              height={30}
+              unoptimized
+              priority
+              className={`hidden h-[30px] w-[120px] ${lettering} lg:hidden`}
+            />
             <Image
               src="/logo-icon.svg"
               alt=""
-              width={32}
-              height={32}
+              width={40}
+              height={40}
               unoptimized
               priority
-              className="h-8 w-8 sm:h-10 sm:w-10"
+              className={`h-10 w-10 ${compactIcon} lg:block`}
             />
-            {/* Wordmark only from tablet up; on phones the icon alone is the logo. */}
-            <span aria-hidden="true" className="hidden text-[1.625rem] font-bold tracking-wide sm:inline">
+            {/* The desktop wordmark (E01-S17); below lg the lettering image is the logo. */}
+            <span aria-hidden="true" className="hidden text-[1.625rem] font-bold tracking-wide lg:inline">
               <span className="text-gray-900">Zapisz</span>
               <span className="text-orange-700">Przepis</span>
             </span>
@@ -63,7 +74,7 @@ export function AppHeader({
           {!isAuthenticated && <HeaderNav className="hidden lg:flex" />}
         </div>
         {isAuthenticated && <HeaderSearch className="hidden lg:flex" />}
-        <div className="flex items-center gap-1 lg:ml-auto lg:gap-2">
+        <div className="flex shrink-0 items-center gap-1 lg:ml-auto lg:gap-2">
           {isAuthenticated ? (
             <>
               {/* 1c header (E01-S10): icon over label, 64x56, #c2410c. Shown without full
@@ -71,7 +82,7 @@ export function AppHeader({
               <Link
                 href={ADD_RECIPE_PATH}
                 aria-label="Dodaj przepis"
-                className="mr-1 inline-flex h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] bg-action text-[13px] leading-none font-bold text-white no-underline! transition-colors hover:bg-action-hover lg:mr-0 lg:h-12 lg:w-auto lg:flex-row lg:gap-1.5 lg:whitespace-nowrap lg:rounded-field lg:px-4 lg:text-[18px]"
+                className="inline-flex h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] bg-action text-[13px] leading-none font-bold text-white no-underline! transition-colors hover:bg-action-hover lg:h-12 lg:w-auto lg:flex-row lg:gap-1.5 lg:whitespace-nowrap lg:rounded-field lg:px-4 lg:text-[18px]"
               >
                 <Plus aria-hidden="true" className="h-6 w-6 lg:h-5 lg:w-5" />
                 Dodaj<span className="-ml-1.5 hidden lg:inline">&nbsp;przepis</span>
@@ -82,7 +93,8 @@ export function AppHeader({
             <>
               <Link
                 href="/login"
-                className="mr-1 inline-flex min-h-[44px] items-center whitespace-nowrap rounded-lg border-2 border-gray-500 px-3 text-sm font-semibold text-gray-900 hover:bg-gray-50 lg:mr-0 lg:min-h-[48px] lg:rounded-field lg:border-field lg:px-4 lg:text-[18px]"
+                // Mobile 1c (E01-S19): outlined, 52 px.
+                className="inline-flex min-h-[52px] items-center whitespace-nowrap rounded-field border-2 border-field px-3 text-[17px] font-bold text-ink hover:bg-surface-2 lg:min-h-[48px] lg:px-4 lg:text-[18px] lg:font-semibold"
               >
                 Zaloguj się
               </Link>
@@ -104,4 +116,13 @@ export function AppHeader({
       </PageContainer>
     </header>
   )
+}
+
+/** A malformed escape in the URL must not crash the header; the raw segment then just finds no list. */
+function safeDecode(segment: string): string {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
 }

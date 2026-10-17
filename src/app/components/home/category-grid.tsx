@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { HOME_CATEGORIES, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { CATEGORY_ICONS, HOME_CATEGORIES, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { categoryPath } from '@/lib/routes'
 
 // On the narrowest phones (320px) three columns leave ~70px per tile, which
@@ -10,28 +10,54 @@ const COLUMNS = {
   3: 'grid-cols-2 min-[360px]:grid-cols-3 lg:grid-cols-9',
 } as const
 
-/** The guest's 9-column desktop row shows one category beyond the home eight, from lg only. */
-const DESKTOP_EXTRA = RECIPE_CATEGORIES[HOME_CATEGORIES.length]
+/**
+ * Tile looks from the handoff (E01-S20): the guest's A1 tile stacks a 26 px
+ * icon over a 17 px name; the signed-in C1 tile is a 56 px row with a
+ * `border-accent` frame, the icon beside an 18 px name.
+ */
+const TILE = {
+  2: {
+    link: 'h-14 gap-2.5 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-3.5 text-[18px] text-ink hover:border-action-text',
+    icon: 'h-6 w-6',
+    stroke: 2,
+  },
+  3: {
+    link: 'min-h-[64px] flex-col justify-center gap-1.5 rounded-[12px] bg-surface-accent px-1 py-3.5 text-center text-[17px] text-action-text hover:bg-surface-accent-2',
+    icon: 'h-[26px] w-[26px]',
+    stroke: 1.75,
+  },
+} as const
+
+/**
+ * The guest grid shows one category beyond the home eight wherever it has three
+ * columns (A1's 3×3, A8's 9-column row); the 2-column grid below 360px keeps eight.
+ */
+const GUEST_EXTRA = RECIPE_CATEGORIES[HOME_CATEGORIES.length]
 
 /** "Kategorie" tiles (E01-S04): 3 columns for a guest (from 360px), 2 for a signed-in user. */
 export function CategoryGrid({ columns }: { columns: keyof typeof COLUMNS }) {
-  const categories = columns === 3 ? [...HOME_CATEGORIES, DESKTOP_EXTRA] : HOME_CATEGORIES
+  const categories = columns === 3 ? [...HOME_CATEGORIES, GUEST_EXTRA] : HOME_CATEGORIES
+  const tile = TILE[columns]
   return (
     <section aria-labelledby="categories-heading">
       <h2 id="categories-heading" className="mb-3 text-[22px] font-bold text-ink">
         Kategorie
       </h2>
-      <ul className={`grid ${COLUMNS[columns]} gap-2.5`}>
-        {categories.map(({ value, label }) => (
-          <li key={value} className={value === DESKTOP_EXTRA.value ? 'hidden min-w-0 lg:block' : 'min-w-0'}>
-            <Link
-              href={categoryPath(value)}
-              className="flex min-h-[64px] items-center justify-center rounded-card border-2 border-border-card bg-white p-2 text-center text-[17px] lg:px-1 font-bold break-words text-ink hover:border-border-card-2 hover:bg-surface-2"
-            >
-              {label}
-            </Link>
-          </li>
-        ))}
+      <ul className={`grid ${COLUMNS[columns]} gap-2`}>
+        {categories.map(({ value, label }) => {
+          const Icon = CATEGORY_ICONS[value]
+          return (
+            <li key={value} className={value === GUEST_EXTRA.value ? 'hidden min-w-0 min-[360px]:block' : 'min-w-0'}>
+              <Link
+                href={categoryPath(value)}
+                className={`flex items-center font-bold break-words no-underline! ${tile.link}`}
+              >
+                <Icon aria-hidden="true" strokeWidth={tile.stroke} className={`shrink-0 text-action-text ${tile.icon}`} />
+                <span className="min-w-0">{label}</span>
+              </Link>
+            </li>
+          )
+        })}
       </ul>
     </section>
   )

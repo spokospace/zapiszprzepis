@@ -17,8 +17,12 @@ const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
   add: Plus,
 }
 
+// "× Zamknij": 56 px, 18 px bold (handoff C5).
 const LABELED_ICON_BUTTON =
-  'inline-flex min-h-[48px] items-center gap-1.5 rounded-field px-3 text-[17px] font-semibold text-ink hover:bg-surface-3'
+  'inline-flex min-h-14 items-center gap-1.5 rounded-field px-3 text-[18px] font-bold text-ink hover:bg-surface-3'
+
+// "Ustawienia | Wyloguj": 64 px rows, 18 px bold (handoff C5).
+const FOOTER_ROW = 'flex min-h-16 items-center justify-center gap-2 text-[18px] font-bold hover:bg-surface-2'
 
 const SECTION_HEADING = 'px-5 pb-2 text-[17px] font-bold text-ink-soft'
 
@@ -98,10 +102,11 @@ export function AppMenu({
         onClick={() => dialogRef.current?.showModal()}
         aria-haspopup="dialog"
         aria-controls="app-menu"
-        // 48px target (WCAG 2.5.8 / project rule), tokens instead of raw greys.
-        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-field px-2.5 text-sm font-semibold text-ink hover:bg-surface-3"
+        // Mobile 1c (E01-S19): icon over a 13 px bold caption, 60x56 like Dodaj and
+        // Powiadomienia. The desktop header (E01-S17) keeps the 48 px inline row.
+        className="inline-flex h-14 w-[60px] flex-col items-center justify-center gap-0.5 rounded-field text-[13px] leading-none font-bold text-ink hover:bg-surface-3 lg:h-auto lg:min-h-[48px] lg:w-auto lg:flex-row lg:gap-1.5 lg:px-2.5 lg:text-sm lg:leading-5 lg:font-semibold"
       >
-        <Menu aria-hidden="true" className="h-5 w-5" />
+        <Menu aria-hidden="true" className="h-6 w-6 lg:h-5 lg:w-5" />
         MENU
       </button>
 
@@ -117,8 +122,8 @@ export function AppMenu({
         className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full max-w-none bg-surface p-0 text-ink shadow-xl transition-transform duration-200 ease-out backdrop:bg-black/40 starting:open:translate-x-full sm:w-[330px]"
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-border-card px-5 py-3">
-            <h2 id="app-menu-title" className="text-[21px] font-bold text-ink">
+          <div className="flex items-center justify-between border-b-2 border-border-card py-1 pr-2 pl-5">
+            <h2 id="app-menu-title" className="text-[22px] font-bold text-ink">
               Menu
             </h2>
             <button type="button" onClick={close} className={LABELED_ICON_BUTTON}>
@@ -138,7 +143,7 @@ export function AppMenu({
                     <li key={entry.key}>
                       <MineRow
                         entry={entry}
-                        // A locked "Dodaj" points at the gate on "/", not at itself: never mark it current.
+                        // A locked "Dodaj" opens the 3c gate on /dodaj, not the add form: never mark it current.
                         active={!entry.locked && pathname === entry.href}
                         onNavigate={close}
                       />
@@ -189,12 +194,12 @@ export function AppMenu({
           </nav>
 
           {showAccountFooter && (
-            <div className="grid grid-cols-2 divide-x divide-border-card border-t border-border-card">
+            <div className="grid grid-cols-2 divide-x-2 divide-border-card border-t-2 border-border-card">
               <Link
                 href="/settings"
                 onClick={close}
                 aria-current={pathname === '/settings' ? 'page' : undefined}
-                className={`flex min-h-[56px] items-center justify-center gap-2 text-[17px] font-semibold hover:bg-surface-2 ${pathname === '/settings' ? 'text-action-text underline decoration-2 underline-offset-4' : 'text-ink'}`}
+                className={`${FOOTER_ROW} ${pathname === '/settings' ? 'text-action-text underline decoration-2 underline-offset-4' : 'text-ink'}`}
               >
                 <Settings aria-hidden="true" className="h-6 w-6 shrink-0" />
                 Ustawienia
@@ -202,7 +207,7 @@ export function AppMenu({
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="flex min-h-[56px] w-full items-center justify-center gap-2 text-[17px] font-semibold text-ink hover:bg-surface-2"
+                  className={`${FOOTER_ROW} w-full text-ink`}
                 >
                   <LogOut aria-hidden="true" className="h-6 w-6 shrink-0" />
                   Wyloguj
