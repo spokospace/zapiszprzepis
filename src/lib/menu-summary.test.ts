@@ -9,9 +9,14 @@ type CountResult = { count: number | null; error: unknown }
 
 const USER = { id: 'user-1' } as User
 
-function makeSupabase(results: Record<string, CountResult>) {
+function makeSupabase(results: Record<string, CountResult>, fullAccess = true) {
   const calls: { table: string; userId: unknown }[] = []
   const supabase = {
+    // getFullAccess() reads the has_full_access() RPC (E01-S11).
+    rpc: async (fn: string) => {
+      expect(fn).toBe('has_full_access')
+      return { data: fullAccess, error: null }
+    },
     from: (table: string) => ({
       select: (_cols: string, opts: { count: string; head: boolean }) => {
         expect(opts).toEqual({ count: 'exact', head: true })
@@ -49,6 +54,18 @@ describe('getMenuSummary', () => {
       { table: 'recipes', userId: 'user-1' },
       { table: 'favorites', userId: 'user-1' },
     ])
+  })
+
+  it('reports no full access when the RPC says so (lock on "Dodaj przepis")', async () => {
+    const { supabase } = makeSupabase(
+      { recipes: { count: 0, error: null }, favorites: { count: 2, error: null } },
+      false,
+    )
+    expect(await getMenuSummary(supabase, USER)).toEqual({
+      hasFullAccess: false,
+      myRecipesCount: 0,
+      favoritesCount: 2,
+    })
   })
 
   it('hides a counter (null), never a false zero, when its query fails', async () => {
