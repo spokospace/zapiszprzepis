@@ -14,7 +14,7 @@ Today the MENU drawer (`app-menu.tsx`) is a flat list: Ulubione + Ustawienia + W
 ## 📝 Proposed Solution
 1. **Drawer rebuild** (`src/app/components/app-menu.tsx`), still on the native `<dialog>` + `showModal()` (keeps Escape, focus trap, inert background with no extra code). Content derived from a pure, unit-tested model builder so every access state is testable without a DOM.
 2. **Menu summary** loaded server-side next to the existing failed-shares query in `AppShell`: `{ hasFullAccess, myRecipesCount, favoritesCount }` via two `count: 'exact', head: true` queries (no rows transferred), passed `AppShell → AppHeader → AppMenu` as one optional prop.
-3. **Full-access seam**: `hasFullAccess(...)` in `src/lib/full-access.ts`. Today every signed-in user can add recipes, so it returns `true` for a signed-in user; S11 replaces its body with the real flag. The drawer's locked branch is built and tested now, reachable once S11 lands.
+3. **Full-access seam**: `getFullAccess(supabase): Promise<boolean>` in `src/lib/full-access.ts`. That is S11's (#214) exact signature: the RPC-backed `has_full_access()` reads `auth.uid()` and fails closed. Callers pass `false` for a guest instead of calling it. Until S11 merges, this branch ships a same-signature stub returning `true`, which is today's capability, so the two changes merge in either order. The locked branch is built and tested now.
 4. **Public category listing** `/kategoria/[category]`: newest recipes in that category from the guest-safe `public_recipes` view, rendered with the existing `RecipeCard` grid. One helper `categoryHref(value)` owns the URL so S05 (`/szukaj`) can later redirect or retarget it in one place.
 
 **Alternatives considered**
@@ -23,7 +23,7 @@ Today the MENU drawer (`app-menu.tsx`) is a flat list: Ulubione + Ustawienia + W
 - *Fetch counters client-side when the drawer opens* (server action) — rejected: "Moje przepisy" visibility depends on full access, so the "Moje" block would reflow after opening, which is disorienting for the target group and for screen readers. Two head-count queries per page render are cheap and run in parallel with the existing failed-shares query.
 
 ## 📝 Architecture
-- `src/lib/full-access.ts` *(new)* — `hasFullAccess(user)`; the single seam S11 swaps.
+- `src/lib/full-access.ts` *(new)* — `getFullAccess(supabase)`; S11's implementation, stubbed here until it merges.
 - `src/lib/menu-summary.ts` *(new)* — `getMenuSummary(supabase, user): Promise<MenuSummary | null>` (null for a guest). Counts: `recipes` where `user_id = me` (exactly the set `/recipes` lists) and `favorites` where `user_id = me` (owner-only RLS already scopes both; the explicit `eq` is defence in depth, matching `/recipes`).
 - `src/lib/recipe-categories.ts` — adds `categoryHref(value)` and `isRecipeCategory(value)`.
 - `src/app/components/app-menu-model.ts` *(new)* — pure `buildMenuModel({ isAuthenticated, summary })` → which "Moje" entries show, their counters, the lock state, guest CTA vs footer.
@@ -59,7 +59,7 @@ Layout (variant 1c style, 1a structure):
 - **"Moje"** (signed-in): heading `h2` "Moje", list of rows ≥ 56 px, 19 px text, icon + label always:
   - "Moje przepisy" + counter (only when `hasFullAccess`) → `/recipes`
   - "Ulubione" + counter → `/ulubione`
-  - "Dodaj przepis" → the add route (`/?tab=add` today; S10 moves it to `/dodaj`). Without full access: padlock icon, caption "Wymaga kodu lub pełnego dostępu" (16 px, `text-ink-soft`) under the label; it still links to the add route, where S10/S11 render the 3c code gate. The padlock is decorative (`aria-hidden`); the caption is part of the link's accessible name.
+  - "Dodaj przepis" → the add route (`/?tab=add` today; S10 moves it to `/dodaj`). Without full access: padlock icon, caption "Wymaga kodu lub pełnego dostępu" (16 px, `text-ink-soft`) under the label; it links to `/`, where S11 renders the 3c `AccessCodeGate` in place of the add form (S10 moves it to `/dodaj`). The padlock is decorative (`aria-hidden`); the caption is part of the link's accessible name.
   - Counter rendered as text in a pill (`text-ink`, `bg-surface-3`), with a visually-hidden unit so a screen reader hears "Ulubione, 12 przepisów", not "Ulubione 12".
 - **Guest** instead of "Moje": a short line "Zaloguj się, żeby zapisywać ulubione przepisy." and two 56 px buttons: "Zaloguj się" (primary, `bg-action`) and "Załóż konto" (outline).
 - **"Wszystkie przepisy według kategorii"** (everyone): `h2` + 2-column grid of every category from `RECIPE_CATEGORIES` (labels with diacritics via the list, never raw enum values); each tile a link ≥ 56 px tall, 2 px `border-field` (3:1), 17–19 px text.
@@ -80,14 +80,14 @@ Layout (variant 1c style, 1a structure):
 ## 📝 Risks & Impact Review
 - **Per-render cost:** two extra head-count queries on every `AppShell` page for signed-in users (none for guests), run in parallel with failed-shares. Reversible by dropping the call.
 - **Public route `/kategoria/*`** is a new public URL (SEO-visible). It reads only the guest-safe view already exposed on `/` and `/przepis/*`; no new data exposure. If S05 supersedes it, keep it as a 301 to `/szukaj?kategoria=` rather than deleting it.
-- **S11 seam:** until S11 lands, `hasFullAccess` is `true` for every signed-in user — the same capability they have today. No user loses access because of this story.
+- **S11 seam:** until S11 lands, the `getFullAccess` stub returns `true` for every signed-in user — the same capability they have today. No user loses access because of this story.
 
 ## 📝 Resolved assumptions (autonomous defaults)
 | # | Question | Default applied | Rationale |
 |---|----------|-----------------|-----------|
 | Q1 | Where do category tiles link, given `/recipes?category=` is owner-only? | New public route `/kategoria/{value}` behind `categoryHref()` | Guests must not bounce to `/login`; `/szukaj` (S05) does not exist yet; one helper makes retargeting a one-liner. |
-| Q2 | What decides "full access" before S11 ships? | `hasFullAccess()` returns `true` for any signed-in user | Matches today's capability (every signed-in user can add); S11 swaps one function body. Locked UI built and unit-tested now. |
-| Q3 | Where does the locked "Dodaj przepis" lead? | Same add route as unlocked (`/?tab=add`, `/dodaj` after S10) | S10 renders the 3c gate on `/dodaj` for users without access; avoids linking to a route that does not exist yet. |
+| Q2 | What decides "full access" before S11 ships? | S11's `getFullAccess(supabase)`; a same-signature stub returning `true` until S11 merges, `false` for a guest without calling it | Agreed with the S11 session; matches today's capability; merge order does not matter. |
+| Q3 | Where does the locked "Dodaj przepis" lead? | `/` (S11's 3c `AccessCodeGate` replaces the add form there); `/dodaj` after S10 | Agreed with the S11 session; the gate's real location today. |
 | Q4 | Counters: server-side per render or client-side on open? | Server-side in `AppShell`, head-count queries | No reflow inside an open dialog; cheap; parallel with an existing query. |
 | Q5 | Should the home page (`src/app/page.tsx`) be wired now? | No — S04 owns it; the drawer degrades without counters there | Avoids a merge conflict with the parallel S04 session. |
 | Q6 | Which categories in the grid? | All entries of `RECIPE_CATEGORIES` (12) | The AC says "z `recipe-categories.ts`"; the 8-item cut is a home-page (S04) decision. |
@@ -97,7 +97,7 @@ Single implementation PR (`Refs #212`, `Source doc:` this file).
 
 **Phase 1 — data seams (no UI change)**
 1. `recipe-categories.ts`: `categoryHref`, `isRecipeCategory` + unit tests.
-2. `src/lib/full-access.ts`: `hasFullAccess(user)` + unit test.
+2. `src/lib/full-access.ts`: `getFullAccess(supabase)` stub with S11's signature (covered through `getMenuSummary`'s tests).
 3. `src/lib/menu-summary.ts`: `getMenuSummary` (two head counts, null on error) + unit tests with a stubbed Supabase client (guest → null; error → null counter; happy path).
 
 **Phase 2 — public category listing**
