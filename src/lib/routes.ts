@@ -61,19 +61,29 @@ export function isPublicRoute(pathname: string): boolean {
     pathname === '/' ||
     PRZEPIS_PAGE_RE.test(pathname) ||
     RECIPE_PAGE_RE.test(pathname) ||
-    PRZEPISY_CATEGORY_RE.test(pathname)
+    PRZEPISY_CATEGORY_RE.test(pathname) ||
+    pathname === SEARCH_PATH
   )
 }
 
-/**
- * Where a recipe search goes. The home search form submits a GET here with `q`.
- * Interim (E01-S04): the owner list's own search; E01-S05 repoints this to
- * /szukaj, the public results page, without touching the screens that link here.
- */
-export const SEARCH_PATH = '/recipes'
+/** The public search results page (E01-S05); the home form submits a GET here with `q`. */
+export const SEARCH_PATH = '/szukaj'
 
-/** A search for `query` (trimmed); a blank query is the bare search page. */
-export function searchPath(query: string): string {
+/** "Szukaj w:" — whose recipes a search covers. `moje` and `ulubione` need a session. */
+export const SEARCH_SCOPES = ['wszystkie', 'moje', 'ulubione'] as const
+export type SearchScope = (typeof SEARCH_SCOPES)[number]
+
+/**
+ * A search for `query` (trimmed) in `scope`, showing `page` pages of results.
+ * Defaults are left out so links stay short and canonical; a blank query is
+ * the bare search page (still keeping the scope).
+ */
+export function searchPath(query: string, scope: SearchScope = 'wszystkie', page = 1): string {
+  const params = new URLSearchParams()
   const q = query.trim()
-  return q ? `${SEARCH_PATH}?q=${encodeURIComponent(q)}` : SEARCH_PATH
+  if (q) params.set('q', q)
+  if (scope !== 'wszystkie') params.set('zakres', scope)
+  if (page > 1) params.set('strona', String(page))
+  const qs = params.toString()
+  return qs ? `${SEARCH_PATH}?${qs}` : SEARCH_PATH
 }

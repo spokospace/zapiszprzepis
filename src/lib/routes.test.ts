@@ -94,12 +94,27 @@ describe('isPublicRoute', () => {
 })
 
 describe('searchPath', () => {
+  it('points at the public results page (E01-S05)', () => {
+    expect(SEARCH_PATH).toBe('/szukaj')
+    expect(isPublicRoute('/szukaj')).toBe(true)
+  })
+
   it('trims and encodes the query', () => {
-    expect(searchPath('  zupa pomidorowa ')).toBe(`${SEARCH_PATH}?q=zupa%20pomidorowa`)
-    expect(searchPath('a&b')).toBe(`${SEARCH_PATH}?q=a%26b`)
+    expect(searchPath('  zupa pomidorowa ')).toBe('/szukaj?q=zupa+pomidorowa')
+    expect(searchPath('a&b')).toBe('/szukaj?q=a%26b')
   })
 
   it('drops a blank query', () => {
-    expect(searchPath('   ')).toBe(SEARCH_PATH)
+    expect(searchPath('   ')).toBe('/szukaj')
+  })
+
+  it('leaves out the default scope and the first page', () => {
+    expect(searchPath('sernik', 'wszystkie', 1)).toBe('/szukaj?q=sernik')
+    expect(searchPath('sernik', 'moje')).toBe('/szukaj?q=sernik&zakres=moje')
+    expect(searchPath('sernik', 'ulubione', 3)).toBe('/szukaj?q=sernik&zakres=ulubione&strona=3')
+  })
+
+  it('keeps the scope on a cleared search', () => {
+    expect(searchPath('', 'moje')).toBe('/szukaj?zakres=moje')
   })
 })

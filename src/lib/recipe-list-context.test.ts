@@ -16,6 +16,7 @@ describe('parseListKey', () => {
     expect(parseListKey('fav')).toBe('fav')
     expect(parseListKey('moje')).toBe('moje')
     expect(parseListKey('home')).toBe('home')
+    expect(parseListKey('szukaj')).toBe('szukaj')
     expect(parseListKey('evil')).toBeNull()
     expect(parseListKey('fav ')).toBeNull()
     expect(parseListKey(['fav'])).toBeNull()
