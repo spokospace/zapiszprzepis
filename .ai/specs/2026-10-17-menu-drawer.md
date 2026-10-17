@@ -15,17 +15,18 @@ Today the MENU drawer (`app-menu.tsx`) is a flat list: Ulubione + Ustawienia + W
 1. **Drawer rebuild** (`src/app/components/app-menu.tsx`), still on the native `<dialog>` + `showModal()` (keeps Escape, focus trap, inert background with no extra code). Content derived from a pure, unit-tested model builder so every access state is testable without a DOM.
 2. **Menu summary** loaded server-side next to the existing failed-shares query in `AppShell`: `{ hasFullAccess, myRecipesCount, favoritesCount }` via two `count: 'exact', head: true` queries (no rows transferred), passed `AppShell → AppHeader → AppMenu` as one optional prop.
 3. **Full-access seam**: `getFullAccess(supabase): Promise<boolean>` in `src/lib/full-access.ts`. That is S11's (#214) exact signature: the RPC-backed `has_full_access()` reads `auth.uid()` and fails closed. Callers pass `false` for a guest instead of calling it. Until S11 merges, this branch ships a same-signature stub returning `true`, which is today's capability, so the two changes merge in either order. The locked branch is built and tested now.
-4. **Public category listing** `/kategoria/[category]`: newest recipes in that category from the guest-safe `public_recipes` view, rendered with the existing `RecipeCard` grid. One helper `categoryHref(value)` owns the URL so S05 (`/szukaj`) can later redirect or retarget it in one place.
+4. **Public category listing** `/kategoria/[category]`: newest recipes in that category from the guest-safe `public_recipes` view, rendered with the existing `RecipeCard` grid. One helper, `categoryPath(category)` in `src/lib/routes.ts` (the seam S04 also uses for its home tiles), owns the URL, so S05 (`/szukaj`) can later redirect or retarget it in one place.
 
 **Alternatives considered**
 - *Link categories to `/recipes?category=`* — rejected: owner-only, scoped to *my* recipes, bounces guests.
-- *Link categories to `/szukaj?kategoria=`* (S05) — rejected for now: the route does not exist yet; S05 is not a dependency of S09. `categoryHref` makes the later switch a one-line change.
+- *Link categories to `/szukaj?kategoria=`* (S05) — rejected for now: the route does not exist yet; S05 is not a dependency of S09. `categoryPath` makes the later switch a one-line change.
 - *Fetch counters client-side when the drawer opens* (server action) — rejected: "Moje przepisy" visibility depends on full access, so the "Moje" block would reflow after opening, which is disorienting for the target group and for screen readers. Two head-count queries per page render are cheap and run in parallel with the existing failed-shares query.
 
 ## 📝 Architecture
 - `src/lib/full-access.ts` *(new)* — `getFullAccess(supabase)`; S11's implementation, stubbed here until it merges.
 - `src/lib/menu-summary.ts` *(new)* — `getMenuSummary(supabase, user): Promise<MenuSummary | null>` (null for a guest). Counts: `recipes` where `user_id = me` (exactly the set `/recipes` lists) and `favorites` where `user_id = me` (owner-only RLS already scopes both; the explicit `eq` is defence in depth, matching `/recipes`).
-- `src/lib/recipe-categories.ts` — adds `categoryHref(value)` and `isRecipeCategory(value)`.
+- `src/lib/recipe-categories.ts` — adds `isRecipeCategory(value)`.
+- `src/lib/routes.ts` — `categoryPath(category)` (shared with S04) returns `/kategoria/{value}`; `isPublicRoute` allows it.
 - `src/app/components/app-menu-model.ts` *(new)* — pure `buildMenuModel({ isAuthenticated, summary })` → which "Moje" entries show, their counters, the lock state, guest CTA vs footer.
 - `src/app/components/app-menu.tsx` — renders the model.
 - `src/app/components/app-shell.tsx` — adds `getMenuSummary` to its `Promise.all`; passes `menu` to `AppHeader`.
@@ -46,8 +47,9 @@ export type MenuSummary = {
 }
 export function getMenuSummary(supabase, user: User | null): Promise<MenuSummary | null>
 
+// src/lib/routes.ts
+export function categoryPath(category: string): string  // '/kategoria/{value}'
 // src/lib/recipe-categories.ts
-export function categoryHref(value: RecipeCategory): string  // '/kategoria/{value}'
 export function isRecipeCategory(value: string): value is RecipeCategory
 ```
 `/kategoria/{value}`: `value` must be a member of the `recipe_category` enum, otherwise `notFound()`. Lists up to 48 newest recipes (`created_at desc`); pagination is S05's concern.
@@ -85,7 +87,7 @@ Layout (variant 1c style, 1a structure):
 ## 📝 Resolved assumptions (autonomous defaults)
 | # | Question | Default applied | Rationale |
 |---|----------|-----------------|-----------|
-| Q1 | Where do category tiles link, given `/recipes?category=` is owner-only? | New public route `/kategoria/{value}` behind `categoryHref()` | Guests must not bounce to `/login`; `/szukaj` (S05) does not exist yet; one helper makes retargeting a one-liner. |
+| Q1 | Where do category tiles link, given `/recipes?category=` is owner-only? | New public route `/kategoria/{value}` behind `categoryPath()` (shared with S04) | Guests must not bounce to `/login`; `/szukaj` (S05) does not exist yet; one helper makes retargeting a one-liner. |
 | Q2 | What decides "full access" before S11 ships? | S11's `getFullAccess(supabase)`; a same-signature stub returning `true` until S11 merges, `false` for a guest without calling it | Agreed with the S11 session; matches today's capability; merge order does not matter. |
 | Q3 | Where does the locked "Dodaj przepis" lead? | `/` (S11's 3c `AccessCodeGate` replaces the add form there); `/dodaj` after S10 | Agreed with the S11 session; the gate's real location today. |
 | Q4 | Counters: server-side per render or client-side on open? | Server-side in `AppShell`, head-count queries | No reflow inside an open dialog; cheap; parallel with an existing query. |
@@ -96,7 +98,7 @@ Layout (variant 1c style, 1a structure):
 Single implementation PR (`Refs #212`, `Source doc:` this file).
 
 **Phase 1 — data seams (no UI change)**
-1. `recipe-categories.ts`: `categoryHref`, `isRecipeCategory` + unit tests.
+1. `recipe-categories.ts`: `isRecipeCategory`; `routes.ts`: `categoryPath` + public allowlist; unit tests.
 2. `src/lib/full-access.ts`: `getFullAccess(supabase)` stub with S11's signature (covered through `getMenuSummary`'s tests).
 3. `src/lib/menu-summary.ts`: `getMenuSummary` (two head counts, null on error) + unit tests with a stubbed Supabase client (guest → null; error → null counter; happy path).
 
