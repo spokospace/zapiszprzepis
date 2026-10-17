@@ -7,6 +7,7 @@ import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
 import { recipePath } from '@/lib/routes'
+import { getFullAccess } from '@/lib/full-access'
 import { revalidatePath } from 'next/cache'
 
 export async function addRecipeFromUrl(formData: FormData): Promise<void> {
@@ -42,6 +43,11 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
     revalidatePath('/ulubione')
     redirect(`${recipePath(dedup.slug)}?in_favorites=1`)
   }
+
+  // E01-S11: a NEW extraction needs full access (RLS refuses the insert too).
+  // Checked after dedup: a link someone else already added only goes to
+  // favorites, which need no full access.
+  if (!(await getFullAccess(supabase))) redirect('/?add_error=no_access')
 
   const sourceType = detectSourceType(url)
 

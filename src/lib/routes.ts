@@ -25,8 +25,18 @@ export function categoryPath(category: string): string {
  * The canonical path to a recipe. Encodes the slug once; the single place every
  * link builder goes through, so the URL shape changes in one spot (E01-S03b).
  */
-export function recipePath(slug: string): string {
-  return `/przepis/${encodeURIComponent(slug)}`
+export function recipePath(slug: string, opts?: { from?: string | null }): string {
+  const path = `/przepis/${encodeURIComponent(slug)}`
+  // ?from names the list the visitor came from, for the list bar (E01-S07).
+  return opts?.from ? `${path}?from=${encodeURIComponent(opts.from)}` : path
+}
+
+/** E01-S14 flips this when the public profile /u/{username} ships. */
+const PROFILE_PAGES_LIVE = false
+
+/** A user's public profile, or null while profiles do not exist yet (E01-S07). */
+export function profilePath(username: string | null | undefined): string | null {
+  return PROFILE_PAGES_LIVE && username ? `/u/${encodeURIComponent(username)}` : null
 }
 
 /**

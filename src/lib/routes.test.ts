@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   categoryPath,
   recipePath,
+  profilePath,
   isPublicRoute,
   RECIPE_PAGE_RE,
   PRZEPIS_PAGE_RE,
@@ -18,6 +19,19 @@ describe('recipePath', () => {
   it('encodes the slug once, so an unexpected char never breaks the path', () => {
     expect(recipePath('a b?c')).toBe('/przepis/a%20b%3Fc')
     expect(recipePath('a/b')).toBe('/przepis/a%2Fb')
+  })
+
+  it('appends the list context only when one is given (E01-S07)', () => {
+    expect(recipePath('tiramisu', { from: 'fav' })).toBe('/przepis/tiramisu?from=fav')
+    expect(recipePath('tiramisu', { from: null })).toBe('/przepis/tiramisu')
+    expect(recipePath('tiramisu', {})).toBe('/przepis/tiramisu')
+  })
+})
+
+describe('profilePath', () => {
+  it('stays null until E01-S14 ships /u/{username}, so nothing links to a 404', () => {
+    expect(profilePath('ania')).toBeNull()
+    expect(profilePath(null)).toBeNull()
   })
 })
 

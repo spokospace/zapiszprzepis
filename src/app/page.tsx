@@ -4,7 +4,9 @@ import { getMenuSummary } from '@/lib/menu-summary'
 import { homeGreeting } from '@/lib/home'
 import { AppHeader } from '@/app/components/app-header'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
+import { AccessCodeGate } from '@/app/components/access-code-gate'
 import { RecipeCard } from '@/app/components/recipe-card'
+import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { PageContainer } from '@/app/components/page-container'
 import { HomeSearch } from '@/app/components/home/home-search'
 import { PopularSearches } from '@/app/components/home/popular-searches'
@@ -23,7 +25,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const user = await getCurrentUser()
 
   // Public since E01-S02: a guest sees the home too; the signed-in home (C1) has no feed.
-  // The menu summary (E01-S09) also carries the full-access flag the tiles use.
+  // The menu summary (E01-S09) also carries the E01-S11 full-access flag, which
+  // decides the "Moje przepisy" tile and add form vs the access-code gate (3c).
   const [failedShares, menu, recentRecipes] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
     getMenuSummary(supabase, user),
@@ -36,7 +39,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       <main className="min-h-screen bg-white pb-10">
         {/* E01-S15 slot: the "N przepisów wymaga uwagi" notifications banner goes here. */}
         {user ? (
-          <MemberHome addError={add_error} hasFullAccess={menu?.hasFullAccess ?? true} />
+          <MemberHome addError={add_error} hasFullAccess={menu?.hasFullAccess ?? false} />
         ) : (
           <GuestHome recentRecipes={recentRecipes} />
         )}
@@ -80,10 +83,18 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
               Ostatnio dodane
             </h2>
             <div className="grid grid-cols-2 gap-3">
+              {/* E01-S07: lets the recipe page show "← Ostatnio dodane" + prev/next. */}
+              <RecipeListSnapshot
+                listKey="home"
+                label="Ostatnio dodane"
+                href="/"
+                items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
+              />
               {recentRecipes.map((r) => (
                 <RecipeCard
                   // id, not slug: the feed spans users, and the id is the stable key.
                   key={r.id}
+                  from="home"
                   slug={r.slug}
                   title={r.title}
                   imageUrl={r.image_url}
@@ -115,13 +126,18 @@ function MemberHome({ addError, hasFullAccess }: { addError?: string; hasFullAcc
       </div>
       <MemberTiles hasFullAccess={hasFullAccess} />
       <CategoryGrid columns={2} />
-      {/* E01-S10 slot: adding moves to /dodaj; until then the form lives here (?tab=add focuses it). */}
-      <section aria-labelledby="add-heading">
-        <h2 id="add-heading" className="mb-3 text-[22px] font-bold text-ink">
-          Dodaj przepis z linku
-        </h2>
-        <AddRecipeForm addError={addError} />
-      </section>
+      {/* E01-S10 slot: adding moves to /dodaj; until then the form lives here (?tab=add focuses it).
+          Without full access (E01-S11) the access-code gate (3c) stands in its place. */}
+      {hasFullAccess ? (
+        <section aria-labelledby="add-heading">
+          <h2 id="add-heading" className="mb-3 text-[22px] font-bold text-ink">
+            Dodaj przepis z linku
+          </h2>
+          <AddRecipeForm addError={addError} />
+        </section>
+      ) : (
+        <AccessCodeGate notice={addError === 'no_access'} />
+      )}
     </PageContainer>
   )
 }

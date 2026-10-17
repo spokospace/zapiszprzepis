@@ -4,6 +4,7 @@ import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { recipePath } from '@/lib/routes'
+import type { ListKey } from '@/lib/recipe-list-context'
 
 interface RecipeCardProps {
   slug: string
@@ -15,6 +16,8 @@ interface RecipeCardProps {
   sourceType: RecipeSource
   sourceUrl: string | null
   sourceAuthor: string | null
+  /** The list this card sits in, for the recipe page's list bar (E01-S07). */
+  from?: ListKey
 }
 
 export function RecipeCard({
@@ -26,9 +29,10 @@ export function RecipeCard({
   sourceType,
   sourceUrl,
   sourceAuthor,
+  from,
 }: RecipeCardProps) {
   return (
-    <Link href={recipePath(slug)}>
+    <Link href={recipePath(slug, { from })}>
       <div className="group h-full cursor-pointer overflow-hidden rounded-card border border-border-card bg-white transition-shadow hover:shadow-lg">
         {/* Image container */}
         <div className="relative aspect-[4/3] w-full bg-surface-3">

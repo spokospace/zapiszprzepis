@@ -5,6 +5,7 @@ import { inngest } from '@/inngest/client'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { recipePath } from '@/lib/routes'
+import { getFullAccess } from '@/lib/full-access'
 
 /**
  * "Odśwież przepis" — re-run extraction for an existing recipe and overwrite it
@@ -21,6 +22,11 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
   } = await supabase.auth.getUser()
   if (!user) {
     redirect('/login')
+  }
+
+  // E01-S11: re-extraction spends the same budget as adding, so it needs full access.
+  if (!(await getFullAccess(supabase))) {
+    redirect(`${recipePath(slug)}?refresh_error=no_access`)
   }
 
   const { data: recipe } = await supabase
