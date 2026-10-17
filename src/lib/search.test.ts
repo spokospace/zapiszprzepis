@@ -69,6 +69,7 @@ describe('searchRecipes', () => {
     expect(await searchRecipes(client(rpc), { q: '', scope: 'wszystkie', page: 1, category: null })).toEqual({
       rows: [],
       total: 0,
+      totalAll: 0,
       categories: [],
     })
     expect(rpc).not.toHaveBeenCalled()
@@ -99,7 +100,7 @@ describe('searchRecipes', () => {
     const rpc = vi.fn().mockResolvedValue({ data: rows, error: null })
     const out = await searchRecipes(client(rpc), { q: 'zupa', scope: 'wszystkie', page: 1, category: 'zupy' })
     expect('rows' in out && out.rows.map((r) => r.slug)).toEqual(['a', 'c'])
-    expect(out).toMatchObject({ total: 2 })
+    expect(out).toMatchObject({ total: 2, totalAll: 3 })
     expect('categories' in out && out.categories.map((c) => c.value)).toEqual(['zupy', 'obiady'])
   })
 
