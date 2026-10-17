@@ -25,6 +25,7 @@ import {
   profileMoreHref,
   profileRobots,
 } from '@/lib/public-profile'
+import { parseGenderForm, profileCountLine, profileEmptyText } from '@/lib/gender-form'
 import { PageContainer } from '@/app/components/page-container'
 import { Avatar } from '@/app/components/ui/avatar'
 import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
@@ -51,8 +52,10 @@ const SUMMARY_MAX_ROWS = 10_000
 /**
  * The profile and a summary of every recipe the person owns (S03: "added as
  * the first person"), shared by generateMetadata and the page via cache().
- * Reads only anon-readable surfaces: profiles (S18) and the public_recipes
- * view — never profiles_private, favorites or auth. Null = no such profile.
+ * Reads only anon-readable surfaces: profiles (S18), the public_recipes
+ * view and profile_gender_form() (E01-S23: the grammatical form f/m/null for
+ * "Dodała/Dodał", never the raw gender) — never profiles_private, favorites or
+ * auth. Null = no such profile.
  */
 const loadProfile = cache(async (username: string) => {
   if (!isUsernameShape(username)) return null
@@ -64,6 +67,11 @@ const loadProfile = cache(async (username: string) => {
     .maybeSingle()
   if (error) throw new Error(`[profile] Profile query failed: ${error.message}`)
   if (!profile) return null
+
+  // The grammatical form for "Dodała/Dodał", read alongside the summary. Before the
+  // E01-S23 migration the function is missing: the error just means neutral wording.
+  // Promise.resolve starts the (lazy) builder now instead of at the await.
+  const formPromise = Promise.resolve(supabase.rpc('profile_gender_form', { p_username: username }))
 
   // All of this person's recipes, two columns only: the total, the chip counts
   // and the oldest date. PostgREST caps one response at 1000 rows and the
@@ -80,7 +88,14 @@ const loadProfile = cache(async (username: string) => {
     rows.push(...(batch ?? []))
     if (!batch || batch.length < SUMMARY_BATCH) break
   }
-  return { profile, total: rows.length, categories: categoryCounts(rows), oldest: oldestCreatedAt(rows) }
+  const { data: form } = await formPromise
+  return {
+    profile,
+    total: rows.length,
+    categories: categoryCounts(rows),
+    oldest: oldestCreatedAt(rows),
+    genderForm: parseGenderForm(form),
+  }
 })
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -111,7 +126,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
   const data = await loadProfile(username)
   if (!data) notFound()
 
-  const { profile, total, categories, oldest } = data
+  const { profile, total, categories, oldest, genderForm } = data
   const query = await searchParams
   const category = parseProfileCategory(query.kategoria, categories)
   const page = parseProfilePage(query.strona)
@@ -182,15 +197,14 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
           />
           <div className="min-w-0">
             <h1 className="break-words text-[28px] font-bold leading-tight text-ink">{profile.display_name}</h1>
-            {/* Neutral until E01-S23 (#290) genders it ("Dodała/Dodał N przepisów"). */}
-            {total > 0 && <p className="text-[17px] text-ink">Przepisy: {total}</p>}
+            {total > 0 && <p className="text-[17px] text-ink">{profileCountLine(genderForm, total)}</p>}
             <p className="text-[17px] text-ink-soft">W ZapiszPrzepis od {memberSinceLabel(profile.created_at, oldest)}</p>
           </div>
         </header>
 
         {total === 0 ? (
           <p className="max-w-prose text-[19px] text-ink-soft">
-            Na tym profilu nie ma jeszcze przepisów.{' '}
+            {profileEmptyText(genderForm, profile.display_name)}{' '}
             <Link href="/" className="font-semibold text-action-text underline underline-offset-4 hover:text-action-hover">
               Wróć na stronę główną
             </Link>

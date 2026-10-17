@@ -1399,3 +1399,48 @@ describe('runExtractRecipe — YouTube transcript fallback', () => {
     expect(mock.didInsert('recipes')).toBe(false)
   })
 })
+
+describe('runExtractRecipe — servings', () => {
+  const withServings = (servings: unknown) => JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), servings })
+  const ldHtml = (recipeYield: unknown) =>
+    `<script type="application/ld+json">${JSON.stringify({ '@type': 'Recipe', recipeYield })}</script>` +
+    '<p>Przepis na naleśniki.</p>'.repeat(20)
+
+  it('stores the servings the LLM read from the text', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withServings(4) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ servings: 4 })
+  })
+
+  it('prefers the JSON-LD recipeYield over the LLM', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ firecrawlHtml: ldHtml(['6', '6 porcji']), openaiContent: withServings(4) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ servings: 6 })
+  })
+
+  it('stores null when neither states servings, and drops an out-of-range answer', async () => {
+    for (const servings of [undefined, null, 0, 150, 'kilka']) {
+      const mock = makeSupabaseMock()
+      mock.queue('recipes', { data: { id: 42 }, error: null })
+
+      await runExtractRecipe(BASE_EVENT, {
+        fetch: makeFetchMock({ openaiContent: withServings(servings) }),
+        supabase: mock.supabase as any,
+      })
+
+      expect(mock.insertArgs('recipes')).toMatchObject({ servings: null })
+    }
+  })
+})

@@ -356,7 +356,7 @@ function sharesDistinctiveWord(url: string, slugWords: Set<string>): boolean {
   return false
 }
 
-const LD_JSON_RE = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+export const LD_JSON_RE = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
 // Nodes whose schema.org image is the dish, best first: the recipe's own, then
 // the article's; a WebPage's primary image is a weaker last resort.
 const LD_IMAGE_TYPES = [/recipe/i, /article|blogposting/i, /webpage/i]
@@ -373,7 +373,7 @@ function ldImageHref(image: unknown): string | undefined {
 }
 
 /** The @type of a JSON-LD node as a lower-case string, however it is spelled. */
-function ldType(node: { '@type'?: unknown }): string {
+export function ldType(node: { '@type'?: unknown }): string {
   const type = node['@type']
   return (Array.isArray(type) ? type.join(' ') : typeof type === 'string' ? type : '').toLowerCase()
 }

@@ -19,6 +19,7 @@
     "collapse:content-duplicates": "node --env-file=.env.local --import tsx scripts/collapse-content-duplicates.ts",
     "fix:recipe-covers": "node --env-file=.env.local --import tsx scripts/fix-recipe-covers.ts",
     "backfill:source-authors":"node --env-file=.env.local --import tsx scripts/backfill-source-authors.ts",
+    "backfill:recipe-servings": "node --env-file=.env.local --import tsx scripts/backfill-recipe-servings.ts",
     "update:recipe-blog-domains": "node --import tsx scripts/update-recipe-blog-domains.ts",
     "render:banner": "node docs/banner/render.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
