@@ -7,6 +7,7 @@ import {
   versionsHeading,
   sortVersions,
   parseVersionsSort,
+  dishExclusionFilter,
   type DishVersionRow,
 } from './dish-versions'
 
@@ -126,6 +127,14 @@ describe('versionsBarLabel & versionsHeading', () => {
   it('headings use the accusative or the case-free fallback', () => {
     expect(versionsHeading(3, 'szarlotkę')).toBe('Inne przepisy na szarlotkę (3)')
     expect(versionsHeading(3, null)).toBe('Inne wersje tego dania (3)')
+  })
+})
+
+describe('dishExclusionFilter', () => {
+  it('builds the or() filter keeping null-dish rows, only when a dish is given', () => {
+    expect(dishExclusionFilter('sernik na zimno')).toBe('dish.is.null,dish.neq."sernik na zimno"')
+    expect(dishExclusionFilter(null)).toBeNull()
+    expect(dishExclusionFilter(undefined)).toBeNull()
   })
 })
 

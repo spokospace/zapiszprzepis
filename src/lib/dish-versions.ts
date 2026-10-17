@@ -184,6 +184,19 @@ export function versionsHeading(n: number, dishAccusative: string | null): strin
   return dishAccusative ? `Inne przepisy na ${dishAccusative} (${n})` : `Inne wersje tego dania (${n})`
 }
 
+// --- "Podobne" exclusion ---------------------------------------------------
+
+/**
+ * The PostgREST `or()` filter that drops this dish's other recipes from
+ * "Podobne" while keeping null-dish rows — a plain `neq` would drop those too,
+ * since `null <> x` is not true in SQL. Null when there is no dish to exclude.
+ * The value is safe to embed because `normalizeDish` limits a dish to letters,
+ * spaces and hyphens.
+ */
+export function dishExclusionFilter(dish: string | null | undefined): string | null {
+  return dish ? `dish.is.null,dish.neq."${dish}"` : null
+}
+
 // --- Sort ------------------------------------------------------------------
 
 export type VersionsSort = 'popularne' | 'nowe' | 'szybkie'
