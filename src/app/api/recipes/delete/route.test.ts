@@ -72,7 +72,7 @@ describe('POST /api/recipes/delete — a recipe others keep as a favorite (E01-S
     const response = await POST(deleteRequest('text/html,application/xhtml+xml'))
 
     expect(response.status).toBe(303)
-    expect(response.headers.get('location')).toBe('http://localhost/recipes/tiramisu?delete_error=shared')
+    expect(response.headers.get('location')).toBe('http://localhost/przepis/tiramisu?delete_error=shared')
     expect(remove).not.toHaveBeenCalled()
   })
 

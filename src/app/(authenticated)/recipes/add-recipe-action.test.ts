@@ -41,7 +41,7 @@ describe('addRecipeFromUrl — one recipe per link (E01-S03a)', () => {
   it('favorites someone else’s recipe and opens it with the in_favorites toast', async () => {
     vi.mocked(findExistingRecipeForUrl).mockResolvedValue(OTHER)
 
-    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /recipes/tiramisu?in_favorites=1')
+    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /przepis/tiramisu?in_favorites=1')
 
     expect(favoriteExistingRecipe).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, URL_IN)
     expect(from).not.toHaveBeenCalled()
@@ -59,7 +59,7 @@ describe('addRecipeFromUrl — one recipe per link (E01-S03a)', () => {
   it('still says "you already have it" for the user’s own recipe', async () => {
     vi.mocked(findExistingRecipeForUrl).mockResolvedValue({ status: 'completed', slug: 'tiramisu', normalizedUrl: URL_IN })
 
-    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /recipes/tiramisu?duplicate=1')
+    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /przepis/tiramisu?duplicate=1')
     expect(favoriteExistingRecipe).not.toHaveBeenCalled()
   })
 })

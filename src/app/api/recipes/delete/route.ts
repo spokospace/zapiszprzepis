@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { extractStoragePath, removeGallery } from '@/lib/recipe-image-archive'
 import { isRecipeSharedError, RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
+import { recipePath } from '@/lib/routes'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (isRecipeSharedError(deleteError)) {
       // The recipe page's plain form gets the message inline; other clients the 409.
       if (request.headers.get('accept')?.includes('text/html')) {
-        return NextResponse.redirect(new URL(`/recipes/${slug}?delete_error=shared`, request.url), { status: 303 })
+        return NextResponse.redirect(new URL(`${recipePath(slug)}?delete_error=shared`, request.url), { status: 303 })
       }
       return NextResponse.json({ error: 'recipe_shared', message: RECIPE_SHARED_MESSAGE }, { status: 409 })
     }

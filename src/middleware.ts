@@ -9,7 +9,7 @@
 //   https://github.com/opennextjs/opennextjs-cloudflare/issues/1213
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
-import { isPublicRoute } from '@/lib/routes'
+import { isPublicRoute, RECIPE_PAGE_RE, legacyRecipePathToCanonical } from '@/lib/routes'
 import { loginPath, resolveLoginNext } from '@/lib/login-redirect'
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
@@ -49,6 +49,15 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return user
       ? NextResponse.redirect(new URL(resolveLoginNext(searchParams.get('next'), origin, '/'), request.url))
       : response
+  }
+
+  // E01-S03b: the canonical recipe URL is /przepis/{slug}. The legacy public
+  // /recipes/{slug} permanently redirects to it — pure path math (swap the
+  // prefix, keep the slug segment verbatim so it is not re-encoded), with the
+  // query string preserved. "/recipes" (Moje przepisy) and deeper paths don't
+  // match RECIPE_PAGE_RE (single segment), so they are untouched.
+  if (RECIPE_PAGE_RE.test(pathname)) {
+    return NextResponse.redirect(new URL(legacyRecipePathToCanonical(pathname) + search, request.url), { status: 301 })
   }
 
   // E01-S02 public routes: a guest may read the home and a single recipe. Data
