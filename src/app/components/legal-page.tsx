@@ -15,7 +15,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
         <article className="mx-auto max-w-3xl text-[19px] leading-relaxed text-ink">
           <h1 className="text-[32px] font-bold leading-tight">{title}</h1>
           <p className="mt-2 text-[16px] text-ink-soft">
-            Obowiązuje od: <Fill>data wejścia w życie</Fill>
+            Obowiązuje od: 17 października 2026
           </p>
           <div className="mt-6 flex flex-col gap-4">{children}</div>
           <LegalLinks className="mt-10 border-t border-border-card pt-6" />
@@ -42,11 +42,6 @@ export function LegalSection({ id, title, children }: { id: string; title: strin
 
 export function LegalList({ children }: { children: ReactNode }) {
   return <ul className="flex list-disc flex-col gap-2 pl-6">{children}</ul>
-}
-
-/** Operator details the owner still has to fill in — highlighted so none is missed. */
-export function Fill({ children }: { children: ReactNode }) {
-  return <mark className="rounded bg-surface-accent-2 px-1 text-ink">[UZUPEŁNIJ: {children}]</mark>
 }
 
 /**

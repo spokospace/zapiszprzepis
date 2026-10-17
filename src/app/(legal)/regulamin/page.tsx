@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { DATA_DELETION_PATH, PRIVACY_POLICY_PATH } from '@/lib/routes'
-import { Fill, LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
+import { LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
 
 export const metadata: Metadata = {
   title: 'Regulamin — ZapiszPrzepis',
@@ -118,12 +118,11 @@ export default function TermsPage() {
       <LegalSection id="kontakt" title="9. Kontakt, reklamacje i zmiany regulaminu">
         <LegalList>
           <li>
-            Pytania i reklamacje wysyłaj na <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>. Odpowiemy w ciągu{' '}
-            <Fill>termin odpowiedzi, np. 14 dni</Fill>.
+            Pytania i reklamacje wysyłaj na <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>. Odpowiemy w ciągu 14 dni.
           </li>
           <li>
-            O zmianie regulaminu poinformujemy na tej stronie, zmieniając datę na górze. <Fill>zasady powiadamiania o
-            zmianach i prawo właściwe</Fill>
+            O zmianie regulaminu poinformujemy na tej stronie (zmieniając datę u góry), a zalogowanych użytkowników
+            dodatkowo powiadomimy e-mailem.
           </li>
         </LegalList>
       </LegalSection>
