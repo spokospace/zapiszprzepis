@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2a — Ustawienia (mockup)</title>
+<style>
+  :root { --ink:#111827; --ink-soft:#374151; --field:#4b5563; --action:#c2410c; --success:#15803d; --focus:#1d4ed8; --card:#e5e7eb; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px 16px; font-family:system-ui, sans-serif; color:var(--ink); background:#f3f4f6; }
+  .row { display:flex; flex-wrap:wrap; gap:24px; }
+  .state { flex:1 1 360px; max-width:420px; }
+  .tag { font-size:14px; font-weight:700; color:var(--ink-soft); margin:0 0 8px; text-transform:uppercase; letter-spacing:.04em; }
+  .card { background:#fff; border-radius:12px; padding:20px 16px; }
+  h1 { font-size:30px; margin:0 0 20px; }
+  .avatar { width:96px; height:96px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:44px; overflow:hidden; }
+  .avatar img { width:100%; height:100%; object-fit:cover; }
+  .avatar.sm { width:48px; height:48px; font-size:22px; }
+  .pic { display:flex; gap:16px; align-items:center; margin-bottom:16px; }
+  .btns { display:flex; flex-direction:column; gap:8px; }
+  .btn { min-height:48px; padding:0 16px; font-size:17px; font-weight:700; border-radius:14px; border:2px solid var(--field); background:#fff; color:var(--ink); }
+  fieldset { border:0; padding:0; margin:0 0 20px; }
+  legend { font-size:19px; font-weight:700; margin-bottom:8px; }
+  .swatches { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  .sw { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:16px; color:var(--ink-soft); }
+  .sw span.c { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:22px; }
+  .sw.on span.c { box-shadow:0 0 0 3px #fff, 0 0 0 6px var(--ink); }
+  .sw.on b { color:var(--ink); }
+  label { display:block; font-size:19px; font-weight:700; margin-bottom:6px; }
+  .help { font-size:16px; color:var(--ink-soft); margin:0 0 8px; }
+  input { width:100%; min-height:56px; font-size:19px; padding:0 14px; border:2px solid var(--field); border-radius:14px; margin-bottom:20px; }
+  .preview { background:#f9fafb; border:2px solid var(--card); border-radius:12px; padding:14px; margin-bottom:20px; font-size:17px; }
+  .preview p { margin:0 0 6px; color:var(--ink-soft); }
+  .byline { display:flex; align-items:center; gap:10px; font-size:19px; font-weight:700; margin-bottom:12px; }
+  .greet { font-size:19px; font-weight:700; color:var(--ink); }
+  .save { width:100%; min-height:56px; font-size:18px; font-weight:700; color:#fff; background:var(--action); border:0; border-radius:14px; }
+  .save.done { background:var(--success); }
+  dl { margin:24px 0 0; border-top:1px solid var(--card); padding-top:16px; }
+  dt { font-size:16px; color:var(--ink-soft); } dd { margin:2px 0 0; font-size:19px; font-weight:600; word-break:break-all; }
+  .out { margin-top:24px; border-top:1px solid var(--card); padding-top:16px; }
+  .out .btn { width:100%; }
+</style>
+</head>
+<body>
+<div class="row">
+  <section class="state" aria-label="Bez zdjęcia">
+    <p class="tag">1 · Litera na kolorze</p>
+    <div class="card">
+      <h1>Ustawienia</h1>
+      <div class="pic">
+        <div class="avatar" style="background:#1d4ed8">A</div>
+        <div class="btns"><button class="btn">Dodaj zdjęcie</button></div>
+      </div>
+      <fieldset>
+        <legend>Kolor tła</legend>
+        <div class="swatches">
+          <div class="sw"><span class="c" style="background:#c2410c">A</span>Pomarańczowy</div>
+          <div class="sw on"><span class="c" style="background:#1d4ed8">✓</span><b>Niebieski</b></div>
+          <div class="sw"><span class="c" style="background:#15803d">A</span>Zielony</div>
+          <div class="sw"><span class="c" style="background:#7e22ce">A</span>Fioletowy</div>
+          <div class="sw"><span class="c" style="background:#be185d">A</span>Różowy</div>
+          <div class="sw"><span class="c" style="background:#0f766e">A</span>Morski</div>
+        </div>
+      </fieldset>
+      <label for="n1">Nazwa przy przepisach</label>
+      <p class="help">Tak podpiszemy przepisy, które dodasz. Widzą ją wszyscy.</p>
+      <input id="n1" value="Ania Kowalska">
+      <label for="f1">Imię</label>
+      <p class="help">Tylko do powitania na stronie głównej. Nikt inny go nie widzi.</p>
+      <input id="f1" value="Ania">
+      <div class="preview" role="status" aria-live="polite">
+        <p>Tak zobaczą Cię inni:</p>
+        <div class="byline"><div class="avatar sm" style="background:#1d4ed8">A</div>Ania Kowalska</div>
+        <p>Powitanie:</p>
+        <div class="greet">Dzień dobry, Aniu!</div>
+      </div>
+      <button class="save">Zapisz zmiany</button>
+      <dl><dt>Adres email</dt><dd>ania.kowalska@example.com</dd></dl>
+      <div class="out"><button class="btn">Wyloguj</button></div>
+    </div>
+  </section>
+  <section class="state" aria-label="Ze zdjęciem, po zapisie">
+    <p class="tag">2 · Zdjęcie · po zapisie</p>
+    <div class="card">
+      <h1>Ustawienia</h1>
+      <div class="pic">
+        <div class="avatar" style="background:#fdba74"><img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%23fed7aa'/%3E%3Ccircle cx='48' cy='38' r='18' fill='%239a3412'/%3E%3Cellipse cx='48' cy='90' rx='32' ry='26' fill='%239a3412'/%3E%3C/svg%3E"></div>
+        <div class="btns"><button class="btn">Zmień zdjęcie</button><button class="btn">Usuń zdjęcie</button></div>
+      </div>
+      <label for="n2">Nazwa przy przepisach</label>
+      <p class="help">Tak podpiszemy przepisy, które dodasz. Widzą ją wszyscy.</p>
+      <input id="n2" value="Kuchnia Marka">
+      <label for="f2">Imię</label>
+      <p class="help">Tylko do powitania na stronie głównej. Nikt inny go nie widzi.</p>
+      <input id="f2" value="Marek">
+      <div class="preview" role="status" aria-live="polite">
+        <p>Tak zobaczą Cię inni:</p>
+        <div class="byline"><div class="avatar sm"><img alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%23fed7aa'/%3E%3Ccircle cx='48' cy='38' r='18' fill='%239a3412'/%3E%3Cellipse cx='48' cy='90' rx='32' ry='26' fill='%239a3412'/%3E%3C/svg%3E"></div>Kuchnia Marka</div>
+        <p>Powitanie:</p>
+        <div class="greet">Dzień dobry, Marku!</div>
+      </div>
+      <button class="save done">✓ Zapisano</button>
+      <dl><dt>Adres email</dt><dd>marek@example.com</dd></dl>
+      <div class="out"><button class="btn">Wyloguj</button></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

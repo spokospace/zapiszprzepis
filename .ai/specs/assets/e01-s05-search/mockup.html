@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E01-S05 search mockup</title>
+<style>
+  /* Illustrative static mockup for the S05 spec. Not app code. Tokens mirror src/app/globals.css. */
+  :root { --ink:#111827; --ink-soft:#374151; --muted:#4b5563; --action:#c2410c; --accent:#fff7ed; --accent2:#ffedd5; --action-text:#9a3412; --card:#e5e7eb; --card2:#d1d5db; --s2:#f9fafb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; color:var(--ink); background:#f3f4f6; display:flex; gap:32px; padding:24px; flex-wrap:wrap; align-items:flex-start; }
+  .phone { width:375px; background:#fff; border:1px solid var(--card2); border-radius:24px; overflow:hidden; padding-bottom:20px; }
+  .cap { font: 700 14px system-ui; color:var(--ink-soft); padding:8px 16px; background:var(--s2); border-bottom:1px solid var(--card); }
+  header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--card); }
+  .logo { font-weight:800; font-size:20px; } .logo b { color:var(--action); }
+  .hbtn { min-height:48px; padding:0 14px; border:2px solid var(--muted); border-radius:14px; font:700 17px system-ui; background:#fff; display:inline-flex; align-items:center; }
+  main { padding:16px; }
+  h1 { font-size:28px; line-height:1.15; margin:0 0 12px; }
+  h2 { font-size:22px; margin:0 0 8px; }
+  label { display:block; font-size:18px; margin-bottom:8px; color:var(--ink-soft); }
+  .field { display:flex; gap:8px; }
+  .field input { flex:1; min-width:0; height:60px; border:2px solid var(--muted); border-radius:14px; font-size:19px; padding:0 14px; }
+  .mic { min-width:72px; height:60px; border:2px solid var(--muted); border-radius:14px; background:#fff; font:700 16px system-ui; }
+  .primary { display:flex; gap:8px; justify-content:center; align-items:center; width:100%; min-height:56px; margin-top:10px; background:var(--action); color:#fff; border:0; border-radius:14px; font:700 19px system-ui; }
+  .outline { display:flex; justify-content:center; align-items:center; width:100%; min-height:56px; margin-top:14px; background:#fff; color:var(--ink); border:2px solid var(--muted); border-radius:14px; font:700 19px system-ui; }
+  .clear { display:flex; justify-content:flex-end; } .clear a { min-height:48px; display:inline-flex; align-items:center; gap:6px; color:var(--ink); font-size:18px; text-decoration:underline; }
+  .scope-l { font-size:16px; color:var(--ink-soft); margin:6px 0 6px; }
+  .seg { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .seg a { min-height:48px; display:flex; align-items:center; justify-content:center; border:2px solid var(--card2); border-radius:12px; font:700 18px system-ui; color:var(--ink); text-decoration:none; }
+  .seg a.on { background:#111827; border-color:#111827; color:#fff; }
+  .count { font-size:19px; margin:16px 0 10px; }
+  ol { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+  .row { border:1px solid var(--card); border-radius:16px; overflow:hidden; }
+  .row .top { display:flex; gap:12px; padding:10px; }
+  .thumb { width:96px; height:96px; flex-shrink:0; border-radius:12px; background:linear-gradient(135deg,#fed7aa,#fde68a); }
+  .row h3 { font-size:20px; line-height:1.2; margin:0 0 4px; }
+  .meta, .src { font-size:16px; color:var(--ink-soft); }
+  .fav { display:flex; align-items:center; gap:8px; min-height:48px; padding:0 12px; border-top:1px solid var(--card); color:var(--action-text); font:700 17px system-ui; }
+  .fav.on { color:var(--action-text); }
+  .empty p { font-size:19px; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="cap">C2 · Gość — wyniki</div>
+    <header><span class="logo">Zapisz<b>Przepis</b></span><span><span class="hbtn">Zaloguj się</span> <span class="hbtn">MENU</span></span></header>
+    <main>
+      <h1>Szukaj przepisu</h1>
+      <label for="q1">Szukaj przepisu po nazwie lub składniku</label>
+      <div class="field"><input id="q1" value="dynia"><button class="mic">🎤 Mów</button></div>
+      <button class="primary">Szukaj przepisu</button>
+      <div class="clear"><a href="#">✕ Wyczyść</a></div>
+      <p class="count"><b>23</b> przepisy dla „dynia”</p>
+      <ol>
+        <li class="row"><div class="top"><div class="thumb"></div><div><h3>Zupa krem z dyni</h3><div class="meta">Zupy · 45 min</div><div class="src">YouTube · Kuchnia Lidla</div></div></div><div class="fav">♡ Dodaj do ulubionych</div></li>
+        <li class="row"><div class="top"><div class="thumb"></div><div><h3>Ciasto dyniowe z cynamonem</h3><div class="meta">Ciasta · 1 godz 10 min</div><div class="src">aniagotuje.pl</div></div></div><div class="fav">♡ Dodaj do ulubionych</div></li>
+        <li class="row"><div class="top"><div class="thumb"></div><div><h3>Placuszki z dynią</h3><div class="meta">Śniadania</div><div class="src">Facebook · Gotuj z nami</div></div></div><div class="fav">♡ Dodaj do ulubionych</div></li>
+      </ol>
+      <a class="outline" href="#">Pokaż kolejne 9</a>
+    </main>
+  </div>
+
+  <div class="phone">
+    <div class="cap">A3 · Zalogowana — zakres „Moich”</div>
+    <header><span class="logo">Zapisz<b>Przepis</b></span><span class="hbtn">MENU</span></header>
+    <main>
+      <h1>Szukaj przepisu</h1>
+      <label for="q2">Szukaj przepisu po nazwie lub składniku</label>
+      <div class="field"><input id="q2" value="ziemniaki"><button class="mic">🎤 Mów</button></div>
+      <button class="primary">Szukaj przepisu</button>
+      <div class="clear"><a href="#">✕ Wyczyść</a></div>
+      <p class="scope-l">Szukaj w:</p>
+      <nav class="seg" aria-label="Zakres wyszukiwania"><a href="#">Wszystkich</a><a class="on" href="#" aria-current="page">Moich</a><a href="#">Ulubionych</a></nav>
+      <p class="count"><b>5</b> przepisów dla „ziemniaki”</p>
+      <ol>
+        <li class="row"><div class="top"><div class="thumb"></div><div><h3>Pierogi ruskie</h3><div class="meta">Obiady · 1 godz 30 min</div><div class="src">kwestiasmaku.com</div></div></div><div class="fav on">♥ W ulubionych</div></li>
+        <li class="row"><div class="top"><div class="thumb"></div><div><h3>Placki ziemniaczane</h3><div class="meta">Obiady · 40 min</div><div class="src">aniagotuje.pl</div></div></div><div class="fav">♡ Dodaj do ulubionych</div></li>
+      </ol>
+    </main>
+  </div>
+
+  <div class="phone">
+    <div class="cap">Brak wyników</div>
+    <header><span class="logo">Zapisz<b>Przepis</b></span><span class="hbtn">MENU</span></header>
+    <main class="empty">
+      <h1>Szukaj przepisu</h1>
+      <label for="q3">Szukaj przepisu po nazwie lub składniku</label>
+      <div class="field"><input id="q3" value="kimchi"><button class="mic">🎤 Mów</button></div>
+      <button class="primary">Szukaj przepisu</button>
+      <div class="clear"><a href="#">✕ Wyczyść</a></div>
+      <p class="scope-l">Szukaj w:</p>
+      <nav class="seg"><a class="on" href="#">Wszystkich</a><a href="#">Moich</a><a href="#">Ulubionych</a></nav>
+      <h2 style="margin-top:20px">Nie ma tego, czego szukasz?</h2>
+      <p>Żaden przepis nie pasuje do „kimchi”. Sprawdź pisownię albo poszukaj w internecie.</p>
+      <button class="primary">🌐 Szukaj „kimchi” w internecie</button>
+    </main>
+  </div>
+</body>
+</html>

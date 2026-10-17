@@ -1,5 +1,44 @@
 import { describe, it, expect } from 'vitest'
-import { safeNext, mapAuthError, inboundAuthError, parseEmailOtpType } from '@/lib/safe-redirect'
+import { safeNext, mapAuthError, inboundAuthError, inboundOAuthError, parseEmailOtpType } from '@/lib/safe-redirect'
+
+describe('safeNext — dot-segment protocol-relative bypass', () => {
+  it.each(['/.//evil.com', '/a/..//evil.com', '/%2e//evil.com', '/x/../..//evil.com'])(
+    'rejects %s',
+    (raw) => {
+      expect(safeNext(raw, 'https://zapiszprzepis.pl')).toBe('/')
+    },
+  )
+})
+
+describe('inboundOAuthError — OAuth errors on the callback URL (E01-S12)', () => {
+  it('maps the email-collision codes', () => {
+    expect(inboundOAuthError('email_exists', 'access_denied', null)).toBe('oauth_email_exists')
+    expect(inboundOAuthError('provider_email_needs_verification', null, null)).toBe('oauth_verify_email')
+  })
+
+  it('maps a disabled provider', () => {
+    expect(inboundOAuthError('provider_disabled', 'invalid_request', null)).toBe('oauth_unavailable')
+    expect(inboundOAuthError('oauth_provider_not_supported', null, null)).toBe('oauth_unavailable')
+  })
+
+  it('maps a provider account without email by its exact description', () => {
+    expect(
+      inboundOAuthError(null, 'server_error', 'Error getting user email from external provider'),
+    ).toBe('oauth_no_email')
+    // Substrings and other server errors are not guessed at.
+    expect(inboundOAuthError(null, 'server_error', 'Error getting user email')).toBeNull()
+    expect(inboundOAuthError(null, 'server_error', 'Something else')).toBeNull()
+  })
+
+  it('treats access_denied without a code as a cancel', () => {
+    expect(inboundOAuthError(null, 'access_denied', 'User denied')).toBe('oauth_cancelled')
+  })
+
+  it('leaves email-link errors to inboundAuthError', () => {
+    expect(inboundOAuthError('otp_expired', 'access_denied', 'Email link is invalid or has expired')).toBeNull()
+    expect(inboundOAuthError(null, null, null)).toBeNull()
+  })
+})
 
 const ORIGIN = 'https://zapiszprzepis.pl'
 

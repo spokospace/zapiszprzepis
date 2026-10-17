@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
+import { getMenuSummary } from '@/lib/menu-summary'
 import { AppHeader } from '@/app/components/app-header'
 
 /**
@@ -14,11 +15,14 @@ import { AppHeader } from '@/app/components/app-header'
 export async function AppShell({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServerClient()
   const user = await getCurrentUser()
-  const failedShares = user ? await getFailedShares(supabase, user.id) : NO_FAILED_SHARES
+  const [failedShares, menu] = await Promise.all([
+    user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
+    getMenuSummary(supabase, user),
+  ])
 
   return (
     <>
-      <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} />
+      <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} menu={menu} />
       {children}
     </>
   )

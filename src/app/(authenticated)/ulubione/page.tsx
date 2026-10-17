@@ -4,6 +4,7 @@ import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/serve
 import { loginPath } from '@/lib/login-redirect'
 import { PageContainer } from '@/app/components/page-container'
 import { RecipeCard } from '@/app/components/recipe-card'
+import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import type { RecipeSource } from '@/lib/recipe-source'
 
 export const metadata: Metadata = { title: 'Ulubione · ZapiszPrzepis' }
@@ -58,9 +59,16 @@ export default async function FavoritesPage() {
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <RecipeListSnapshot
+              listKey="fav"
+              label="Ulubione"
+              href="/ulubione"
+              items={recipes.map((r) => ({ slug: r.slug, title: r.title }))}
+            />
             {recipes.map((r) => (
               <RecipeCard
                 key={r.id}
+                from="fav"
                 slug={r.slug}
                 title={r.title}
                 imageUrl={r.image_url}
@@ -69,6 +77,7 @@ export default async function FavoritesPage() {
                 sourceType={r.source_type}
                 sourceUrl={r.source_url}
                 sourceAuthor={r.source_author}
+                favorite={{ recipeId: r.id, favorited: true, isAuthenticated: true }}
               />
             ))}
           </div>

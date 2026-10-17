@@ -2,8 +2,9 @@
 
 import { Suspense } from 'react'
 import { RecipeCard } from '@/app/components/recipe-card'
+import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { CategoryFilter } from '@/app/components/category-filter'
-import { RecipeSearch } from '@/app/components/recipe-search'
+import { HomeSearch } from '@/app/components/home/home-search'
 import { ActiveTagFilter } from '@/app/components/active-tag-filter'
 import { ListResults, ListTransition } from '@/app/components/list-transition'
 import { Toast } from '@/app/components/toast'
@@ -13,6 +14,15 @@ import type { Database } from '@/lib/supabase.types'
 type Recipe = Database['public']['Tables']['recipes']['Row']
 type RecipeCategory = Database['public']['Enums']['recipe_category']
 
+/** "Moje przepisy" with the filters the visitor had on, for the list bar's back link. */
+function myRecipesHref(category?: string | null, tag?: string | null): string {
+  const params = new URLSearchParams()
+  if (category) params.set('category', category)
+  if (tag) params.set('tag', tag)
+  const query = params.toString()
+  return query ? `/recipes?${query}` : '/recipes'
+}
+
 interface RecipesContentProps {
   recipes: Recipe[]
   showSharedToast: boolean
@@ -20,7 +30,6 @@ interface RecipesContentProps {
   activeCategory?: RecipeCategory | null
   activeTag?: string | null
   categoryCounts?: Partial<Record<RecipeCategory, number>>
-  searchQuery?: string
 }
 
 export function RecipesContent({
@@ -30,9 +39,7 @@ export function RecipesContent({
   activeCategory,
   activeTag,
   categoryCounts,
-  searchQuery,
 }: RecipesContentProps) {
-  const hasSearch = Boolean(searchQuery)
   return (
     <div className="min-h-screen bg-white py-8">
       {showSharedToast && (
@@ -58,17 +65,16 @@ export function RecipesContent({
             <h1 className="text-3xl font-bold text-gray-900">Moje przepisy</h1>
             <p className="mt-2 text-gray-600">
               {recipes.length === 0
-                ? hasSearch
-                  ? `Brak wyników dla „${searchQuery}".`
-                  : activeCategory || activeTag
-                    ? 'Brak przepisów pasujących do filtrów.'
-                    : 'Brak przepisów. Dodaj pierwszy przepis!'
+                ? activeCategory || activeTag
+                  ? 'Brak przepisów pasujących do filtrów.'
+                  : 'Brak przepisów. Dodaj pierwszy przepis!'
                 : `${recipes.length} przepis${recipes.length === 1 ? '' : 'ów'}`}
             </p>
           </div>
 
           <div className="mb-4">
-            <RecipeSearch query={searchQuery} />
+            {/* One search (E01-S05): submits to /szukaj in the "Moje" scope. */}
+            <HomeSearch id="my-recipes-search" scope="moje" label="Szukaj w moich przepisach" />
           </div>
 
           <div className="mb-8">
@@ -102,21 +108,26 @@ export function RecipesContent({
                   />
                 </svg>
                 <h3 className="mt-4 text-lg font-medium text-gray-900">
-                  {hasSearch ? 'Brak wyników' : 'Brak przepisów'}
+                  Brak przepisów
                 </h3>
                 <p className="mt-2 text-gray-600">
-                  {hasSearch
-                    ? `Żaden przepis nie pasuje do „${searchQuery}". Spróbuj innej nazwy lub składnika.`
-                    : activeCategory || activeTag
-                      ? 'Nie masz jeszcze przepisów pasujących do filtrów.'
-                      : 'Wróć na stronę główną, aby wyszukać lub dodać przepis.'}
+                  {activeCategory || activeTag
+                    ? 'Nie masz jeszcze przepisów pasujących do filtrów.'
+                    : 'Wróć na stronę główną, aby wyszukać lub dodać przepis.'}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <RecipeListSnapshot
+                  listKey="moje"
+                  label="Moje przepisy"
+                  href={myRecipesHref(activeCategory, activeTag)}
+                  items={recipes.map((r) => ({ slug: r.slug, title: r.title }))}
+                />
                 {recipes.map((recipe) => (
                   <RecipeCard
                     key={recipe.id}
+                    from="moje"
                     slug={recipe.slug}
                     title={recipe.title}
                     imageUrl={recipe.image_url}

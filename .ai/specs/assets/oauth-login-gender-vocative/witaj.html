@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — /witaj wybór płci (E01-S12, ekran 3b)</title>
+<style>
+  :root { --ink:#111827; --muted:#374151; --field:#6b7280; --action:#c2410c; --focus:#1d4ed8; --bg:#ffffff; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font: 19px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 420px; margin: 0 auto; padding: 32px 16px; display:flex; flex-direction:column; gap:20px; }
+  .logo { font-weight:800; font-size:28px; color:var(--action); }
+  h1 { font-size:32px; line-height:1.2; margin:0; }
+  .lead { margin:0; }
+  fieldset { border:0; padding:0; margin:0; display:flex; flex-direction:column; gap:12px; }
+  legend { font-weight:700; margin-bottom:12px; font-size:22px; }
+  .opt { display:flex; align-items:center; gap:12px; min-height:56px; padding:8px 16px; border:2px solid var(--field); border-radius:12px; font-size:19px; font-weight:600; }
+  .opt input { width:24px; height:24px; accent-color: var(--focus); }
+  .opt.sel { border-color:var(--focus); box-shadow:0 0 0 3px var(--focus) inset; }
+  .opt .tag { margin-left:auto; font-size:16px; color:var(--focus); font-weight:700; }
+  .help { font-size:16px; color:var(--muted); margin:0; }
+  .primary { width:100%; min-height:56px; border:0; border-radius:12px; background:var(--action); color:#fff; font-size:19px; font-weight:700; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo">ZapiszPrzepis</div>
+  <h1>Dzień dobry, Aniu!</h1>
+  <p class="lead">Jedno pytanie na start.</p>
+  <fieldset>
+    <legend>Jestem</legend>
+    <label class="opt sel"><input type="radio" name="g" checked> Kobietą <span class="tag">✓ wybrane</span></label>
+    <label class="opt"><input type="radio" name="g"> Mężczyzną</label>
+  </fieldset>
+  <p class="help">Dzięki temu dobrze odmienimy słowa, np. „Dodała” / „Dodał”. <strong>Tego wyboru nie można później zmienić.</strong></p>
+  <button class="primary" type="button">Zapisz i przejdź dalej</button>
+</main>
+</body>
+</html>

@@ -113,3 +113,15 @@ Każde przekazanie to **punkt STOP**. Orkiestrator kopiuje następne polecenie d
 - `context/changes/<change-id>/` — folder zmian dla każdej fazy wdrożenia (jeden na wiersz w §3)
 
 <!-- END @przeprogramowani/10x-cli -->
+
+## Weryfikacja ekranów zalogowanego — konto QA (dev-only)
+
+Agent **nie wpisuje haseł** w formularz logowania (Supabase auth to zewnętrzny host). Ekrany zalogowanego sprawdzaj na lokalnym dev serwerze przez `/api/dev/login`. Pełna instrukcja: **[docs/dev-qa-login.md](docs/dev-qa-login.md)**.
+
+- `/api/dev/login?as=full&next=/ścieżka` → `qa-full@zapiszprzepis.pl`, pełny dostęp (może dodawać przepisy),
+- `/api/dev/login?as=free&next=/ścieżka` → `qa-free@zapiszprzepis.pl`, bez pełnego dostępu (ulubione, galeria, zablokowany kafel „Dodaj przepis”).
+- Przełączanie kont = po prostu otwórz drugi URL (nadpisuje sesję). Wylogowanie z menu działa normalnie.
+- W worktree: skopiuj `.env.local` z głównego checkoutu (jest w `.gitignore`) i odpal dev na wolnym porcie.
+- 404 = route wyłączony / brak zmiennych → zgłoś ekran jako „niezweryfikowany”, nie obchodź. 409 = mail nie jest potwierdzonym kontem.
+- **Lokalny dev = produkcyjna baza.** Zapisy kont QA to prawdziwe wiersze: trzymaj je minimalne i sprzątaj po teście (np. odznacz serce). **Nigdy nie dodawaj przepisów jako konto QA** — trafiłyby do publicznego katalogu.
+- Nie zakładaj, nie usuwaj i nie zmieniaj kont QA samodzielnie — robi to właściciel w Supabase Dashboard.

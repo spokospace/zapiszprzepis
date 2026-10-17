@@ -36,6 +36,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
+  // Dev-only QA sign-in: it opens the session itself, so a guest must reach it.
+  // The route answers 404 outside an opted-in dev server.
+  if (pathname === '/api/dev/login') {
+    return response
+  }
+
   // Auth pages are accessible to all users
   // /reset-password is intentionally excluded: after /auth/confirm verifies the
   // email link the user is authenticated, so it must be reachable while logged in.

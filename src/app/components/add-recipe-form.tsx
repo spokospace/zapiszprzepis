@@ -6,6 +6,7 @@ import { Link, Mic, Search, X } from 'lucide-react'
 import { addRecipeFromUrl } from '@/app/(authenticated)/recipes/add-recipe-action'
 import { searchViaExa, type ExaResult } from '@/app/(authenticated)/recipes/search-via-exa-action'
 import { stripSearchParam } from '@/lib/strip-search-param'
+import { isSpeechRecognitionSupported, speechRecognitionCtor } from '@/lib/speech'
 
 type SearchState = 'idle' | 'loading' | 'searching' | 'results' | 'error' | 'recording' | 'mic_error'
 
@@ -17,9 +18,10 @@ const ADD_ERROR_MESSAGES: Record<string, string> = {
   empty: 'Wklej adres URL lub wpisz nazwę przepisu.',
   invalid_url: 'To nie wygląda jak prawidłowy URL.',
   server: 'Coś poszło nie tak. Spróbuj ponownie.',
+  no_access: 'Dodawanie przepisów wymaga kodu dostępu.',
 }
 
-function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: () => void }) {
+export function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: () => void }) {
   return (
     <div className="mt-3 rounded-lg border border-gray-200 bg-white shadow-sm">
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
@@ -88,7 +90,7 @@ function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; onClose: 
   )
 }
 
-export function AddRecipeForm({ addError }: { addError?: string | null }) {
+export function AddRecipeForm({ addError, autoFocus }: { addError?: string | null; autoFocus?: boolean }) {
   // `?tab=add` comes from the header's quick-add button.
   const wantsAddTab = useSearchParams().get('tab') === 'add'
   const inputRef = useRef<HTMLInputElement>(null)
@@ -121,7 +123,7 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
     // read during render without breaking SSR and desyncing hydration, and the
     // empty dep array means this runs once and settles.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsSpeechSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+    setIsSpeechSupported(isSpeechRecognitionSupported(window))
   }, [])
 
   useEffect(() => {
@@ -151,16 +153,15 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
   }
 
   const startVoiceSearch = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR = ((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition) as new () => any
+    const SR = speechRecognitionCtor(window)
+    if (!SR) return
     const recognition = new SR()
     recognition.lang = 'pl-PL'
     recognition.interimResults = false
     recognition.maxAlternatives = 1
     setSearchState('recording')
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = async (event: any) => {
+    recognition.onresult = async (event) => {
       const transcript = event.results[0][0].transcript
       setSearchState('searching')
       const res = await searchViaExa(transcript)
@@ -221,6 +222,8 @@ export function AddRecipeForm({ addError }: { addError?: string | null }) {
             }
             <input
               ref={inputRef}
+              // Set right after the access-code gate unlocks (E01-S11), so focus lands on the link field.
+              autoFocus={autoFocus}
               name="url"
               type="text"
               aria-label={activeTab === 'search' ? 'Szukaj przepisu' : 'URL przepisu'}
