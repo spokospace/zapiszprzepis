@@ -34,12 +34,9 @@ export function recipePath(slug: string, opts?: { from?: string | null }): strin
   return opts?.from ? `${path}?from=${encodeURIComponent(opts.from)}` : path
 }
 
-/** E01-S14 flips this when the public profile /u/{username} ships. */
-const PROFILE_PAGES_LIVE = false
-
-/** A user's public profile, or null while profiles do not exist yet (E01-S07). */
+/** A user's public profile /u/{username} (E01-S14), or null without a username (e.g. a deleted account). */
 export function profilePath(username: string | null | undefined): string | null {
-  return PROFILE_PAGES_LIVE && username ? `/u/${encodeURIComponent(username)}` : null
+  return username ? `/u/${encodeURIComponent(username)}` : null
 }
 
 /**

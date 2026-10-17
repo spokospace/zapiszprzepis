@@ -112,8 +112,9 @@ export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
         )}
       </p>
 
-      {/* Gender-neutral until E01-S12 supplies gender ("Dodała/Dodał"); a link once
-          E01-S14 turns profilePath on, so it never points at a 404. */}
+      {/* Gender-neutral on purpose: gender is owner-only (E01-S12), so no public
+          "Dodała/Dodał" (E01-S14 spec A1). A link to /u/{username} when the author
+          has a username, plain text otherwise. */}
       {recipe.author_name && (
         <p className="text-[17px] text-ink-soft">
           Dodane przez{' '}

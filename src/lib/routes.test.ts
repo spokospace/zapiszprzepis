@@ -29,9 +29,15 @@ describe('recipePath', () => {
 })
 
 describe('profilePath', () => {
-  it('stays null until E01-S14 ships /u/{username}, so nothing links to a 404', () => {
-    expect(profilePath('ania')).toBeNull()
+  it('links /u/{username} once E01-S14 ships the page', () => {
+    expect(profilePath('ania')).toBe('/u/ania')
+    expect(isPublicRoute(profilePath('ania')!)).toBe(true)
+  })
+
+  it('is null without a username, so a missing author renders as plain text', () => {
     expect(profilePath(null)).toBeNull()
+    expect(profilePath(undefined)).toBeNull()
+    expect(profilePath('')).toBeNull()
   })
 })
 
