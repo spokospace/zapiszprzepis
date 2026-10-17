@@ -6,11 +6,18 @@
 -- (read_at), and "Usuń przeczytane" hides read ones (cleared_at). Completed
 -- rows are never deleted: the S03a merge rollback restores shares from them.
 --
--- No new policy: recipe_shares_user_isolation (for all, owner only) already
--- lets the owner set both columns. The pipeline is unchanged — a completed
--- row starts with read_at = null, i.e. unread.
+-- No new policy: recipe_shares_owner_update (owner only, 20261017140000)
+-- already lets the owner set both columns, and recipe_shares_owner_select keeps
+-- them owner-only to read. The pipeline is unchanged — a completed row starts
+-- with read_at = null, i.e. unread.
 --
--- Idempotent: safe to re-run.
+-- Deploy order: apply this BEFORE the app build that reads the columns. The
+-- current app never names them, so it runs unchanged on the new schema; the
+-- new app without them shows /powiadomienia's error state.
+--
+-- Idempotent: safe to re-run (re-running after the new app ships only marks
+-- the ready recipes unread at that moment as read). The backfill fires the
+-- recipe_shares updated_at trigger; nothing reads that column.
 --
 -- Rollback:
 --   drop index if exists public.idx_recipe_shares_user_unread;

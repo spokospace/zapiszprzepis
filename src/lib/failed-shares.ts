@@ -105,25 +105,33 @@ export async function getFailedShares(supabase: ServerClient, userId: string): P
   return shares === null ? { status: 'error' } : { status: 'ok', shares, unreadReady }
 }
 
+/** Rows scanned for the unread count; far above what one user shares in 14 days. */
+const UNREAD_SCAN_LIMIT = 100
+
 /**
- * Ready recipes not opened yet (E01-S15): a head-only count backed by the
- * partial unread index. It must never break the bell — before the read-state
- * migration is applied (or on any error) it counts 0 and logs.
+ * Ready recipes not opened yet (E01-S15), backed by the partial unread index.
+ * Counted per recipe, as /powiadomienia shows them: a link shared twice (or a
+ * share repointed by a merge) is one card, and opening it marks every share of
+ * that recipe read, so the badge never keeps a number no card can clear. Only
+ * `recipe_id` is fetched — a few ids at most. It must never break the bell —
+ * before the read-state migration is applied (or on any error) it counts 0.
  */
 async function countUnreadReady(supabase: ServerClient, userId: string): Promise<number> {
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from('recipe_shares')
-    .select('id', { count: 'exact', head: true })
+    .select('recipe_id')
     .eq('user_id', userId)
     .eq('status', 'completed')
+    .not('recipe_id', 'is', null)
     .is('read_at', null)
     .is('cleared_at', null)
     .gte('created_at', readyWindowStart())
+    .limit(UNREAD_SCAN_LIMIT)
   if (error) {
     console.error('[failed-shares] Failed to count unread ready recipes:', error)
     return 0
   }
-  return count ?? 0
+  return new Set((data ?? []).map((s) => s.recipe_id)).size
 }
 
 /** `null` = could not check. */

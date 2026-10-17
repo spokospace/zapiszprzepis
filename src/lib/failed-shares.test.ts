@@ -18,7 +18,7 @@ function makeSupabase(
   favorites: Result = { data: [], error: null },
   favoritedRecipes: Result = { data: [], error: null },
   pending: Result = { data: [], error: null },
-  unread: { count: number | null; error: unknown } = { count: 0, error: null },
+  unread: Result = { data: [], error: null },
 ) {
   // The failed-rows query ends in order(); the pending-URL lookup (E01-S15) ends in in().
   const sharesQuery = {
@@ -27,8 +27,10 @@ function makeSupabase(
     is: () => sharesQuery,
     order: async () => shares,
     in: async () => pending,
-    // The unread-ready count (E01-S15) ends in gte().
-    gte: async () => unread,
+    not: () => sharesQuery,
+    gte: () => sharesQuery,
+    // The unread-ready count (E01-S15) ends in limit().
+    limit: async () => unread,
   }
   const recipesQuery = { select: () => recipesQuery, eq: () => recipesQuery, in: async () => recipes }
   const favoritesQuery = { select: () => favoritesQuery, eq: async () => favorites }
@@ -166,8 +168,10 @@ describe('getFailedShares — a re-added link is in progress, not a problem (E01
 })
 
 describe('getFailedShares — unread ready recipes for the badge (E01-S15)', () => {
-  it('returns the unread count next to the problems', async () => {
-    const supabase = makeSupabase({ data: [], error: null }, undefined, undefined, undefined, undefined, { count: 3, error: null })
+  it('returns the unread count next to the problems, one per recipe', async () => {
+    // Recipe 7 was shared twice: the page shows one card for it, so it counts once.
+    const unread = { data: [{ recipe_id: 7 }, { recipe_id: 7 }, { recipe_id: 8 }, { recipe_id: 9 }], error: null }
+    const supabase = makeSupabase({ data: [], error: null }, undefined, undefined, undefined, undefined, unread)
 
     expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 3, shares: [] })
   })
@@ -180,7 +184,7 @@ describe('getFailedShares — unread ready recipes for the badge (E01-S15)', () 
       undefined,
       undefined,
       undefined,
-      { count: null, error: { message: 'column recipe_shares.read_at does not exist' } },
+      { data: null, error: { message: 'column recipe_shares.read_at does not exist' } },
     )
 
     expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(1, 'https://a.example')] })

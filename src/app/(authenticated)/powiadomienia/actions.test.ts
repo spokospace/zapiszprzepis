@@ -54,7 +54,7 @@ function signIn(client: unknown) {
 describe('openReadyShare', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('marks the own completed share read (first open only) and opens the recipe', async () => {
+  it('marks every unread share of the recipe read (first open only) and opens it', async () => {
     const { client, queries } = makeSupabase((table, calls) => {
       if (table === 'public_recipes') return { data: { slug: 'sernik' } }
       return isUpdate(calls) ? { error: null } : { data: { recipe_id: 100 } }
@@ -66,6 +66,7 @@ describe('openReadyShare', () => {
     const update = queries.find((q) => isUpdate(q.calls))!
     expect(update.calls).toContainEqual(['eq', 'user_id', 'user-1'])
     expect(update.calls).toContainEqual(['eq', 'status', 'completed'])
+    expect(update.calls).toContainEqual(['eq', 'recipe_id', 100])
     expect(update.calls).toContainEqual(['is', 'read_at', null])
     expect(revalidatePath).toHaveBeenCalledWith('/', 'layout')
   })
@@ -78,6 +79,14 @@ describe('openReadyShare', () => {
     signIn(client)
 
     await expect(openReadyShare(form('3'))).rejects.toThrow('REDIRECT /powiadomienia')
+  })
+
+  it('goes back to /powiadomienia without writing when the share is not the user’s', async () => {
+    const { client, queries } = makeSupabase(() => ({ data: null }))
+    signIn(client)
+
+    await expect(openReadyShare(form('3'))).rejects.toThrow('REDIRECT /powiadomienia')
+    expect(queries.some((q) => isUpdate(q.calls))).toBe(false)
   })
 
   it('rejects a malformed id without touching the database', async () => {
