@@ -15,7 +15,10 @@ export type SlugRename = { id: number; oldSlug: string; newSlug: string }
  * result is empty once slugs are globally unique (idempotent, like the SQL).
  *
  * The SQL in the migration implements the same rule row-for-row; this is the
- * testable mirror (no local DB), echoing S03a's buildCollapseGroups.
+ * testable mirror (no local DB), echoing S03a's buildCollapseGroups. It is used
+ * only by its unit test — the SQL is authoritative for the real backfill, so the
+ * ms-precision `Date.parse` tie-break here (vs the DB's microsecond timestamptz)
+ * cannot affect production.
  */
 export function buildSlugRenames(rows: SlugRow[]): SlugRename[] {
   // Every slug currently in use, so a suffix never collides with an unrelated
