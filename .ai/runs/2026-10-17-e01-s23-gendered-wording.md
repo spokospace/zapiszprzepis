@@ -35,20 +35,22 @@ receive a grammatical form ('f' | 'm' | null), never raw gender and never a read
 
 ## Progress
 
+PR: #291
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Database
 
-- [ ] 1.1 Migration exposing author_gender_form and profile_gender_form
-- [ ] 1.2 Rolled-back rehearsal asserting form and privacy
+- [x] 1.1 Migration exposing author_gender_form and profile_gender_form — a225535
+- [x] 1.2 Rolled-back rehearsal asserting form and privacy — a225535
 
 ### Phase 2: App
 
-- [ ] 2.1 Polish verb-form helper with tests
-- [ ] 2.2 Recipe author line
-- [ ] 2.3 Public profile count line and empty state
-- [ ] 2.4 Settings preview
+- [x] 2.1 Polish verb-form helper with tests — 5da283c
+- [x] 2.2 Recipe author line — 5da283c
+- [x] 2.3 Public profile count line and empty state — 5da283c
+- [x] 2.4 Settings preview — 5da283c
 
 ### Phase 3: Verification
 
-- [ ] 3.1 Local gate and live neutral-fallback check
+- [x] 3.1 Local gate and live neutral-fallback check — local gate
