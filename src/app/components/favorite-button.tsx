@@ -26,7 +26,9 @@ const COPY = {
   bar: { off: 'Dodaj do ulubionych', on: 'W ulubionych' },
 } as const
 
-const BASE = 'inline-flex items-center justify-center gap-2 font-bold transition-colors'
+// wrap-anywhere + shrink-0 icons: the label wraps at 320 px / A++ instead of
+// widening the page (WCAG 1.4.10), in every size.
+const BASE = 'inline-flex items-center justify-center gap-2 font-bold wrap-anywhere transition-colors'
 const BUTTON = `${BASE} rounded-field border-action`
 const SIZE = {
   full: `${BUTTON} min-h-[58px] w-full border-[2.5px] px-5 text-[18px] sm:w-auto`,
@@ -40,7 +42,7 @@ const LOOK = {
   compact: BUTTON_LOOK,
   bar: { off: 'bg-white text-ink hover:bg-surface-3', on: 'bg-surface-accent text-action-text hover:bg-surface-accent-2' },
 } as const
-const ICON = { full: 'h-6 w-6', compact: 'h-5 w-5', bar: 'h-[22px] w-[22px]' } as const
+const ICON = { full: 'h-6 w-6 shrink-0', compact: 'h-5 w-5 shrink-0', bar: 'h-[22px] w-[22px] shrink-0' } as const
 
 /**
  * `?fav_added={recipeId}` (set by postLoginPath after a guest heart's login):

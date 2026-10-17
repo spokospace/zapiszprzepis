@@ -25,7 +25,7 @@ export function GuestCta() {
         {/* The outline button for a dark surface: `border-dark` keeps the 3:1 frame. */}
         <Link
           href="/login"
-          className="inline-flex min-h-[56px] flex-1 items-center justify-center rounded-field border-2 border-border-dark px-5 text-[18px] leading-tight font-bold text-white no-underline! hover:bg-white/10"
+          className="inline-flex min-h-[56px] flex-1 items-center justify-center rounded-field border-2 border-border-dark px-5 text-[18px] leading-tight font-bold wrap-anywhere text-white no-underline! hover:bg-white/10"
         >
           Zaloguj się
         </Link>

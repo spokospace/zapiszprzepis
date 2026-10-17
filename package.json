@@ -31,7 +31,8 @@
     "test:ui": "vitest --ui",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:reflow": "playwright test --project=reflow --reporter=list"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.6",

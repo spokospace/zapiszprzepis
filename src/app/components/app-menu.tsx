@@ -44,7 +44,7 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
       className={`flex min-h-[56px] items-center gap-3 px-5 py-3 text-[19px] font-semibold no-underline! hover:bg-surface-2 ${activeClasses(active)}`}
     >
       <Icon aria-hidden="true" className="h-6 w-6 shrink-0" />
-      <span className="flex flex-col">
+      <span className="flex min-w-0 flex-col">
         <span className="underline underline-offset-4">{entry.label}</span>
         {entry.locked && (
           <span className="text-[16px] font-normal text-ink-soft">Wymaga kodu lub pełnego dostępu</span>
@@ -180,7 +180,7 @@ export function AppMenu({
                         onClick={close}
                         aria-current={active ? 'page' : undefined}
                         className={[
-                          'flex h-full min-h-[56px] items-center rounded-field border-2 px-3 py-2 text-[17px] font-semibold break-words hover:bg-surface-2',
+                          'flex h-full min-h-[56px] items-center rounded-field border-2 px-3 py-2 text-[17px] font-semibold wrap-anywhere hover:bg-surface-2',
                           active ? 'border-action bg-surface-accent text-action-text' : 'border-field text-ink',
                         ].join(' ')}
                       >

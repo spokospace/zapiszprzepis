@@ -92,7 +92,7 @@ export function RecipeHeader({ recipe }: RecipeHeaderProps) {
 
         <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[17px] text-ink">
           <Globe aria-hidden="true" size={20} className="shrink-0 text-ink-soft" />
-          <span>Źródło: {sourceLabel(recipe.source_type, recipe.source_url, recipe.source_author)}</span>
+          <span className="min-w-0">Źródło: {sourceLabel(recipe.source_type, recipe.source_url, recipe.source_author)}</span>
           {/* From lg only (A9: "Oryginał" by the title); below lg the original is the
               outlined button at the end of the recipe (C3, item 11). */}
           {recipe.source_url && (

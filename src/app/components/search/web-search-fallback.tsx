@@ -51,9 +51,9 @@ export function WebSearchFallback({
             onClick={runExa}
             disabled={state.kind === 'searching'}
             aria-busy={state.kind === 'searching'}
-            className={`${buttonClasses('primary', 'lg')} mt-4 w-full`}
+            className={`${buttonClasses('primary', 'lg')} mt-4 w-full text-center`}
           >
-            <Globe aria-hidden="true" className="h-5 w-5" />
+            <Globe aria-hidden="true" className="h-5 w-5 shrink-0" />
             {state.kind === 'searching' ? 'Szukam…' : label}
           </button>
           {state.kind === 'error' && (
@@ -72,7 +72,7 @@ export function WebSearchFallback({
           rel="noopener noreferrer"
           className={`${buttonClasses('primary', 'lg')} mt-4 w-full flex-wrap text-center`}
         >
-          <Globe aria-hidden="true" className="h-5 w-5" />
+          <Globe aria-hidden="true" className="h-5 w-5 shrink-0" />
           {label}
           <span className="text-[16px] font-normal">(otworzy się w nowej karcie)</span>
         </a>

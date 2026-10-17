@@ -75,6 +75,22 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /*
+   * Reflow (WCAG 1.4.10): a word longer than its line (a run-together title, a long
+   * query or domain) breaks instead of scrolling the page sideways. Inherited by all
+   * block text. It does not shrink a flex/grid item's minimum width, so flex rows
+   * with user text still need `min-w-0` (or `wrap-anywhere`) on that child.
+   */
+  overflow-wrap: break-word;
+}
+
+/* A fieldset's default min-width is min-content and a legend shrink-wraps its text,
+   so a long word would widen either past a 320 px screen (WCAG 1.4.10). */
+fieldset {
+  min-width: 0;
+}
+legend {
+  max-width: 100%;
 }
 
 /*

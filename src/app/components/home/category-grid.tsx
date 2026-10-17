@@ -50,7 +50,7 @@ export function CategoryGrid({ columns }: { columns: keyof typeof COLUMNS }) {
             <li key={value} className={value === GUEST_EXTRA.value ? 'hidden min-w-0 min-[360px]:block' : 'min-w-0'}>
               <Link
                 href={categoryPath(value)}
-                className={`flex items-center font-bold break-words no-underline! ${tile.link}`}
+                className={`flex items-center font-bold wrap-anywhere no-underline! ${tile.link}`}
               >
                 <Icon aria-hidden="true" strokeWidth={tile.stroke} className={`shrink-0 text-action-text ${tile.icon}`} />
                 <span className="min-w-0">{label}</span>

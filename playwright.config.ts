@@ -3,6 +3,11 @@ import { config } from 'dotenv'
 
 config({ path: '.env.local' })
 
+// E2E_PORT lets an agent worktree run its own dev server next to another session's.
+const port = process.env.E2E_PORT ?? '3001'
+const baseURL = `http://localhost:${port}`
+const REFLOW = /reflow\.spec\.ts/
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -11,7 +16,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3001',
+    baseURL,
     trace: 'on-first-retry',
   },
   projects: [
@@ -21,16 +26,29 @@ export default defineConfig({
     },
     {
       name: 'chromium',
+      testIgnore: REFLOW,
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json',
       },
       dependencies: ['setup'],
     },
+    // Layout checks: no password sign-in, so no dependency on the setup project.
+    {
+      name: 'reflow-setup',
+      testMatch: /reflow\.setup\.ts/,
+    },
+    {
+      name: 'reflow',
+      testMatch: REFLOW,
+      use: { ...devices['Desktop Chrome'] },
+      // Signs the dev QA accounts in once, for the signed-in screens.
+      dependencies: ['reflow-setup'],
+    },
   ],
   webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:3001',
+    command: `pnpm exec next dev -p ${port}`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
   },
 })

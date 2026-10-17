@@ -16,10 +16,10 @@ interface TextSizeControlsProps {
 export function TextSizeControls({ level, onChange }: TextSizeControlsProps) {
   return (
     <div className="flex items-center gap-3">
-      <span id="text-size-label" className="text-[16px] font-bold text-ink-soft">
+      <span id="text-size-label" className="min-w-0 text-[16px] font-bold wrap-anywhere text-ink-soft">
         Wielkość tekstu
       </span>
-      <div role="group" aria-labelledby="text-size-label" className="flex gap-2">
+      <div role="group" aria-labelledby="text-size-label" className="flex shrink-0 gap-2">
         {TEXT_SCALE_LEVELS.map((l) => {
           const active = l === level
           return (
