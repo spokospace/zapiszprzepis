@@ -15,9 +15,9 @@ People cook with the recipe open on a phone or tablet propped on the counter. Tw
 
 ## 📝 Proposed Solution
 
-A client component **`CookingMode`** mounted in the slot S07 reserved in `RecipeActions`. It renders:
+A client component **`CookingMode`** rendered by `RecipeChecklists`, directly under the text-size row (C3 item 7; S07 had reserved a slot in `RecipeActions`, but the handoff places the entry under "Wielkość tekstu"). It renders:
 
-- **The entry button** "Tryb gotowania" (with an icon and a visible label, primary `lg` 56 px), shown only when the recipe has at least one step.
+- **The entry button** "Tryb gotowania" (with an icon and a visible label, full-width 58 px on `bg-ink`, see UI/UX), shown only when the recipe has at least one step.
 - **The cooking screen**: a native `<dialog>` opened with `showModal()`, the pattern `AppMenu` (S09) already uses. `showModal()` puts it in the top layer and makes the page behind it inert. It also traps focus, closes on Escape and returns focus to the trigger, with no hand-written focus code. The dialog fills the viewport (`fixed inset-0`, `100dvh`) on `bg-surface-dark`.
 
 Opening the mode, from the same click (the user gesture both APIs need):
@@ -45,12 +45,12 @@ Alternatives considered:
 - **New:** `src/lib/cooking-mode.ts` (+ test) — pure step navigation: `clampStep(index, total)`, `stepLabel(index, total)` → "Krok N z M", `isLastStep`, and `progressSegments(index, total)` → done/current/todo per segment.
 - **New:** `src/app/przepis/[slug]/_components/cooking-mode.tsx` (`'use client'`) — entry button + `<dialog>`, fullscreen calls, keyboard (`←`/`→`), and the hook `useScreenWakeLock`.
 - **Edited (minimal):** `recipe-checklists.tsx` renders `<CookingMode title steps />` under the text-size row (new `title` prop). `page.tsx` passes `title`. `recipe-actions.tsx` drops the S07 placeholder comment. `globals.css` gets one token, `--color-border-dark: #6b7280`. S06's heart, S14's author line and S16's "Podobne" are untouched.
-- **Reused:** `parseSteps` (already run by the page), `buttonClasses('primary'|'outline', 'lg'|'xl')`, tokens `bg-surface-dark`, `bg-progress`, `text-accent-dark`, `bg-action`, the global `:focus-visible` rule.
+- **Reused:** `parseSteps` (already run by the page), tokens `bg-ink`, `bg-surface-dark`, `bg-progress`, `text-accent-dark`, `bg-orange-bright` (only with dark text), the global `:focus-visible` rule.
 
 ```mermaid
 flowchart TD
-  P[page.tsx - existing, passes steps + title] --> RA[RecipeActions - existing slot]
-  RA --> CM[CookingMode - new client component]
+  P[page.tsx - existing, passes steps + title] --> RC[RecipeChecklists - existing, under text-size row]
+  RC --> CM[CookingMode - new client component]
   CM --> D[dialog showModal - native]
   CM --> FS[Fullscreen API - optional]
   CM --> H[useScreenWakeLock - new hook]
@@ -59,7 +59,7 @@ flowchart TD
   CM --> NV[cooking-mode.ts step helpers - new, unit-tested]
 ```
 
-Takeaway: one new client island hanging off a slot S07 left for it. Every browser API is behind a support check, and the pure logic is unit-tested outside React.
+Takeaway: one new client island under the text-size row of `RecipeChecklists`. Every browser API is behind a support check, and the pure logic is unit-tested outside React.
 
 ## 📝 Data Model
 
@@ -79,7 +79,7 @@ Mockup (pre-handoff draft; the handoff's C4 supersedes its colours and placement
 3. **"Krok N z M"**, 22 px bold `#fdba74`.
 4. **Step text**: 30 px, weight 600, line-height 1.45, white. It scrolls vertically when a step is long, and the buttons stay pinned. It sits in `aria-live="polite"` together with the step label.
 5. **Wake-lock line**, 17 px `#d1d5db`. While the lock is held: ☀ "Ekran nie wygaśnie podczas gotowania" (C4). When it is refused or unsupported: "Ekran może się wygasić — ta przeglądarka nie pozwala go podtrzymać." (A5). Nothing shows before the first answer.
-6. **Bottom buttons**, 72 px, in a 1 : 1.4 grid. "← Wstecz" has a 2 px `#6b7280` border (new token `border-dark`, 3.9:1) on the dark background, with white 20 px text and an arrow icon. "Dalej →" is `#ea580c` with **dark** `#111827` 22 px text (5.6:1; this orange never takes white text). On step 1 "Wstecz" is `disabled`. On the last step "Dalej" becomes "Gotowe ✓" and ends the mode.
+6. **Bottom buttons**, 72 px, in a 1 : 1.4 grid. "← Wstecz" has a 2 px `#6b7280` border (new token `border-dark`, 3.7:1) on the dark background, with white 20 px text and an arrow icon. "Dalej →" is `#ea580c` with **dark** `#111827` 22 px text (5.0:1; this orange never takes white text). On step 1 "Wstecz" is `disabled`. On the last step "Dalej" becomes "Gotowe ✓" and ends the mode.
 
 **Handoff alignment** (what this spec keeps that C4 does not show): the refused-lock line (C4 only shows the "won't dim" promise, which would be false there), "Gotowe ✓" on the last step (C4 shows only the middle state), and the merged bar past 20 steps.
 
@@ -95,14 +95,14 @@ Accessibility (WCAG 2.2 AA, CLAUDE.md): text ≥ 4.5:1 on #111827, UI parts ≥ 
 - **No Fullscreen API / rejected** (iPhone Safari, an iframe without `allowfullscreen`) → overlay only. Nothing is shown to the user, because the screen looks the same.
 - **User leaves fullscreen with the browser's own Esc/gesture** → the mode stays open as an overlay. The browser consumes the first Escape, so a second Escape ends the mode. The lock is kept.
 - **Tab hidden and shown again** (a phone call, switching apps) → the lock is re-requested on `visible`. Requests while hidden are skipped (they would reject).
-- **System Back gesture while the mode is open** (Android): opening pushes one history entry with the same URL, and `popstate` closes the mode instead of leaving the recipe. "× Zakończ" goes `history.back()` to consume that entry, so a later Back leaves the page as expected. If Next's router turns out to interfere with a same-URL entry, the fallback (decided during implementation, recorded on the PR) is no history entry: Back then leaves the page, which is the current behaviour (A7).
+- **System Back gesture while the mode is open** (Android): opening pushes one history entry with the same URL, and `popstate` closes the mode instead of leaving the recipe. Every other close path ("× Zakończ", Escape, "Gotowe ✓") goes `history.back()` to consume that entry, so a later Back leaves the page as expected instead of doing nothing. If Next's router turns out to interfere with a same-URL entry, the fallback (decided during implementation, recorded on the PR) is no history entry: Back then leaves the page, which is the current behaviour (A7).
 - **Unmount while open** (the page behind the modal is inert, so this only happens on a programmatic navigation or a Back past the history entry) → the hook releases the lock and exits fullscreen in its cleanup.
 - **Very long step** (some extracted steps are 600+ characters) → the step area scrolls and the buttons stay put. **Very many steps** (30+) → merged progress fill (A4).
 
 ## 📝 Risks & Impact Review
 
-- **Blast radius:** one client island on the recipe page plus two one-line prop passes. No server, RLS, schema or URL contract. Removing it means deleting the component and restoring the placeholder.
-- **Parallel stories:** S06/S14/S16 edited `recipe-header.tsx`, the heart and `similar-recipes.tsx`. This story touches none of them, only `recipe-actions.tsx` (the reserved slot) and the `RecipeActions` call in `page.tsx`. S17 (desktop layouts) may restyle the action row later, and the component takes no layout assumptions beyond `flex-wrap`.
+- **Blast radius:** one client island on the recipe page plus a `title` prop pass (`page.tsx` → `RecipeChecklists`). No server, RLS, schema or URL contract. Removing it means deleting the component and restoring the placeholder.
+- **Parallel stories:** S06/S14/S16 edited `recipe-header.tsx`, the heart and `similar-recipes.tsx`. This story touches none of them, only `recipe-checklists.tsx` (the entry under the text-size row), the placeholder comment in `recipe-actions.tsx` and the `RecipeChecklists` call in `page.tsx`. S17 (desktop layouts, #275) also edits `recipe-checklists.tsx` and the recipe `page.tsx`, so whichever lands second merges by hand; the entry is a self-contained block and takes no layout assumptions.
 - **Battery:** the lock lives only while the dialog is open and is released on every exit path, including unmount. That is the one property tested beyond the happy path.
 - **History entry (A7):** the only interaction with Next's router. It is verified in the browser at implementation, with a documented fallback.
 
@@ -119,7 +119,7 @@ Phase 2 — the component, the slot wiring, browser verification (with and witho
 
 ### Phase 2 — the screen
 3. `src/app/przepis/[slug]/_components/cooking-mode.tsx`: the entry button, `<dialog>`, top bar, progress bar, step, buttons, wake-lock note, keyboard, fullscreen enter/exit, a history entry with a `popstate` close (A7), and `useScreenWakeLock`.
-4. `recipe-actions.tsx` (slot) + `page.tsx` (pass `steps`, `title`).
+4. `recipe-checklists.tsx` (render the entry under the text-size row, new `title` prop), `recipe-actions.tsx` (drop the placeholder comment), `page.tsx` (pass `title`).
 5. Verify on the dev server: a guest on a multi-step recipe (open, next/back, last → "Gotowe", Escape, × Zakończ, focus return, Back gesture), a recipe with one step and with none, 320 px width, and a browser **without** Wake Lock / Fullscreen (both APIs deleted via an init script) → mode works and the note shows. Full gate: `pnpm typecheck`, `pnpm lint`, `pnpm test`.
 
 ## Resolved assumptions (autonomous defaults)
