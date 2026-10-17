@@ -13,8 +13,8 @@ export default function TermsPage() {
     <LegalPage title="Regulamin">
       <LegalSection id="uslugodawca" title="1. Kto prowadzi serwis">
         <p>
-          Serwis ZapiszPrzepis (zapiszprzepis.pl) prowadzi firma spoko.space (<Fill>pełna nazwa firmy z CEIDG</Fill>),{' '}
-          <Fill>adres firmy</Fill>, NIP <Fill>NIP</Fill>. Kontakt: <Fill>adres e-mail do kontaktu</Fill>.
+          Serwis ZapiszPrzepis (zapiszprzepis.pl) prowadzi Szymon Berski, spoko.space (<Fill>pełna nazwa firmy z CEIDG</Fill>),{' '}
+          <Fill>adres firmy</Fill>, NIP <Fill>NIP</Fill>. Kontakt: <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>.
         </p>
       </LegalSection>
 
@@ -93,7 +93,7 @@ export default function TermsPage() {
         </p>
         <p>
           Jeśli jesteś autorem lub autorką przepisu i nie chcesz, żeby był w serwisie, albo uważasz, że przepis narusza
-          Twoje prawa, napisz na <Fill>adres e-mail do kontaktu</Fill>, podając link do przepisu w naszym serwisie.
+          Twoje prawa, napisz na <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>, podając link do przepisu w naszym serwisie.
           Sprawdzimy zgłoszenie i w razie potrzeby usuniemy przepis.
         </p>
       </LegalSection>
@@ -118,7 +118,7 @@ export default function TermsPage() {
       <LegalSection id="kontakt" title="9. Kontakt, reklamacje i zmiany regulaminu">
         <LegalList>
           <li>
-            Pytania i reklamacje wysyłaj na <Fill>adres e-mail do kontaktu</Fill>. Odpowiemy w ciągu{' '}
+            Pytania i reklamacje wysyłaj na <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>. Odpowiemy w ciągu{' '}
             <Fill>termin odpowiedzi, np. 14 dni</Fill>.
           </li>
           <li>
