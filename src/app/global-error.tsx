@@ -20,6 +20,8 @@ export default function GlobalError({
   return (
     <html lang="pl" className="h-full antialiased">
       <body className="min-h-full flex flex-col mx-auto w-full max-w-screen-2xl">
+        {/* No metadata export here; React hoists this into <head>. */}
+        <title>Coś poszło nie tak — ZapiszPrzepis</title>
         <RootError error={error} retry={retry} />
       </body>
     </html>

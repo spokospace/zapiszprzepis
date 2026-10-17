@@ -14,6 +14,10 @@ describe('error boundaries — shared RouteErrorFallback', () => {
     expect(PrzepisError({ error, retry }).props.retry).toBe(retry)
     expect(AuthenticatedError({ error, retry }).props.retry).toBe(retry)
     expect(RootError({ error, retry }).props.retry).toBe(retry)
+    // GlobalError wraps RootError in its own <html>/<body>; dig it out.
+    const body = GlobalError({ error, retry }).props.children
+    const inner = [body.props.children].flat().find((c: { type?: unknown }) => c?.type === RootError)
+    expect(inner.props.retry).toBe(retry)
   })
 
   it('sends any visitor home from a page without its own boundary', () => {
