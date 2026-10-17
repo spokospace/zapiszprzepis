@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Heart } from 'lucide-react'
 import { addFavorite, removeFavorite } from '@/app/favorites/actions'
@@ -43,6 +43,56 @@ function claimFavoriteAdded(recipeId: number): boolean {
   return true
 }
 
+/** Hides a shown toast after ~5 s (handoff). */
+function useToastTimeout(toast: boolean, hide: () => void) {
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(hide, 5000)
+    return () => clearTimeout(timer)
+  }, [toast, hide])
+}
+
+/** "Dodano do ulubionych · Cofnij" in a region that is always mounted, so screen readers announce it when it fills. */
+function FavoriteToast({ show, onUndo }: { show: boolean; onUndo: () => void }) {
+  return (
+    <div role="status" className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex justify-center empty:hidden">
+      {show && (
+        <p className="pointer-events-auto flex items-center gap-3 rounded-field bg-ink px-4 py-2 text-[17px] text-white shadow-lg">
+          Dodano do ulubionych ·
+          <button type="button" onClick={onUndo} className="min-h-[48px] font-bold underline">
+            Cofnij
+          </button>
+        </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The toast after a guest heart's login, on a page that has no heart for the
+ * recipe (the signed-in home: the guest home's card hearts return there).
+ */
+export function FavoriteAddedNotice({ recipeId }: { recipeId: number }) {
+  const [toast, setToast] = useState(false)
+  const hide = useCallback(() => setToast(false), [])
+  useToastTimeout(toast, hide)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (claimFavoriteAdded(recipeId)) setToast(true)
+  }, [recipeId])
+
+  return (
+    <FavoriteToast
+      show={toast}
+      onUndo={() => {
+        setToast(false)
+        void removeFavorite(recipeId)
+      }}
+    />
+  )
+}
+
 /**
  * The labelled heart (E01-S06): never an icon alone, never a star. Optimistic
  * toggle with a ~5 s "Dodano do ulubionych · Cofnij" toast after adding. A guest
@@ -79,12 +129,8 @@ export function FavoriteButton({ recipeId, initialFavorited, isAuthenticated, si
     if (isAuthenticated && claimFavoriteAdded(recipeId)) setToast(true)
   }, [isAuthenticated, recipeId])
 
-  // The toast lives ~5 s (handoff).
-  useEffect(() => {
-    if (!toast) return
-    const timer = setTimeout(() => setToast(false), 5000)
-    return () => clearTimeout(timer)
-  }, [toast])
+  const hideToast = useCallback(() => setToast(false), [])
+  useToastTimeout(toast, hideToast)
 
   if (!isAuthenticated) {
     return (
@@ -114,17 +160,7 @@ export function FavoriteButton({ recipeId, initialFavorited, isAuthenticated, si
         <Heart aria-hidden="true" className={ICON[size]} fill={favorited ? 'currentColor' : 'none'} />
         {favorited ? copy.on : copy.off}
       </button>
-      {/* Always mounted, so screen readers announce the toast when it fills. */}
-      <div role="status" className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex justify-center empty:hidden">
-        {toast && (
-          <p className="pointer-events-auto flex items-center gap-3 rounded-field bg-ink px-4 py-2 text-[17px] text-white shadow-lg">
-            Dodano do ulubionych ·
-            <button type="button" onClick={() => change(false)} className="min-h-[48px] font-bold underline">
-              Cofnij
-            </button>
-          </p>
-        )}
-      </div>
+      <FavoriteToast show={toast} onUndo={() => change(false)} />
       {error && (
         <p role="alert" className="text-[16px] font-bold text-danger">
           Nie udało się zapisać. Spróbuj ponownie.

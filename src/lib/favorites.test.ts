@@ -22,6 +22,14 @@ describe('withFavoriteIntent', () => {
     expect(withFavoriteIntent('/przepis/tiramisu', '12')).toBe('/przepis/tiramisu?add_fav=12')
   })
 
+  it('keeps a / in the query unencoded, so safeNext still accepts it', () => {
+    expect(withFavoriteIntent('/szukaj?q=a/b#top', '12')).toBe('/szukaj?q=a/b&add_fav=12#top')
+  })
+
+  it('ignores a repeated next (an array), never throwing', () => {
+    expect(withFavoriteIntent(['/a', '/b'], '12')).toBe('/?add_fav=12')
+  })
+
   it('uses / when next is missing', () => {
     expect(withFavoriteIntent(undefined, '12')).toBe('/?add_fav=12')
     expect(withFavoriteIntent('  ', '12')).toBe('/?add_fav=12')
@@ -54,6 +62,13 @@ describe('applyFavoriteIntent', () => {
     )
     expect(from).toHaveBeenCalledWith('favorites')
     expect(insert).toHaveBeenCalledWith({ user_id: 'u1', recipe_id: 12 })
+  })
+
+  it('keeps the rest of the query as it was', async () => {
+    const { client } = fakeInsert({ error: null })
+    await expect(applyFavoriteIntent(client, 'u1', '/szukaj?q=a/b&add_fav=12#top')).resolves.toBe(
+      '/szukaj?q=a/b&fav_added=12#top',
+    )
   })
 
   it('treats an existing favorite as added', async () => {

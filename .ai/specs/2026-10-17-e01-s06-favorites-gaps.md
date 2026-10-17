@@ -9,7 +9,7 @@ What is live today covers the recipe page only. The backlog story asks for more,
 - **One heart component.** The same optimistic toggle, toast and guest link serve both the recipe page (full size) and cards (compact).
 
 *Proposed (future behavior):*
-- Every recipe card on the guest home, category pages, `/ulubione` and "Moje przepisy" has a labelled heart.
+- Every recipe card on the guest home, category pages and `/ulubione` has a labelled heart.
   - Off: "Ulubione". On: "W ulubionych".
   - It is a 48 px target, separate from the card's link.
 - A guest who taps any heart goes to `/login?next={current page}&fav={recipe id}`.
@@ -22,16 +22,17 @@ What is live today covers the recipe page only. The backlog story asks for more,
 
 ## 📝 Proposed Solution
 1. **`fav` rides on `/login` and folds into `next`.**
-   - The login page reads `fav`. When `fav` is a valid recipe ID, the page appends `fav={id}` to the safe `next` path (`withFavoriteIntent(next, fav)`) before it hands `next` to the forms.
+   - The login page reads `fav`. When `fav` is a valid recipe ID, the page appends `add_fav={id}` to the `next` path (a distinct name, so a retired `?fav=1` link can never favorite recipe #1) (`withFavoriteIntent(next, fav)`) before it hands `next` to the forms.
    - Nothing else in the login plumbing changes. The password action, the magic-link `emailRedirectTo` and the OAuth `redirectTo` already carry `next` end to end and re-validate it with `safeNext`.
 2. **The one login-completion funnel applies it.**
    - `postLoginPath(supabase, next)` (S12) is the single exit of all three login paths: the password action, `/auth/confirm` for a sign-in link, and `/auth/callback` for OAuth.
    - It first calls `applyFavoriteIntent(supabase, userId, next)`, which:
-     - reads `fav` from `next`
+     - reads `add_fav` from `next`
      - adds the favorite with the existing idempotent `insertFavorite`
-     - rewrites `next` as `fav_added={id}` on success, or drops `fav` on failure
+     - rewrites `next` as `fav_added={id}` on success, or drops `add_fav` on failure
    - The `/witaj` detour on a first login still works, because the rewritten `next` is what it carries.
 3. **A heart that sees `fav_added={its id}` on mount shows the toast once and strips the param.** A module-level claim stops two hearts for the same recipe (say, a card and a list) from both showing a toast.
+   - **A landing page with no heart for that recipe.** A guest's heart on the guest home sends them back to `/`, which is the signed-in home once they log in, and it lists no cards. So the signed-in home renders a standalone notice (`FavoriteAddedNotice`) when `fav_added` is present. It shows the same toast with a working "Cofnij" and strips the param the same way.
 4. **The recipe page drops its browser-side `?fav=1` auto-add.** It is replaced by steps 1–3. The recipe page's guest link becomes `loginPath(currentPath, recipeId)`.
 5. **`FavoriteButton` gains `size: 'full' | 'compact'`.**
    - `full`: the recipe page, unchanged copy ("Dodaj do ulubionych" / "W ulubionych · usuń", 58 px).
@@ -53,7 +54,7 @@ What is live today covers the recipe page only. The backlog story asks for more,
 - `src/app/login/page.tsx`: reads `fav` and passes `withFavoriteIntent(next, fav)` to `OAuthButtons` and `SignInForm`.
 - `src/app/components/favorite-button.tsx`: the `size` variant, a self-built guest link, the `fav_added` toast, and a persistent live region.
 - `src/app/components/recipe-card.tsx`: the optional `favorite` prop and the stretched-link structure.
-- The pages that list cards look up favorite IDs for a signed-in user: `/` (guest home, so guest hearts only), `/przepisy/[kategoria]`, `/ulubione` (all on), and `/recipes`.
+- The pages that list cards look up favorite IDs for a signed-in user: `/` (guest home, so guest hearts only), `/przepisy/[kategoria]`, and `/ulubione` (all on). `/recipes` stays with S05, which opts in through the prop.
 - The recipe page: `fav` and `autoAddFavorite` are removed, and the guest link comes from the component. The edits stay inside the favorites slot (`recipe-actions.tsx` and the `fav` lines of `page.tsx`).
 
 ## 📝 API Contracts
@@ -91,10 +92,11 @@ What is live today covers the recipe page only. The backlog story asks for more,
 - **A password-recovery link.** It skips `postLoginPath`, so the intent is ignored.
 - **The `/witaj` first-login detour.** The favorite is already saved before the detour, and `fav_added` reaches the final page.
 - **Removing a favorite on `/ulubione`.** `revalidatePath('/ulubione')` re-renders the page and the card leaves the list.
+- **A `next` whose query holds a `/` (a search phrase, say).** The intent is added and removed as raw `&key=value` text, never by re-serializing the whole query. `URLSearchParams` would turn `/` into `%2F`, which `safeNext` rejects, and the user would land on `/` without their favorite.
 - **Old `?fav=1` links mid-flight during the deploy.** They are ignored, and the guest lands on the recipe signed in and taps again.
 
 ## 📝 Risks & Impact Review
-- **The `RecipeCard` restructure touches every list.** The props stay backward compatible and the visuals are unchanged apart from the heart footer. Parallel sessions (S05, S16) only need to resolve merge conflicts.
+- **The `RecipeCard` restructure touches every list.** The props stay backward compatible and the visuals are unchanged apart from the heart footer. Parallel sessions (S05, S16) only need to resolve merge conflicts. S05's search cards must use this one heart (`RecipeCard`'s `favorite` prop or `FavoriteButton size="compact"`) and this one `getFavoriteIds`, not a second card heart or a second lookup helper.
 - **`first-login.ts` belongs to S12.** The change is additive, and the funnel fails open as before.
 - **No migration, no change to RLS or grants.** Favorites need no full access (S11). The existing policy is `user_id = current_user_id()` only.
 
@@ -104,7 +106,7 @@ What is live today covers the recipe page only. The backlog story asks for more,
 | Q1 | Where does the `fav` intent get applied? | Server side, in `postLoginPath` (all three login completions) | One funnel; works for card hearts; POST/PKCE-bound, not a GET side effect. Reversible. |
 | Q2 | How does `fav` reach the completion? | Folded into `next` by the login page | Zero changes to forms, actions, OAuth and confirm plumbing that already carry `next`. Reversible. |
 | Q3 | Card label | "Ulubione" / "W ulubionych" (compact) | Fits a 2-column mobile grid at 16 px; the full "Dodaj do ulubionych" stays on the recipe page. Reversible. |
-| Q4 | Which lists get the heart now? | Guest home, `/przepisy/[kategoria]`, `/ulubione`, `/recipes` | Every card list on master; S05/S16 opt in via the `favorite` prop. Reversible. |
+| Q4 | Which lists get the heart now? | Guest home, `/przepisy/[kategoria]`, `/ulubione` | `/recipes` is S05's search surface, so S05 and S16 opt in via the `favorite` prop. Reversible. |
 | Q5 | Toast after the login round-trip? | Yes, via `fav_added={id}`, once per page | Keeps the decided "Dodano do ulubionych · Cofnij" (first spec, Q3). Reversible. |
 
 ## 📋 Implementation Plan
@@ -117,5 +119,5 @@ What is live today covers the recipe page only. The backlog story asks for more,
    - the fixed toast inside a persistent live region
    - `autoAdd` removed
 4. `RecipeCard`: the `<article>` + stretched-link structure and the optional `favorite` footer.
-5. Wire `getFavoriteIds` into `/`, `/przepisy/[kategoria]`, `/ulubione` and `/recipes`, and update the recipe page's favorites slot.
+5. Wire `getFavoriteIds` into `/`, `/przepisy/[kategoria]` and `/ulubione`, render `FavoriteAddedNotice` on the signed-in home, and update the recipe page's favorites slot.
 6. Run the gates (typecheck, lint, test) and check in the browser: card hearts as a guest and signed in, the guest → login → return flow with the toast, and the 48 px target and focus ring.

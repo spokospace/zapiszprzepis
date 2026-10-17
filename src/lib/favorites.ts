@@ -32,32 +32,46 @@ export const FAVORITE_ADDED_PARAM = 'fav_added'
 // Only for parsing relative paths; never leaves this module.
 const PATH_BASE = 'http://path.invalid'
 
-/** A relative path parsed as a URL, or null when it points at another origin. */
-function parsePath(path: string): URL | null {
+/**
+ * A relative path cut into its parts, the query kept as raw `key=value` text, or
+ * null when it points at another origin. Raw on purpose: re-serializing through
+ * URLSearchParams turns a `/` in the query into `%2F`, which safeNext refuses.
+ */
+function splitPath(path: string): { base: string; pairs: string[]; hash: string } | null {
   try {
-    const url = new URL(path, PATH_BASE)
-    return url.origin === PATH_BASE ? url : null
+    if (new URL(path, PATH_BASE).origin !== PATH_BASE) return null
   } catch {
     return null
   }
+  const hashAt = path.indexOf('#')
+  const rest = hashAt === -1 ? path : path.slice(0, hashAt)
+  const queryAt = rest.indexOf('?')
+  return {
+    base: queryAt === -1 ? rest : rest.slice(0, queryAt),
+    pairs: queryAt === -1 ? [] : rest.slice(queryAt + 1).split('&').filter(Boolean),
+    hash: hashAt === -1 ? '' : path.slice(hashAt),
+  }
 }
 
-function toPath(url: URL): string {
-  return `${url.pathname}${url.search}${url.hash}`
+function joinPath({ base, pairs, hash }: { base: string; pairs: string[]; hash: string }): string {
+  return `${base}${pairs.length ? `?${pairs.join('&')}` : ''}${hash}`
 }
+
+const isParam = (name: string) => (pair: string) => pair.split('=')[0] === name
 
 /**
  * `/login?next=…&fav={id}` → the `next` the login forms carry: the raw `next`
  * (or `/`) with the intent appended. An invalid `fav`, or a `next` that is not a
  * relative path, leaves `next` untouched; the login actions still run safeNext.
  */
-export function withFavoriteIntent(next: string | undefined, rawFav: unknown): string | undefined {
+export function withFavoriteIntent(next: unknown, rawFav: unknown): string | undefined {
+  const raw = typeof next === 'string' ? next : undefined
   const recipeId = parseRecipeId(rawFav)
-  if (recipeId === null) return next
-  const url = parsePath(next?.trim() || '/')
-  if (!url) return next
-  url.searchParams.set(FAVORITE_INTENT_PARAM, String(recipeId))
-  return toPath(url)
+  if (recipeId === null) return raw
+  const parts = splitPath(raw?.trim() || '/')
+  if (!parts) return raw
+  parts.pairs = [...parts.pairs.filter((pair) => !isParam(FAVORITE_INTENT_PARAM)(pair)), `${FAVORITE_INTENT_PARAM}=${recipeId}`]
+  return joinPath(parts)
 }
 
 /**
@@ -66,19 +80,20 @@ export function withFavoriteIntent(next: string | undefined, rawFav: unknown): s
  * favorite must never block signing in, so on failure the intent is just dropped.
  */
 export async function applyFavoriteIntent(supabase: SupabaseClient, userId: string, next: string): Promise<string> {
-  const url = parsePath(next)
-  const recipeId = url ? parseRecipeId(url.searchParams.get(FAVORITE_INTENT_PARAM)) : null
-  if (!url || recipeId === null) return next
+  const parts = splitPath(next)
+  const intent = parts?.pairs.find(isParam(FAVORITE_INTENT_PARAM))
+  const recipeId = intent ? parseRecipeId(intent.slice(FAVORITE_INTENT_PARAM.length + 1)) : null
+  if (!parts || recipeId === null) return next
 
-  url.searchParams.delete(FAVORITE_INTENT_PARAM)
+  parts.pairs = parts.pairs.filter((pair) => !isParam(FAVORITE_INTENT_PARAM)(pair))
   try {
     const error = await insertFavorite(supabase, userId, recipeId)
     if (error) console.error('[favorites] login intent failed', { code: error.code })
-    else url.searchParams.set(FAVORITE_ADDED_PARAM, String(recipeId))
+    else parts.pairs.push(`${FAVORITE_ADDED_PARAM}=${recipeId}`)
   } catch (err) {
     console.error('[favorites] login intent threw', err instanceof Error ? err.message : err)
   }
-  return toPath(url)
+  return joinPath(parts)
 }
 
 /** Which of `recipeIds` the user has favorited, in one query per page of cards. Empty on error. */
