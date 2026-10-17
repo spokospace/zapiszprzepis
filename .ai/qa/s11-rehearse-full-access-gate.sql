@@ -7,7 +7,7 @@
 -- throwaway auth users, the codes and every write roll back. Expected:
 --   T1[invalid] T2[42501] T3[ok] T4[t] T5[insert-ok] T6[invalid] T7[invalid]
 --   T8[rate_limited] T9[42501] T10[own_rows=1] T11[42501] T12[already]
---   T13[uses=1 used_by_b=1] T14[recipes 42501] T15[short refused] T16[invite]
+--   T13[uses=1 used_by_b=1] T14[recipes 42501] T15[short refused] T16[none]
 --   grandfathered=<n> email_users=<n> users=<n>
 -- (Per-user concurrency — the advisory lock — needs two sessions and is not
 -- exercised here; it is a plain pg_advisory_xact_lock.)
@@ -38,7 +38,8 @@ begin
   select count(*) into users from auth.users;
   select count(distinct user_id) into email_users from auth.identities where provider = 'email';
 
-  -- T16: a new invited (email-identity) account gets full access on its own.
+  -- T16: a NEW email-identity account gets NO access by itself (no auto-grant:
+  -- GoTrue /otp can create one without INVITE_CODE). It needs a code.
   insert into auth.users (id, email, aud, role)
   values (d, 'rehearsal-s11-d@example.invalid', 'authenticated', 'authenticated');
   insert into auth.identities (provider_id, user_id, identity_data, provider)
