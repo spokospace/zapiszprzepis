@@ -46,7 +46,7 @@ const SUMMARY_BATCH = 1000
 const SUMMARY_MAX_ROWS = 10_000
 
 const CHIP =
-  'inline-flex min-h-[48px] items-center gap-2 rounded-pill border-2 px-4 text-[17px] font-bold leading-tight transition-colors'
+  'inline-flex min-h-[48px] items-center gap-2 rounded-pill border-2 px-4 text-[17px] font-bold leading-tight wrap-anywhere transition-colors'
 
 /**
  * The profile and a summary of every recipe the person owns (S03: "added as

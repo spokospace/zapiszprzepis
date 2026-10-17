@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Cookie, type Page } from '@playwright/test'
+import { existsSync, readFileSync } from 'fs'
+import { qaSessionFile, type QaAccount } from './qa-session'
 
 /**
  * WCAG 1.4.10 Reflow guard for the E01 screens: at 320 px wide with the recipe text
@@ -132,3 +134,122 @@ test('recipe page reflows at 320 px, A++', async ({ page }) => {
   await inject(page, 'section[aria-labelledby="steps-heading"] li p.text-scalable', LONG_TITLE, 2)
   await expectNoHorizontalScroll(page)
 })
+
+/*
+ * Every other E01 screen, signed-in ones included, checked twice: as it renders, and
+ * with a long word appended to each content text that may wrap (in <main> and an open
+ * <dialog>), standing in for any user/extracted string the screen shows.
+ */
+
+interface Screen {
+  name: string
+  path: string | ((page: Page) => Promise<string | null>)
+  /** Dev-only QA account (docs/dev-qa-login.md); read-only use. */
+  as?: QaAccount
+  /** Opens an overlay after load. */
+  overlay?: (page: Page) => Promise<void>
+}
+
+async function recipePath(page: Page) {
+  return `/przepis/${await firstRecipeSlug(page)}`
+}
+
+/** A profile linked from a recipe; only recipes added by a user with a username have one. */
+async function profilePath(page: Page): Promise<string | null> {
+  await open(page, '/szukaj?q=a')
+  const recipes = await page
+    .locator('main a[href^="/przepis/"]')
+    .evaluateAll((links) => links.slice(0, 10).map((a) => a.getAttribute('href')!))
+  for (const recipe of recipes) {
+    await open(page, recipe)
+    const link = page.locator('a[href^="/u/"]').first()
+    if (await link.count()) return link.getAttribute('href')
+  }
+  return null
+}
+
+async function openMenu(page: Page) {
+  await page.locator('button[aria-controls="app-menu"]').click()
+  await expect(page.locator('dialog#app-menu[open]')).toBeVisible()
+}
+
+const SCREENS: Screen[] = [
+  { name: 'home (guest)', path: '/' },
+  { name: 'home (signed in)', path: '/', as: 'full' },
+  {
+    name: 'cooking mode',
+    path: recipePath,
+    overlay: async (page) => {
+      await page.getByRole('button', { name: /Tryb gotowania/ }).first().click()
+      await expect(page.locator('dialog[open]')).toBeVisible()
+    },
+  },
+  { name: 'profile', path: profilePath },
+  { name: 'add recipe', path: '/dodaj', as: 'full' },
+  { name: 'add recipe (code gate)', path: '/dodaj', as: 'free' },
+  { name: 'notifications', path: '/powiadomienia', as: 'full' },
+  { name: 'settings', path: '/settings', as: 'full' },
+  { name: 'login', path: '/login' },
+  { name: 'menu (guest)', path: '/', overlay: openMenu },
+  { name: 'menu (signed in)', path: '/', as: 'full', overlay: openMenu },
+  { name: 'recipe, all text', path: recipePath },
+  { name: 'category, all text', path: '/przepisy/desery' },
+]
+
+async function signIn(page: Page, as: QaAccount) {
+  const file = qaSessionFile(as)
+  test.skip(!existsSync(file), 'no QA session: /api/dev/login is disabled (see docs/dev-qa-login.md)')
+  const { cookies } = JSON.parse(readFileSync(file, 'utf8')) as { cookies: Cookie[] }
+  await page.context().addCookies(cookies)
+}
+
+/** Appends `long` to every content text (10+ chars, wrappable) in <main> and an open <dialog>. */
+function stressContent(long: string) {
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+  const texts: Text[] = []
+  while (walker.nextNode()) texts.push(walker.currentNode as Text)
+  const stressed = new Set<Element>()
+  for (const text of texts) {
+    const parent = text.parentElement
+    if (!parent?.closest('main, dialog[open]') || parent.closest('script, style')) continue
+    if (text.data.trim().length < 10 || getComputedStyle(parent).whiteSpace === 'nowrap') continue
+    text.data = `${text.data} ${long}`
+    stressed.add(parent)
+  }
+  // Marked like inject() once all texts are long (a parent's textContent includes its
+  // children's): expectNoHorizontalScroll fails if a re-render drops them.
+  stressed.forEach((el) => el.setAttribute('data-reflow-injected', el.textContent ?? ''))
+  return stressed.size
+}
+
+/** Widest overflow of a scrolling/clipping box in an open drawer (the page width can't show it). */
+function drawerOverflow() {
+  const boxes = [...document.querySelectorAll('dialog[open], dialog[open] *')].filter((el) => {
+    const style = getComputedStyle(el)
+    // sr-only (1 px) and ellipsis truncation clip on purpose.
+    return /auto|scroll|hidden/.test(style.overflowX) && el.clientWidth > 1 && style.textOverflow !== 'ellipsis'
+  })
+  return Math.max(0, ...boxes.map((el) => el.scrollWidth - el.clientWidth))
+}
+
+/** Live-data paths (a search crawl each), shared by a screen's two runs in a worker. */
+const resolved = new Map<Screen, string | null>()
+async function resolvePath(screen: Screen, find: (page: Page) => Promise<string | null>, page: Page) {
+  if (!resolved.has(screen)) resolved.set(screen, await find(page))
+  return resolved.get(screen)!
+}
+
+for (const screen of SCREENS) {
+  for (const stressed of [false, true]) {
+    test(`${screen.name}${stressed ? ', long content' : ''} reflows at 320 px, A++`, async ({ page }) => {
+      if (screen.as) await signIn(page, screen.as)
+      const path = typeof screen.path === 'string' ? screen.path : await resolvePath(screen, screen.path, page)
+      if (!path) test.skip(true, 'no live data for this screen')
+      await open(page, path)
+      await screen.overlay?.(page)
+      if (stressed) expect(await page.evaluate(stressContent, LONG_WORD), 'no content text to stress').toBeGreaterThan(0)
+      await expectNoHorizontalScroll(page)
+      expect(await page.evaluate(drawerOverflow), 'an open drawer scrolls sideways').toBe(0)
+    })
+  }
+}

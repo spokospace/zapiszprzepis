@@ -33,11 +33,17 @@ export default defineConfig({
       },
       dependencies: ['setup'],
     },
-    // Guest-only layout checks: no sign-in, so no dependency on the setup project.
+    // Layout checks: no password sign-in, so no dependency on the setup project.
+    {
+      name: 'reflow-setup',
+      testMatch: /reflow\.setup\.ts/,
+    },
     {
       name: 'reflow',
       testMatch: REFLOW,
       use: { ...devices['Desktop Chrome'] },
+      // Signs the dev QA accounts in once, for the signed-in screens.
+      dependencies: ['reflow-setup'],
     },
   ],
   webServer: {

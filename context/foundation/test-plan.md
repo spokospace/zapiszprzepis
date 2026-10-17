@@ -126,15 +126,24 @@ and pay per run, so reserve them for "is the extracted content actually good?",
 which no cheap assertion answers. TBD until Phase 1–4 land.
 
 ### 6.5a Layout guard: reflow at 320 px (WCAG 1.4.10)
-Playwright project `reflow` (no sign-in, no `setup` dependency): `e2e/reflow.spec.ts`.
+Playwright project `reflow` (no password sign-in, no `setup` dependency): `e2e/reflow.spec.ts`.
 - **What:** recipe page, category list, search results at 320 px with the text
   scale at A++; worst-case strings are a real query in the URL, a seeded
   `zp-list:*` snapshot in sessionStorage, and text swapped into the hydrated DOM
   (`inject()` marks nodes; the check fails if a re-render drops them). Asserts
   `scrollWidth <= innerWidth` and names the overflowing elements.
-- **Read-only:** local dev hits the production DB, so the spec only reads as a guest.
-- **New screen with user text:** add a test with `open()` + `inject()` +
-  `expectNoHorizontalScroll()`.
+- **Every other E01 screen** (`SCREENS`): home (guest + signed in), cooking mode,
+  profile, `/dodaj` (full + code gate), `/powiadomienia`, `/settings`, `/login`,
+  menu drawer (guest + signed in), plus recipe and category again. Each runs as
+  rendered and with a long word appended to every wrappable 10+ char text in
+  `<main>` / the open `<dialog>`; an open drawer must not scroll sideways either.
+- **Signed-in screens:** project `reflow-setup` (`e2e/reflow.setup.ts`) signs the dev
+  QA accounts in once via `/api/dev/login` (docs/dev-qa-login.md) and saves
+  `e2e/.auth/qa-*.json`; repeated logins for one email fail (500). Route disabled →
+  those tests skip.
+- **Read-only:** local dev hits the production DB, so the spec only reads.
+- **New screen with user text:** add it to `SCREENS`, or for targeted strings a test
+  with `open()` + `inject()` + `expectNoHorizontalScroll()`.
 - **Run:** `pnpm test:reflow` (starts `next dev`; `E2E_PORT=3107` for a free port).
 
 ### 6.6 Per-rollout-phase notes
