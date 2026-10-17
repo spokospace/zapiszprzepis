@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 
 interface RecipeGalleryProps {
   images: string[]
@@ -46,6 +47,7 @@ export function RecipeGallery({ images, title }: RecipeGalleryProps) {
                 fill
                 sizes="(max-width: 640px) 50vw, 240px"
                 className="object-cover hover:scale-105 transition-transform"
+                unoptimized={!isArchivedImageUrl(src)}
               />
             </button>
           </li>
@@ -82,6 +84,7 @@ export function RecipeGallery({ images, title }: RecipeGalleryProps) {
               sizes="100vw"
               className="object-contain select-none"
               draggable={false}
+              unoptimized={!isArchivedImageUrl(images[index])}
             />
 
             <p className="absolute top-4 left-4 text-sm tabular-nums text-white/80" aria-live="polite">
