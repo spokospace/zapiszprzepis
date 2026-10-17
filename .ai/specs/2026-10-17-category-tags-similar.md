@@ -17,7 +17,7 @@ Today `/przepisy/{kategoria}` (S09) is a flat grid of the 48 newest recipes in a
 3. **Card query.** A second query, run in parallel, reads the page of cards: `contains` + `order(created_at desc, id desc)` + `range`, with `count: 'exact'` for the summary and paging. Page size stays 48. `?strona=N` adds "← Nowsze" / "Starsze →" links that keep the tags.
 4. **Recipe page, bottom.** A self-loading async server component `<SimilarRecipes>` replaces S07's placeholder comment. That way `page.tsx` changes by one import and one line (S06 and S14 edit the same file in parallel). It renders:
    - "Ten przepis jest" + the recipe's tags as chip links → `categoryPath(category, { tags: [tag] })`;
-   - "Podobne": candidates from the same category sharing ≥ 1 tag (`overlaps`), ranked by shared-tag count, then newest. If there are fewer than 4, newest recipes from the category fill the rest. At most 4 are shown, and the section is hidden at 0;
+   - "Podobne": candidates from the same category, **excluding the recipe itself**, sharing ≥ 1 tag (`overlaps`), ranked by shared-tag count, then newest. If there are fewer than 4, newest recipes from the category fill the rest (deduplicated: each recipe appears once). At most 4 are shown, and the section is hidden at 0;
    - "Wszystkie przepisy: {Kategoria} (N) →", with N the category total.
 5. **Header tags move down.** The header's tag chips are removed: the AC puts tags at the bottom ("dół"), and two chip rows of the same tags is noise. The owner's `/recipes?tag=` filter keeps working; it just loses this entry point, and the new links are public.
 6. **`RECIPE_TAGS`**: add `kokosowe`, `owsiane`, `orzechowe`, `cytrynowe`, `miodowe`, `makowe`, `dyniowe`, `ziemniaczane` (each with an LLM hint and an unambiguous title pattern). Title counts on production: 9 / 10 / 13 / 13 / 14 / 14 / 18 / 19.
@@ -39,7 +39,7 @@ Today `/przepisy/{kategoria}` (S09) is a flat grid of the 48 newest recipes in a
 - `src/app/przepisy/[kategoria]/_components/tag-filter.tsx` *(new, client)* — chip links; "Pokaż wszystkie (N)" / "Pokaż mniej" toggle (`aria-expanded`). Without JS the extra chips stay hidden and the toggle is inert, while the first 8 still work.
 - `src/app/przepis/[slug]/_components/similar-recipes.tsx` *(new, async server)* — loads and renders the bottom section; logs and renders nothing on query failure.
 - `src/app/przepis/[slug]/page.tsx` — one import + `<SimilarRecipes recipe={…} />` in place of the S16 comment.
-- `src/app/przepis/[slug]/_components/recipe-header.tsx` — the tag `<ul>` is removed. The `isAuthenticated` prop stays, because the gallery/author logic may need it and removing it would touch the call site S06/S14 edit.
+- `src/app/przepis/[slug]/_components/recipe-header.tsx` — the tag `<ul>` is removed. The `isAuthenticated` prop is removed with it (its only use was the tag links), so the `<RecipeHeader …>` call site changes; S06 (#260) edits the neighbouring lines, so whichever merges second resolves a trivial conflict.
 
 ## 📝 Data Model
 No schema change, no migration, no data change. Reads only `public_recipes` (guest-safe view, already exposes `tags`). Recipes extracted before this story never get the eight new tags retroactively (re-extraction or a refresh assigns them). A title-based backfill is a separate, owner-gated data change (follow-up).
@@ -65,7 +65,7 @@ Variant 1c style, 1a structure. Tokens only (`bg-ink`, `text-ink-soft`, `border-
 
 **Category page `/przepisy/{kategoria}`**
 - `h1` category label (unchanged).
-- **Filter** (`<nav aria-label="Filtruj według tagów">`, only when the category has any tags): `h2` "Tagi" (visually small), wrapping chip row, no horizontal scroll. Chip = `Chip` look: ≥ 48 px, pill, 2 px border, 17 px bold. Selected = `bg-ink` (#111827) + white + "✓ " (the ✓ is `aria-hidden`; sr-only ", wybrany"). Count after the label, with an sr-only unit ("12 przepisów"). First 8 chips, then a `Pokaż wszystkie ({N})` button (outline, ≥ 48 px, `aria-expanded`, `aria-controls`). Selected chips are always within the first 8 because they sort first.
+- **Filter** (`<nav>` labelled by its `h2` "Tagi", only when the category has any tags): `h2` "Tagi" (visually small), wrapping chip row, no horizontal scroll. Chip = `Chip` look: ≥ 48 px, pill, 2 px border, 17 px bold. Selected = `bg-ink` (#111827) + white + "✓ " (the ✓ is `aria-hidden`), count after the label with an sr-only unit; the accessible name reads "kruche 12 przepisów, wybrany", so the visible "kruche 12" stays contiguous for WCAG 2.5.3). First 8 chips, then a `Pokaż wszystkie ({N})` button (outline, ≥ 48 px, `aria-expanded`, `aria-controls`). Selected chips are always within the first 8 because they sort first.
 - **Summary** (`<p role="status" aria-live="polite">`): "{N} {przepis/przepisy/przepisów}" plus, with a selection, " z tagami: kruche, czekoladowe". Next to it (outside the live region), the "× Wyczyść" link → `categoryPath(category)`, ≥ 48 px, underlined, shown only with a selection. Next.js keeps the region mounted across soft navigation, so a chip tap announces the new count.
 - **Grid** as today (`RecipeCard`, now `from="kategoria"`). Empty with a selection: "Brak przepisów z tymi tagami." + "× Wyczyść". Empty category: today's empty state.
 - **Paging** below the grid, only when needed: "← Nowsze" / "Strona 2 z 5" / "Starsze →", links ≥ 48 px.
@@ -73,7 +73,7 @@ Variant 1c style, 1a structure. Tokens only (`bg-ink`, `text-ink-soft`, `border-
 
 **Recipe page, bottom (before the owner's refresh/delete row)**
 - `section aria-labelledby`: `h2` "Ten przepis jest" (26 px, like "Wideo"), a chip-link row of its tags (unselected chip look). Hidden when the recipe has no tags.
-- `h2` "Podobne": a 2-column grid (3 at `sm`) of up to 4 `RecipeCard`s (no `from`, so the list bar falls back to the category). Hidden at 0.
+- `h2` "Podobne": a 2-column grid (the page column is narrow, so 2 at every width) of up to 4 `RecipeCard`s (no `from`, so the list bar falls back to the category). Hidden at 0.
 - "Wszystkie przepisy: {Kategoria} ({N}) →" link (underlined, `text-action-text`, ≥ 48 px), N omitted when the count failed. It shows even without similar recipes, as long as the category has other recipes.
 
 ## 📝 Edge Cases & Failure Scenarios
@@ -87,10 +87,11 @@ Variant 1c style, 1a structure. Tokens only (`bg-ink`, `text-ink-soft`, `border-
 - **Large text scale** → chips wrap. The grid stays 2 columns on mobile, as on `/ulubione`.
 
 ## 📝 Risks & Impact Review
-- **Query cost:** the category page does 2 queries (facets: `id, tags` for the category; cards: one page). The recipe page adds 2 small ones (overlaps candidates limited to 50, fill limited to 5) plus a head count. No index on `tags`/`category`: fine at ~700 recipes. Revisit (GIN on `tags`, `(category, created_at desc)`) past ~5k recipes or if the category page p95 grows. Noted, not done here (owner-gated migration).
+- **Query cost:** the category page does 2 queries (facets: `id, tags` for the category; cards: one page). The recipe page adds 2 small ones (overlaps candidates limited to 50, fill limited to 5) plus a head count. `recipes.tags` already has a GIN index (`idx_recipes_tags`); there is none on `(category, created_at desc)`, fine at ~700 recipes. Revisit that one past ~5k recipes or if the category page p95 grows. Noted, not done here (owner-gated migration).
 - **Header change** is user-visible: tags move from the top of the recipe page to the bottom. Reversible.
 - **New tags** change the LLM prompt (`LLM_TAGS` is derived from the list). The model may now pick e.g. `orzechowe` over `owocowe`. Bounded by `MAX_TAGS` and the closed list; covered by the existing tag tests.
-- **Parallel sessions:** `page.tsx` (S06/S14) gets a 2-line diff; `recipe-list-context.ts` `LIST_KEYS` also grows in S05 (trivial merge); `chip.tsx` gets an additive export.
+- **Streaming:** `<SimilarRecipes>` renders behind `<Suspense fallback={null}>` so its queries never delay the recipe itself.
+- **Parallel sessions:** S06 (#260) also edits `/przepisy/[kategoria]/page.tsx` (hearts on cards) — expect a real merge conflict there, and the "Podobne" cards then need S06's `favorite` prop too; `page.tsx` (S06/S14) gets a 2-line diff; `recipe-list-context.ts` `LIST_KEYS` also grows in S05 (trivial merge); `chip.tsx` gets an additive export.
 
 ## 📝 Resolved assumptions (autonomous defaults)
 | # | Question | Default applied | Rationale |
