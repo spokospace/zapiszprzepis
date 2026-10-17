@@ -11,14 +11,23 @@ export const PRZEPIS_PAGE_RE = /^\/przepis\/[^/]+$/
 /** A public category listing: /przepisy/{kategoria} (one segment) — E01-S09, extended by E01-S16. */
 const PRZEPISY_CATEGORY_RE = /^\/przepisy\/[^/]+$/
 
+/** A public profile: /u/{username} (one segment) — E01-S14. */
+export const PROFILE_PAGE_RE = /^\/u\/[^/]+$/
+
 /**
  * The public listing of one category (E01-S09), shared by the MENU drawer and
  * the home category tiles (E01-S04) so both link the same URL — the route
- * E01-S16 later extends with tag chips. Public on purpose: /recipes?category=
- * is owner-only and would bounce a guest to /login.
+ * E01-S16 extends with tag chips (`?tag=a,b`, AND) and paging (`?strona=N`).
+ * Public on purpose: /recipes?category= is owner-only and would bounce a guest
+ * to /login.
  */
-export function categoryPath(category: string): string {
-  return `/przepisy/${encodeURIComponent(category)}`
+export function categoryPath(category: string, opts?: { tags?: readonly string[]; page?: number }): string {
+  const path = `/przepisy/${encodeURIComponent(category)}`
+  const query: string[] = []
+  // Tag values are ASCII slugs, so the comma stays readable instead of %2C.
+  if (opts?.tags?.length) query.push(`tag=${opts.tags.map(encodeURIComponent).join(',')}`)
+  if (opts?.page && opts.page > 1) query.push(`strona=${opts.page}`)
+  return query.length ? `${path}?${query.join('&')}` : path
 }
 
 /**
@@ -31,12 +40,9 @@ export function recipePath(slug: string, opts?: { from?: string | null }): strin
   return opts?.from ? `${path}?from=${encodeURIComponent(opts.from)}` : path
 }
 
-/** E01-S14 flips this when the public profile /u/{username} ships. */
-const PROFILE_PAGES_LIVE = false
-
-/** A user's public profile, or null while profiles do not exist yet (E01-S07). */
+/** A user's public profile /u/{username} (E01-S14), or null without a username (e.g. a deleted account). */
 export function profilePath(username: string | null | undefined): string | null {
-  return PROFILE_PAGES_LIVE && username ? `/u/${encodeURIComponent(username)}` : null
+  return username ? `/u/${encodeURIComponent(username)}` : null
 }
 
 /**
@@ -54,14 +60,16 @@ export function legacyRecipePathToCanonical(pathname: string): string {
  * job. Both the canonical /przepis/{slug} and the legacy /recipes/{slug} are
  * public: the legacy path must be reachable so middleware can issue its 301
  * instead of bouncing the visitor to /login first (E01-S03b). The category
- * listings are linked from the guest's MENU drawer (E01-S09).
+ * listings are linked from the guest's MENU drawer (E01-S09), the profiles
+ * from every recipe's author line (E01-S14).
  */
 export function isPublicRoute(pathname: string): boolean {
   return (
     pathname === '/' ||
     PRZEPIS_PAGE_RE.test(pathname) ||
     RECIPE_PAGE_RE.test(pathname) ||
-    PRZEPISY_CATEGORY_RE.test(pathname)
+    PRZEPISY_CATEGORY_RE.test(pathname) ||
+    PROFILE_PAGE_RE.test(pathname)
   )
 }
 

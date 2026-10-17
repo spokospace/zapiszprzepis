@@ -22,6 +22,20 @@ describe('resolveTags', () => {
     expect(resolveTags({ title: 'Wigilijny barszcz' })).toEqual(['boze-narodzenie'])
   })
 
+  it('reads the leading-ingredient tags added in E01-S16 from the title', () => {
+    expect(resolveTags({ title: 'Ciasteczka owsiane z kokosem' })).toEqual(['kokosowe', 'owsiane'])
+    expect(resolveTags({ title: 'Makowiec z orzechami' })).toEqual(['orzechowe', 'makowe'])
+    expect(resolveTags({ title: 'Tarta cytrynowa' })).toEqual(['cytrynowe'])
+    expect(resolveTags({ title: 'Miodownik' })).toEqual(['miodowe'])
+    expect(resolveTags({ title: 'Zupa krem z dyni' })).toEqual(['dyniowe'])
+    expect(resolveTags({ title: 'Placki ziemniaczane' })).toEqual(['ziemniaczane'])
+  })
+
+  it('does not read pasta or mackerel as poppy seed', () => {
+    expect(resolveTags({ title: 'Makaron z makrelą' })).toEqual([])
+    expect(resolveTags({ title: 'Kluski z makiem' })).toEqual(['makowe'])
+  })
+
   it('does not read buttermilk or a word inside another as a tag', () => {
     expect(resolveTags({ title: 'Placki na maślance' })).toEqual([])
     expect(resolveTags({ title: 'Niekruchy chleb' })).toEqual([])

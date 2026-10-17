@@ -29,9 +29,15 @@ describe('recipePath', () => {
 })
 
 describe('profilePath', () => {
-  it('stays null until E01-S14 ships /u/{username}, so nothing links to a 404', () => {
-    expect(profilePath('ania')).toBeNull()
+  it('links /u/{username} once E01-S14 ships the page', () => {
+    expect(profilePath('ania')).toBe('/u/ania')
+    expect(isPublicRoute(profilePath('ania')!)).toBe(true)
+  })
+
+  it('is null without a username, so a missing author renders as plain text', () => {
     expect(profilePath(null)).toBeNull()
+    expect(profilePath(undefined)).toBeNull()
+    expect(profilePath('')).toBeNull()
   })
 })
 
@@ -83,6 +89,19 @@ describe('isPublicRoute', () => {
     // the bare listing root and deeper paths stay gated
     expect(isPublicRoute('/przepisy')).toBe(false)
     expect(isPublicRoute('/przepisy/zupy/x')).toBe(false)
+  })
+
+  it('allows a public profile /u/{username} (E01-S14)', () => {
+    expect(isPublicRoute('/u/tola')).toBe(true)
+    expect(isPublicRoute('/u')).toBe(false)
+    expect(isPublicRoute('/u/tola/x')).toBe(false)
+  })
+
+  it('adds tag and page filters to the category listing (E01-S16)', () => {
+    expect(categoryPath('ciasta', { tags: ['kruche', 'czekoladowe'] })).toBe('/przepisy/ciasta?tag=kruche,czekoladowe')
+    expect(categoryPath('ciasta', { tags: ['kruche'], page: 2 })).toBe('/przepisy/ciasta?tag=kruche&strona=2')
+    expect(categoryPath('ciasta', { tags: [], page: 1 })).toBe('/przepisy/ciasta')
+    expect(categoryPath('ciasta', { page: 3 })).toBe('/przepisy/ciasta?strona=3')
   })
 
   it('keeps the owner list and everything else gated', () => {
