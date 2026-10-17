@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E01-S04 home mockup</title>
+<style>
+  /* Illustrative static mockup for the S04 spec. Not app code. Tokens mirror src/app/globals.css. */
+  :root { --ink:#111827; --ink-soft:#374151; --muted:#4b5563; --action:#c2410c; --accent:#fff7ed; --accent2:#ffedd5; --action-text:#9a3412; --card:#e5e7eb; --card2:#d1d5db; --s2:#f9fafb; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; color:var(--ink); background:#f3f4f6; display:flex; gap:32px; padding:24px; flex-wrap:wrap; }
+  .phone { width:375px; background:#fff; border:1px solid var(--card2); border-radius:24px; overflow:hidden; }
+  .cap { font: 700 14px system-ui; color:var(--ink-soft); padding:8px 16px; background:var(--s2); border-bottom:1px solid var(--card); }
+  header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid var(--card); }
+  .logo { font-weight:800; font-size:20px; } .logo b { color:var(--action); }
+  .hbtn { min-height:48px; padding:0 14px; border:2px solid var(--muted); border-radius:14px; font:700 17px system-ui; background:#fff; display:inline-flex; align-items:center; }
+  .slot { margin:12px 16px 0; padding:8px; border:2px dashed var(--card2); color:var(--muted); font-size:14px; border-radius:12px; text-align:center; }
+  .hero { background:var(--accent); padding:20px 16px 24px; }
+  h1 { font-size:30px; line-height:1.15; margin:0 0 14px; }
+  h2 { font-size:22px; margin:0 0 12px; }
+  label { display:block; font-size:18px; margin-bottom:8px; color:var(--ink-soft); }
+  .field { display:flex; gap:8px; }
+  .field input { flex:1; min-width:0; height:60px; border:2px solid var(--muted); border-radius:14px; font-size:19px; padding:0 14px; }
+  .mic { min-width:72px; height:60px; border:2px solid var(--muted); border-radius:14px; background:#fff; font:700 16px system-ui; }
+  .primary { display:flex; justify-content:center; align-items:center; width:100%; min-height:56px; margin-top:10px; background:var(--action); color:#fff; border:0; border-radius:14px; font:700 19px system-ui; }
+  .outline { display:flex; justify-content:center; align-items:center; width:100%; min-height:56px; margin-top:10px; background:#fff; color:var(--ink); border:2px solid var(--muted); border-radius:14px; font:700 19px system-ui; }
+  section { padding:20px 16px 0; }
+  .pills { display:flex; flex-wrap:wrap; gap:8px; }
+  .pill { min-height:48px; padding:0 16px; display:inline-flex; align-items:center; border:2px solid var(--card2); border-radius:999px; font:700 17px system-ui; }
+  .grid { display:grid; gap:10px; }
+  .g3 { grid-template-columns:repeat(3,minmax(0,1fr)); } .g2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .tile { min-height:64px; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px; border:2px solid var(--card); border-radius:16px; font:700 17px system-ui; background:#fff; }
+  .card { border:1px solid var(--card); border-radius:16px; overflow:hidden; }
+  .img { aspect-ratio:4/3; background:linear-gradient(135deg,#fed7aa,#fde68a); }
+  .card div.b { padding:10px; } .card h3 { font-size:19px; margin:0 0 4px; line-height:1.2; } .src { font-size:16px; color:var(--ink-soft); }
+  .badge { display:inline-block; margin-top:6px; padding:2px 8px; border-radius:999px; background:var(--accent2); color:var(--action-text); font:700 14px system-ui; }
+  .cta { margin:24px 16px; padding:18px 16px; background:var(--s2); border-radius:16px; font-size:19px; }
+  .tiles a { display:flex; gap:12px; align-items:center; min-height:72px; padding:12px 16px; border:2px solid var(--card); border-radius:16px; margin-bottom:10px; }
+  .tiles strong { display:block; font-size:19px; } .tiles span { font-size:16px; color:var(--ink-soft); }
+  .ico { width:40px; height:40px; border-radius:999px; background:var(--accent2); display:flex; align-items:center; justify-content:center; font-size:20px; }
+</style>
+</head>
+<body>
+  <div class="phone" id="guest">
+    <div class="cap">A1 · Gość</div>
+    <header><span class="logo">Zapisz<b>Przepis</b></span><span><span class="hbtn">Zaloguj się</span> <span class="hbtn">MENU</span></span></header>
+    <div class="slot">S15 slot: pasek powiadomień</div>
+    <div class="hero">
+      <h1>Czego dziś szukasz?</h1>
+      <label for="q1">Szukaj przepisu po nazwie lub składniku</label>
+      <div class="field"><input id="q1" placeholder="np. sernik, pierogi"><button class="mic">🎤 Mów</button></div>
+      <button class="primary">Szukaj przepisu</button>
+    </div>
+    <section><h2>Często szukane</h2><div class="pills"><span class="pill">sernik</span><span class="pill">pierogi</span><span class="pill">rosół</span><span class="pill">szarlotka</span><span class="pill">naleśniki</span><span class="pill">zupa pomidorowa</span></div></section>
+    <section><h2>Kategorie</h2><div class="grid g3"><span class="tile">Obiady</span><span class="tile">Zupy</span><span class="tile">Desery</span><span class="tile">Ciasta</span><span class="tile">Ciasteczka</span><span class="tile">Śniadania</span><span class="tile">Pieczywo</span><span class="tile">Przekąski</span></div></section>
+    <section><h2>Ostatnio dodane</h2><div class="grid g2">
+      <div class="card"><div class="img"></div><div class="b"><h3>Sernik baskijski</h3><div class="src">aniagotuje.pl</div><span class="badge">Ciasta</span></div></div>
+      <div class="card"><div class="img"></div><div class="b"><h3>Zupa krem z dyni</h3><div class="src">YouTube · Kuchnia Lidla</div><span class="badge">Zupy</span></div></div>
+      <div class="card"><div class="img"></div><div class="b"><h3>Pierogi ruskie</h3><div class="src">kwestiasmaku.com</div><span class="badge">Obiady</span></div></div>
+      <div class="card"><div class="img"></div><div class="b"><h3>Owsiane ciasteczka</h3><div class="src">Facebook · Gotuj z nami</div><span class="badge">Ciasteczka</span></div></div>
+    </div></section>
+    <div class="cta">Załóż konto, żeby zapisywać ulubione przepisy.<a class="primary">Załóż konto</a><a class="outline">Zaloguj się</a></div>
+  </div>
+
+  <div class="phone" id="member">
+    <div class="cap">C1 · Zalogowany</div>
+    <header><span class="logo">Zapisz<b>Przepis</b></span><span><span class="hbtn">Dodaj</span> <span class="hbtn">MENU</span></span></header>
+    <div class="slot">S15 slot: pasek powiadomień</div>
+    <section>
+      <h1>Dzień dobry, Aniu!</h1>
+      <label for="q2">Szukaj przepisu po nazwie lub składniku</label>
+      <div class="field"><input id="q2" placeholder="np. sernik, pierogi"><button class="mic">🎤 Mów</button></div>
+      <button class="primary">Szukaj przepisu</button>
+    </section>
+    <section class="tiles">
+      <a><span class="ico">📖</span><span><strong>Moje przepisy</strong><span>Przepisy, które dodałaś</span></span></a>
+      <a><span class="ico">♥</span><span><strong>Ulubione</strong><span>Zapisane do ugotowania</span></span></a>
+      <a><span class="ico">＋</span><span><strong>Dodaj przepis</strong><span>Wklej link do przepisu</span></span></a>
+    </section>
+    <section><h2>Kategorie</h2><div class="grid g2"><span class="tile">Obiady</span><span class="tile">Zupy</span><span class="tile">Desery</span><span class="tile">Ciasta</span><span class="tile">Ciasteczka</span><span class="tile">Śniadania</span><span class="tile">Pieczywo</span><span class="tile">Przekąski</span></div></section>
+    <section style="padding-bottom:24px"><h2>Dodaj przepis z linku</h2><div class="slot" style="margin:0">istniejący AddRecipeForm (slot S10 → /dodaj)</div></section>
+  </div>
+</body>
+</html>

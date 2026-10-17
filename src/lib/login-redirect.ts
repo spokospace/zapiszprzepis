@@ -6,6 +6,13 @@ export function loginPath(next?: string | null): string {
   return next ? `/login?next=${encodeURIComponent(next)}` : '/login'
 }
 
+/** `/login` showing `error`, keeping a non-root `next` so a retry returns there. */
+export function loginErrorPath(error: string, next?: string | null): string {
+  const query = new URLSearchParams({ error })
+  if (next && next !== '/') query.set('next', next)
+  return `/login?${query.toString()}`
+}
+
 /**
  * The post-login destination from a raw `next` value (form field or query).
  * Empty → `fallback`; anything that does not resolve to our own origin → `/`

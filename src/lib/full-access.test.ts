@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('server-only', () => ({}))
 import { getFullAccess } from './full-access'
 
 function client(rpc: ReturnType<typeof vi.fn>) {

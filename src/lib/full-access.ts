@@ -1,3 +1,4 @@
+import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
@@ -5,6 +6,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * code (screen 3c) or, later, a payment. Backed by the has_full_access() RPC,
  * which RLS on recipe_shares/recipes INSERT also uses, so the app and the
  * database agree. Fails CLOSED: any RPC error means "no access".
+ * Callers pass `false` for a guest instead of calling this (home page, the
+ * E01-S09 menu summary).
  */
 export async function getFullAccess(supabase: SupabaseClient): Promise<boolean> {
   try {

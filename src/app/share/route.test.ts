@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('./actions', () => ({ triggerRecipeExtraction: vi.fn() }))
+vi.mock('server-only', () => ({}))
 
 import { NextRequest } from 'next/server'
 import { triggerRecipeExtraction } from './actions'

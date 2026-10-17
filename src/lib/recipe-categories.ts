@@ -48,3 +48,8 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'syropy', label: 'Syropy i napary' },
   { value: 'inne', label: 'Inne' },
 ]
+
+/** Narrows a URL segment or query value to an enum member. */
+export function isRecipeCategory(value: string): value is RecipeCategory {
+  return RECIPE_CATEGORIES.some((c) => c.value === value)
+}
