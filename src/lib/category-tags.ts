@@ -1,4 +1,5 @@
-import { MAX_TAGS, RECIPE_TAGS, isRecipeTag, type RecipeTag } from '@/lib/recipe-tags'
+import { MAX_TAGS, RECIPE_TAGS, isRecipeTag, tagLabel, type RecipeTag } from '@/lib/recipe-tags'
+import { recipesNoun } from '@/app/components/app-menu-model'
 
 /**
  * Tag filtering on the public category page and "Podobne" on the recipe page
@@ -89,4 +90,62 @@ export function rankSimilar<T extends { id: number; tags: readonly string[] | nu
     result.push(r)
   }
   return result
+}
+
+/** "kruche", "kruche i maślane", "kruche, maślane i czekoladowe". */
+export function joinWithAnd(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? ''
+  return `${items.slice(0, -1).join(', ')} i ${items[items.length - 1]}`
+}
+
+/** The category page's filter summary (screen 6): "3 przepisy: kruche i czekoladowe". */
+export function tagSummary(count: number, selected: readonly string[]): string {
+  return `${count} ${recipesNoun(count)}: ${joinWithAnd(selected.map(tagLabel))}`
+}
+
+/** Under a "Podobne" card: what it shares with the recipe ("też kruche i czekoladowe"), null when nothing. */
+export function sharedTagsCaption(own: readonly string[], other: readonly string[] | null): string | null {
+  const shared = own.filter((t) => other?.includes(t))
+  return shared.length ? `też ${joinWithAnd(shared.map(tagLabel))}` : null
+}
+
+/**
+ * A category as the noun of a phrase ("Jakie ciasteczka?", "Podobne: kruche
+ * ciasteczka"). "Inne" is no noun, so it reads "przepisy" there.
+ */
+export function categoryNoun(categoryLabel: string): string {
+  const noun = categoryLabel.toLocaleLowerCase('pl')
+  return noun === 'inne' ? 'przepisy' : noun
+}
+
+/** A phrase-like tag goes after the noun: "zupy na zimno", "obiady dla dzieci", "ciasta bez pieczenia". */
+const POSTPOSITIVE_TAG = /^(z|ze|bez|na|dla) /
+
+/**
+ * "Podobne: kruche ciasteczka" — the recipe's tag most of the shown recipes
+ * share (the recipe's own order breaks a tie), around the category: an
+ * adjective in front ("kruche ciasteczka"), a phrase after ("zupy na zimno").
+ * A tag that reads as neither (an occasion, "Boże Narodzenie"; a noun, "grill")
+ * or one nobody shares leaves "Podobne: ciasteczka".
+ */
+export function similarHeading(
+  own: readonly string[],
+  similar: readonly { tags: readonly string[] | null }[],
+  categoryLabel: string,
+): string {
+  const category = categoryNoun(categoryLabel)
+  let best: string | null = null
+  let bestCount = 0
+  for (const tag of own) {
+    const label = tagLabel(tag)
+    const adjective = /^\p{Ll}+e$/u.test(label)
+    if (!adjective && !POSTPOSITIVE_TAG.test(label)) continue
+    const count = similar.filter((r) => r.tags?.includes(tag)).length
+    if (count > bestCount) {
+      best = label
+      bestCount = count
+    }
+  }
+  if (!best) return `Podobne: ${category}`
+  return POSTPOSITIVE_TAG.test(best) ? `Podobne: ${category} ${best}` : `Podobne: ${best} ${category}`
 }

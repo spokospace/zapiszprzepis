@@ -10,11 +10,21 @@ import { webSearchUrl } from '@/lib/search'
 type State = { kind: 'idle' } | { kind: 'searching' } | { kind: 'results'; results: ExaResult[] } | { kind: 'error' }
 
 /**
- * The empty search result (E01-S05): „Nie ma tego, czego szukasz?”. With full
- * access the existing Exa web search runs in place, with its "Zapisz" action;
- * everyone else (Exa is paid, E01-S11) gets a regular web search in a new tab.
+ * „Nie ma tego, czego szukasz?” at the end of every result list (E01-S05; A3,
+ * E01-S22: not only when nothing matched). With full access the existing Exa
+ * web search runs in place, with its "Zapisz" action; everyone else (Exa is
+ * paid, E01-S11) gets a regular web search in a new tab.
  */
-export function WebSearchFallback({ q, hasFullAccess }: { q: string; hasFullAccess: boolean }) {
+export function WebSearchFallback({
+  q,
+  hasFullAccess,
+  hasResults,
+}: {
+  q: string
+  hasFullAccess: boolean
+  /** Some recipes matched: the note under the heading no longer says none did. */
+  hasResults: boolean
+}) {
   const [state, setState] = useState<State>({ kind: 'idle' })
   const label = `Szukaj „${q}” w internecie`
 
@@ -30,7 +40,9 @@ export function WebSearchFallback({ q, hasFullAccess }: { q: string; hasFullAcce
         Nie ma tego, czego szukasz?
       </h2>
       <p className="mt-2 text-[19px] text-ink-soft">
-        Żaden przepis nie pasuje do „{q}”. Sprawdź pisownię albo poszukaj w internecie.
+        {hasResults
+          ? 'Poszukaj tego przepisu w internecie.'
+          : `Żaden przepis nie pasuje do „${q}”. Sprawdź pisownię albo poszukaj w internecie.`}
       </p>
       {hasFullAccess ? (
         <>

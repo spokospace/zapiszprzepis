@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { rankSimilar, SIMILAR_LIMIT } from '@/lib/category-tags'
+import { rankSimilar, sharedTagsCaption, similarHeading, SIMILAR_LIMIT } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { chipClasses } from '@/app/components/ui/chip'
@@ -99,7 +99,7 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
       {similar.length > 0 && (
         <section aria-labelledby="podobne">
           <h2 id="podobne" className="mb-4 text-[26px] font-bold text-ink">
-            Podobne
+            {similarHeading(recipe.tags, similar, label)}
           </h2>
           {/* Two cards a row, four from lg (E01-S17, A9). */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
@@ -110,7 +110,8 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
                 title={r.title}
                 imageUrl={r.image_url}
                 category={r.category}
-                description={r.description}
+                // "też kruche i czekoladowe" (screen 6); a top-up card with no shared tag keeps its note.
+                description={sharedTagsCaption(recipe.tags, r.tags) ?? r.description}
                 sourceType={r.source_type}
                 sourceUrl={r.source_url}
                 sourceAuthor={r.source_author}

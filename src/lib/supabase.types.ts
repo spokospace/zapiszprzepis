@@ -105,6 +105,7 @@ export type Database = {
           ingredients: Json
           meta_description: string | null
           prep_time_minutes: number | null
+          servings: number | null
           slug: string
           source_author: string | null
           source_fingerprint: string | null
@@ -131,6 +132,7 @@ export type Database = {
           ingredients?: Json
           meta_description?: string | null
           prep_time_minutes?: number | null
+          servings?: number | null
           slug: string
           source_author?: string | null
           source_fingerprint?: string | null
@@ -157,6 +159,7 @@ export type Database = {
           ingredients?: Json
           meta_description?: string | null
           prep_time_minutes?: number | null
+          servings?: number | null
           slug?: string
           source_author?: string | null
           source_fingerprint?: string | null

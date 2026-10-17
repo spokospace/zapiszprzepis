@@ -23,17 +23,20 @@ export const VISIBLE_CHIPS = 8
  * toggles its tag in `?tag=`, so the filter works before hydration and is
  * shareable; this component only adds the "Pokaż wszystkie" toggle.
  */
-export function TagFilter({ chips }: { chips: TagChip[] }) {
+export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ciasteczka?" (screen 6). */ question: string }) {
   const [expanded, setExpanded] = useState(false)
   const listId = useId()
   const hidden = chips.length - VISIBLE_CHIPS
   const shown = expanded ? chips : chips.slice(0, VISIBLE_CHIPS)
 
   return (
-    <nav aria-labelledby={`${listId}-h`} className="mb-4">
-      <h2 id={`${listId}-h`} className="mb-3 text-[18px] font-bold text-ink">
-        Tagi
+    <nav aria-labelledby={`${listId}-h`}>
+      <h2 id={`${listId}-h`} className="text-[19px] font-bold text-ink">
+        {question}
       </h2>
+      <p className="mb-3 text-[16px] leading-snug text-ink-soft">
+        Możesz zaznaczyć kilka. Pokażemy przepisy, które pasują do wszystkich.
+      </p>
       <ul id={listId} className="flex flex-wrap gap-2">
         {shown.map((chip) => (
           <li key={chip.value}>

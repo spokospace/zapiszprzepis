@@ -6,6 +6,7 @@ import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine } from '@/lib/recipe-meta'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
+import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
 
 export interface RecipeHeaderData {
   title: string
@@ -22,6 +23,8 @@ export interface RecipeHeaderData {
   source_author: string | null
   author_name: string | null
   author_username?: string | null
+  /** 'f' | 'm' | null from the E01-S23 view column; missing before that migration → neutral. */
+  author_gender_form?: string | null
 }
 
 interface RecipeHeaderProps {
@@ -108,12 +111,12 @@ export function RecipeHeader({ recipe }: RecipeHeaderProps) {
           )}
         </p>
 
-        {/* Gender-neutral on purpose: gender is owner-only (E01-S12), so no public
-            "Dodała/Dodał" (E01-S14 spec A1). A link to /u/{username} when the author
-            has a username, plain text otherwise. */}
+        {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the
+            raw gender, which stays owner-only (E01-S12); neutral "Dodane przez" when
+            unknown. A link to /u/{username} when the author has a username. */}
         {recipe.author_name && (
           <p className="text-[17px] text-ink-soft">
-            Dodane przez{' '}
+            {authorLinePrefix(parseGenderForm(recipe.author_gender_form))}{' '}
             {authorHref ? (
               <Link href={authorHref} className="font-bold text-ink underline hover:text-action-hover">
                 {recipe.author_name}

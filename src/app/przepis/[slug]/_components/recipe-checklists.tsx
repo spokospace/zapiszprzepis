@@ -6,6 +6,7 @@ import { TextSizeControls } from '@/app/components/ui/text-size-controls'
 import { useTextScale } from '@/app/components/ui/use-text-scale'
 import { useSessionStorage } from '@/app/components/ui/use-session-storage'
 import { checklistStorageKey, parseChecklist, toggleChecked } from '@/lib/recipe-checklist'
+import { servingsLabel } from '@/lib/servings'
 import type { Ingredient } from '@/lib/ingredients'
 import { CookingMode } from './cooking-mode'
 
@@ -20,6 +21,8 @@ interface RecipeChecklistsProps {
   title: string
   ingredientGroups: IngredientGroup[]
   steps: string[]
+  /** Servings the source states; null/undefined hides "na N porcji". */
+  servings?: number | null
   /** Rendered under the steps: in the steps column from lg (video, gallery; E01-S17). */
   children?: React.ReactNode
 }
@@ -75,7 +78,7 @@ function IngredientRow({
  * From lg (E01-S17, A9) a `1fr 1.6fr` grid: the ingredients in a panel | the steps
  * plus `children`. Below lg it is one column, in the same order.
  */
-export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, children }: RecipeChecklistsProps) {
+export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, servings, children }: RecipeChecklistsProps) {
   const { level, setLevel, scaleStyle } = useTextScale()
   const [raw, setRaw] = useSessionStorage(checklistStorageKey(recipeId))
   const state = useMemo(() => parseChecklist(raw), [raw])
@@ -113,10 +116,11 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, chi
         aria-labelledby="ingredients-heading"
         className="mb-10 lg:rounded-card lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"
       >
-        <h2 id="ingredients-heading" className="mb-3 text-[26px] font-bold text-ink">
+        <h2 id="ingredients-heading" className={`${servings != null ? 'mb-1' : 'mb-3'} text-[26px] font-bold text-ink`}>
           Składniki
         </h2>
-        {/* "na N porcji" (handoff C3, item 8) waits for a servings field: recipes store none yet. */}
+        {/* "na N porcji" (handoff C3, item 8): only when the source states it. */}
+        {servings != null && <p className="mb-3 text-[17px] text-ink-soft">{servingsLabel(servings)}</p>}
         {ingredientGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
             {group.section && <h3 className="mb-1 text-[17px] font-bold text-ink-soft">{group.section}</h3>}

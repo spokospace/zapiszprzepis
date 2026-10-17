@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { formatMinutes } from '@/lib/format-minutes'
+import { listCardLines } from '@/lib/recipe-meta'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { recipePath } from '@/lib/routes'
@@ -23,13 +23,21 @@ interface RecipeCardProps {
   /** The labelled heart in the card's footer (E01-S06); no heart without it. */
   favorite?: { recipeId: number; favorited: boolean; isAuthenticated: boolean }
   /**
-   * `tile` (default): the grid card. `row` (E01-S05 search results): a 96 px
-   * thumbnail beside the text, unframed so the caller can frame the list item.
+   * `tile` (default): the grid card (home, Ulubione, Moje przepisy, Podobne).
+   * `list` (E01-S22): the one list card of search, category and profile — a
+   * thumbnail beside the full title, with the favorites bar inside its frame.
    */
-  variant?: 'tile' | 'row'
-  /** Row only: total time, shown as "Zupy · 45 min" under the title (left out when unknown). */
+  variant?: 'tile' | 'list'
+  /** List only: total time ("Zupy · 45 min"), left out when unknown. */
   minutes?: number | null
+  /** List only: 96 px thumbnail + 20 px title (search, C2) or 84 + 19 (category 6, profile 7). */
+  thumb?: 84 | 96
+  /** List only, on a category page: "czas · źródło" and these tag labels instead of the category. */
+  inCategory?: { tagLabels: readonly string[] }
 }
+
+/** The list cards' container: one column, two from lg so they don't stretch to 1088 px (E01-S17). */
+export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
 
 export function RecipeCard({
   slug,
@@ -44,40 +52,59 @@ export function RecipeCard({
   favorite,
   variant = 'tile',
   minutes,
+  thumb = 96,
+  inCategory,
 }: RecipeCardProps) {
-  const heart = favorite && (
-    <FavoriteButton
-      recipeId={favorite.recipeId}
-      initialFavorited={favorite.favorited}
-      isAuthenticated={favorite.isAuthenticated}
-      size="compact"
-    />
-  )
+  const heart = (size: 'compact' | 'bar') =>
+    favorite && (
+      <FavoriteButton
+        recipeId={favorite.recipeId}
+        initialFavorited={favorite.favorited}
+        isAuthenticated={favorite.isAuthenticated}
+        size={size}
+      />
+    )
 
-  if (variant === 'row') {
+  if (variant === 'list') {
+    const lines = listCardLines({
+      category,
+      minutes: minutes ?? null,
+      source: sourceLabel(sourceType, sourceUrl, sourceAuthor),
+      tagLabels: inCategory?.tagLabels,
+      inCategory: Boolean(inCategory),
+    })
+    // No overflow-hidden on the frame: it would clip the focus outline of the link and the bar.
     return (
-      <article>
+      <article className="@container flex h-full flex-col rounded-card border-2 border-border-card bg-white">
         {/* Only the title is underlined: it names the link; the meta lines would just be noise. */}
-        <Link href={recipePath(slug, { from })} className="group flex gap-3 p-2.5 no-underline!">
-          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-field bg-surface-3">
+        <Link href={recipePath(slug, { from })} className="group flex flex-1 gap-3 rounded-[14px] p-3 no-underline!">
+          {/* Under 280 px of card (320 px at 130 % zoom) a smaller thumbnail leaves the title room for whole words. */}
+          <div
+            className={`relative shrink-0 overflow-hidden rounded-[12px] bg-surface-3 @max-[280px]:h-16 @max-[280px]:w-16 ${thumb === 84 ? 'h-[84px] w-[84px]' : 'h-24 w-24'}`}
+          >
             {imageUrl ? (
               // The title sits right beside it, so the image is decorative here.
-              <Image src={imageUrl} alt="" fill className="object-cover" sizes="96px" unoptimized={!isArchivedImageUrl(imageUrl)} />
+              <Image src={imageUrl} alt="" fill className="object-cover" sizes={`${thumb}px`} unoptimized={!isArchivedImageUrl(imageUrl)} />
             ) : (
               <div aria-hidden="true" className="h-full w-full bg-surface-accent-2" />
             )}
           </div>
-          <div className="min-w-0">
-            <h3 className="line-clamp-3 text-[20px] leading-snug font-bold break-words text-ink underline underline-offset-4 group-hover:text-action-text">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            {/* Two lines at most (C2), words wrapped whole. A tiny card gets 18 px and a third line,
+                so a long word still fits instead of being cut; only a word wider than that breaks. */}
+            <h3
+              className={`line-clamp-2 leading-[1.25] font-bold break-words text-ink underline underline-offset-4 group-hover:text-action-text @max-[280px]:line-clamp-3 @max-[280px]:text-[18px] ${thumb === 84 ? 'text-[19px]' : 'text-[20px]'}`}
+            >
               {title}
             </h3>
-            <p className="mt-1 text-[16px] text-ink-soft">
-              {minutes ? `${categoryLabel(category)} · ${formatMinutes(minutes)}` : categoryLabel(category)}
-            </p>
-            <p className="mt-0.5 text-[16px] break-words text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
+            {lines.map((line) => (
+              <p key={line} className="text-[16px] leading-snug break-words text-ink-soft">
+                {line}
+              </p>
+            ))}
           </div>
         </Link>
-        {heart && <div className="px-2.5 pb-2.5">{heart}</div>}
+        {heart('bar')}
       </article>
     )
   }
@@ -131,7 +158,7 @@ export function RecipeCard({
         </span>
       </div>
 
-      {heart && <div className="relative z-10 px-3 pb-3">{heart}</div>}
+      {favorite && <div className="relative z-10 px-3 pb-3">{heart('compact')}</div>}
     </article>
   )
 }
