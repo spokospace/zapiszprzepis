@@ -13,23 +13,34 @@ interface FavoriteButtonProps {
   /** Server truth at render time; the client override layers on top of it. */
   initialFavorited: boolean
   isAuthenticated: boolean
-  /** `full`: the recipe page. `compact`: a recipe card's footer. */
-  size?: 'full' | 'compact'
+  /**
+   * `full`: the recipe page. `compact`: a tile card's footer. `bar`: the 52 px
+   * strip along the bottom of a list card (E01-S22, handoff C2).
+   */
+  size?: 'full' | 'compact' | 'bar'
 }
 
 const COPY = {
   full: { off: 'Dodaj do ulubionych', on: 'W ulubionych · usuń' },
   compact: { off: 'Ulubione', on: 'W ulubionych' },
+  bar: { off: 'Dodaj do ulubionych', on: 'W ulubionych' },
 } as const
 
-const BASE = 'inline-flex items-center justify-center gap-2 rounded-field border-action font-bold transition-colors'
+const BASE = 'inline-flex items-center justify-center gap-2 font-bold transition-colors'
+const BUTTON = `${BASE} rounded-field border-action`
 const SIZE = {
-  full: `${BASE} min-h-[58px] w-full border-[2.5px] px-5 text-[18px] sm:w-auto`,
-  compact: `${BASE} min-h-[48px] w-full border-2 px-3 text-[16px]`,
+  full: `${BUTTON} min-h-[58px] w-full border-[2.5px] px-5 text-[18px] sm:w-auto`,
+  compact: `${BUTTON} min-h-[48px] w-full border-2 px-3 text-[16px]`,
+  // Rounded to the list card's inner corners (16 px radius minus its 2 px frame).
+  bar: `${BASE} min-h-[52px] w-full rounded-b-[14px] border-t-2 border-border-card px-3 text-[17px]`,
 } as const
-const OFF = 'bg-white text-action-text hover:bg-surface-accent'
-const ON = 'bg-action text-white hover:bg-action-hover'
-const ICON = { full: 'h-6 w-6', compact: 'h-5 w-5' } as const
+const BUTTON_LOOK = { off: 'bg-white text-action-text hover:bg-surface-accent', on: 'bg-action text-white hover:bg-action-hover' }
+const LOOK = {
+  full: BUTTON_LOOK,
+  compact: BUTTON_LOOK,
+  bar: { off: 'bg-white text-ink hover:bg-surface-3', on: 'bg-surface-accent text-action-text hover:bg-surface-accent-2' },
+} as const
+const ICON = { full: 'h-6 w-6', compact: 'h-5 w-5', bar: 'h-[22px] w-[22px]' } as const
 
 /**
  * `?fav_added={recipeId}` (set by postLoginPath after a guest heart's login):
@@ -140,7 +151,7 @@ export function FavoriteButton({ recipeId, initialFavorited, isAuthenticated, si
         onClick={(e) => {
           e.currentTarget.href = loginPath(`${window.location.pathname}${window.location.search}`, recipeId)
         }}
-        className={`${SIZE[size]} ${OFF}`}
+        className={`${SIZE[size]} ${LOOK[size].off}`}
       >
         <Heart aria-hidden="true" className={ICON[size]} />
         {copy.off}
@@ -149,20 +160,20 @@ export function FavoriteButton({ recipeId, initialFavorited, isAuthenticated, si
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={size === 'bar' ? 'flex flex-col' : 'flex flex-col gap-2'}>
       <button
         type="button"
         aria-pressed={favorited}
         disabled={pending}
         onClick={() => change(!favorited)}
-        className={`${SIZE[size]} ${favorited ? ON : OFF} disabled:opacity-70`}
+        className={`${SIZE[size]} ${favorited ? LOOK[size].on : LOOK[size].off} disabled:opacity-70`}
       >
         <Heart aria-hidden="true" className={ICON[size]} fill={favorited ? 'currentColor' : 'none'} />
         {favorited ? copy.on : copy.off}
       </button>
       <FavoriteToast show={toast} onUndo={() => change(false)} />
       {error && (
-        <p role="alert" className="text-[16px] font-bold text-danger">
+        <p role="alert" className={`text-[16px] font-bold text-danger ${size === 'bar' ? 'px-3 py-2' : ''}`}>
           Nie udało się zapisać. Spróbuj ponownie.
         </p>
       )}
