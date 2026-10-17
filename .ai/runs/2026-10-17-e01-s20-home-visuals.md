@@ -21,17 +21,19 @@ Bring the guest (A1) and signed-in (C1) home page in line with the handoff, with
 
 ## Progress
 
+PR: #283
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Home visuals
 
-- [ ] 1.1 Category icon map and tile variants
-- [ ] 1.2 Guest CTA and member shortcut rows
-- [ ] 1.3 Search field variants and hero copy
-- [ ] 1.4 Remove the leftover add form from the member home
-- [ ] 1.5 Tests for the home components
+- [x] 1.1 Category icon map and tile variants
+- [x] 1.2 Guest CTA and member shortcut rows
+- [x] 1.3 Search field variants and hero copy
+- [x] 1.4 Remove the leftover add form from the member home
+- [x] 1.5 Tests for the home components
 
 ### Phase 2: Verification
 
-- [ ] 2.1 Browser check guest/signed-in, mobile/desktop
-- [ ] 2.2 Local gate (typecheck, lint, test)
+- [x] 2.1 Browser check guest/signed-in, mobile/desktop
+- [x] 2.2 Local gate (typecheck, lint, test)
