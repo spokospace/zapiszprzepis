@@ -15,11 +15,11 @@ Today ZapiszPrzepis only signs people in by email (magic link or password), and 
 ## 📝 Proposed Solution
 
 1. **OAuth sign-in (server action).** `signInWithOAuthProvider(formData)` validates the provider against an env allowlist. It calls `supabase.auth.signInWithOAuth({ provider, options: { redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}` } })` on the SSR server client, which stores the PKCE verifier in a cookie, then `redirect(data.url)`. The existing `/auth/callback` already exchanges the code, so it gains error mapping and the first-login hop.
-2. **Feature flag `AUTH_OAUTH_PROVIDERS`** (server env, comma-separated, e.g. `google,facebook`). The page shows a button only for each provider listed, and the action refuses any provider not listed. The default is empty: no buttons, and the code is inert in production until the owner turns it on. **Why:** an OAuth account is created without an invite code. Until E01-S11 ships the "full access" gate on *adding* recipes, any authenticated user can add recipes (which spends Firecrawl/LLM budget). The owner enables the flag only after S11 is live (see Risks).
+2. **Feature flag `AUTH_OAUTH_PROVIDERS`** (server env, comma-separated, e.g. `google,facebook`). The page shows a button only for each provider listed, and the action refuses any provider not listed. The default is empty: no buttons, and the code is inert in production until the owner turns it on. **The flag is UI hygiene, not the security control.** Supabase's `/auth/v1/authorize?provider=…` endpoint can be called directly whatever the flag says, so the real switch is the **provider toggle in the Supabase dashboard**. Both the toggle and the flag are turned on together, only after E01-S11 is live. **Why:** an OAuth account is created without an invite code. Until E01-S11 ships the "full access" gate on *adding* recipes, any authenticated user can add recipes (which spends Firecrawl/LLM budget). The owner enables the flag only after S11 is live (see Risks).
 3. **Private profile table** `public.profiles_private` (owner-select only) holds `gender`. The only way to write it is the RPC `public.set_gender(p_gender text)` (SECURITY DEFINER), which succeeds **only while gender is null**. A trigger also rejects any change to a non-null gender for every role, including service_role. That makes the field one-time and impossible to edit (CLAUDE.md: "Płeć wybierana raz przy pierwszym logowaniu, nieedytowalna").
 4. **First-login hop.** After a successful login (OAuth callback, email-link confirm, password), the shared helper `postLoginPath(supabase, next)` returns `/witaj?next=…` when the user has no gender, otherwise `next`. The helper **fails open**: if the read errors (for example the migration is not applied yet), it returns `next`, so login is never blocked by this feature.
 5. **`/witaj` screen (3b).** A radio group ("Jestem…": Kobietą / Mężczyzną) and a primary "Zapisz i przejdź dalej" button. The save calls `set_gender` and redirects to the validated `next`. If gender is already set, the page redirects straight to `next`.
-6. **Vocative util** `src/lib/vocative.ts`: `vocative(firstName) → string | null` (a dictionary of common names plus the fallback rules `-sia/-nia/-cia/-zia → -siu/-niu/-ciu/-ziu` and `-a → -o`; anything else → null). `greeting(displayName) → "Dzień dobry, {wołacz}!" | "Dzień dobry!"` takes the first token of `profiles.display_name` and ignores the placeholder "Użytkownik". `/witaj` uses it in its heading. E01-S04 (home) consumes it next.
+6. **Vocative util** `src/lib/vocative.ts`: `vocative(firstName) → string | null` (a dictionary of common names plus the fallback rules: `-sia/-cia/-zia → -iu`; `-nia → -niu` only for short diminutives of 5 letters or fewer (Ania, Hania), while full names such as Antonia/Stefania take `-o`; a short `-la` name that is not in the dictionary → null; any other `-a → -o`; anything else → null). `greeting(displayName) → "Dzień dobry, {wołacz}!" | "Dzień dobry!"` takes the first token of `profiles.display_name` and ignores the placeholder "Użytkownik". `/witaj` uses it in its heading. E01-S04 (home) consumes it next.
 
 **Alternatives considered**
 
@@ -64,7 +64,7 @@ grant select on public.profiles_private to authenticated;
 create policy profiles_private_owner_read on public.profiles_private
   for select to authenticated using (id = public.current_user_id());
 -- trigger: once gender is non-null it can never change (any role)
--- rpc: set_gender(p_gender text) returns text — security definer, search_path = public;
+-- rpc: set_gender(p_gender text) returns text — security definer, search_path = '' (all names schema-qualified);
 --      auth.uid() required; validates value; insert … on conflict (id) do update
 --      set gender = excluded.gender where profiles_private.gender is null;
 --      returns 'ok' | 'already_set' | 'invalid'. execute granted to authenticated only.
@@ -73,7 +73,7 @@ create policy profiles_private_owner_read on public.profiles_private
 - **Sensitive data.** Gender is personal data. It is readable only by its owner and never by anon or other users. It is not joined into `public_recipes`/`profiles` views. There is no backfill: a missing row means "not chosen".
 - **Rows are lazy.** The row is created by `set_gender`, so `handle_new_user` is untouched.
 - **Rollback.** `drop function public.set_gender(text); drop table public.profiles_private;` loses only the gender choices. This is documented in the migration header.
-- **Types.** Add `profiles_private` and `set_gender` to `src/lib/supabase.types.ts` by hand (codegen needs the applied schema).
+- **Types.** `src/lib/supabase.types.ts` is stale (it lacks `profiles`/`favorites`) and no client is typed with it, so the implementation uses local row types. Regenerating the types is a separate chore.
 
 ## 📝 API Contracts
 
@@ -131,13 +131,13 @@ Prototype: `.ai/specs/assets/oauth-login-gender-vocative/` (static mockups attac
 - **Migration not applied yet when the code deploys.** `postLoginPath` fails open (no `/witaj` hop). If someone opens `/witaj` directly, the RPC error shows the generic `unknown` error, and every other part of the app works.
 - **Double submit / two tabs on `/witaj`.** `set_gender` is first-write-wins (`where gender is null`). The second call returns `already_set` and redirects, and the stored value never changes.
 - **Tampered form value** (`gender=other`): the RPC returns `invalid` and the DB `check` constraint is a second guard.
-- **Open redirect via `next`.** Every hop (`/login` → provider → `/auth/callback` → `/witaj` → `next`) re-validates with `safeNext` (same origin only).
+- **Open redirect via `next`.** Every hop (`/login` → provider → `/auth/callback` → `/witaj` → `next`) re-validates with `safeNext` (same origin only). `safeNext` must also reject a resolved path that starts with `//`: `new URL('/.//evil.com', origin)` keeps our origin, but its pathname is the protocol-relative `//evil.com`. This was found in review and is fixed in the implementation.
 - **Existing users (email) with no gender** are asked once at their next login. Already-open sessions are not interrupted.
 - **Name the util doesn't know** ("Xawery", "Dżesika") → `vocative` returns null → "Dzień dobry!".
 
 ## 📝 Risks & Impact Review
 
-- **Account creation without an invite (security, ordering).** OAuth opens self-signup. Today *any* authenticated user can add recipes, so enabling OAuth before E01-S11's full-access gate would let anyone spend extraction budget. **Mitigation:** the `AUTH_OAUTH_PROVIDERS` flag defaults to off, and the owner runbook says to enable it only after S11 is live in production. The code itself is safe to merge and deploy before then.
+- **Account creation without an invite (security, ordering).** OAuth opens self-signup. Today *any* authenticated user can add recipes, so enabling OAuth before E01-S11's full-access gate would let anyone spend extraction budget. **Mitigation:** the providers stay **disabled in the Supabase dashboard**, which is the real control because the authorize endpoint is public, and `AUTH_OAUTH_PROVIDERS` stays unset. The owner turns both on together, only after S11 is live in production. S11 (#244) grants full access only through a redeemed code or the grandfather backfill, so new OAuth accounts start without it. The code itself is safe to merge and deploy before then.
 - **Irreversible user choice.** Gender cannot be edited by the user. Correcting a mistake is an owner-only SQL operation (`update … ; -- with the trigger disabled`), documented in the migration header. This is deliberate, per the CLAUDE.md product decision.
 - **Personal data.** A new owner-only table. Verify the anon/other-user read denial in the rehearsal (RLS) and with unit tests on the read helper.
 - **Supabase redirect allowlist.** `redirectTo` must match the project's allowed redirect URLs, or Supabase falls back to the Site URL and `next` is lost. This is an owner step, listed below.
@@ -148,9 +148,9 @@ Prototype: `.ai/specs/assets/oauth-login-gender-vocative/` (static mockups attac
 
 1. **Google Cloud Console** → APIs & Services → OAuth consent screen (External, app name "ZapiszPrzepis", support email, authorised domain `zapiszprzepis.pl`, scopes `openid`, `email`, `profile`) → Credentials → *Create OAuth client ID* (Web application). Authorised JavaScript origins: `https://zapiszprzepis.pl`. Authorised redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`. Copy the Client ID and Client secret.
 2. **Meta for Developers** → Create App (use case "Authenticate and request data from users with Facebook Login") → Facebook Login → Settings → Valid OAuth Redirect URIs: `https://<project-ref>.supabase.co/auth/v1/callback`. Use Cases → Authentication → ensure `email` + `public_profile`. Settings → Basic: App domain `zapiszprzepis.pl`, privacy policy URL, data-deletion URL. Copy the App ID and App secret. Add yourself and testers under App Roles. Submit App Review before the public launch.
-3. **Supabase Dashboard** → Authentication → Sign In / Providers → enable **Google** and **Facebook** with the IDs and secrets above. Authentication → URL Configuration → Redirect URLs: add `https://zapiszprzepis.pl/auth/callback**` (and `http://localhost:3000/auth/callback**` for local dev). Keep "Allow new users to sign up" on (needed for the first OAuth login).
+3. **Supabase Dashboard** (**only after E01-S11 is live**; this toggle is the real security switch) → Authentication → Sign In / Providers → enable **Google** and **Facebook** with the IDs and secrets above. Authentication → URL Configuration → Redirect URLs: add `https://zapiszprzepis.pl/auth/callback**` (and `http://localhost:3000/auth/callback**` for local dev). Keep "Allow new users to sign up" on (needed for the first OAuth login).
 4. **Apply the migration** `20261017130000_profiles_private_gender.sql` (Management API query path, per the project runbook) and register its version in `supabase_migrations.schema_migrations`.
-5. **After E01-S11 is live**, set `AUTH_OAUTH_PROVIDERS=google,facebook` on the Cloudflare Worker (Workers → Settings → Variables) and redeploy via Workers Builds. Verify both buttons on production.
+5. **Together with step 3**, set `AUTH_OAUTH_PROVIDERS=google,facebook` on the Cloudflare Worker (Workers → Settings → Variables) and redeploy via Workers Builds. Verify both buttons on production.
 
 ## 📋 Phasing
 
@@ -167,7 +167,7 @@ Prototype: `.ai/specs/assets/oauth-login-gender-vocative/` (static mockups attac
 ### Phase 2 — Private profile table (owner-gated)
 2. Migration `20261017130000_profiles_private_gender.sql` (idempotent: `if not exists` / `create or replace` / guarded policy + trigger creation) with the table, RLS, the immutability trigger and the `set_gender` RPC, plus a rollback note.
 3. `.ai/qa/s12-rehearse-profiles-private.sql`: a rolled-back rehearsal that asserts the RPC first-write-wins, `already_set`, `invalid`, the trigger blocking a direct update, and anon having no select. Run it against production with the rollback, and record `REHEARSAL_RESULT` in the PR.
-4. Hand-edit `src/lib/supabase.types.ts` (table + function).
+4. Types: none. The implementation uses local row types (see Data Model).
 
 ### Phase 3 — OAuth sign-in
 5. `src/lib/oauth-providers.ts` (`parseOAuthProviders`) + tests.
@@ -184,7 +184,7 @@ Prototype: `.ai/specs/assets/oauth-login-gender-vocative/` (static mockups attac
 
 | # | Question | Default chosen | Rationale |
 |---|----------|----------------|-----------|
-| Q1 | OAuth creates accounts without an invite code, but S11's add-gate isn't live. Ship OAuth enabled? | **No: behind `AUTH_OAUTH_PROVIDERS`, default off; enable only after S11 is live** | Never weaken access control; it is fully reversible by an env var. |
+| Q1 | OAuth creates accounts without an invite code, but S11's add-gate isn't live. Ship OAuth enabled? | **No: providers disabled in Supabase (the real control) and `AUTH_OAUTH_PROVIDERS` unset; enable both only after S11 is live** | Never weaken access control; it is fully reversible by an env var. |
 | Q2 | Where does gender live? | **New owner-only `profiles_private` table, written only via `set_gender` RPC** | `profiles` is anon-readable (S18); `user_metadata` is user-editable. |
 | Q3 | Store the vocative? | **No, compute it from `display_name` at render** | Smallest schema; no drift when S13 edits the name. |
 | Q4 | Show gendered "Dodała/Dodał" publicly now? | **Defer to S07/S14** (public pages stay "Dodane przez") | Exposing a derived gender form to guests is a separate privacy/product call that S07/S14 must make explicitly (it would need a public projection of the verb form, never of `gender` itself). |
