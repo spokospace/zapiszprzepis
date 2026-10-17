@@ -1,7 +1,6 @@
-import { cache } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { buildFallbackMetaDescription } from '@/lib/recipe-tags'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
@@ -10,10 +9,10 @@ import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
 import { refreshRecipe } from './refresh-action'
+import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
-import type { Database } from '@/lib/supabase.types'
 import { RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
 import { RecipeChecklists } from './_components/recipe-checklists'
@@ -23,46 +22,6 @@ import { SimilarRecipes } from './_components/similar-recipes'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
-
-type Recipe = Database['public']['Tables']['recipes']['Row']
-
-/** A row of the guest-safe public_recipes view: no user_id, no gallery, plus the author. */
-type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_fingerprint' | 'extracted_at' | 'updated_at'> & {
-  author_name: string | null
-  /** Optional until the E01-S07 view migration is applied; the page degrades without them. */
-  author_username?: string | null
-  gallery_count?: number | null
-}
-
-/**
- * One guest-safe read of the recipe for this slug, shared by generateMetadata
- * and the page through React cache() so a single render hits the DB once.
- * Everyone reads through the public_recipes view (recipes itself is owner-only
- * RLS). The slug resolves to the oldest row — the one that keeps the bare slug
- * once E01-S03b's global-unique slug migration lands; until then two genuinely
- * different recipes may still share a title, so the oldest (created_at, then id)
- * is the deterministic, link-stable winner. `isOwner` is the signed-in visitor
- * owning that row (refresh/delete are the owner's; others only read).
- */
-const loadRecipe = cache(async (slug: string) => {
-  const supabase = await createSupabaseServerClient()
-  const user = await getCurrentUser()
-  const [{ data: rows, error }, { data: own }] = await Promise.all([
-    supabase
-      .from('public_recipes')
-      .select('*')
-      .eq('slug', slug)
-      .order('created_at', { ascending: true })
-      .order('id', { ascending: true })
-      .limit(1),
-    // (user_id, slug) is unique per user, so at most one own row for this slug.
-    user
-      ? supabase.from('recipes').select('id').eq('slug', slug).eq('user_id', user.id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ])
-  const recipe = ((rows ?? []) as PublicRecipe[])[0] ?? null
-  return { recipe, error, isOwner: own?.id != null && recipe?.id === own.id, user }
-})
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
