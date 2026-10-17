@@ -113,3 +113,15 @@ Każde przekazanie to **punkt STOP**. Orkiestrator kopiuje następne polecenie d
 - `context/changes/<change-id>/` — folder zmian dla każdej fazy wdrożenia (jeden na wiersz w §3)
 
 <!-- END @przeprogramowani/10x-cli -->
+
+## Weryfikacja ekranów zalogowanego — konto QA (dev-only)
+
+Agent **nie wpisuje haseł** w formularz logowania (Supabase auth to zewnętrzny host). Ekrany zalogowanego sprawdzaj na lokalnym `pnpm dev`, otwierając w przeglądarce:
+
+- `http://localhost:3000/api/dev/login?as=full&next=/ścieżka` — konto QA z pełnym dostępem (może dodawać przepisy),
+- `http://localhost:3000/api/dev/login?as=free&next=/ścieżka` — konto QA bez pełnego dostępu (ulubione, galeria, bramka 3c).
+
+Route działa tylko przy `NODE_ENV=development` + `DEV_LOGIN_ENABLED=1` + `DEV_LOGIN_EMAIL_FULL`/`_FREE` w `.env.local` (patrz `.env.local.example`); inaczej 404. Gdy odpowiada 404 — konto nie jest skonfigurowane: zgłoś to jako „niezweryfikowane”, nie obchodź.
+
+- **Lokalny dev = produkcyjna baza.** Ulubione i inne zapisy kont QA to prawdziwe wiersze: trzymaj je minimalne i sprzątaj po teście (np. odznacz serce). **Nigdy nie dodawaj przepisów jako konto QA** — trafiłyby do publicznego katalogu.
+- Nie zakładaj ani nie zmieniaj kont QA samodzielnie — robi to właściciel w Supabase Dashboard.
