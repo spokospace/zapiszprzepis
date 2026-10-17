@@ -67,8 +67,9 @@ export function resolveTitle(raw: unknown, original: string): string {
 }
 
 /** The shared OpenAI JSON call for the labelling model (POST, json_object, 30s
- *  timeout). Returns the parsed message content; throws on a non-2xx response. */
-async function postChatJson(
+ *  timeout). Returns the parsed message content; throws on a non-2xx response.
+ *  Exported so the dish classifier (recipe-dish.ts) shares one call shape. */
+export async function postChatJson(
   messages: { role: string; content: string }[],
   temperature: number,
   { fetch, apiKey }: LabelRecipeDeps,
