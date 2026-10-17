@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { safeNext, mapAuthError, inboundAuthError, inboundOAuthError } from '@/lib/safe-redirect'
 import { loginErrorPath } from '@/lib/login-redirect'
+import { postLoginPath } from '@/lib/first-login'
 
 export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams, origin } = request.nextUrl
@@ -41,5 +42,6 @@ export async function GET(request: NextRequest): Promise<Response> {
     return NextResponse.redirect(new URL(`/login?error=${mapped}`, origin))
   }
 
-  return NextResponse.redirect(new URL(next, origin))
+  // First login (no gender chosen yet) detours once through /witaj (E01-S12).
+  return NextResponse.redirect(new URL(await postLoginPath(supabase, next), origin))
 }

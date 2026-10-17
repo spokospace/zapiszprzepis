@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getSiteUrl } from '@/lib/site-url'
 import { safeNext, mapAuthError, parseEmailOtpType } from '@/lib/safe-redirect'
+import { postLoginPath } from '@/lib/first-login'
 
 /**
  * Verify the one-time token from an email link and open the session.
@@ -30,5 +31,7 @@ export async function confirmEmailLink(formData: FormData): Promise<void> {
     redirect(`/login?error=${mapAuthError(error.code)}`)
   }
 
-  redirect(next)
+  // A sign-in link detours once through /witaj when no gender is chosen yet
+  // (E01-S12); a password-recovery link goes straight to setting the password.
+  redirect(type === 'email' ? await postLoginPath(supabase, next) : next)
 }

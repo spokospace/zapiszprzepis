@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getSiteUrl } from '@/lib/site-url'
 import { resolveLoginNext } from '@/lib/login-redirect'
 import { enabledProvider, parseOAuthProviders } from '@/lib/oauth-providers'
+import { postLoginPath } from '@/lib/first-login'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -129,5 +130,6 @@ export async function signInWithPassword(formData: FormData): Promise<void> {
     redirect(backToLogin({ error: 'unknown', email }, keep))
   }
 
-  redirect(next)
+  // First login without a gender detours once through /witaj (E01-S12).
+  redirect(await postLoginPath(supabase, next))
 }
