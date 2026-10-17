@@ -20,6 +20,7 @@ import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quali
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
+import { jsonLdServings, toServings } from '@/lib/servings'
 
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -108,6 +109,7 @@ interface RecipeData {
   cookTimeMinutes?: number | null
   totalTimeMinutes?: number | null
   timesEstimated?: boolean
+  servings?: number | null
 }
 
 // The model's own flag counts only when there is a time to flag: all three
@@ -441,7 +443,8 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
   "prepTimeMinutes": integer or null,
   "cookTimeMinutes": integer or null,
   "totalTimeMinutes": integer or null,
-  "timesEstimated": boolean
+  "timesEstimated": boolean,
+  "servings": integer or null
 }
 Rules:
 - The page often includes navigation, related/popular posts widgets, comments and ads. Focus ONLY on the PRIMARY recipe — usually the post-body content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
@@ -459,6 +462,7 @@ Rules:
 - When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
 - When estimating, include passive periods (rising, proofing, marinating, chilling, setting, resting) in totalTimeMinutes. If the recipe clearly has a long passive step whose length you cannot tell, return null for totalTimeMinutes rather than a number that ignores it.
 - All three times null → "timesEstimated": false.
+- servings: only a number of servings the source states ("na 4 porcje", "dla 6 osób", "Serves 4", "4 portions"). A range ("4–6 porcji"), a yield in pieces, tins or litres ("24 sztuki", "1 tortownica"), or no statement at all → null. Never estimate it.
 - Best-effort if content incomplete.`,
             },
             {
@@ -511,8 +515,9 @@ Rules:
       const { category, coerced } = toRecipeCategory(parsed.category)
       if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
       // A missing method comes back as null as often as []; the gate below
-      // and the steps column both want the list.
-      return { ...parsed, steps: parsed.steps ?? [], category }
+      // and the steps column both want the list. servings must fit the column
+      // (1–99) or it fails the insert.
+      return { ...parsed, steps: parsed.steps ?? [], category, servings: toServings(parsed.servings) }
     }
 
     // The user's other recipes, for the labelling pass below; read while the
@@ -591,6 +596,10 @@ Rules:
     }
 
     const timesEstimated = timesAreEstimated(recipeJSON)
+    // The page's own JSON-LD recipeYield is read deterministically and beats the
+    // LLM's reading of the text; the full-page embed scan keeps the <script>
+    // blocks a main-content scrape may drop.
+    const servings = jsonLdServings(html) ?? jsonLdServings(embedHtml) ?? recipeJSON.servings
 
     // Title casing, the distinguishing note and the tags, judged against the
     // user's own recipes (minus this one, on a refresh) so the note tells
@@ -626,6 +635,7 @@ Rules:
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
           total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
           times_estimated: timesEstimated,
+          servings,
           extracted_at: new Date().toISOString(),
         })
         .eq('user_id', userId)
@@ -705,6 +715,7 @@ Rules:
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
           total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
           times_estimated: timesEstimated,
+          servings,
           extracted_at: new Date().toISOString(),
         })
         .select('id')
@@ -751,7 +762,7 @@ Rules:
       if (ownUrl || error?.message.includes(GLOBAL_URL_KEY)) {
         const existingQuery = supabase
           .from('recipes')
-          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, image_url, youtube_id, source_author, description, meta_description, tags')
+          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags')
         const { data: existing } = await (ownUrl ? existingQuery.eq('user_id', userId) : existingQuery)
           .eq('source_url', sourceUrl)
           .single()
@@ -776,6 +787,9 @@ Rules:
             (gapFill.prep_time_minutes != null || gapFill.cook_time_minutes != null || gapFill.total_time_minutes != null)
           ) {
             gapFill.times_estimated = true
+          }
+          if (existing.servings == null && servings != null) {
+            gapFill.servings = servings
           }
           if (existing.youtube_id == null && youtubeId != null) {
             gapFill.youtube_id = youtubeId
