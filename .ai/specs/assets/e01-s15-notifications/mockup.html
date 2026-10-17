@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E01-S15 mockup — Powiadomienia</title>
+<style>
+  :root { --ink:#111827; --soft:#374151; --action:#c2410c; --field:#4b5563; --danger:#b91c1c; --card:#d1d5db; --ok:#15803d; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:19px/1.5 system-ui, sans-serif; color:var(--ink); background:#e5e7eb; }
+  .row { display:flex; gap:24px; padding:24px; align-items:flex-start; flex-wrap:wrap; }
+  .phone { width:375px; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 10px #0002; }
+  .cap { font:600 14px system-ui; color:#374151; margin:0 0 8px; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-bottom:1px solid #e5e7eb; }
+  .logo { font-weight:800; color:var(--action); }
+  .hbtns { display:flex; gap:4px; align-items:center; font-size:14px; font-weight:600; }
+  .add { background:var(--action); color:#fff; padding:6px 10px; border-radius:10px; }
+  .bell { width:48px; height:48px; display:grid; place-items:center; position:relative; }
+  .badge { position:absolute; top:6px; right:6px; background:#dc2626; color:#fff; font-size:11px; border-radius:99px; padding:0 5px; }
+  main { padding:16px; }
+  a { color:var(--ink); text-underline-offset:4px; }
+  h1 { font-size:30px; margin:8px 0 16px; }
+  h2 { font-size:22px; margin:20px 0 10px; display:flex; justify-content:space-between; align-items:center; }
+  .card { border:2px solid var(--card); border-radius:16px; padding:14px; margin-bottom:12px; }
+  .problem { border-color:var(--danger); background:#fef2f2; }
+  .label { font-size:16px; font-weight:700; display:flex; gap:6px; align-items:center; }
+  .problem .label { color:var(--danger); }
+  .done .label { color:var(--ok); }
+  .domain { font-weight:700; margin:4px 0; }
+  .help { font-size:16px; color:var(--soft); }
+  .btns { display:flex; gap:8px; margin-top:12px; }
+  .btn { flex:1; min-height:56px; border-radius:14px; font:600 18px system-ui; display:grid; place-items:center; text-align:center; }
+  .primary { background:var(--action); color:#fff; }
+  .outline { border:2px solid var(--field); background:#fff; }
+  .small { min-height:48px; font-size:16px; padding:0 12px; border:2px solid var(--field); border-radius:14px; display:grid; place-items:center; font-weight:600; }
+  .back { display:inline-flex; min-height:48px; align-items:center; }
+  .banner { display:flex; justify-content:space-between; align-items:center; gap:8px; background:#fef2f2; color:var(--danger); border:2px solid var(--danger); border-radius:16px; padding:10px 14px; font-weight:600; }
+  .banner a { color:var(--danger); min-height:48px; display:inline-flex; align-items:center; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div>
+    <p class="cap">/powiadomienia — pełny ekran</p>
+    <div class="phone">
+      <header><span class="logo">ZapiszPrzepis</span><span class="hbtns"><span class="add">Dodaj</span><span class="bell" aria-label="Powiadomienia (2)">🔔<span class="badge">2</span></span><span>☰ MENU</span></span></header>
+      <main>
+        <a class="back" href="#">← Wróć</a>
+        <h1>Powiadomienia</h1>
+        <h2>Wymaga uwagi (2) <span class="small">Usuń wszystkie</span></h2>
+        <div class="card problem">
+          <div class="label">⚠ Problem</div>
+          <div class="domain">aniagotuje.pl</div>
+          <div>Na tej stronie nie znaleźliśmy przepisu (składników i kroków).</div>
+          <a class="help" href="#">Otwórz stronę źródłową</a>
+          <div class="btns"><span class="btn primary">Spróbuj ponownie</span><span class="btn outline">Usuń</span></div>
+        </div>
+        <div class="card problem">
+          <div class="label">⚠ Problem</div>
+          <div class="domain">facebook.com</div>
+          <div>Ten post na Facebooku nie ma opisu z przepisem ani linku do niego…</div>
+          <div class="btns"><span class="btn primary">Spróbuj ponownie</span><span class="btn outline">Usuń</span></div>
+        </div>
+        <h2>W trakcie <span class="small">Odśwież</span></h2>
+        <div class="card">
+          <div class="label">🕒 W trakcie</div>
+          <div class="domain">kwestiasmaku.com</div>
+          <div class="help">Zapisujemy przepis. To zwykle trwa do minuty.</div>
+        </div>
+        <h2>Wcześniej</h2>
+        <div class="card done">
+          <div class="label">✓ Gotowe</div>
+          <div class="domain">Sernik baskijski</div>
+          <div class="help">mojewypieki.com</div>
+          <a class="back" href="#">Otwórz przepis</a>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Strona główna — pasek alertu (slot S04)</p>
+    <div class="phone">
+      <header><span class="logo">ZapiszPrzepis</span><span class="hbtns"><span class="add">Dodaj</span><span class="bell">🔔<span class="badge">2</span></span><span>☰ MENU</span></span></header>
+      <main>
+        <section class="banner" aria-label="Powiadomienia"><span>⚠ 2 przepisy wymagają uwagi</span><a href="#">Zobacz</a></section>
+        <h1>Dzień dobry, Aniu!</h1>
+        <div class="card help">[ wyszukiwarka, kafle, kategorie — bez zmian ]</div>
+      </main>
+    </div>
+  </div>
+</div>
+</body>
+</html>
