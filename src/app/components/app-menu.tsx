@@ -98,7 +98,8 @@ export function AppMenu({
         onClick={() => dialogRef.current?.showModal()}
         aria-haspopup="dialog"
         aria-controls="app-menu"
-        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+        // 48px target (WCAG 2.5.8 / project rule), tokens instead of raw greys.
+        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-field px-2.5 text-sm font-semibold text-ink hover:bg-surface-3"
       >
         <Menu aria-hidden="true" className="h-5 w-5" />
         MENU
@@ -135,7 +136,12 @@ export function AppMenu({
                 <ul>
                   {mine.map((entry) => (
                     <li key={entry.key}>
-                      <MineRow entry={entry} active={pathname === entry.href} onNavigate={close} />
+                      <MineRow
+                        entry={entry}
+                        // A locked "Dodaj" points at the gate on "/", not at itself: never mark it current.
+                        active={!entry.locked && pathname === entry.href}
+                        onNavigate={close}
+                      />
                     </li>
                   ))}
                 </ul>

@@ -41,7 +41,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
   }
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-surface">
       <PageContainer className="py-6 sm:py-12">
         <h1 className="mb-6 text-2xl font-bold text-ink">{categoryLabel(category)}</h1>
         {!recipes || recipes.length === 0 ? (
