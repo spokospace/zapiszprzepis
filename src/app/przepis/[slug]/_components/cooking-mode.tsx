@@ -1,8 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChefHat, X } from 'lucide-react'
-import { buttonClasses } from '@/app/components/ui/button'
+import { ArrowLeft, ArrowRight, Check, ChefHat, Sun, X } from 'lucide-react'
 import { clampStep, isLastStep, progressRatio, progressSegments, stepLabel } from '@/lib/cooking-mode'
 import { createScreenWakeLock, type ScreenWakeLock } from '@/lib/wake-lock'
 
@@ -168,13 +167,14 @@ export function CookingMode({ title, steps }: CookingModeProps) {
 
   return (
     <>
+      {/* Handoff C3 item 7: dark, 58 px, full width (white on #111827). */}
       <button
         type="button"
         ref={triggerRef}
         onClick={start}
         aria-haspopup="dialog"
         aria-controls="cooking-mode"
-        className={`${buttonClasses('primary', 'lg')} w-full sm:w-auto`}
+        className="inline-flex min-h-[58px] w-full items-center justify-center gap-2.5 rounded-field bg-ink px-5 text-[19px] font-bold text-white hover:bg-ink-soft"
       >
         <ChefHat aria-hidden="true" className="h-6 w-6" />
         Tryb gotowania
@@ -196,13 +196,14 @@ export function CookingMode({ title, steps }: CookingModeProps) {
         // because the global rule is unlayered and would beat a layered utility).
         className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none bg-surface-dark p-0 text-white backdrop:bg-surface-dark [&_:focus-visible]:outline-accent-dark!"
       >
-        <div className="mx-auto flex h-full max-w-3xl flex-col px-4 pt-4 pb-4 sm:px-8 sm:pt-6">
-          <div className="flex items-center justify-between gap-3">
+        {/* Layout and colours follow the design handoff, screen C4. */}
+        <div className="mx-auto flex h-full max-w-3xl flex-col">
+          <div className="flex items-center justify-between gap-3 py-2 pr-2 pl-5">
             <h2
               id="cooking-mode-title"
               ref={headingRef}
               tabIndex={-1}
-              className="min-w-0 truncate text-[16px] font-normal text-border-card-2"
+              className="min-w-0 truncate text-[17px] font-bold text-border-card"
             >
               <span className="sr-only">Tryb gotowania: </span>
               {title}
@@ -210,9 +211,9 @@ export function CookingMode({ title, steps }: CookingModeProps) {
             <button
               type="button"
               onClick={finish}
-              className="inline-flex min-h-[56px] shrink-0 items-center gap-1.5 rounded-field border-2 border-border-card-2 px-4 text-[18px] font-bold text-white hover:bg-white/10"
+              className="inline-flex min-h-[56px] shrink-0 items-center gap-1.5 rounded-field px-3.5 text-[18px] font-bold text-white hover:bg-white/10"
             >
-              <X aria-hidden="true" className="h-6 w-6" />
+              <X aria-hidden="true" className="h-[26px] w-[26px]" />
               Zakończ
             </button>
           </div>
@@ -224,17 +225,17 @@ export function CookingMode({ title, steps }: CookingModeProps) {
             aria-valuemax={total}
             aria-valuenow={current + 1}
             aria-valuetext={stepLabel(current, total)}
-            className="mt-5 mb-5 flex h-2 gap-1"
+            className="flex h-2 gap-1.5 px-5"
           >
             {segments ? (
               segments.map((state, i) => (
                 <span
                   key={i}
-                  className={`h-full flex-1 rounded-pill ${state === 'todo' ? 'bg-ink-muted' : 'bg-progress'}`}
+                  className={`h-full flex-1 rounded-pill ${state === 'todo' ? 'bg-ink-soft' : 'bg-progress'}`}
                 />
               ))
             ) : (
-              <span className="h-full flex-1 overflow-hidden rounded-pill bg-ink-muted">
+              <span className="h-full flex-1 overflow-hidden rounded-pill bg-ink-soft">
                 <span
                   className="block h-full rounded-pill bg-progress transition-[width] motion-reduce:transition-none"
                   style={{ width: `${progressRatio(current, total) * 100}%` }}
@@ -243,34 +244,50 @@ export function CookingMode({ title, steps }: CookingModeProps) {
             )}
           </div>
 
-          {/* Announced after every "Dalej" / "Wstecz". */}
-          <div aria-live="polite" className="flex min-h-0 flex-1 flex-col">
-            <p className="mb-3 text-[22px] font-bold text-accent-dark">{stepLabel(current, total)}</p>
-            <p className="min-h-0 flex-1 overflow-y-auto text-[30px] leading-[1.4] break-words">{steps[current]}</p>
+          <div className="flex min-h-0 flex-1 flex-col gap-5 px-5 pt-7 pb-4">
+            {/* Announced after every "Dalej" / "Wstecz". */}
+            <div aria-live="polite" className="flex min-h-0 flex-col gap-5">
+              <p className="text-[22px] font-bold text-accent-dark">{stepLabel(current, total)}</p>
+              <p className="min-h-0 overflow-y-auto text-[30px] leading-[1.45] font-semibold text-pretty break-words">
+                {steps[current]}
+              </p>
+            </div>
+            {wakeLock === true && (
+              <p className="flex items-center gap-2 text-[17px] text-border-card-2">
+                <Sun aria-hidden="true" className="h-5 w-5 shrink-0" />
+                Ekran nie wygaśnie podczas gotowania
+              </p>
+            )}
+            {wakeLock === false && (
+              <p className="text-[17px] text-border-card-2">
+                Ekran może się wygasić — ta przeglądarka nie pozwala go podtrzymać.
+              </p>
+            )}
           </div>
 
-          {wakeLock === false && (
-            <p className="mt-3 text-[16px] text-border-card-2">
-              Ekran może się wygasić — ta przeglądarka nie pozwala go podtrzymać.
-            </p>
-          )}
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-[1fr_1.4fr] gap-2.5 p-4">
             <button
               type="button"
               onClick={() => go(-1)}
               disabled={current === 0}
-              className={buttonClasses('outline', 'xl')}
+              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-card border-2 border-border-dark text-[20px] font-bold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              ← Wstecz
+              <ArrowLeft aria-hidden="true" className="h-6 w-6" />
+              Wstecz
             </button>
+            {/* #ea580c only ever with dark text (5.6:1), never white. */}
             <button
               type="button"
               ref={nextRef}
               onClick={() => (last ? finish() : go(1))}
-              className={buttonClasses('primary', 'xl')}
+              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-card bg-orange-bright text-[22px] font-bold text-ink hover:bg-progress"
             >
-              {last ? 'Gotowe ✓' : 'Dalej →'}
+              {last ? 'Gotowe' : 'Dalej'}
+              {last ? (
+                <Check aria-hidden="true" className="h-[26px] w-[26px]" />
+              ) : (
+                <ArrowRight aria-hidden="true" className="h-[26px] w-[26px]" />
+              )}
             </button>
           </div>
         </div>

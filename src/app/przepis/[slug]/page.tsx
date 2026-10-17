@@ -172,10 +172,13 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           recipeId={typedRecipe.id}
           isFavorite={isFavorite}
           isAuthenticated={Boolean(user)}
+        />
+        <RecipeChecklists
+          recipeId={typedRecipe.id}
           title={typedRecipe.title}
+          ingredientGroups={ingredientGroups}
           steps={steps}
         />
-        <RecipeChecklists recipeId={typedRecipe.id} ingredientGroups={ingredientGroups} steps={steps} />
 
         {typedRecipe.youtube_id && (
           <section className="mb-12">
