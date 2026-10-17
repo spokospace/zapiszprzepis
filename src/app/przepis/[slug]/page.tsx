@@ -172,6 +172,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           recipeId={typedRecipe.id}
           isFavorite={isFavorite}
           isAuthenticated={Boolean(user)}
+          title={typedRecipe.title}
+          steps={steps}
         />
         <RecipeChecklists recipeId={typedRecipe.id} ingredientGroups={ingredientGroups} steps={steps} />
 
