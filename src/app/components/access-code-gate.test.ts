@@ -90,4 +90,20 @@ describe('AccessCodeGateView — repeated wrong codes (E01-S11)', () => {
     )
     expect(html).not.toContain('role="alert"')
   })
+
+  it('on success shows the caller’s unlocked content instead of the home form (E01-S10 /dodaj)', () => {
+    const html = renderToStaticMarkup(
+      createElement(AccessCodeGateView, {
+        state: { status: 'ok' },
+        pending: false,
+        formAction: vi.fn(),
+        code: '',
+        onCodeChange: vi.fn(),
+        unlocked: createElement('div', { 'data-testid': 'add-panel' }),
+      }),
+    )
+    expect(html).toContain('Gotowe — możesz dodawać przepisy.')
+    expect(html).toContain('data-testid="add-panel"')
+    expect(html).not.toContain('data-testid="add-form"')
+  })
 })

@@ -6,19 +6,19 @@ import { inngest } from '@/inngest/client'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
-import { recipePath } from '@/lib/routes'
+import { addRecipeErrorPath, recipePath } from '@/lib/routes'
 import { getFullAccess } from '@/lib/full-access'
 import { revalidatePath } from 'next/cache'
 
 export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   const url = String(formData.get('url') ?? '').trim()
 
-  if (!url) redirect('/?add_error=empty')
+  if (!url) redirect(addRecipeErrorPath('empty'))
 
   try {
     new URL(url)
   } catch {
-    redirect('/?add_error=invalid_url')
+    redirect(addRecipeErrorPath('invalid_url'))
   }
 
   const supabase = await createSupabaseServerClient()
@@ -39,7 +39,7 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
       favorited = false
     }
     // redirect() throws, so it stays outside the try.
-    if (!favorited) redirect('/?add_error=server')
+    if (!favorited) redirect(addRecipeErrorPath('server'))
     revalidatePath('/ulubione')
     redirect(`${recipePath(dedup.slug)}?in_favorites=1`)
   }
@@ -47,7 +47,7 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   // E01-S11: a NEW extraction needs full access (RLS refuses the insert too).
   // Checked after dedup: a link someone else already added only goes to
   // favorites, which need no full access.
-  if (!(await getFullAccess(supabase))) redirect('/?add_error=no_access')
+  if (!(await getFullAccess(supabase))) redirect(addRecipeErrorPath('no_access'))
 
   const sourceType = detectSourceType(url)
 
@@ -65,7 +65,7 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
 
   if (shareError || !share) {
     console.error('Failed to create share record:', shareError?.message)
-    redirect('/?add_error=server')
+    redirect(addRecipeErrorPath('server'))
   }
 
   try {

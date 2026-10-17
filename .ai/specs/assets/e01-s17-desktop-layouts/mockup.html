@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>E01-S17 desktop mockup (illustrative)</title>
+<style>
+  :root { --ink:#111827; --soft:#374151; --muted:#4b5563; --action:#c2410c; --atext:#9a3412; --acc:#fff7ed; --acc2:#ffedd5; --s2:#f9fafb; --s3:#f3f4f6; --card:#e5e7eb; --card2:#d1d5db; --field:#4b5563; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:19px/1.4 system-ui, sans-serif; color:var(--ink); background:#e5e7eb; }
+  .frame { width:1440px; background:#fff; margin:0 auto 40px; }
+  .label { width:1440px; margin:24px auto 8px; font:700 20px system-ui; color:#111827; }
+  .c { max-width:1152px; margin:0 auto; padding:0 32px; }
+  header { border-bottom:1px solid var(--card); }
+  header .c { display:flex; align-items:center; gap:16px; height:72px; }
+  .logo { font-weight:800; font-size:22px; } .logo b { color:var(--action); }
+  .nav { font-size:17px; font-weight:700; text-decoration:underline; text-underline-offset:4px; min-height:48px; display:flex; align-items:center; padding:0 8px; }
+  .hs { flex:1; max-width:460px; display:flex; gap:8px; }
+  .hs input { flex:1; height:48px; border:2px solid var(--field); border-radius:14px; padding:0 14px; font-size:17px; }
+  .btn { height:48px; border-radius:14px; display:inline-flex; align-items:center; padding:0 14px; font-weight:700; font-size:17px; gap:6px; white-space:nowrap; }
+  .primary { background:var(--action); color:#fff; } .outline { border:2px solid var(--field); color:var(--ink); background:#fff; }
+  .ml { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .hero { background:var(--acc); padding:48px 0 40px; }
+  h1 { font-size:46px; line-height:1.1; margin:0 0 16px; }
+  .field { display:flex; gap:8px; max-width:760px; } .field input { flex:1; height:64px; border:2px solid var(--field); border-radius:14px; padding:0 18px; font-size:19px; }
+  h2 { font-size:22px; margin:32px 0 12px; }
+  .pills { display:flex; gap:8px; } .pill { border:2px solid var(--card2); border-radius:999px; padding:10px 16px; font-size:17px; text-decoration:underline; }
+  .g9 { display:grid; grid-template-columns:repeat(9,1fr); gap:10px; } .tile { min-height:64px; border:2px solid var(--card); border-radius:16px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px; }
+  .g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; } .rc { border:1px solid var(--card); border-radius:16px; overflow:hidden; } .rc .img { aspect-ratio:4/3; background:var(--acc2); } .rc p { margin:10px 12px; font-weight:700; }
+  .cta { margin:32px 0; padding:24px; border-radius:16px; background:var(--s2); border:1px solid var(--card); }
+  .bar { display:flex; align-items:center; gap:12px; border:1px solid var(--card2); border-radius:16px; padding:12px; margin:24px 0; font-size:17px; font-weight:700; }
+  .bar .nl { flex:0 0 260px; border:2px solid var(--field); border-radius:14px; padding:6px 12px; min-height:56px; }
+  .rh { display:grid; grid-template-columns:1.2fr 1fr; gap:40px; align-items:center; }
+  .cover { aspect-ratio:16/10; border-radius:16px; background:var(--acc2); }
+  .cols { display:grid; grid-template-columns:1fr 1.6fr; gap:32px; align-items:start; margin-top:32px; }
+  .panel { background:var(--s2); border:1px solid var(--card); border-radius:16px; padding:24px; }
+  .row { display:flex; gap:12px; min-height:48px; align-items:flex-start; } .box { width:32px; height:32px; border:2px solid var(--field); border-radius:6px; flex:none; }
+  .h26 { font-size:26px; margin:0 0 12px; }
+  .ph { aspect-ratio:1; border-radius:8px; background:var(--acc2); }
+  .soft { color:var(--soft); font-size:16px; }
+</style>
+</head>
+<body>
+<div class="label">A8 — header + guest home at 1440 px (container 1152 px, padding 32 px)</div>
+<div class="frame">
+  <header><div class="c">
+    <span class="logo">Zapisz<b>Przepis</b></span>
+    <a class="nav">Przepisy</a>
+    <a class="nav">Kategorie ▾</a>
+    <div class="ml"><span class="btn outline">Zaloguj się</span><span class="btn primary">Załóż konto</span></div>
+  </div></header>
+  <section class="hero"><div class="c" style="text-align:center">
+    <h1>Czego dziś szukasz?</h1>
+    <div class="soft" style="font-size:18px;margin-bottom:8px">Szukaj przepisu po nazwie lub składniku</div>
+    <div class="field" style="margin:0 auto"><input placeholder="np. sernik, pierogi"><span class="btn outline" style="height:64px">🎤 Mów</span><span class="btn primary" style="height:64px">🔍 Szukaj</span></div>
+  </div></section>
+  <div class="c" style="padding-bottom:8px">
+    <h2>Często szukane</h2>
+    <div class="pills"><span class="pill">sernik</span><span class="pill">pierogi</span><span class="pill">rosół</span><span class="pill">szarlotka</span><span class="pill">naleśniki</span></div>
+    <h2>Kategorie</h2>
+    <div class="g9"><div class="tile">Obiady</div><div class="tile">Zupy</div><div class="tile">Desery</div><div class="tile">Ciasta</div><div class="tile">Ciasteczka</div><div class="tile">Śniadania</div><div class="tile">Pieczywo</div><div class="tile">Przekąski</div><div class="tile">Sałatki</div></div>
+    <h2>Ostatnio dodane</h2>
+    <div class="g4"><div class="rc"><div class="img"></div><p>Kotlety gyros</p></div><div class="rc"><div class="img"></div><p>Ciasto widelcem mieszane</p></div><div class="rc"><div class="img"></div><p>Ciasto z truskawkami</p></div><div class="rc"><div class="img"></div><p>Babeczki cytrynowe</p></div></div>
+    <div class="cta"><b>Załóż konto</b> — zapisuj ulubione przepisy.</div>
+  </div>
+</div>
+
+<div class="label">A8/A9 — header, signed in (full access)</div>
+<div class="frame">
+  <header><div class="c">
+    <span class="logo">Zapisz<b>Przepis</b></span>
+    <form class="hs"><input placeholder="Szukaj przepisu lub składnika"><span class="btn outline">🔍 Szukaj</span></form>
+    <div class="ml"><span class="btn primary">+ Dodaj przepis</span><span class="btn">🔔 Powiadomienia</span><span class="btn">☰ MENU</span></div>
+  </div></header>
+</div>
+
+<div class="label">A9 — recipe page at 1440 px: header 1.2fr | 1fr (16:10 photo), list bar in one row, ingredients panel | steps + gallery 4 col, similar 4 col</div>
+<div class="frame">
+  <header><div class="c">
+    <span class="logo">Zapisz<b>Przepis</b></span>
+    <form class="hs"><input placeholder="Szukaj przepisu"><span class="btn outline">🔍 Szukaj</span></form>
+    <div class="ml"><span class="btn primary">+ Dodaj przepis</span><span class="btn">🔔</span><span class="btn">☰ MENU</span></div>
+  </div></header>
+  <div class="c" style="padding-bottom:40px">
+    <nav class="bar"><span style="text-decoration:underline">← Ciasta</span><span>2 z 203</span><span style="flex:1"></span><span class="nl">← Poprzedni<br><span class="soft">Ciasto widelcem mieszane</span></span><span class="nl" style="text-align:right">Następny →<br><span class="soft">Babeczki cytrynowe</span></span></nav>
+    <div class="rh"><div class="cover"></div><div>
+      <div class="soft"><u>Strona główna</u> › <u>Ciasta</u> › Ciasto z truskawkami i kruszonką</div>
+      <h1 style="font-size:44px;margin:8px 0">Ciasto z truskawkami i kruszonką</h1>
+      <div class="soft" style="font-size:17px">Ciasta · 1 godz 10 min</div>
+      <p style="font-size:17px">🌐 Źródło: beszamel.se.pl · <b style="color:var(--atext)"><u>Otwórz oryginał</u></b></p>
+      <p>Puszyste ciasto z truskawkami i chrupiącą kruszonką…</p>
+      <span class="btn outline" style="border-color:var(--action);color:var(--atext)">♡ Dodaj do ulubionych</span>
+    </div></div>
+    <div class="soft" style="margin-top:24px">Wielkość tekstu: A · A+ · A++</div>
+    <div class="cols">
+      <section class="panel"><h2 class="h26">Składniki</h2>
+        <div class="row"><span class="box"></span>mąka pszenna — 2 szklanki</div><div class="row"><span class="box"></span>jajka — 2</div><div class="row"><span class="box"></span>cukier — 3/4 szklanki</div><div class="row"><span class="box"></span>olej — 1/2 szklanki</div><div class="row"><span class="box"></span>truskawki — 400–500 g</div>
+      </section>
+      <div>
+        <section><h2 class="h26">Przygotowanie</h2>
+          <div class="soft"><b>Krok 1 z 8</b></div><div class="row"><span class="box"></span>W jednej misce wymieszaj mąkę, proszek do pieczenia, cukier i sól.</div>
+          <div class="soft"><b>Krok 2 z 8</b></div><div class="row"><span class="box"></span>W drugiej połącz jajka, olej, maślankę i wanilię…</div>
+        </section>
+        <h2 class="h26" style="margin-top:32px">Zdjęcia</h2>
+        <div class="g4" style="gap:12px"><div class="ph"></div><div class="ph"></div><div class="ph"></div><div class="ph"></div></div>
+      </div>
+    </div>
+    <h2 class="h26" style="margin-top:40px">Podobne</h2>
+    <div class="g4"><div class="rc"><div class="img"></div><p>Ciasto widelcem mieszane</p></div><div class="rc"><div class="img"></div><p>Babeczki cytrynowe</p></div><div class="rc"><div class="img"></div><p>Ciasto drożdżowe z truskawkami</p></div><div class="rc"><div class="img"></div><p>Kakaowe ciasto z jabłkami</p></div></div>
+  </div>
+</div>
+</body>
+</html>

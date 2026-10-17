@@ -1,10 +1,11 @@
 import type { MenuSummary } from '@/lib/menu-summary'
+import { ADD_RECIPE_PATH } from '@/lib/routes'
 
-/** Today's add flow; E01-S10 moves it to /dodaj. */
-export const ADD_RECIPE_HREF = '/?tab=add'
+/** The add page (E01-S10). */
+export const ADD_RECIPE_HREF = ADD_RECIPE_PATH
 
-/** The 3c code gate (E01-S11): the home page shows it in place of the add form until S10 builds /dodaj. */
-export const ACCESS_GATE_HREF = '/'
+/** The 3c code gate (E01-S11): /dodaj shows it to users without full access (E01-S10). */
+export const ACCESS_GATE_HREF = ADD_RECIPE_PATH
 
 export type MineEntryKey = 'my-recipes' | 'favorites' | 'add'
 

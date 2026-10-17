@@ -23,5 +23,5 @@ export async function getFullAccess(supabase: SupabaseClient): Promise<boolean> 
   }
 }
 
-/** Thrown by triggerRecipeExtraction for a user without full access; /share maps it to ?add_error=no_access. */
+/** Thrown by triggerRecipeExtraction for a user without full access; /share maps it to /dodaj?add_error=no_access. */
 export const NO_FULL_ACCESS = 'No full access'
