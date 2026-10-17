@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { categoryLabel } from '@/lib/recipe-categories'
+import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { listCardLines } from '@/lib/recipe-meta'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
@@ -53,6 +53,20 @@ export const CAROUSEL_CLASS =
 
 /** One card of CAROUSEL_CLASS: 3/4 of the screen on a phone, a grid cell from sm. */
 export const CAROUSEL_ITEM_CLASS = 'w-3/4 shrink-0 snap-start sm:w-auto'
+
+/**
+ * The photo slot of a recipe without a photo: its category icon on the accent
+ * tint, so a full-width slot on a phone does not read as an image that failed
+ * to load. Decorative: the title and the category line name the recipe.
+ */
+function NoPhoto({ category, iconClassName }: { category: string; iconClassName: string }) {
+  const Icon = isRecipeCategory(category) ? CATEGORY_ICONS[category] : CATEGORY_ICONS.inne
+  return (
+    <div aria-hidden="true" className="flex h-full w-full items-center justify-center bg-surface-accent-2">
+      <Icon strokeWidth={1.5} className={`text-action-text ${iconClassName}`} />
+    </div>
+  )
+}
 
 export function RecipeCard({
   slug,
@@ -112,7 +126,7 @@ export function RecipeCard({
                 unoptimized={!isArchivedImageUrl(imageUrl)}
               />
             ) : (
-              <div aria-hidden="true" className="h-full w-full bg-surface-accent-2" />
+              <NoPhoto category={category} iconClassName="h-14 w-14 sm:h-9 sm:w-9" />
             )}
           </div>
           <div className="flex min-w-0 flex-col gap-1.5 p-3 sm:p-0">
@@ -151,22 +165,7 @@ export function RecipeCard({
             unoptimized={!isArchivedImageUrl(imageUrl)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-surface-accent-2">
-            <svg
-              aria-hidden="true"
-              className="h-12 w-12 text-action-text"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6v6m0 0v6m0-6h6m0 0h6m0-6H6m0 0H0M12 6h6"
-              />
-            </svg>
-          </div>
+          <NoPhoto category={category} iconClassName="h-12 w-12" />
         )}
       </div>
 
