@@ -13,6 +13,8 @@ import { detectSourceType } from '@/lib/detect-source-type'
  * transition, so it takes a plain shareId rather than FormData and stays on the
  * current route (revalidate, no redirect) — the bell lives on every
  * authenticated screen, so a redirect would yank the user off the detail page.
+ * The whole layout is revalidated because the bell badge, the home banner and
+ * /powiadomienia (E01-S15) all read the same shares.
  */
 export async function retryShare(shareId: number): Promise<void> {
   if (!Number.isInteger(shareId) || shareId <= 0) return
@@ -28,7 +30,7 @@ export async function retryShare(shareId: number): Promise<void> {
 
   // Gone, or a concurrent retry already moved it off `failed` — nothing to do.
   if (!share || share.status !== 'failed') {
-    revalidatePath('/recipes')
+    revalidatePath('/', 'layout')
     return
   }
 
@@ -45,11 +47,11 @@ export async function retryShare(shareId: number): Promise<void> {
     .select('id')
   if (resetError) {
     console.error('[retry] Failed to reset share to pending:', resetError)
-    revalidatePath('/recipes')
+    revalidatePath('/', 'layout')
     return
   }
   if (!reset || reset.length === 0) {
-    revalidatePath('/recipes')
+    revalidatePath('/', 'layout')
     return
   }
 
@@ -79,5 +81,5 @@ export async function retryShare(shareId: number): Promise<void> {
       .eq('id', share.id)
   }
 
-  revalidatePath('/recipes')
+  revalidatePath('/', 'layout')
 }

@@ -42,9 +42,11 @@ export type Database = {
       recipe_shares: {
         Row: {
           attempts: number
+          cleared_at: string | null
           created_at: string
           error_message: string | null
           id: number
+          read_at: string | null
           recipe_id: number | null
           share_intent: Json
           shared_url: string
@@ -54,9 +56,11 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          cleared_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: number
+          read_at?: string | null
           recipe_id?: number | null
           share_intent: Json
           shared_url: string
@@ -66,9 +70,11 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          cleared_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: number
+          read_at?: string | null
           recipe_id?: number | null
           share_intent?: Json
           shared_url?: string

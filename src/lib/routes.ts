@@ -96,6 +96,9 @@ export function searchPath(query: string, scope: SearchScope = 'wszystkie', page
   return qs ? `${SEARCH_PATH}?${qs}` : SEARCH_PATH
 }
 
+/** The full-screen notifications page (E01-S15). */
+export const NOTIFICATIONS_PATH = '/powiadomienia'
+
 /**
  * Adding a recipe (E01-S10): the link form for users with full access, the
  * access-code gate (3c) for everyone else. Behind login — not in isPublicRoute.
