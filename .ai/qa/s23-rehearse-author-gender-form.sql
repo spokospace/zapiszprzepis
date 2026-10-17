@@ -1,8 +1,10 @@
 -- E01-S23 — rolled-back production rehearsal of
 -- supabase/migrations/20261017210000_author_gender_form.sql (= M).
 --
--- Build the script as: `begin;` + M + this file, then run it with
--- `supabase db query --linked --project-ref <ref> -f <script>`. The DO block
+-- Build the script as: `begin;` + M + this file (to rehearse together with #293:
+-- `begin;` + 20261017200000_recipe_servings.sql + M + this file), then run it
+-- with `supabase db query --linked --project-ref <ref> -f <script>` or the
+-- Management API query endpoint. The DO block
 -- always ends by RAISING REHEARSAL_RESULT, so M and every write below roll
 -- back — production is left exactly as it was. Needs at least one recipe whose
 -- author has a profile with a username.
@@ -11,7 +13,7 @@
 -- still null (set_gender's own rule); an already chosen gender is used as is.
 --
 -- Expected (healthy):
---   REHEARSAL_RESULT columns[ok] order_kept[ok] no_raw_columns[ok] view_form[ok]
+--   REHEARSAL_RESULT columns[ok] order_kept[ok] servings_kept[ok|skip] no_raw_columns[ok] view_form[ok]
 --                    fn_form[ok] fn_unknown[ok] neutral[ok|skip] values[ok]
 --                    anon_table[ok] anon_read[ok] anon_fn_grant[ok]
 --                    other_user_read[ok] authed_fn[ok]
@@ -27,7 +29,7 @@ declare
   form text;
   n int;
   cols text[];
-  t_cols text; t_order text; t_raw text; t_view text; t_fn text; t_unknown text;
+  t_cols text; t_order text; t_servings text; t_raw text; t_view text; t_fn text; t_unknown text;
   t_neutral text; t_values text; t_anon_table text; t_anon_read text; t_fn_grant text;
   t_other text; t_authed_fn text;
 begin
@@ -61,6 +63,12 @@ begin
       'source_url','source_author','times_estimated','youtube_id','created_at','author_name',
       'meta_description','author_username','gallery_count']
     then 'ok' else 'FAIL:' || array_to_string(cols, ',') end;
+  -- With #293 (20261017200000) applied, servings must stay at position 23.
+  t_servings := case
+    when not exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'recipes' and column_name = 'servings') then 'skip'
+    when cols[23] = 'servings' and array_length(cols, 1) = 24 then 'ok'
+    else 'FAIL:' || array_to_string(cols, ',') end;
   t_raw := case when cols && array['gender','gender_set_at','first_name','user_id'] then 'FAIL:' || array_to_string(cols, ',') else 'ok' end;
 
   -- Everything below runs as a guest, like PostgREST with the anon key.
@@ -120,8 +128,8 @@ begin
   end if;
 
   raise exception
-    'REHEARSAL_RESULT columns[%] order_kept[%] no_raw_columns[%] view_form[%] fn_form[%] fn_unknown[%] neutral[%] values[%] anon_table[%] anon_read[%] anon_fn_grant[%] other_user_read[%] authed_fn[%]',
-    t_cols, t_order, t_raw, t_view, t_fn, t_unknown, t_neutral, t_values, t_anon_table, t_anon_read,
+    'REHEARSAL_RESULT columns[%] order_kept[%] servings_kept[%] no_raw_columns[%] view_form[%] fn_form[%] fn_unknown[%] neutral[%] values[%] anon_table[%] anon_read[%] anon_fn_grant[%] other_user_read[%] authed_fn[%]',
+    t_cols, t_order, t_servings, t_raw, t_view, t_fn, t_unknown, t_neutral, t_values, t_anon_table, t_anon_read,
     t_fn_grant, t_other, t_authed_fn;
 end;
 $rehearsal$;

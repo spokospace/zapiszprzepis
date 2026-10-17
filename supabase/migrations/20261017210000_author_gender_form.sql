@@ -22,13 +22,33 @@
 -- unaffected). The app reads the column/function as optional and falls back to
 -- neutral wording, so it is safe to deploy before this migration.
 --
--- Rollback: re-run the view definition from
--- 20261017150000_public_recipes_author_username_gallery_count.sql (drop view +
--- create without author_gender_form) and
+-- Ordering with 20261017200000_recipe_servings.sql (#293), which also appends a
+-- column (servings) to this view: apply that one FIRST, in version order. This
+-- migration keeps `servings` (before author_gender_form) whenever recipes already
+-- has the column, so it works with or without #293 applied; applying #293 AFTER
+-- this one fails loudly (create-or-replace cannot drop author_gender_form).
+--
+-- Rollback: re-run the view definition from the latest earlier migration that
+-- defines it (20261017200000_recipe_servings.sql if applied, else
+-- 20261017150000_public_recipes_author_username_gallery_count.sql) as
+-- drop view + create without author_gender_form, and
 --   drop function if exists public.profile_gender_form(text);
 -- The app degrades to neutral wording.
 -- Rehearsal: .ai/qa/s23-rehearse-author-gender-form.sql (rolled back).
 
+do $view$
+declare
+  -- r.servings stays in position 23 when #293 is applied, so create-or-replace
+  -- only appends author_gender_form.
+  servings_col text := case
+    when exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'recipes' and column_name = 'servings'
+    ) then 'r.servings,'
+    else ''
+  end;
+begin
+  execute format($sql$
 create or replace view public.public_recipes
 with (security_invoker = false)
 as
@@ -55,10 +75,14 @@ select
   r.meta_description,
   p.username as author_username,
   coalesce(cardinality(r.image_urls), 0) as gallery_count,
+  %s
   case pp.gender when 'female' then 'f' when 'male' then 'm' end as author_gender_form
 from public.recipes r
 left join public.profiles p on p.id = r.user_id
-left join public.profiles_private pp on pp.id = r.user_id;
+left join public.profiles_private pp on pp.id = r.user_id
+$sql$, servings_col);
+end
+$view$;
 
 comment on view public.public_recipes is
   'Guest-safe read of every recipe (E01). No user_id, no gallery URLs (count only), '
