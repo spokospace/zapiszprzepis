@@ -97,6 +97,13 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/u/tola/x')).toBe(false)
   })
 
+  it('adds tag and page filters to the category listing (E01-S16)', () => {
+    expect(categoryPath('ciasta', { tags: ['kruche', 'czekoladowe'] })).toBe('/przepisy/ciasta?tag=kruche,czekoladowe')
+    expect(categoryPath('ciasta', { tags: ['kruche'], page: 2 })).toBe('/przepisy/ciasta?tag=kruche&strona=2')
+    expect(categoryPath('ciasta', { tags: [], page: 1 })).toBe('/przepisy/ciasta')
+    expect(categoryPath('ciasta', { page: 3 })).toBe('/przepisy/ciasta?strona=3')
+  })
+
   it('keeps the owner list and everything else gated', () => {
     expect(isPublicRoute('/recipes')).toBe(false)
     expect(isPublicRoute('/przepis')).toBe(false)

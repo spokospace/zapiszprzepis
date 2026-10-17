@@ -19,6 +19,7 @@ import { RecipeActions } from './_components/recipe-actions'
 import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar } from './_components/recipe-list-bar'
 import { LockedGallery } from './_components/locked-gallery'
+import { SimilarRecipes } from './_components/similar-recipes'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
@@ -168,7 +169,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       )}
       <PageContainer narrow>
         <RecipeListBar slug={typedRecipe.slug} from={parseListKey(from)} fallback={categoryContext} />
-        <RecipeHeader recipe={typedRecipe} isAuthenticated={Boolean(user)} />
+        <RecipeHeader recipe={typedRecipe} />
         <RecipeActions
           recipeId={typedRecipe.id}
           slug={typedRecipe.slug}
@@ -205,7 +206,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
         )}
 
-        {/* E01-S16: <SimilarRecipes … /> ("Ten przepis jest" + "Podobne") */}
+        <SimilarRecipes recipe={typedRecipe} />
 
         {isOwner && delete_error === 'shared' && (
           <p role="alert" className="mb-4 border-t border-border-card pt-8 text-[17px] font-bold text-danger">

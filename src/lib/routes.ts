@@ -17,11 +17,17 @@ export const PROFILE_PAGE_RE = /^\/u\/[^/]+$/
 /**
  * The public listing of one category (E01-S09), shared by the MENU drawer and
  * the home category tiles (E01-S04) so both link the same URL — the route
- * E01-S16 later extends with tag chips. Public on purpose: /recipes?category=
- * is owner-only and would bounce a guest to /login.
+ * E01-S16 extends with tag chips (`?tag=a,b`, AND) and paging (`?strona=N`).
+ * Public on purpose: /recipes?category= is owner-only and would bounce a guest
+ * to /login.
  */
-export function categoryPath(category: string): string {
-  return `/przepisy/${encodeURIComponent(category)}`
+export function categoryPath(category: string, opts?: { tags?: readonly string[]; page?: number }): string {
+  const path = `/przepisy/${encodeURIComponent(category)}`
+  const query: string[] = []
+  // Tag values are ASCII slugs, so the comma stays readable instead of %2C.
+  if (opts?.tags?.length) query.push(`tag=${opts.tags.map(encodeURIComponent).join(',')}`)
+  if (opts?.page && opts.page > 1) query.push(`strona=${opts.page}`)
+  return query.length ? `${path}?${query.join('&')}` : path
 }
 
 /**
