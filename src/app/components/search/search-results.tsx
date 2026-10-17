@@ -2,8 +2,6 @@ import Link from 'next/link'
 import { buttonClasses } from '@/app/components/ui/button'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
-import { CardFavoriteBar } from '@/app/components/search/card-favorite-bar'
-import { favoriteReturnPath, loginPath } from '@/lib/login-redirect'
 import { searchPath, type SearchScope } from '@/lib/routes'
 import { recipeTotalMinutes } from '@/lib/recipe-meta'
 import { SEARCH_MAX_PAGES, SEARCH_PAGE_SIZE, type SearchResult } from '@/lib/search'
@@ -53,12 +51,7 @@ export function SearchResults({ q, scope, page, rows, total, favoriteIds }: Sear
               sourceType={r.source_type}
               sourceUrl={r.source_url}
               sourceAuthor={r.source_author}
-            />
-            <CardFavoriteBar
-              recipeId={r.id}
-              title={r.title}
-              initialFavorited={favoriteIds?.has(r.id) ?? false}
-              loginHref={favoriteIds ? null : loginPath(favoriteReturnPath(r.slug))}
+              favorite={{ recipeId: r.id, favorited: favoriteIds?.has(r.id) ?? false, isAuthenticated: favoriteIds !== null }}
             />
           </li>
         ))}

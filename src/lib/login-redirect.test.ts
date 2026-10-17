@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { loginPath, loginErrorPath, resolveLoginNext, favoriteReturnPath } from './login-redirect'
+import { loginPath, loginErrorPath, resolveLoginNext } from './login-redirect'
 
 describe('loginErrorPath', () => {
   it('carries the error and a non-root next', () => {
@@ -24,7 +24,12 @@ describe('loginPath', () => {
   })
 
   it('encodes the destination, including its own query', () => {
-    expect(loginPath('/przepis/tiramisu?fav=1')).toBe('/login?next=%2Fprzepis%2Ftiramisu%3Ffav%3D1')
+    expect(loginPath('/przepisy/ciasta?tag=x')).toBe('/login?next=%2Fprzepisy%2Fciasta%3Ftag%3Dx')
+  })
+
+  it('carries the recipe a guest asked to favorite (E01-S06)', () => {
+    expect(loginPath('/przepis/tiramisu', 12)).toBe('/login?next=%2Fprzepis%2Ftiramisu&fav=12')
+    expect(loginPath(null, 12)).toBe('/login?fav=12')
   })
 })
 
@@ -47,15 +52,5 @@ describe('resolveLoginNext', () => {
 
   it('ignores non-string input', () => {
     expect(resolveLoginNext(42, ORIGIN, '/recipes')).toBe('/recipes')
-  })
-})
-
-describe('favoriteReturnPath', () => {
-  it('returns to the recipe asking to add it', () => {
-    expect(favoriteReturnPath('tiramisu')).toBe('/przepis/tiramisu?fav=1')
-  })
-
-  it('encodes an unexpected slug instead of breaking the path', () => {
-    expect(favoriteReturnPath('a b?c')).toBe('/przepis/a%20b%3Fc?fav=1')
   })
 })

@@ -1,41 +1,112 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useCallback, useEffect, useState, useTransition } from 'react'
+import { usePathname } from 'next/navigation'
 import { Heart } from 'lucide-react'
 import { addFavorite, removeFavorite } from '@/app/favorites/actions'
+import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
+import { loginPath } from '@/lib/login-redirect'
+import { stripSearchParam } from '@/lib/strip-search-param'
 
 interface FavoriteButtonProps {
   recipeId: number
   /** Server truth at render time; the client override layers on top of it. */
   initialFavorited: boolean
   isAuthenticated: boolean
-  /** Where a guest goes: /login with a `next` that returns here asking to add. */
-  loginHref: string
-  /** The page was reached with ?fav=1 after logging in: add once, then drop the param. */
-  autoAdd: boolean
+  /** `full`: the recipe page. `compact`: a recipe card's footer. */
+  size?: 'full' | 'compact'
 }
 
-const BASE =
-  'inline-flex min-h-[58px] w-full items-center justify-center gap-2 rounded-field px-5 text-[18px] font-bold transition-colors sm:w-auto'
-const OFF = `${BASE} border-[2.5px] border-action bg-white text-action-text hover:bg-surface-accent`
-const ON = `${BASE} border-[2.5px] border-action bg-action text-white hover:bg-action-hover`
+const COPY = {
+  full: { off: 'Dodaj do ulubionych', on: 'W ulubionych · usuń' },
+  compact: { off: 'Ulubione', on: 'W ulubionych' },
+} as const
+
+const BASE = 'inline-flex items-center justify-center gap-2 rounded-field border-action font-bold transition-colors'
+const SIZE = {
+  full: `${BASE} min-h-[58px] w-full border-[2.5px] px-5 text-[18px] sm:w-auto`,
+  compact: `${BASE} min-h-[48px] w-full border-2 px-3 text-[16px]`,
+} as const
+const OFF = 'bg-white text-action-text hover:bg-surface-accent'
+const ON = 'bg-action text-white hover:bg-action-hover'
+const ICON = { full: 'h-6 w-6', compact: 'h-5 w-5' } as const
 
 /**
- * "Dodaj do ulubionych" / "W ulubionych · usuń" (E01-S06, handoff recipe page).
- * Optimistic toggle with a 5 s "Cofnij" toast after adding. A guest gets a link
- * to /login that brings them back and adds the favorite there.
+ * `?fav_added={recipeId}` (set by postLoginPath after a guest heart's login):
+ * claim it once. Stripping it at once means a second heart for the same recipe
+ * on the page (its effect runs next) no longer sees it.
  */
-export function FavoriteButton({ recipeId, initialFavorited, isAuthenticated, loginHref, autoAdd }: FavoriteButtonProps) {
-  const router = useRouter()
+function claimFavoriteAdded(recipeId: number): boolean {
+  const added = parseRecipeId(new URLSearchParams(window.location.search).get(FAVORITE_ADDED_PARAM))
+  if (added !== recipeId) return false
+  stripSearchParam(FAVORITE_ADDED_PARAM)
+  return true
+}
+
+/** Hides a shown toast after ~5 s (handoff). */
+function useToastTimeout(toast: boolean, hide: () => void) {
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(hide, 5000)
+    return () => clearTimeout(timer)
+  }, [toast, hide])
+}
+
+/** "Dodano do ulubionych · Cofnij" in a region that is always mounted, so screen readers announce it when it fills. */
+function FavoriteToast({ show, onUndo }: { show: boolean; onUndo: () => void }) {
+  return (
+    <div role="status" className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex justify-center empty:hidden">
+      {show && (
+        <p className="pointer-events-auto flex items-center gap-3 rounded-field bg-ink px-4 py-2 text-[17px] text-white shadow-lg">
+          Dodano do ulubionych ·
+          <button type="button" onClick={onUndo} className="min-h-[48px] font-bold underline">
+            Cofnij
+          </button>
+        </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The toast after a guest heart's login, on a page that has no heart for the
+ * recipe (the signed-in home: the guest home's card hearts return there).
+ */
+export function FavoriteAddedNotice({ recipeId }: { recipeId: number }) {
+  const [toast, setToast] = useState(false)
+  const hide = useCallback(() => setToast(false), [])
+  useToastTimeout(toast, hide)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (claimFavoriteAdded(recipeId)) setToast(true)
+  }, [recipeId])
+
+  return (
+    <FavoriteToast
+      show={toast}
+      onUndo={() => {
+        setToast(false)
+        void removeFavorite(recipeId)
+      }}
+    />
+  )
+}
+
+/**
+ * The labelled heart (E01-S06): never an icon alone, never a star. Optimistic
+ * toggle with a ~5 s "Dodano do ulubionych · Cofnij" toast after adding. A guest
+ * gets a link to /login?next={this page}&fav={id}; the favorite is saved as the
+ * login completes and the toast shows on the way back.
+ */
+export function FavoriteButton({ recipeId, initialFavorited, isAuthenticated, size = 'full' }: FavoriteButtonProps) {
   const pathname = usePathname()
   const [override, setOverride] = useState<boolean | null>(null)
   const [toast, setToast] = useState(false)
   const [error, setError] = useState(false)
   const [pending, startTransition] = useTransition()
-  const autoAddRan = useRef(false)
   const favorited = override ?? initialFavorited
+  const copy = COPY[size]
 
   function change(next: boolean) {
     setOverride(next)
@@ -52,34 +123,28 @@ export function FavoriteButton({ recipeId, initialFavorited, isAuthenticated, lo
     })
   }
 
-  // After login with ?fav=1: add once (a POST through the server action, never a
-  // GET side effect), then drop the param so a reload does not repeat it.
+  // A one-shot read of the address bar after hydration (the server render cannot see it).
   useEffect(() => {
-    if (!autoAdd || autoAddRan.current) return
-    autoAddRan.current = true
-    void (async () => {
-      if (!initialFavorited) {
-        const result = await addFavorite(recipeId)
-        if (result.ok) setToast(true)
-        else setError(true)
-      }
-      router.replace(pathname, { scroll: false })
-    })()
-  }, [autoAdd, initialFavorited, pathname, recipeId, router])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isAuthenticated && claimFavoriteAdded(recipeId)) setToast(true)
+  }, [isAuthenticated, recipeId])
 
-  // The toast lives ~5 s (handoff).
-  useEffect(() => {
-    if (!toast) return
-    const timer = setTimeout(() => setToast(false), 5000)
-    return () => clearTimeout(timer)
-  }, [toast])
+  const hideToast = useCallback(() => setToast(false), [])
+  useToastTimeout(toast, hideToast)
 
   if (!isAuthenticated) {
     return (
-      <Link href={loginHref} className={OFF}>
-        <Heart aria-hidden="true" className="h-6 w-6" />
-        Dodaj do ulubionych
-      </Link>
+      <a
+        href={loginPath(pathname, recipeId)}
+        // The render knows only the path; return to the page's current query too.
+        onClick={(e) => {
+          e.currentTarget.href = loginPath(`${window.location.pathname}${window.location.search}`, recipeId)
+        }}
+        className={`${SIZE[size]} ${OFF}`}
+      >
+        <Heart aria-hidden="true" className={ICON[size]} />
+        {copy.off}
+      </a>
     )
   }
 
@@ -90,21 +155,14 @@ export function FavoriteButton({ recipeId, initialFavorited, isAuthenticated, lo
         aria-pressed={favorited}
         disabled={pending}
         onClick={() => change(!favorited)}
-        className={`${favorited ? ON : OFF} disabled:opacity-70`}
+        className={`${SIZE[size]} ${favorited ? ON : OFF} disabled:opacity-70`}
       >
-        <Heart aria-hidden="true" className="h-6 w-6" fill={favorited ? 'currentColor' : 'none'} />
-        {favorited ? 'W ulubionych · usuń' : 'Dodaj do ulubionych'}
+        <Heart aria-hidden="true" className={ICON[size]} fill={favorited ? 'currentColor' : 'none'} />
+        {favorited ? copy.on : copy.off}
       </button>
-      {toast && (
-        <p role="status" className="flex items-center gap-3 rounded-field bg-ink px-4 py-3 text-[17px] text-white">
-          Dodano do ulubionych ·
-          <button type="button" onClick={() => change(false)} className="min-h-[48px] font-bold underline">
-            Cofnij
-          </button>
-        </p>
-      )}
+      <FavoriteToast show={toast} onUndo={() => change(false)} />
       {error && (
-        <p role="alert" className="text-[17px] font-bold text-danger">
+        <p role="alert" className="text-[16px] font-bold text-danger">
           Nie udało się zapisać. Spróbuj ponownie.
         </p>
       )}

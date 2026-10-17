@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { parseOAuthProviders } from '@/lib/oauth-providers'
+import { withFavoriteIntent } from '@/lib/favorites'
 import { OAuthButtons } from './oauth-buttons'
 import { SignInForm } from './signin-form'
 
@@ -9,6 +10,8 @@ type SearchParams = Promise<{
   sent?: string
   success?: string
   next?: string
+  /** A guest's heart: the recipe to favorite once logged in (E01-S06). */
+  fav?: string
 }>
 
 export default async function LoginPage({
@@ -16,7 +19,10 @@ export default async function LoginPage({
 }: {
   searchParams: SearchParams
 }) {
-  const { error, email, sent, success, next } = await searchParams
+  const { error, email, sent, success, next: rawNext, fav } = await searchParams
+  // The intent rides inside `next`, which every login path already carries to
+  // postLoginPath; that is where the favorite is saved.
+  const next = withFavoriteIntent(rawNext, fav)
   // E01-S12: off unless the owner lists providers (see oauth-providers.ts).
   const providers = parseOAuthProviders(process.env.AUTH_OAUTH_PROVIDERS)
 

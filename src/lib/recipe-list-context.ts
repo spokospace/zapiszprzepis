@@ -3,9 +3,9 @@
  * links its cards with `?from={key}` and writes a snapshot of what it rendered
  * to sessionStorage; the recipe page locates itself in that snapshot. Only
  * whitelisted keys count, so a hand-edited `?from` never reaches a storage key
- * or a rendered link. E01-S16 (category) adds its key here.
+ * or a rendered link.
  */
-export const LIST_KEYS = ['fav', 'moje', 'home', 'szukaj'] as const
+export const LIST_KEYS = ['fav', 'moje', 'home', 'kategoria', 'szukaj'] as const
 export type ListKey = (typeof LIST_KEYS)[number]
 
 export interface ListItem {

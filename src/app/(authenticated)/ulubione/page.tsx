@@ -77,6 +77,7 @@ export default async function FavoritesPage() {
                 sourceType={r.source_type}
                 sourceUrl={r.source_url}
                 sourceAuthor={r.source_author}
+                favorite={{ recipeId: r.id, favorited: true, isAuthenticated: true }}
               />
             ))}
           </div>
