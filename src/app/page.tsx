@@ -103,6 +103,7 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
                   sourceType={r.source_type}
                   sourceUrl={r.source_url}
                   sourceAuthor={r.source_author}
+                  favorite={{ recipeId: r.id, favorited: false, isAuthenticated: false }}
                 />
               ))}
             </div>

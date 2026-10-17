@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { getFavoriteIds } from '@/lib/favorites'
 import { categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { PageContainer } from '@/app/components/page-container'
 import { RecipeCard } from '@/app/components/recipe-card'
@@ -28,17 +29,24 @@ export default async function CategoryPage({ params }: { params: Params }) {
   if (!isRecipeCategory(category)) notFound()
 
   const supabase = await createSupabaseServerClient()
-  const { data: recipes, error } = await supabase
-    .from('public_recipes')
-    .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
-    .eq('category', category)
-    .order('created_at', { ascending: false })
-    .limit(LIMIT)
+  const [user, { data: recipes, error }] = await Promise.all([
+    getCurrentUser(),
+    supabase
+      .from('public_recipes')
+      .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
+      .eq('category', category)
+      .order('created_at', { ascending: false })
+      .limit(LIMIT),
+  ])
 
   if (error) {
     // Let the route error boundary say so instead of a misleading empty state.
     throw new Error(`[przepisy] Query failed: ${error.message}`)
   }
+
+  // The labelled heart on each card (E01-S06); favorites are private, so only with a session.
+  const ids = (recipes ?? []).map((r) => r.id)
+  const favoriteIds = user ? await getFavoriteIds(supabase, user.id, ids) : new Set<number>()
 
   return (
     <main className="min-h-screen bg-surface">
@@ -64,6 +72,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
                 sourceType={r.source_type}
                 sourceUrl={r.source_url}
                 sourceAuthor={r.source_author}
+                favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: Boolean(user) }}
               />
             ))}
           </div>

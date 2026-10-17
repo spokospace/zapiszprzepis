@@ -5,6 +5,7 @@
 // applied yet), login continues to `next` — this feature must never block
 // signing in.
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { applyFavoriteIntent } from './favorites'
 
 export const WELCOME_PATH = '/witaj'
 export const GENDERS = ['female', 'male'] as const
@@ -28,12 +29,18 @@ export function firstLoginTarget(gender: string | null, next: string): string {
   return welcomePath(next)
 }
 
-/** Where to send a freshly signed-in user: /witaj when gender is unset, else `next`. */
-export async function postLoginPath(supabase: SupabaseClient, next: string): Promise<string> {
+/**
+ * Where to send a freshly signed-in user: /witaj when gender is unset, else `next`.
+ * The one exit of every login path (password, email link, OAuth), so it also
+ * applies a guest heart's favorite intent carried in `next` (E01-S06).
+ */
+export async function postLoginPath(supabase: SupabaseClient, requestedNext: string): Promise<string> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return next
+  if (!user) return requestedNext
+
+  const next = await applyFavoriteIntent(supabase, user.id, requestedNext)
 
   const { data, error } = await supabase
     .from('profiles_private')
