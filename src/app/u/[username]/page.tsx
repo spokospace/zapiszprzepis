@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { cache, Fragment } from 'react'
+import { cache } from 'react'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
+import { recipeTotalMinutes } from '@/lib/recipe-meta'
+import { getFavoriteIds } from '@/lib/favorites'
 import type { RecipeSource } from '@/lib/recipe-source'
 import { getSiteUrl } from '@/lib/site-url'
 import { profilePath } from '@/lib/routes'
@@ -25,8 +27,9 @@ import {
 } from '@/lib/public-profile'
 import { PageContainer } from '@/app/components/page-container'
 import { Avatar } from '@/app/components/ui/avatar'
-import { RecipeCard } from '@/app/components/recipe-card'
+import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { buttonClasses } from '@/app/components/ui/button'
+import { chipClasses } from '@/app/components/ui/chip'
 
 type Params = Promise<{ username: string }>
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
@@ -44,9 +47,6 @@ function decodeParam(raw: string): string {
 const SUMMARY_BATCH = 1000
 /** Safety stop for the summary loop (10 requests). */
 const SUMMARY_MAX_ROWS = 10_000
-
-const CHIP =
-  'inline-flex min-h-[48px] items-center gap-2 rounded-pill border-2 px-4 text-[17px] font-bold leading-tight transition-colors'
 
 /**
  * The profile and a summary of every recipe the person owns (S03: "added as
@@ -125,16 +125,20 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
     title: string
     image_url: string | null
     category: string
-    description: string | null
     source_type: RecipeSource
     source_url: string | null
     source_author: string | null
+    total_time_minutes: number | null
+    prep_time_minutes: number | null
+    cook_time_minutes: number | null
   }[] = []
+  const supabase = await createSupabaseServerClient()
   if (total > 0) {
-    const supabase = await createSupabaseServerClient()
     let listQuery = supabase
       .from('public_recipes')
-      .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
+      .select(
+        'id, slug, title, image_url, category, source_type, source_url, source_author, total_time_minutes, prep_time_minutes, cook_time_minutes',
+      )
       .eq('author_username', username)
     if (category) listQuery = listQuery.eq('category', category)
     // One row past the page tells us whether "Pokaż kolejne" is needed.
@@ -148,6 +152,8 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
   // At the page cap a further link would render the same list again.
   const hasMore = recipes.length > shown && page < MAX_PROFILE_PAGE
   const visible = recipes.slice(0, shown)
+  // The favorites bar on each card (E01-S22); favorites are private, so only with a session.
+  const favoriteIds = user && visible.length ? await getFavoriteIds(supabase, user.id, visible.map((r) => r.id)) : new Set<number>()
   // The first card of the newest page, where "Pokaż kolejne" lands (#wiecej).
   const firstNewIndex = page > 1 ? (page - 1) * PROFILE_PAGE_SIZE : -1
 
@@ -157,7 +163,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
         {isOwner && (
           <section
             aria-label="Twój profil"
-            className="mb-6 rounded-card border-2 border-border-accent bg-surface-accent p-4"
+            className="mb-6 rounded-card bg-surface-3 p-4"
           >
             <p className="mb-3 text-[19px] text-ink">Tak widzą Twój profil inni.</p>
             <Link href="/settings" className={`${buttonClasses('outline', 'lg')} w-full sm:w-auto`}>
@@ -175,8 +181,9 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
             size={88}
           />
           <div className="min-w-0">
-            <h1 className="break-words text-[30px] font-bold leading-tight text-ink">{profile.display_name}</h1>
-            {total > 0 && <p className="text-[19px] text-ink">Dodane przepisy: {total}</p>}
+            <h1 className="break-words text-[28px] font-bold leading-tight text-ink">{profile.display_name}</h1>
+            {/* Neutral until E01-S23 (#290) genders it ("Dodała/Dodał N przepisów"). */}
+            {total > 0 && <p className="text-[17px] text-ink">Przepisy: {total}</p>}
             <p className="text-[17px] text-ink-soft">W ZapiszPrzepis od {memberSinceLabel(profile.created_at, oldest)}</p>
           </div>
         </header>
@@ -200,7 +207,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
                         <Link
                           href={profileCategoryHref(profile.username, c.value)}
                           aria-current={active ? 'page' : undefined}
-                          className={`${CHIP} ${active ? 'border-ink bg-ink text-white' : 'border-border-card-2 bg-white text-ink hover:bg-surface-3'}`}
+                          className={chipClasses(active)}
                         >
                           <span>
                             {active ? '✓ ' : ''}
@@ -216,23 +223,26 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
             )}
 
             <h2 className="mb-3 text-[22px] font-bold text-ink">{category ? categoryLabel(category) : 'Przepisy'}</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <ol className={LIST_CARDS_CLASS}>
               {visible.map((r, i) => (
-                <Fragment key={r.id}>
-                  {i === firstNewIndex && <span id="wiecej" className="col-span-full -mb-3 block scroll-mt-24" aria-hidden="true" />}
+                // #wiecej: the first card of the newest page, where "Pokaż kolejne" lands.
+                <li key={r.id} id={i === firstNewIndex ? 'wiecej' : undefined} className="scroll-mt-24">
                   <RecipeCard
+                    variant="list"
+                    thumb={84}
                     slug={r.slug}
                     title={r.title}
                     imageUrl={r.image_url}
                     category={r.category}
-                    description={r.description}
+                    minutes={recipeTotalMinutes(r)}
                     sourceType={r.source_type}
                     sourceUrl={r.source_url}
                     sourceAuthor={r.source_author}
+                    favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: Boolean(user) }}
                   />
-                </Fragment>
+                </li>
               ))}
-            </div>
+            </ol>
 
             {hasMore && (
               <Link
