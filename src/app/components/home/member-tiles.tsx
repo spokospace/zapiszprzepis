@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { BookOpen, Heart, Lock, Plus, type LucideIcon } from 'lucide-react'
+import { ADD_RECIPE_PATH } from '@/lib/routes'
 
 interface Tile {
   href: string
@@ -10,11 +11,10 @@ interface Tile {
 
 const MY_RECIPES: Tile = { href: '/recipes', title: 'Moje przepisy', caption: 'Przepisy dodane przez Ciebie', Icon: BookOpen }
 const FAVORITES: Tile = { href: '/ulubione', title: 'Ulubione', caption: 'Przepisy zapisane na później', Icon: Heart }
-// `?tab=add` focuses the add-from-link form further down the home (E01-S04
-// slot); E01-S10 repoints this to /dodaj.
-const ADD_RECIPE: Tile = { href: '/?tab=add', title: 'Dodaj przepis', caption: 'Wklej link do przepisu', Icon: Plus }
-// Without full access the same tile leads to the access-code gate (3c) on the
-// home, worded like the MENU drawer's locked entry (E01-S09).
+// The add page (E01-S10).
+const ADD_RECIPE: Tile = { href: ADD_RECIPE_PATH, title: 'Dodaj przepis', caption: 'Wklej link do przepisu', Icon: Plus }
+// Without full access the same tile leads to the access-code gate (3c), which
+// /dodaj shows in place of the form; worded like the MENU drawer's locked entry (E01-S09).
 const ADD_RECIPE_LOCKED: Tile = { ...ADD_RECIPE, caption: 'Wymaga kodu lub pełnego dostępu', Icon: Lock }
 
 /**

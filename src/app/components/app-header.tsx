@@ -9,7 +9,7 @@ import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
 import type { FailedSharesResult } from '@/lib/failed-shares'
 import type { MenuSummary } from '@/lib/menu-summary'
-import { PRZEPIS_PAGE_RE } from '@/lib/routes'
+import { ADD_RECIPE_PATH, PRZEPIS_PAGE_RE } from '@/lib/routes'
 
 export function AppHeader({
   failedShares,
@@ -55,7 +55,7 @@ export function AppHeader({
           {isAuthenticated ? (
             <>
               <Link
-                href="/?tab=add"
+                href={ADD_RECIPE_PATH}
                 aria-label="Dodaj przepis z linku"
                 className="mr-1 inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-600 transition-colors"
               >

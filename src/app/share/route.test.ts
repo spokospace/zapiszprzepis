@@ -27,7 +27,7 @@ describe('POST /share — Web Share Target errors', () => {
     const res = await POST(share('https://example.com/tiramisu'))
 
     expect(res.status).toBe(303)
-    expect(res.headers.get('location')).toBe('https://zapiszprzepis.pl/?add_error=no_access')
+    expect(res.headers.get('location')).toBe('https://zapiszprzepis.pl/dodaj?add_error=no_access')
   })
 
   it('still sends a guest to login', async () => {
