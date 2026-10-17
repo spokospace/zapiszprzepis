@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Globe } from 'lucide-react'
@@ -29,6 +30,8 @@ export interface RecipeHeaderData {
 
 interface RecipeHeaderProps {
   recipe: RecipeHeaderData
+  /** E01-S21: the "N inne przepisy na {danie}" bar, under the author line. */
+  versionsBar?: ReactNode
 }
 
 /**
@@ -37,7 +40,7 @@ interface RecipeHeaderProps {
  * from lg), and who added it. The tags
  * render at the bottom of the page, in "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
   const category = categoryLabel(recipe.category)
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
@@ -129,6 +132,7 @@ export function RecipeHeader({ recipe }: RecipeHeaderProps) {
 
         {recipe.description && <p className="mt-4 text-[19px] text-ink-soft">{recipe.description}</p>}
         {recipe.meta_description && <p className="mt-3 text-[19px] leading-relaxed text-ink">{recipe.meta_description}</p>}
+        {versionsBar}
       </div>
     </header>
   )

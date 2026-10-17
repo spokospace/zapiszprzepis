@@ -12,6 +12,10 @@ type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_fingerprint'
   gallery_count?: number | null
   /** 'f' | 'm' | null, optional until the E01-S23 migration; neutral wording without it. */
   author_gender_form?: string | null
+  /** Optional until the E01-S21 view migration (#296); the versions feature stays hidden without them. */
+  dish?: string | null
+  dish_accusative?: string | null
+  variant_note?: string | null
 }
 
 /**

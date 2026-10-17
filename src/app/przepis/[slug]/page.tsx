@@ -21,6 +21,9 @@ import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar, RecipeListNav } from './_components/recipe-list-bar'
 import { LockedGallery } from './_components/locked-gallery'
 import { SimilarRecipes } from './_components/similar-recipes'
+import { DishVersionsBar } from './_components/dish-versions-bar'
+import { DishVersions } from './_components/dish-versions'
+import { parseVersionsSort, type DishVersionRow } from '@/lib/dish-versions'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
@@ -69,12 +72,14 @@ interface RecipeDetailPageProps {
     delete_error?: string
     /** The list the visitor came from, for the list bar (E01-S07); whitelisted. */
     from?: string
+    /** Version sort order (E01-S21); whitelisted, falls back to popularne. */
+    wersje?: string
   }>
 }
 
 export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
-  const { duplicate, refreshing, refresh_error, in_favorites, delete_error, from } = await searchParams
+  const { duplicate, refreshing, refresh_error, in_favorites, delete_error, from, wersje } = await searchParams
 
   const { recipe: typedRecipe, error, isOwner, user } = await loadRecipe(slug)
 
@@ -86,17 +91,35 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // The gallery is a login perk (decision Q3) and favorites are private (owner-only
   // RLS): both need a session. The list bar's category context (E01-S07) is
   // guest-safe. All three run in parallel on one client.
+  // The "versions of the same dish" RPC (E01-S21) runs ONLY when this recipe has
+  // a dish — until the #298 backfill lands, dish is null everywhere, so no call
+  // is made and no bar/section renders (empty-data state).
   const supabase = await createSupabaseServerClient()
-  const [categoryContext, gallery, favorite] = await Promise.all([
+  const [categoryContext, gallery, favorite, dishVersionsResult] = await Promise.all([
     loadCategoryContext(supabase, typedRecipe),
     user ? supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle() : null,
     user
       ? supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle()
       : null,
+    typedRecipe.dish ? supabase.rpc('dish_versions', { p_recipe_id: typedRecipe.id }) : null,
   ])
   const galleryImages: string[] = gallery?.data?.image_urls ?? []
   const isFavorite = Boolean(favorite?.data)
   const galleryCount = typedRecipe.gallery_count ?? 0
+
+  // An RPC error is non-critical: log it and hide the feature (treat as []).
+  if (dishVersionsResult?.error) console.error('[recipe] dish_versions failed:', dishVersionsResult.error)
+  const versions = (dishVersionsResult?.data ?? []) as DishVersionRow[]
+  const versionsTotal = versions[0]?.total_count ?? 0
+  const versionsOrder = parseVersionsSort(wersje)
+  const currentRecipe = {
+    servings: typedRecipe.servings,
+    prep_time_minutes: typedRecipe.prep_time_minutes,
+    cook_time_minutes: typedRecipe.cook_time_minutes,
+    total_time_minutes: typedRecipe.total_time_minutes,
+    times_estimated: typedRecipe.times_estimated,
+    ingredients: typedRecipe.ingredients,
+  }
 
   // Parse the jsonb ingredients and steps. Both parsers are crash-safe (an RSC
   // exception is a full page crash, which would also hide the delete button);
@@ -131,7 +154,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           both widths are the viewport anyway. */}
       <PageContainer>
         <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
-        <RecipeHeader recipe={typedRecipe} />
+        <RecipeHeader
+          recipe={typedRecipe}
+          versionsBar={
+            versionsTotal > 0 ? (
+              <DishVersionsBar count={versionsTotal} dishAccusative={typedRecipe.dish_accusative ?? null} />
+            ) : undefined
+          }
+        />
         <RecipeActions
           recipeId={typedRecipe.id}
           isFavorite={isFavorite}
@@ -189,6 +219,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           </a>
         )}
         <RecipeListNav slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+
+        <DishVersions
+          versions={versions}
+          totalCount={versionsTotal}
+          dishAccusative={typedRecipe.dish_accusative ?? null}
+          order={versionsOrder}
+          current={currentRecipe}
+        />
 
         <SimilarRecipes recipe={typedRecipe} />
 
