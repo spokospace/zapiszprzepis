@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}</style>
+</helmet>
+<section id="7" style="padding:48px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">7</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Profil publiczny · /u/login · styl 1c</span></div>
+    <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Kto dodał i co jeszcze dodał</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Otwiera się po kliknięciu „Dodała Ania K.” przy przepisie. Ekran jest klikalny: zmień kategorię albo przełącz na własny profil.</div>
+  </div>
+
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span style="font-size:15px;color:#374151"><b style="color:#111827">7a</b> · <span style="font-family:monospace;font-size:14px">/u/ania</span></span>
+        <div role="radiogroup" style="display:flex;gap:4px">
+          <sc-for list="{{ views }}" as="v" hint-placeholder-count="2"><button role="radio" aria-checked="{{ v.on }}" onClick="{{ v.pick }}" style="height:44px;padding:0 12px;border-radius:10px;border:2px solid {{ v.border }};background:{{ v.bg }};color:{{ v.fg }};font:700 14px Arial;cursor:pointer">{{ v.l }}</button></sc-for>
+        </div>
+      </div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 10px 4px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Wróć</span>
+          <div style="display:flex;align-items:stretch;gap:4px">
+            <span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span>
+            <span style="min-width:100px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia</span>
+            <span style="width:56px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span>
+          </div>
+        </div>
+        <div style="flex:1;overflow:auto;padding:24px 16px;display:flex;flex-direction:column;gap:18px">
+          <div style="flex-shrink:0;display:flex;align-items:center;gap:16px">
+            <span style="width:88px;height:88px;flex-shrink:0;border-radius:999px;background:#fed7aa;color:#111827;font-size:38px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #9ca3af">A</span>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">Ania K.</span>
+              <span style="font-size:17px;color:#374151">Dodała 24 przepisy</span>
+              <span style="font-size:16px;color:#374151">W ZapiszPrzepis od marca 2026</span>
+            </div>
+          </div>
+          <sc-if value="{{ isOwn }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;display:flex;flex-direction:column;gap:8px;background:#f3f4f6;border-radius:14px;padding:14px">
+              <span style="font-size:17px;color:#111827;line-height:1.45">Tak widzą Twój profil inni.</span>
+              <span style="height:52px;border-radius:12px;border:2px solid #4b5563;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;color:#111827"><i data-lucide="pencil" width="20" height="20"></i>Zmień nazwę lub obrazek</span>
+            </div>
+          </sc-if>
+
+          <div style="flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+            <span id="pc" style="font-size:19px;font-weight:700;color:#111827">Przepisy według kategorii</span>
+            <div role="group" aria-labelledby="pc" style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ cats }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.pick }}" aria-pressed="{{ c.on }}" style="min-height:48px;padding:0 14px;border-radius:999px;border:2px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};font:700 17px Arial;cursor:pointer;display:inline-flex;align-items:center;gap:6px">{{ c.mark }}{{ c.l }}<span style="font-weight:400;font-size:16px">{{ c.n }}</span></button></sc-for>
+            </div>
+          </div>
+
+          <span style="flex-shrink:0;font-size:18px;color:#111827" aria-live="polite"><b>{{ countText }}</b></span>
+          <sc-for list="{{ list }}" as="r" hint-placeholder-count="4">
+            <div style="flex-shrink:0;border:2px solid #e5e7eb;border-radius:16px;padding:12px;display:flex;gap:12px">
+              <span style="width:84px;height:84px;flex-shrink:0;border-radius:12px;background:repeating-linear-gradient(135deg,#fdf0e4 0 8px,#fbe6d3 8px 16px)"></span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                <span style="font:700 19px Arial;color:#111827;line-height:1.25">{{ r.t }}</span>
+                <span style="font:16px Arial;color:#374151">{{ r.c }} · {{ r.time }}</span>
+                <span style="font:16px Arial;color:#374151">{{ r.src }}</span>
+              </span>
+            </div>
+          </sc-for>
+          <span style="flex-shrink:0;height:56px;border-radius:14px;border:2px solid #4b5563;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#111827">Pokaż kolejne</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:460px;font-size:16px;line-height:1.55;color:#374151">
+      <div style="font-size:20px;font-weight:700;color:#111827">Co jest, a czego nie ma</div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <span><b style="color:#111827">Widać:</b> obrazek, wyświetlaną nazwę, liczbę dodanych przepisów, datę dołączenia i listę przepisów dodanych jako pierwsza osoba, z filtrem kategorii.</span>
+        <span><b style="color:#111827">Nie widać:</b> imienia, emaila, ulubionych ani płci. Ulubione są prywatne.</span>
+        <span><b style="color:#111827">Bez obserwowania, komentarzy i wiadomości.</b> To strona do przeglądania, nie portal społecznościowy.</span>
+        <span><b style="color:#111827">Własny profil:</b> ten sam widok z dopiskiem „Tak widzą Twój profil inni” i przyciskiem do ustawień.</span>
+        <span><b style="color:#111827">Dla gości</b> profil jest dostępny jak cała reszta przeglądania.</span>
+        <span><b style="color:#111827">Brak przepisów:</b> „Ania K. nie dodała jeszcze przepisów”. Profil bez przepisów nie trafia do wyszukiwarek internetowych.</span>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { cat: 'all', own: false };
+  componentDidMount() { this.icons(); }
+  componentDidUpdate() { this.icons(); }
+  icons() { setTimeout(() => window.lucide && window.lucide.createIcons(), 0); }
+  data = [
+    { t: 'Zupa krem z dyni', c: 'Zupy', time: '45 minut', src: 'YouTube · Kuchnia Ani' },
+    { t: 'Placuszki dyniowe', c: 'Śniadania', time: '25 minut', src: 'aniagotuje.pl' },
+    { t: 'Kokosanki', c: 'Ciasteczka', time: '25 minut', src: 'aniagotuje.pl' },
+    { t: 'Kulki kokosowe bez pieczenia', c: 'Ciasteczka', time: '20 minut', src: 'Facebook · Słodkie Przepisy' },
+    { t: 'Kruche ciasteczka kokosowe', c: 'Ciasteczka', time: '40 minut', src: 'mojewypieki.com' },
+    { t: 'Zupa marchewkowa z imbirem', c: 'Zupy', time: '30 minut', src: 'kwestiasmaku.com' },
+    { t: 'Sałatka z ogórkiem konserwowym', c: 'Sałatki', time: '15 minut', src: 'aniagotuje.pl' },
+  ];
+  renderVals() {
+    const s = this.state;
+    const pl = (n) => n === 1 ? '1 przepis' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? `${n} przepisy` : `${n} przepisów`;
+    const names = ['Zupy', 'Ciasteczka', 'Śniadania', 'Sałatki'];
+    const chip = (v, l, n) => { const on = s.cat === v; return { l, n: on ? '' : n, on: String(on), mark: on ? '✓ ' : '', border: on ? '#111827' : '#9ca3af', bg: on ? '#111827' : '#fff', fg: on ? '#fff' : '#111827', pick: () => this.setState({ cat: v }) }; };
+    const list = s.cat === 'all' ? this.data : this.data.filter(r => r.c === s.cat);
+    const view = (v, l) => ({ l, on: String(s.own === v), border: s.own === v ? '#111827' : '#d1d5db', bg: s.own === v ? '#111827' : '#fff', fg: s.own === v ? '#fff' : '#111827', pick: () => this.setState({ own: v }) });
+    return {
+      views: [view(false, 'Cudzy'), view(true, 'Mój')],
+      isOwn: s.own,
+      cats: [chip('all', 'Wszystkie', this.data.length), ...names.map(n => chip(n, n, this.data.filter(r => r.c === n).length))],
+      list, countText: s.cat === 'all' ? `Ostatnio dodane: ${pl(list.length)}` : `${s.cat}: ${pl(list.length)}`,
+    };
+  }
+}
+</script>
+</body>
+</html>

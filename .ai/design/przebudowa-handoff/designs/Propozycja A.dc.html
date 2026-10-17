@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#171717;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#9a3412}</style>
+</helmet>
+<section id="1a" style="padding:48px;display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:15px;font-weight:700;padding:4px 10px;border-radius:6px">1a</span><span style="font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#4b5563">Kierunek A · Menu + wyszukiwarka</span></div>
+      <div style="font-size:32px;font-weight:700;color:#111827;line-height:1.15;text-wrap:pretty">Wyszukiwarka na pierwszym planie, wszystko inne w menu</div>
+      <div style="font-size:18px;color:#374151;line-height:1.55;text-wrap:pretty">Rozwinięcie obecnego układu: nagłówek z przyciskiem MENU zostaje, a menu dostaje dwie wyraźne sekcje. Większe litery i przyciski (min. 48 px), każda ikona z podpisem. Porównaj z <a href="Propozycja B.dc.html">1b</a> i <a href="Obecna wersja.dc.html">obecną wersją</a>.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:520px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px 24px">
+      <div style="font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:#4b5563">Model zapisywania</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:10px 14px;font-size:17px;line-height:1.5;color:#374151">
+        <span style="display:inline-flex;color:#c2410c;padding-top:2px"><i data-lucide="book-open" width="20" height="20"></i></span><span><b style="color:#111827">Moje przepisy</b> to tylko te, które sam dodałeś (link, później zdjęcie). Adres: <span style="font-family:monospace;font-size:15px">/przepis/zupa-krem-z-dyni</span>.</span>
+        <span style="display:inline-flex;color:#c2410c;padding-top:2px"><i data-lucide="heart" width="20" height="20"></i></span><span><b style="color:#111827">Ulubione</b> to zakładki na dowolne przepisy, swoje i cudze. Nic się nie kopiuje, autor zostaje widoczny.</span>
+        <span style="display:inline-flex;color:#c2410c;padding-top:2px"><i data-lucide="info" width="20" height="20"></i></span><span>Serce zamiast gwiazdki: gwiazdka kojarzy się z oceną 1–5, zakładka z „zapisz”, czyli z nazwą serwisu. Serce zawsze z podpisem „Ulubione”, żeby nie trzeba było zgadywać.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+
+    <!-- A1 Home guest -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:16px;color:#374151"><b style="color:#111827">A1</b> · Strona główna — gość</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="background:#f3f4f6;padding:8px 16px;font:12px monospace;color:#374151;display:flex;gap:6px;align-items:center"><i data-lucide="lock" width="12" height="12"></i>zapiszprzepis.pl</div>
+        <div style="border-bottom:1px solid #e5e7eb;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+          <img src="public/logo-lettering.svg" width="120" height="30" alt="ZapiszPrzepis">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="border:1.5px solid #d1d5db;border-radius:10px;padding:9px 10px;font-size:17px;font-weight:600;color:#1f2937;white-space:nowrap">Zaloguj się</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:10px;padding:9px 8px;font-size:17px;font-weight:700;color:#1f2937;white-space:nowrap"><i data-lucide="menu" width="22" height="22"></i>MENU</span>
+          </div>
+        </div>
+        <div style="padding:28px 16px 20px;background:#fff7ed;display:flex;flex-direction:column;gap:14px">
+          <div style="font-size:28px;font-weight:700;color:#111827;line-height:1.15">Czego dziś szukasz?</div>
+          <div style="font-size:18px;color:#374151;line-height:1.45">Przepisy z Facebooka, YouTube i blogów, spisane po polsku i zapisane na stałe.</div>
+          <div style="display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #c2410c;border-radius:14px;padding:0 8px 0 14px;height:58px">
+            <span style="display:inline-flex;color:#4b5563"><i data-lucide="search" width="22" height="22"></i></span>
+            <span style="flex:1;font-size:19px;color:#4b5563">Danie lub składnik, np. dynia</span>
+            <span style="display:inline-flex;color:#374151;padding:10px"><i data-lucide="mic" width="22" height="22"></i></span>
+          </div>
+          <div style="height:52px;border-radius:12px;background:#c2410c;color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;justify-content:center">Szukaj przepisu</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <span style="font-size:16px;color:#374151">Często szukane:</span>
+            <sc-for list="{{ popular }}" as="p" hint-placeholder-count="3"><span style="background:#fff;border:1px solid #fed7aa;color:#9a3412;border-radius:999px;padding:7px 12px;font-size:17px">{{ p }}</span></sc-for>
+          </div>
+        </div>
+        <div style="padding:24px 16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:20px;font-weight:700;color:#111827">Kategorie</span><span style="font-size:17px;font-weight:600;color:#c2410c">Wszystkie →</span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <sc-for list="{{ cats }}" as="c" hint-placeholder-count="9">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px;border-radius:12px;background:#fff7ed;color:#9a3412"><i data-lucide="{{ c.i }}" width="26" height="26" stroke-width="1.75"></i><span style="font-size:17px;font-weight:600">{{ c.l }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:8px 16px 24px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-size:20px;font-weight:700;color:#111827">Ostatnio dodane</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <sc-for list="{{ recent }}" as="r" hint-placeholder-count="4">
+              <div style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+                <div style="position:relative;aspect-ratio:4/3;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                  <span style="position:absolute;left:8px;bottom:6px;font:10px monospace;color:#b45309">zdjęcie dania</span>
+                  <span style="position:absolute;top:6px;right:6px;width:48px;height:48px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,.15)"><i data-lucide="heart" width="20" height="20"></i></span>
+                </div>
+                <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px">
+                  <span style="font-size:18px;font-weight:600;color:#111827;line-height:1.3">{{ r.t }}</span>
+                  <span style="font-size:16px;color:#374151">{{ r.a }} · {{ r.time }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin:0 16px 24px;border-radius:16px;background:#111827;color:#fff;padding:20px;display:flex;flex-direction:column;gap:12px">
+          <div style="font-size:19px;font-weight:700;line-height:1.3">Zapisuj przepisy z linku i zbieraj ulubione</div>
+          <div style="font-size:17px;line-height:1.45;color:#e5e7eb">Po zalogowaniu dodasz własne przepisy, zobaczysz galerię zdjęć i zapiszesz ulubione.</div>
+          <div style="display:flex;gap:8px"><span style="flex:1;height:48px;border-radius:12px;background:#c2410c;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700">Załóż konto</span><span style="flex:1;height:48px;border-radius:12px;border:1.5px solid #6b7280;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600">Zaloguj się</span></div>
+        </div>
+      </div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><div style="font-size:16px;color:#374151;line-height:1.5">Gość ląduje na wyszukiwarce, nie na logowaniu. Serce u gościa otwiera prośbę o zalogowanie i po zalogowaniu wraca do tego samego przepisu.</div></sc-if>
+    </div>
+
+    <!-- A2 Home logged -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:16px;color:#374151"><b style="color:#111827">A2</b> · Strona główna — zalogowany</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="background:#f3f4f6;padding:8px 16px;font:12px monospace;color:#374151;display:flex;gap:6px;align-items:center"><i data-lucide="lock" width="12" height="12"></i>zapiszprzepis.pl</div>
+        <div style="border-bottom:1px solid #e5e7eb;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+          <img src="public/logo-lettering.svg" width="120" height="30" alt="ZapiszPrzepis">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:10px;background:#c2410c;padding:9px 12px;font-size:17px;font-weight:700;color:#fff;white-space:nowrap"><i data-lucide="plus" width="18" height="18"></i>Dodaj</span>
+            <span style="position:relative;padding:10px;color:#374151;display:inline-flex"><i data-lucide="bell" width="22" height="22"></i><span style="position:absolute;top:4px;right:3px;min-width:18px;height:18px;border-radius:999px;background:#dc2626;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">1</span></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:9px 6px;font-size:17px;font-weight:700;color:#1f2937;white-space:nowrap"><i data-lucide="menu" width="22" height="22"></i>MENU</span>
+          </div>
+        </div>
+        <div style="padding:22px 16px 20px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-size:24px;font-weight:700;color:#111827">Dzień dobry, Aniu</div>
+          <div style="display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #d1d5db;border-radius:14px;padding:0 8px 0 14px;height:56px">
+            <span style="display:inline-flex;color:#4b5563"><i data-lucide="search" width="22" height="22"></i></span>
+            <span style="flex:1;font-size:19px;color:#4b5563">Szukaj przepisu lub składnika</span>
+            <span style="display:inline-flex;color:#374151;padding:10px"><i data-lucide="mic" width="22" height="22"></i></span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="display:inline-flex;color:#c2410c"><i data-lucide="book-open" width="24" height="24"></i></span><span style="font-size:19px;font-weight:700;color:#111827">Moje przepisy</span><span style="font-size:16px;color:#374151">24 dodane przez Ciebie</span></div>
+            <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="display:inline-flex;color:#c2410c"><i data-lucide="heart" width="24" height="24"></i></span><span style="font-size:19px;font-weight:700;color:#111827">Ulubione</span><span style="font-size:16px;color:#374151">12 przepisów</span></div>
+          </div>
+          <div style="border-radius:14px;background:#fff7ed;padding:16px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:19px;font-weight:700;color:#111827">Dodaj przepis z linku</span>
+            <div style="display:flex;gap:8px"><div style="flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #d1d5db;border-radius:12px;padding:0 12px;height:50px;font-size:18px;color:#4b5563"><i data-lucide="link" width="18" height="18"></i>Wklej link</div><span style="height:50px;padding:0 16px;border-radius:12px;background:#c2410c;color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center">Dodaj</span></div>
+            <span style="font-size:16px;color:#374151;display:flex;gap:6px;align-items:center"><i data-lucide="camera" width="16" height="16"></i>Ze zdjęcia lub zrzutu ekranu — wkrótce</span>
+          </div>
+        </div>
+        <div style="padding:4px 16px 24px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:20px;font-weight:700;color:#111827">Nowe w serwisie</span><span style="font-size:17px;font-weight:600;color:#c2410c">Więcej →</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <sc-for list="{{ recent }}" as="r" hint-placeholder-count="4">
+              <div style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+                <div style="position:relative;aspect-ratio:4/3;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                  <span style="position:absolute;top:6px;right:6px;width:48px;height:48px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;color:{{ r.heartColor }};box-shadow:0 1px 3px rgba(0,0,0,.15)"><i data-lucide="heart" width="20" height="20" fill="{{ r.fill }}"></i></span>
+                </div>
+                <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:18px;font-weight:600;color:#111827;line-height:1.3">{{ r.t }}</span><span style="font-size:16px;color:#374151">{{ r.a }} · {{ r.time }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><div style="font-size:16px;color:#374151;line-height:1.5">Dwa kafle prowadzą do dwóch różnych rzeczy: własnej kolekcji i ulubionych. Dodawanie z linku zostaje na wierzchu, bo to główna czynność zalogowanego.</div></sc-if>
+    </div>
+
+    <!-- A3 Search results -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:16px;color:#374151"><b style="color:#111827">A3</b> · Wyniki wyszukiwania</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="background:#f3f4f6;padding:8px 16px;font:12px monospace;color:#374151;display:flex;gap:6px;align-items:center"><i data-lucide="lock" width="12" height="12"></i>zapiszprzepis.pl/szukaj?q=dynia</div>
+        <div style="border-bottom:1px solid #e5e7eb;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+          <img src="public/logo-lettering.svg" width="120" height="30" alt="ZapiszPrzepis">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:10px;background:#c2410c;padding:9px 12px;font-size:17px;font-weight:700;color:#fff;white-space:nowrap"><i data-lucide="plus" width="18" height="18"></i>Dodaj</span>
+            <span style="padding:10px;color:#374151;display:inline-flex"><i data-lucide="bell" width="22" height="22"></i></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:9px 6px;font-size:17px;font-weight:700;color:#1f2937;white-space:nowrap"><i data-lucide="menu" width="22" height="22"></i>MENU</span>
+          </div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:10px;border:2px solid #c2410c;border-radius:14px;padding:0 6px 0 14px;height:56px">
+            <span style="display:inline-flex;color:#4b5563"><i data-lucide="search" width="22" height="22"></i></span>
+            <span style="flex:1;font-size:19px;color:#111827">dynia</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;color:#374151;padding:8px 10px;font-size:17px;font-weight:600"><i data-lucide="x" width="18" height="18"></i>Wyczyść</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);background:#f3f4f6;border-radius:12px;padding:4px;gap:4px">
+            <span style="background:#fff;border-radius:9px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#111827;box-shadow:0 1px 2px rgba(0,0,0,.1)">Wszystkie 18</span>
+            <span style="border-radius:9px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:#374151">Moje 3</span>
+            <span style="border-radius:9px;height:44px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:#374151">Ulubione 1</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <span style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#c2410c;color:#fff;font-size:17px;font-weight:600">Wszystkie kategorie</span>
+            <sc-for list="{{ catsShort }}" as="c" hint-placeholder-count="3"><span style="flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:17px;font-weight:600"><i data-lucide="{{ c.i }}" width="18" height="18" stroke-width="1.75"></i>{{ c.l }}</span></sc-for>
+          </div>
+          <div style="font-size:17px;color:#374151">18 przepisów dla „dynia”</div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ results }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid #f3f4f6">
+                <div style="width:88px;height:88px;flex-shrink:0;border-radius:10px;background:repeating-linear-gradient(135deg,#fdf0e4 0 8px,#fbe6d3 8px 16px)"></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                  <span style="font-size:19px;font-weight:600;color:#111827;line-height:1.3">{{ r.t }}</span>
+                  <span style="font-size:16px;color:#374151">{{ r.c }} · {{ r.time }}</span>
+                  <span style="font-size:16px;color:#374151;display:flex;gap:6px;align-items:center">{{ r.a }}<sc-if value="{{ r.mine }}" hint-placeholder-val="{{ false }}"><span style="background:#f3f4f6;color:#374151;border-radius:6px;padding:1px 6px;font-size:14px;font-weight:700">Twój</span></sc-if></span>
+                </div>
+                <span style="width:48px;height:48px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;justify-content:center;color:{{ r.heartColor }}"><i data-lucide="heart" width="24" height="24" fill="{{ r.fill }}"></i></span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border:1.5px dashed #d1d5db;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:18px;font-weight:700;color:#111827">Nie ma tego, czego szukasz?</span>
+            <span style="height:48px;border-radius:12px;border:1.5px solid #d1d5db;display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;font-weight:600;color:#1f2937"><i data-lucide="globe" width="18" height="18"></i>Szukaj „dynia” w internecie</span>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><div style="font-size:16px;color:#374151;line-height:1.5">Jedna wyszukiwarka dla całego serwisu. Zakres (Wszystkie / Moje / Ulubione) to duży przełącznik z liczbami, kategorie przewijają się w poziomie. Lista zamiast siatki: dłuższe tytuły mieszczą się w całości. Gość widzi tylko „Wszystkie”. Wyszukiwanie w internecie (Exa) przeniesione na koniec wyników.</div></sc-if>
+    </div>
+
+    <!-- A4 Recipe top -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:16px;color:#374151"><b style="color:#111827">A4</b> · Przepis — początek</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="background:#f3f4f6;padding:8px 16px;font:12px monospace;color:#374151;display:flex;gap:6px;align-items:center"><i data-lucide="lock" width="12" height="12"></i>zapiszprzepis.pl/przepis/zupa-krem-z-dyni</div>
+        <div style="border-bottom:1px solid #e5e7eb;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+          <img src="public/logo-lettering.svg" width="120" height="30" alt="ZapiszPrzepis">
+          <div style="display:flex;align-items:center;gap:2px">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:10px;background:#c2410c;padding:9px 12px;font-size:17px;font-weight:700;color:#fff;white-space:nowrap"><i data-lucide="plus" width="18" height="18"></i>Dodaj</span>
+            <span style="padding:10px;color:#374151;display:inline-flex"><i data-lucide="bell" width="22" height="22"></i></span>
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:9px 6px;font-size:17px;font-weight:700;color:#1f2937;white-space:nowrap"><i data-lucide="menu" width="22" height="22"></i>MENU</span>
+          </div>
+        </div>
+        <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f3f4f6">
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:18px;font-weight:600;color:#1f2937;padding:8px 0"><i data-lucide="arrow-left" width="20" height="20"></i>Wyniki: „dynia”</span>
+          <span style="font-size:16px;color:#374151">1 z 18</span>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div style="aspect-ratio:4/3;border-radius:14px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px);position:relative"><span style="position:absolute;left:12px;bottom:10px;font:11px monospace;color:#b45309">zdjęcie główne</span></div>
+          <div style="display:flex;gap:8px;font-size:16px;color:#374151"><span>Przepisy</span><span>›</span><span style="color:#c2410c;font-weight:600">Zupy</span></div>
+          <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Zupa krem z dyni</div>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;align-items:center;gap:8px;font-size:18px;color:#111827"><i data-lucide="globe" width="20" height="20"></i>Źródło: <b>YouTube · Kuchnia Ani</b></span><span style="font-size:16px;color:#374151">Dodała <a href="#">Ania K.</a> · 12 października</span></div>
+          <div style="display:flex;gap:8px">
+            <span style="flex:1;height:52px;border-radius:12px;border:2px solid #c2410c;color:#c2410c;display:flex;align-items:center;justify-content:center;gap:8px;font-size:19px;font-weight:700"><i data-lucide="heart" width="22" height="22"></i>Dodaj do ulubionych</span>
+            <span style="width:52px;height:52px;border-radius:12px;border:1.5px solid #d1d5db;color:#374151;display:flex;align-items:center;justify-content:center"><i data-lucide="share-2" width="22" height="22"></i></span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div style="background:#f9fafb;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;color:#374151">Przygotowanie</span><span style="font-size:19px;font-weight:700;color:#111827">15 min</span></div>
+            <div style="background:#f9fafb;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;color:#374151">Gotowanie</span><span style="font-size:19px;font-weight:700;color:#111827">30 min</span></div>
+            <div style="background:#f9fafb;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;color:#374151">Łącznie</span><span style="font-size:19px;font-weight:700;color:#111827">45 min</span></div>
+          </div>
+          <div style="font-size:22px;font-weight:700;color:#111827;margin-top:8px">Składniki</div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ ingredients }}" as="g" hint-placeholder-count="5"><div style="display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #f3f4f6;font-size:19px"><span style="color:#111827">{{ g.n }}</span><span style="color:#374151;white-space:nowrap">{{ g.a }}</span></div></sc-for>
+          </div>
+          <div style="font-size:22px;font-weight:700;color:#111827;margin-top:8px">Przygotowanie</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3"><div style="display:flex;gap:12px"><span style="width:32px;height:32px;border-radius:999px;background:#ffedd5;color:#9a3412;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ s.n }}</span><span style="font-size:19px;line-height:1.5;color:#1f2937;padding-top:4px">{{ s.t }}</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><div style="font-size:16px;color:#374151;line-height:1.5">„Wróć” mówi dokąd: do wyników, kategorii albo ulubionych, zależnie skąd przyszedł użytkownik. Autor i data zamiast technicznej plakietki źródła. Składniki w dwóch kolumnach: nazwa i ilość, łatwe do przeczytania z daleka.</div></sc-if>
+    </div>
+
+    <!-- A5 Recipe bottom -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:16px;color:#374151"><b style="color:#111827">A5</b> · Przepis — koniec strony (gość)</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="padding:20px 16px;display:flex;flex-direction:column;gap:16px">
+          <div style="font-size:22px;font-weight:700;color:#111827">Zdjęcia</div>
+          <div style="border-radius:14px;background:#f9fafb;border:1.5px dashed #d1d5db;padding:20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+            <span style="display:inline-flex;color:#374151"><i data-lucide="lock" width="26" height="26"></i></span>
+            <span style="font-size:18px;color:#1f2937;line-height:1.45">Galeria 6 zdjęć jest dostępna po zalogowaniu.</span>
+            <span style="height:48px;padding:0 24px;border-radius:12px;background:#111827;color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center">Zaloguj się</span>
+          </div>
+          <span style="height:48px;border-radius:12px;border:1.5px solid #d1d5db;color:#1f2937;display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;font-weight:600"><i data-lucide="external-link" width="18" height="18"></i>Otwórz oryginał na YouTube</span>
+          <div style="border-top:1px solid #e5e7eb;padding-top:18px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:16px;color:#374151">Więcej w kategorii Zupy</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px;min-height:76px"><span style="display:inline-flex;align-items:center;gap:4px;font-size:16px;font-weight:600;color:#c2410c"><i data-lucide="arrow-left" width="16" height="16"></i>Poprzedni</span><span style="font-size:18px;font-weight:600;color:#111827;line-height:1.3">Barszcz czerwony</span></div>
+              <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:4px;min-height:76px"><span style="display:inline-flex;align-items:center;gap:4px;font-size:16px;font-weight:600;color:#c2410c">Następny<i data-lucide="arrow-right" width="16" height="16"></i></span><span style="font-size:18px;font-weight:600;color:#111827;line-height:1.3">Krem z pieczonej papryki</span></div>
+            </div>
+          </div>
+          <div style="font-size:22px;font-weight:700;color:#111827;margin-top:6px">Podobne przepisy</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <sc-for list="{{ similar }}" as="r" hint-placeholder-count="4">
+              <div style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+                <div style="position:relative;aspect-ratio:4/3;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)"><span style="position:absolute;top:6px;right:6px;width:48px;height:48px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,.15)"><i data-lucide="heart" width="20" height="20"></i></span></div>
+                <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:18px;font-weight:600;color:#111827;line-height:1.3">{{ r.t }}</span><span style="font-size:16px;color:#374151">{{ r.a }} · {{ r.time }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+          <span style="height:52px;border-radius:12px;background:#fff7ed;color:#9a3412;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700">Wszystkie zupy (96) →</span>
+        </div>
+      </div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><div style="font-size:16px;color:#374151;line-height:1.5">Poprzedni / następny idą po liście, z której przyszedł użytkownik (wyniki, kategoria, ulubione), a nazwa listy jest podpisana. Podobne przepisy: ta sama kategoria i wspólne tagi. Galeria dla gościa: zablokowana z liczbą zdjęć i przyciskiem logowania.</div></sc-if>
+    </div>
+
+    <!-- A6 Drawer -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:16px;color:#374151"><b style="color:#111827">A6</b> · Menu — zalogowany</div>
+      <div style="width:390px;height:844px;position:relative;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
+        <div style="position:absolute;top:0;right:0;bottom:0;width:330px;background:#fff;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding:12px 16px 12px 20px">
+            <span style="font-size:19px;font-weight:700;color:#111827">Menu</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:10px;font-size:17px;font-weight:700;color:#1f2937"><i data-lucide="x" width="22" height="22"></i>Zamknij</span>
+          </div>
+          <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 20px"><span style="width:48px;height:48px;border-radius:999px;background:#ffedd5;color:#9a3412;font-weight:700;font-size:19px;display:flex;align-items:center;justify-content:center">A</span><span style="display:flex;flex-direction:column"><span style="font-size:19px;font-weight:700;color:#111827">Ania Kowalska</span><span style="font-size:16px;color:#374151">@ania</span></span></div>
+            <div style="padding:10px 20px 4px;font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#374151">Moje</div>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 20px;font-size:18px;font-weight:600;color:#1f2937"><i data-lucide="book-open" width="24" height="24"></i><span style="flex:1">Moje przepisy</span><span style="font-size:17px;color:#374151">24</span></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 20px;font-size:18px;font-weight:600;color:#1f2937"><i data-lucide="heart" width="24" height="24"></i><span style="flex:1">Ulubione</span><span style="font-size:17px;color:#374151">12</span></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 20px;font-size:18px;font-weight:600;color:#c2410c"><i data-lucide="plus" width="24" height="24"></i><span style="flex:1">Dodaj przepis</span></div>
+            <div style="margin:8px 20px;border-top:1px solid #e5e7eb"></div>
+            <div style="padding:6px 20px 4px;font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#374151">Wszystkie przepisy</div>
+            <div style="display:flex;align-items:center;gap:14px;padding:10px 20px;font-size:19px;font-weight:600;color:#1f2937"><i data-lucide="layout-grid" width="22" height="22"></i><span style="flex:1">Przeglądaj wszystkie</span><span style="font-size:17px;color:#374151">625</span></div>
+            <sc-for list="{{ cats }}" as="c" hint-placeholder-count="9"><div style="display:flex;align-items:center;gap:14px;padding:9px 20px;font-size:19px;color:#1f2937"><span style="display:inline-flex;color:#c2410c"><i data-lucide="{{ c.i }}" width="22" height="22" stroke-width="1.75"></i></span><span style="flex:1">{{ c.l }}</span><span style="font-size:17px;color:#374151">{{ c.n }}</span></div></sc-for>
+          </div>
+          <div style="border-top:1px solid #f3f4f6;padding:6px 0;display:flex">
+            <span style="flex:1;display:flex;align-items:center;gap:10px;padding:12px 20px;font-size:18px;font-weight:600;color:#1f2937"><i data-lucide="settings" width="22" height="22"></i>Ustawienia</span>
+            <span style="flex:1;display:flex;align-items:center;gap:10px;padding:12px 20px;font-size:18px;font-weight:600;color:#1f2937"><i data-lucide="log-out" width="22" height="22"></i>Wyloguj</span>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><div style="font-size:16px;color:#374151;line-height:1.5">Dwie sekcje z nagłówkami: „Moje” (kolekcja i ulubione) oraz „Wszystkie przepisy” z kategoriami. Kategoria otwiera wyniki w zakresie Wszystkie, a przełącznik z A3 zawęża do Moich. Gość zamiast sekcji „Moje” widzi przyciski Zaloguj się / Załóż konto.</div></sc-if>
+    </div>
+
+    <!-- A7 Add -->
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:16px;color:#374151"><b style="color:#111827">A7</b> · Dodaj przepis</div>
+      <div style="width:390px;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="background:#f3f4f6;padding:8px 16px;font:12px monospace;color:#374151;display:flex;gap:6px;align-items:center"><i data-lucide="lock" width="12" height="12"></i>zapiszprzepis.pl/dodaj</div>
+        <div style="border-bottom:1px solid #e5e7eb;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:18px;font-weight:600;color:#1f2937;padding:8px 0"><i data-lucide="arrow-left" width="20" height="20"></i>Wróć</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:9px 6px;font-size:17px;font-weight:700;color:#1f2937;white-space:nowrap"><i data-lucide="menu" width="22" height="22"></i>MENU</span>
+        </div>
+        <div style="padding:24px 16px;display:flex;flex-direction:column;gap:16px">
+          <div style="font-size:28px;font-weight:700;color:#111827">Dodaj przepis</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="border:2px solid #c2410c;background:#fff7ed;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="display:inline-flex;color:#c2410c"><i data-lucide="link" width="26" height="26"></i></span><span style="font-size:19px;font-weight:700;color:#111827">Z linku</span><span style="font-size:16px;color:#374151">Facebook, YouTube, blog</span></div>
+            <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;color:#4b5563"><i data-lucide="camera" width="26" height="26"></i><span style="font-size:19px;font-weight:700;color:#374151">Ze zdjęcia</span><span style="font-size:16px;color:#374151">Zrzut ekranu lub książka · wkrótce</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:18px;font-weight:600;color:#111827">Link do przepisu</span>
+            <div style="display:flex;align-items:center;gap:8px;border:2px solid #d1d5db;border-radius:12px;padding:0 6px 0 14px;height:56px"><span style="flex:1;font-size:19px;color:#4b5563">https://…</span><span style="display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 12px;border-radius:9px;background:#f3f4f6;font-size:17px;font-weight:600;color:#1f2937"><i data-lucide="clipboard-paste" width="18" height="18"></i>Wklej</span></div>
+          </div>
+          <span style="height:54px;border-radius:12px;background:#c2410c;color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center;justify-content:center">Dodaj przepis</span>
+          <div style="background:#f9fafb;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:17px;color:#374151;line-height:1.5">
+            <span style="display:flex;gap:10px"><b style="color:#111827">1.</b>Wklejasz link, my spisujemy przepis po polsku.</span>
+            <span style="display:flex;gap:10px"><b style="color:#111827">2.</b>Trwa to 1–3 minuty. Możesz zamknąć stronę.</span>
+            <span style="display:flex;gap:10px"><b style="color:#111827">3.</b>Gotowy przepis pojawi się w „Moje przepisy”, a dzwonek da znać o problemie.</span>
+          </div>
+          <span style="font-size:17px;color:#374151;line-height:1.5">Na telefonie możesz też użyć „Udostępnij → ZapiszPrzepis” prosto z Facebooka lub YouTube.</span>
+        </div>
+      </div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><div style="font-size:16px;color:#374151;line-height:1.5">Osobna strona zamiast zakładki na stronie głównej. Kafel „Ze zdjęcia” już jest widoczny, ale wyszarzony z napisem „wkrótce”, więc późniejsze włączenie nie zmienia układu.</div></sc-if>
+    </div>
+  </div>
+
+  <!-- Desktop -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:16px;color:#374151"><b style="color:#111827">A8</b> · Strona główna — gość, desktop</div>
+    <div style="width:1280px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+      <div style="background:#f3f4f6;padding:10px 20px;font:13px monospace;color:#374151;display:flex;gap:6px;align-items:center"><i data-lucide="lock" width="13" height="13"></i>zapiszprzepis.pl</div>
+      <div style="border-bottom:1px solid #e5e7eb"><div style="max-width:1152px;margin:0 auto;padding:14px 32px;display:flex;align-items:center;gap:32px">
+        <img src="public/logo-lettering.svg" width="140" height="35" alt="ZapiszPrzepis">
+        <div style="display:flex;gap:4px;font-size:18px;font-weight:600;color:#1f2937"><span style="padding:10px 14px">Przepisy</span><span style="padding:10px 14px;display:inline-flex;align-items:center;gap:4px">Kategorie<i data-lucide="chevron-down" width="16" height="16"></i></span></div>
+        <div style="flex:1"></div>
+        <span style="border:1.5px solid #d1d5db;border-radius:10px;padding:10px 16px;font-size:18px;font-weight:600;color:#1f2937">Zaloguj się</span>
+        <span style="border-radius:10px;padding:11px 16px;font-size:18px;font-weight:700;color:#fff;background:#c2410c;white-space:nowrap">Załóż konto</span>
+      </div></div>
+      <div style="background:#fff7ed"><div style="max-width:1152px;margin:0 auto;padding:56px 32px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+        <div style="font-size:46px;font-weight:700;color:#111827;line-height:1.1">Czego dziś szukasz?</div>
+        <div style="font-size:19px;color:#374151">Przepisy z Facebooka, YouTube i blogów, spisane po polsku i zapisane na stałe.</div>
+        <div style="width:760px;display:flex;gap:10px;margin-top:6px">
+          <div style="flex:1;display:flex;align-items:center;gap:12px;background:#fff;border:2px solid #c2410c;border-radius:14px;padding:0 10px 0 18px;height:64px"><span style="display:inline-flex;color:#4b5563"><i data-lucide="search" width="24" height="24"></i></span><span style="flex:1;text-align:left;font-size:19px;color:#4b5563">Danie lub składnik, np. dynia</span><span style="display:inline-flex;color:#374151;padding:10px"><i data-lucide="mic" width="22" height="22"></i></span></div>
+          <span style="height:64px;padding:0 32px;border-radius:14px;background:#c2410c;color:#fff;font-size:19px;font-weight:700;display:flex;align-items:center">Szukaj</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center"><span style="font-size:17px;color:#374151">Często szukane:</span><sc-for list="{{ popular }}" as="p" hint-placeholder-count="3"><span style="background:#fff;border:1px solid #fed7aa;color:#9a3412;border-radius:999px;padding:7px 14px;font-size:17px">{{ p }}</span></sc-for></div>
+      </div></div>
+      <div style="max-width:1152px;margin:0 auto;padding:40px 32px;display:flex;flex-direction:column;gap:40px">
+        <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:10px">
+          <sc-for list="{{ cats }}" as="c" hint-placeholder-count="9"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 4px;border-radius:14px;background:#fff7ed;color:#9a3412"><i data-lucide="{{ c.i }}" width="28" height="28" stroke-width="1.75"></i><span style="font-size:18px;font-weight:600">{{ c.l }}</span><span style="font-size:15px;color:#374151">{{ c.n }}</span></div></sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:26px;font-weight:700;color:#111827">Ostatnio dodane</span><span style="font-size:18px;font-weight:600;color:#c2410c">Wszystkie przepisy →</span></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+            <sc-for list="{{ recent }}" as="r" hint-placeholder-count="4">
+              <div style="border:1px solid #e5e7eb;border-radius:14px;overflow:hidden">
+                <div style="position:relative;aspect-ratio:4/3;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)"><span style="position:absolute;top:10px;right:10px;width:48px;height:48px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,.15)"><i data-lucide="heart" width="22" height="22"></i></span></div>
+                <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px"><span style="font-size:18px;font-weight:600;color:#111827;line-height:1.3">{{ r.t }}</span><span style="font-size:17px;color:#374151">{{ r.c }} · {{ r.time }} · {{ r.a }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border-radius:20px;background:#111827;color:#fff;padding:32px 40px;display:flex;align-items:center;gap:32px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px"><span style="font-size:24px;font-weight:700">Zapisuj przepisy z linku i zbieraj ulubione</span><span style="font-size:19px;color:#e5e7eb">Po zalogowaniu dodasz własne przepisy, zobaczysz galerię zdjęć i zapiszesz ulubione.</span></div>
+          <span style="height:54px;padding:0 28px;border-radius:12px;background:#c2410c;display:flex;align-items:center;font-size:19px;font-weight:700">Załóż konto</span>
+          <span style="height:54px;padding:0 24px;border-radius:12px;border:1.5px solid #6b7280;display:flex;align-items:center;font-size:19px;font-weight:600">Zaloguj się</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:16px;color:#374151"><b style="color:#111827">A9</b> · Przepis — zalogowany, desktop</div>
+    <div style="width:1280px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+      <div style="background:#f3f4f6;padding:10px 20px;font:13px monospace;color:#374151;display:flex;gap:6px;align-items:center"><i data-lucide="lock" width="13" height="13"></i>zapiszprzepis.pl/przepis/zupa-krem-z-dyni</div>
+      <div style="border-bottom:1px solid #e5e7eb"><div style="max-width:1152px;margin:0 auto;padding:14px 32px;display:flex;align-items:center;gap:24px">
+        <img src="public/logo-lettering.svg" width="140" height="35" alt="ZapiszPrzepis">
+        <div style="flex:1;display:flex;align-items:center;gap:10px;border:1.5px solid #d1d5db;border-radius:12px;padding:0 14px;height:48px;max-width:460px"><span style="display:inline-flex;color:#4b5563"><i data-lucide="search" width="20" height="20"></i></span><span style="font-size:18px;color:#4b5563">Szukaj przepisu lub składnika</span></div>
+        <div style="flex:1"></div>
+        <span style="display:inline-flex;align-items:center;gap:6px;border-radius:10px;background:#c2410c;padding:11px 16px;font-size:18px;font-weight:700;color:#fff;white-space:nowrap"><i data-lucide="plus" width="18" height="18"></i>Dodaj przepis</span>
+        <span style="padding:10px;color:#374151;display:inline-flex"><i data-lucide="bell" width="22" height="22"></i></span>
+        <span style="display:inline-flex;align-items:center;gap:6px;padding:10px;font-size:18px;font-weight:700;color:#1f2937;white-space:nowrap"><i data-lucide="menu" width="22" height="22"></i>MENU</span>
+      </div></div>
+      <div style="max-width:1152px;margin:0 auto;padding:20px 32px 48px;display:flex;flex-direction:column;gap:28px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:600;color:#1f2937"><i data-lucide="arrow-left" width="20" height="20"></i>Wyniki: „dynia” · 1 z 18</span><span style="display:flex;gap:8px;font-size:17px;color:#374151"><span>Przepisy</span><span>›</span><span style="color:#c2410c;font-weight:600">Zupy</span></span></div>
+        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center">
+          <div style="aspect-ratio:16/10;border-radius:18px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)"></div>
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div style="font-size:44px;font-weight:700;color:#111827;line-height:1.1">Zupa krem z dyni</div>
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;align-items:center;gap:8px;font-size:19px;color:#111827"><i data-lucide="globe" width="20" height="20"></i>Źródło: <b>YouTube · Kuchnia Ani</b></span><span style="font-size:17px;color:#374151">Dodała <a href="#">Ania K.</a> · 12 października</span></div>
+            <div style="display:flex;gap:28px"><span style="display:flex;flex-direction:column"><span style="font-size:16px;color:#374151">Przygotowanie</span><b style="font-size:20px;color:#111827">15 min</b></span><span style="display:flex;flex-direction:column"><span style="font-size:16px;color:#374151">Gotowanie</span><b style="font-size:20px;color:#111827">30 min</b></span><span style="display:flex;flex-direction:column"><span style="font-size:16px;color:#374151">Łącznie</span><b style="font-size:20px;color:#111827">45 min</b></span></div>
+            <div style="display:flex;gap:10px">
+              <span style="height:54px;padding:0 22px;border-radius:12px;background:#c2410c;color:#fff;display:flex;align-items:center;gap:8px;font-size:19px;font-weight:700"><i data-lucide="heart" width="22" height="22" fill="currentColor"></i>W ulubionych</span>
+              <span style="height:54px;padding:0 18px;border-radius:12px;border:1.5px solid #d1d5db;color:#1f2937;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:600"><i data-lucide="share-2" width="20" height="20"></i>Udostępnij</span>
+              <span style="height:54px;padding:0 18px;border-radius:12px;border:1.5px solid #d1d5db;color:#1f2937;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:600"><i data-lucide="external-link" width="20" height="20"></i>Oryginał</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:48px">
+          <div style="background:#f9fafb;border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:6px;align-self:start">
+            <div style="font-size:24px;font-weight:700;color:#111827;margin-bottom:6px">Składniki</div>
+            <sc-for list="{{ ingredients }}" as="g" hint-placeholder-count="5"><div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #e5e7eb;font-size:18px"><span style="color:#111827">{{ g.n }}</span><span style="color:#374151">{{ g.a }}</span></div></sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div style="font-size:24px;font-weight:700;color:#111827">Przygotowanie</div>
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3"><div style="display:flex;gap:14px"><span style="width:36px;height:36px;border-radius:999px;background:#ffedd5;color:#9a3412;font-weight:700;font-size:19px;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ s.n }}</span><span style="font-size:18px;line-height:1.6;color:#1f2937;padding-top:4px">{{ s.t }}</span></div></sc-for>
+            <div style="font-size:24px;font-weight:700;color:#111827;margin-top:12px">Zdjęcia</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><sc-for list="{{ gallery }}" as="x" hint-placeholder-count="4"><div style="aspect-ratio:1;border-radius:12px;background:repeating-linear-gradient(135deg,#fdf0e4 0 8px,#fbe6d3 8px 16px)"></div></sc-for></div>
+          </div>
+        </div>
+        <div style="border-top:1px solid #e5e7eb;padding-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px"><span style="display:inline-flex;color:#c2410c"><i data-lucide="arrow-left" width="24" height="24"></i></span><span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;color:#374151">Poprzedni w wynikach „dynia”</span><span style="font-size:18px;font-weight:600;color:#111827">Barszcz czerwony</span></span></div>
+          <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:16px 20px;display:flex;align-items:center;gap:14px;justify-content:flex-end;text-align:right"><span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;color:#374151">Następny w wynikach „dynia”</span><span style="font-size:18px;font-weight:600;color:#111827">Ciasto dyniowe z kruszonką</span></span><span style="display:inline-flex;color:#c2410c"><i data-lucide="arrow-right" width="24" height="24"></i></span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <span style="font-size:26px;font-weight:700;color:#111827">Podobne przepisy</span>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+            <sc-for list="{{ similar }}" as="r" hint-placeholder-count="4">
+              <div style="border:1px solid #e5e7eb;border-radius:14px;overflow:hidden">
+                <div style="position:relative;aspect-ratio:4/3;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)"><span style="position:absolute;top:10px;right:10px;width:48px;height:48px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;color:#374151;box-shadow:0 1px 3px rgba(0,0,0,.15)"><i data-lucide="heart" width="22" height="22"></i></span></div>
+                <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px"><span style="font-size:18px;font-weight:600;color:#111827;line-height:1.3">{{ r.t }}</span><span style="font-size:17px;color:#374151">{{ r.a }} · {{ r.time }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prezentacja&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() { this.icons(); }
+  componentDidUpdate() { this.icons(); }
+  icons() { setTimeout(() => window.lucide && window.lucide.createIcons(), 0); }
+  renderVals() {
+    const heart = (r) => ({ ...r, fill: r.fav ? 'currentColor' : 'none', heartColor: r.fav ? '#ea580c' : '#4b5563' });
+    const cats = [['Obiady','utensils',142],['Zupy','soup',96],['Desery','cake-slice',88],['Ciasteczka','cookie',51],['Śniadania','coffee',64],['Przekąski','sandwich',73],['Sałatki','salad',58],['Napoje','glass-water',22],['Inne','utensils-crossed',31]].map(([l,i,n]) => ({ l, i, n }));
+    return {
+      showNotes: this.props.showNotes ?? true,
+      popular: ['pierogi', 'tiramisu', 'zupa krem'],
+      cats,
+      catsShort: cats.slice(0, 3),
+      recent: [
+        { t: 'Zupa krem z dyni', a: 'aniagotuje.pl', c: 'Zupy', time: '45 min', fav: true },
+        { t: 'Tiramisu klasyczne', a: 'kwestiasmaku.com', c: 'Desery', time: '30 min' },
+        { t: 'Bułki poznańskie jak dawniej', a: 'YouTube · Kuchnia Marka', c: 'Inne', time: '2 h' },
+        { t: 'Placki ziemniaczane', a: 'mojewypieki.com', c: 'Obiady', time: '40 min', fav: true },
+      ].map(heart),
+      results: [
+        { t: 'Zupa krem z dyni', a: 'aniagotuje.pl', c: 'Zupy', time: '45 min', fav: true, mine: true },
+        { t: 'Ciasto dyniowe z kruszonką', a: 'kwestiasmaku.com', c: 'Desery', time: '1 h 10 min' },
+        { t: 'Risotto z dynią i szałwią', a: 'YouTube · Kuchnia Marka', c: 'Obiady', time: '40 min' },
+        { t: 'Pieczona dynia z fetą', a: 'mojewypieki.com', c: 'Przekąski', time: '35 min' },
+        { t: 'Placuszki dyniowe', a: 'aniagotuje.pl', c: 'Śniadania', time: '25 min', mine: true },
+      ].map(heart),
+      similar: [
+        { t: 'Krem z pieczonej papryki', a: 'mojewypieki.com', time: '50 min' },
+        { t: 'Zupa z soczewicy', a: 'YouTube · Kuchnia Marka', time: '40 min' },
+        { t: 'Krem z batatów', a: 'kwestiasmaku.com', time: '35 min' },
+        { t: 'Zupa marchewkowa z imbirem', a: 'aniagotuje.pl', time: '30 min' },
+      ],
+      ingredients: [{ n: 'dynia hokkaido', a: '1 kg' }, { n: 'cebula', a: '1 szt.' }, { n: 'czosnek', a: '2 ząbki' }, { n: 'bulion warzywny', a: '1 l' }, { n: 'mleczko kokosowe', a: '200 ml' }],
+      steps: [
+        { n: 1, t: 'Dynię umyj, usuń pestki i pokrój w kostkę. Skórki z hokkaido nie trzeba obierać.' },
+        { n: 2, t: 'Na oleju zeszklij cebulę i czosnek, dodaj dynię i wlej bulion. Gotuj 25 minut.' },
+        { n: 3, t: 'Zmiksuj na gładko, wlej mleczko kokosowe i dopraw solą oraz pieprzem.' },
+      ],
+      gallery: [1, 2, 3, 4],
+    };
+  }
+}
+</script>
+</body>
+</html>
