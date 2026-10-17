@@ -1,9 +1,14 @@
 import { safeNext } from './safe-redirect'
-import { recipePath } from './routes'
 
-/** `/login`, carrying where to return afterwards when there is somewhere to go. */
-export function loginPath(next?: string | null): string {
-  return next ? `/login?next=${encodeURIComponent(next)}` : '/login'
+/**
+ * `/login`, carrying where to return afterwards when there is somewhere to go,
+ * and the recipe a guest's heart asked to favorite (E01-S06: `&fav={id}`).
+ */
+export function loginPath(next?: string | null, favoriteRecipeId?: number): string {
+  const query: string[] = []
+  if (next) query.push(`next=${encodeURIComponent(next)}`)
+  if (favoriteRecipeId) query.push(`fav=${favoriteRecipeId}`)
+  return query.length ? `/login?${query.join('&')}` : '/login'
 }
 
 /** `/login` showing `error`, keeping a non-root `next` so a retry returns there. */
@@ -21,9 +26,4 @@ export function loginErrorPath(error: string, next?: string | null): string {
 export function resolveLoginNext(raw: unknown, origin: string, fallback: string): string {
   if (typeof raw !== 'string' || raw.trim() === '') return fallback
   return safeNext(raw.trim(), origin)
-}
-
-/** Where a guest who tapped the heart comes back to: the recipe, asking to add it. */
-export function favoriteReturnPath(slug: string): string {
-  return `${recipePath(slug)}?fav=1`
 }

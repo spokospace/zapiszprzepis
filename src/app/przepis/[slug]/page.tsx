@@ -102,8 +102,6 @@ interface RecipeDetailPageProps {
     duplicate?: string
     refreshing?: string
     refresh_error?: string
-    /** Set by the guest heart's login round-trip: add this recipe to favorites (E01-S06). */
-    fav?: string
     /** The link was someone else's recipe; it was added to favorites instead (E01-S03a). */
     in_favorites?: string
     /** The delete was refused: others have this recipe as a favorite (E01-S03a). */
@@ -115,7 +113,7 @@ interface RecipeDetailPageProps {
 
 export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
   const { slug } = await params
-  const { duplicate, refreshing, refresh_error, fav, in_favorites, delete_error, from } = await searchParams
+  const { duplicate, refreshing, refresh_error, in_favorites, delete_error, from } = await searchParams
 
   const { recipe: typedRecipe, error, isOwner, user } = await loadRecipe(slug)
 
@@ -172,10 +170,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         <RecipeHeader recipe={typedRecipe} />
         <RecipeActions
           recipeId={typedRecipe.id}
-          slug={typedRecipe.slug}
           isFavorite={isFavorite}
           isAuthenticated={Boolean(user)}
-          autoAddFavorite={fav === '1' && Boolean(user)}
         />
         <RecipeChecklists recipeId={typedRecipe.id} ingredientGroups={ingredientGroups} steps={steps} />
 

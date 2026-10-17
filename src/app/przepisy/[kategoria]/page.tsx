@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { getFavoriteIds } from '@/lib/favorites'
 import { categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { parsePageParam, parseTagParam, tagFacets } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
@@ -53,7 +54,8 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     })
     .eq('category', category)
   if (selected.length > 0) cards = cards.contains('tags', selected)
-  const [tagRows, { data: recipes, count, error }] = await Promise.all([
+  const [user, tagRows, { data: recipes, count, error }] = await Promise.all([
+    getCurrentUser(),
     supabase.from('public_recipes').select('tags').eq('category', category),
     cards
       .order('created_at', { ascending: false })
@@ -88,6 +90,10 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       }))
 
   const list = recipes ?? []
+
+  // The labelled heart on each card (E01-S06); favorites are private, so only with a session.
+  const ids = (recipes ?? []).map((r) => r.id)
+  const favoriteIds = user ? await getFavoriteIds(supabase, user.id, ids) : new Set<number>()
 
   return (
     <main className="min-h-screen bg-surface">
@@ -150,6 +156,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
                 sourceUrl={r.source_url}
                 sourceAuthor={r.source_author}
                 from="kategoria"
+                favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: Boolean(user) }}
               />
             ))}
           </div>
