@@ -95,3 +95,6 @@ export function searchPath(query: string, scope: SearchScope = 'wszystkie', page
   const qs = params.toString()
   return qs ? `${SEARCH_PATH}?${qs}` : SEARCH_PATH
 }
+
+/** The full-screen notifications page (E01-S15). */
+export const NOTIFICATIONS_PATH = '/powiadomienia'

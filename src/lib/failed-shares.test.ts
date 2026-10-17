@@ -17,8 +17,16 @@ function makeSupabase(
   recipes: Result = { data: [], error: null },
   favorites: Result = { data: [], error: null },
   favoritedRecipes: Result = { data: [], error: null },
+  pending: Result = { data: [], error: null },
 ) {
-  const sharesQuery = { select: () => sharesQuery, eq: () => sharesQuery, is: () => sharesQuery, order: async () => shares }
+  // The failed-rows query ends in order(); the pending-URL lookup (E01-S15) ends in in().
+  const sharesQuery = {
+    select: () => sharesQuery,
+    eq: () => sharesQuery,
+    is: () => sharesQuery,
+    order: async () => shares,
+    in: async () => pending,
+  }
   const recipesQuery = { select: () => recipesQuery, eq: () => recipesQuery, in: async () => recipes }
   const favoritesQuery = { select: () => favoritesQuery, eq: async () => favorites }
   const publicQuery: any = {
@@ -117,6 +125,36 @@ describe('getFailedShares — a link that landed in favorites is resolved (E01-S
       { data: [], error: null },
       { data: [{ recipe_id: 7 }], error: null },
       { data: null, error: { message: 'upstream 503' } },
+    )
+
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(1, 'https://a.example')] })
+  })
+})
+
+describe('getFailedShares — a re-added link is in progress, not a problem (E01-S15)', () => {
+  it('drops a failed URL that has a pending row, scoped to the user', async () => {
+    const supabase = makeSupabase(
+      { data: [share(3, 'https://a.example'), share(1, 'https://b.example')], error: null },
+      undefined,
+      undefined,
+      undefined,
+      { data: [{ shared_url: 'https://a.example' }], error: null },
+    )
+    const eq = vi.spyOn(supabase.from('recipe_shares'), 'eq')
+
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(1, 'https://b.example')] })
+    expect(eq).toHaveBeenCalledWith('user_id', USER)
+    expect(eq).toHaveBeenCalledWith('status', 'pending')
+  })
+
+  it('keeps every failed share when the pending lookup fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const supabase = makeSupabase(
+      { data: [share(1, 'https://a.example')], error: null },
+      undefined,
+      undefined,
+      undefined,
+      { data: null, error: { message: 'boom' } },
     )
 
     expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(1, 'https://a.example')] })

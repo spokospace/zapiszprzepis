@@ -44,6 +44,7 @@
 
   /* Status */
   --color-danger: #b91c1c;
+  --color-danger-bg: #fef2f2;     /* problem surface; danger text on it is 5.9:1 */
   --color-success: #15803d;
   --color-success-bg: #dcfce7;
   --color-facebook: #1877f2;

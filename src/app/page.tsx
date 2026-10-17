@@ -15,6 +15,7 @@ import { PopularSearches } from '@/app/components/home/popular-searches'
 import { CategoryGrid } from '@/app/components/home/category-grid'
 import { MemberTiles } from '@/app/components/home/member-tiles'
 import { GuestCta } from '@/app/components/home/guest-cta'
+import { AttentionBanner } from '@/app/components/home/attention-banner'
 import { FavoriteAddedNotice } from '@/app/components/favorite-button'
 import { parseRecipeId } from '@/lib/favorites'
 
@@ -42,7 +43,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     <>
       <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} menu={menu} />
       <main className="min-h-screen bg-white pb-10">
-        {/* E01-S15 slot: the "N przepisów wymaga uwagi" notifications banner goes here. */}
+        {/* E01-S15: "N przepisów wymaga uwagi" — reuses the header's failed-shares result (no extra query). */}
+        <AttentionBanner failedShares={failedShares} />
         {user ? (
           <MemberHome
             addError={add_error}

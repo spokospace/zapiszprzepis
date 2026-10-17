@@ -46,6 +46,25 @@ async function favoritedSourceUrls(supabase: ServerClient, userId: string, urls:
 }
 
 /**
+ * Which of `urls` the user has added again and is still being processed
+ * (E01-S15): the link is "W trakcie", so an older failed row for it must not
+ * keep claiming a problem. A failed lookup resolves nothing (over-report).
+ */
+async function pendingSourceUrls(supabase: ServerClient, userId: string, urls: string[]): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('recipe_shares')
+    .select('shared_url')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .in('shared_url', urls)
+  if (error) {
+    console.error('[failed-shares] Failed to load pending shares:', error)
+    return new Set()
+  }
+  return new Set((data ?? []).map((s) => s.shared_url))
+}
+
+/**
  * Failed extractions that never produced a recipe — surfaced in the header
  * notification bell so no shared URL is silently lost (NFR "żadne żądanie nie
  * ginie cicho"). Two cleanups keep the bell honest:
@@ -57,6 +76,8 @@ async function favoritedSourceUrls(supabase: ServerClient, userId: string, urls:
  *    `recipes.source_url` are written pre-normalized by the dedup path
  *    (`normalizeUrl` / SQL `normalize_url()`); the match relies on that invariant.
  *  - Dedupe by URL: retries can leave several failed rows for one URL.
+ *  - Re-added: a URL with a newer `pending` row is in progress, not a problem
+ *    (E01-S15), so the bell, the home banner and /powiadomienia agree.
  *
  * RLS scopes the recipe_shares query to the current user. The recipes lookup is
  * also scoped by `userId` explicitly, as defense in depth: if recipes ever became
@@ -82,9 +103,10 @@ export async function getFailedShares(supabase: ServerClient, userId: string): P
   if (!failed || failed.length === 0) return { status: 'ok', shares: [] }
 
   const failedUrls = [...new Set(failed.map((s) => s.shared_url))]
-  const [{ data: recipes, error: recipesError }, favoritedUrls] = await Promise.all([
+  const [{ data: recipes, error: recipesError }, favoritedUrls, pendingUrls] = await Promise.all([
     supabase.from('recipes').select('source_url').eq('user_id', userId).in('source_url', failedUrls),
     favoritedSourceUrls(supabase, userId, failedUrls),
+    pendingSourceUrls(supabase, userId, failedUrls),
   ])
 
   // Without the lookup nothing can be auto-resolved: list every failed share
@@ -99,7 +121,7 @@ export async function getFailedShares(supabase: ServerClient, userId: string): P
 
   const seen = new Set<string>()
   const shares = failed.filter((s) => {
-    if (savedUrls.has(s.shared_url) || favoritedUrls.has(s.shared_url)) return false
+    if (savedUrls.has(s.shared_url) || favoritedUrls.has(s.shared_url) || pendingUrls.has(s.shared_url)) return false
     if (seen.has(s.shared_url)) return false
     seen.add(s.shared_url)
     return true
