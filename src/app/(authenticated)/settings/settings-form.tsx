@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState, type ChangeEvent } from 'r
 import Link from 'next/link'
 import { Avatar } from '@/app/components/ui/avatar'
 import { Button } from '@/app/components/ui/button'
-import { AVATAR_COLORS, avatarInitial } from '@/lib/avatar'
+import { AVATAR_COLORS } from '@/lib/avatar'
 import { greetingName } from '@/lib/first-name'
 import { greeting } from '@/lib/vocative'
 import { saveProfileSettings, type SettingsFormState } from './actions'
@@ -13,7 +13,7 @@ import { resizeAvatar } from './resize-avatar'
 const initialState: SettingsFormState = { status: 'idle' }
 
 const INPUT =
-  'min-h-[56px] w-full rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink ' +
+  'min-h-[60px] w-full rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink ' +
   'aria-[invalid=true]:border-danger'
 const LABEL = 'block text-[19px] font-bold text-ink'
 const HELP = 'text-[16px] text-ink-soft'
@@ -28,7 +28,7 @@ interface SettingsFormProps {
   profileHref: string | null
 }
 
-/** Screen 2a (E01-S13): picture, public name, private first name, live preview, one save. */
+/** Screen 2a (E01-S13, S13b): picture, public name, private first name, live preview, one save. */
 export function SettingsForm({ initialDisplayName, initialFirstName, avatarSrc, colorIndex, profileHref }: SettingsFormProps) {
   // Controlled on purpose: React 19 resets uncontrolled fields after a form
   // action, which would wipe what the user typed whenever validation rejects it.
@@ -96,13 +96,16 @@ export function SettingsForm({ initialDisplayName, initialFirstName, avatarSrc, 
 
   return (
     <form action={submit} className="flex flex-col gap-6" noValidate>
-      <fieldset className="flex flex-col gap-4">
-        <legend className={`${LABEL} mb-3`}>Obrazek</legend>
+      <fieldset className="flex flex-col gap-4" aria-describedby="avatar-help">
+        <legend className={`${LABEL} mb-1`}>Twój obrazek</legend>
+        <p id="avatar-help" className={HELP}>
+          Widać go przy Twoich przepisach. Może to być zdjęcie, kartka albo dowolny obrazek z telefonu.
+        </p>
         <div className="flex items-center gap-4">
           <Avatar src={shownSrc} name={name} colorIndex={color} size={96} />
-          <div className="flex flex-col gap-2">
-            <Button id="avatar-pick" variant="outline" size="md" onClick={() => fileRef.current?.click()}>
-              {shownSrc ? 'Zmień zdjęcie' : 'Dodaj zdjęcie'}
+          <div className="flex flex-1 flex-col gap-2">
+            <Button id="avatar-pick" variant="outline" onClick={() => fileRef.current?.click()}>
+              {shownSrc ? 'Wybierz inny' : 'Wybierz obrazek'}
             </Button>
             {shownSrc && (
               <Button
@@ -114,7 +117,7 @@ export function SettingsForm({ initialDisplayName, initialFirstName, avatarSrc, 
                   edited()
                 }}
               >
-                Usuń zdjęcie
+                Usuń obrazek
               </Button>
             )}
           </div>
@@ -127,37 +130,36 @@ export function SettingsForm({ initialDisplayName, initialFirstName, avatarSrc, 
           </p>
         )}
 
-        {!shownSrc && (
-          <fieldset>
-            <legend className={`${LABEL} mb-2`}>Kolor tła</legend>
-            <div className="grid grid-cols-3 gap-x-2 gap-y-3">
-              {AVATAR_COLORS.map((c, i) => (
-                <label key={c.hex} className="flex cursor-pointer flex-col items-center gap-1 text-[16px] text-ink-soft has-[:checked]:font-bold has-[:checked]:text-ink">
-                  <input
-                    type="radio"
-                    name="avatarColor"
-                    value={i}
-                    checked={color === i}
-                    onChange={() => {
-                      setColor(i)
-                      edited()
-                    }}
-                    className="peer sr-only"
-                  />
-                  <span
-                    aria-hidden
-                    style={{ backgroundColor: c.hex }}
-                    className="flex h-12 w-12 items-center justify-center rounded-full text-[22px] font-bold text-white peer-checked:ring-3 peer-checked:ring-ink peer-checked:ring-offset-3 peer-focus-visible:outline-3 peer-focus-visible:outline-offset-8 peer-focus-visible:outline-focus"
-                  >
-                    {color === i ? '✓' : avatarInitial(name)}
-                  </span>
-                  {c.name}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        )}
-        {shownSrc && <input type="hidden" name="avatarColor" value={color} />}
+        {/* Always shown (S13b): the colour is the fallback whenever the photo is removed. */}
+        <fieldset>
+          <legend className={`${HELP} mb-2`}>Bez obrazka pokażemy kółko z literą. Wybierz jego kolor:</legend>
+          {/* 6 × 52 px + 5 × 6 px = 342 px: one row at 375 px wide. */}
+          <div className="flex flex-wrap gap-x-[6px] gap-y-3">
+            {AVATAR_COLORS.map((c, i) => (
+              <label key={c.hex} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name="avatarColor"
+                  value={i}
+                  checked={color === i}
+                  aria-label={c.name}
+                  onChange={() => {
+                    setColor(i)
+                    edited()
+                  }}
+                  className="peer sr-only"
+                />
+                <span
+                  aria-hidden
+                  style={{ backgroundColor: c.hex }}
+                  className="flex h-[52px] w-[52px] items-center justify-center rounded-full border-3 border-transparent text-[22px] font-bold text-white peer-checked:border-ink peer-checked:shadow-[inset_0_0_0_3px_var(--color-surface)] peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus"
+                >
+                  {color === i ? '✓' : ''}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </fieldset>
 
       <div className="flex flex-col gap-2">
@@ -209,21 +211,19 @@ export function SettingsForm({ initialDisplayName, initialFirstName, avatarSrc, 
         />
       </div>
 
-      <section aria-labelledby="preview-heading" className="rounded-xl border-2 border-border-card bg-surface-2 p-4">
+      <section aria-labelledby="preview-heading" className="flex flex-col gap-3">
         <h2 id="preview-heading" className="sr-only">
           Podgląd
         </h2>
-        <div role="status" aria-live="polite" className="flex flex-col gap-2 text-[17px] text-ink-soft">
-          <p>Tak zobaczą Cię inni:</p>
-          <p className="flex items-center gap-3 text-[19px] font-bold text-ink">
-            <Avatar src={shownSrc} name={name} colorIndex={color} size={48} />
-            <span className="break-words">{name}</span>
-          </p>
-          <p className="mt-2">Powitanie:</p>
-          <p className="text-[19px] font-bold text-ink">{greetingText}</p>
-        </div>
+        {/* Neutral wording until the gender-form story adds "Dodałaś/Dodałeś". */}
+        <p
+          aria-live="polite"
+          className="rounded-[14px] border-[1.5px] border-border-accent bg-surface-accent px-4 py-3.5 text-[18px] leading-normal text-ink"
+        >
+          {greetingText} Tak przywitamy Cię na stronie głównej.
+        </p>
         {profileHref && (
-          <p className="mt-3 text-[17px]">
+          <p className="text-[17px]">
             <Link href={profileHref} className="font-semibold text-action-text">
               Zobacz swój profil publiczny
             </Link>
@@ -235,7 +235,7 @@ export function SettingsForm({ initialDisplayName, initialFirstName, avatarSrc, 
         <Button
           type="submit"
           disabled={pending}
-          className={`w-full ${saved ? 'bg-success! hover:bg-success!' : ''}`}
+          className={`min-h-[58px] w-full ${saved ? 'bg-success! hover:bg-success!' : ''}`}
         >
           {pending ? 'Zapisywanie…' : saved ? '✓ Zapisano' : 'Zapisz zmiany'}
         </Button>
