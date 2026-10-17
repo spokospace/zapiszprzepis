@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}</style>
+</helmet>
+<section id="8" style="padding:48px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">8</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Wersje tego samego dania · styl 1c</span></div>
+    <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Inne przepisy na makowiec i czym się różnią</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekran jest klikalny. Naciśnij „Mamy jeszcze 4 inne przepisy” pod tytułem albo otwórz inną wersję. Różnice zawsze liczą się względem przepisu, który właśnie oglądasz.</div>
+  </div>
+
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="font-size:15px;color:#374151"><b style="color:#111827">8a</b> · <span style="font-family:monospace;font-size:14px">{{ url }}</span></div>
+      <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
+        <div style="border-bottom:2px solid #e5e7eb;padding:4px 10px 4px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+          <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Ciasta</span>
+          <div style="display:flex;align-items:stretch;gap:4px">
+            <span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span>
+            <span style="min-width:100px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia</span>
+            <span style="width:56px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span>
+          </div>
+        </div>
+        <div ref="{{ scrollRef }}" style="flex:1;overflow:auto;padding:20px 16px;display:flex;flex-direction:column;gap:16px">
+          <div style="flex-shrink:0;aspect-ratio:16/9;border-radius:16px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)"></div>
+          <span style="flex-shrink:0;font-size:30px;font-weight:700;color:#111827;line-height:1.15">{{ cur.t }}</span>
+          <div style="flex-shrink:0;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:17px;color:#374151">Ciasta · {{ cur.portions }} porcji · {{ cur.time }}</span>
+            <span style="display:flex;align-items:center;gap:8px;font-size:18px;color:#111827"><i data-lucide="globe" width="20" height="20"></i>Źródło: <b>{{ cur.src }}</b></span>
+            <span style="font-size:16px;color:#374151">{{ cur.by }}</span>
+          </div>
+          <button onClick="{{ jump }}" style="flex-shrink:0;min-height:60px;border-radius:14px;border:2px solid #fed7aa;background:#fff7ed;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;text-align:left">
+            <span style="display:inline-flex;color:#9a3412"><i data-lucide="layers" width="26" height="26"></i></span>
+            <span style="flex:1;font:700 18px Arial;color:#111827;line-height:1.35">Mamy jeszcze {{ othersCount }} inne przepisy na makowiec</span>
+            <span style="display:inline-flex;color:#111827"><i data-lucide="arrow-down" width="24" height="24"></i></span>
+          </button>
+
+          <div style="flex-shrink:0;display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:22px;font-weight:700;color:#111827">Składniki</span>
+            <sc-for list="{{ curIng }}" as="g" hint-placeholder-count="5"><div style="display:flex;justify-content:space-between;gap:12px;min-height:48px;align-items:center;border-bottom:1.5px solid #e5e7eb;font-size:19px"><span style="color:#111827">{{ g.n }}</span><b style="color:#111827;white-space:nowrap">{{ g.a }}</b></div></sc-for>
+          </div>
+          <div style="flex-shrink:0;border:2px dashed #d1d5db;border-radius:14px;padding:14px;font-size:16px;color:#374151;text-align:center">… przygotowanie, zdjęcia, poprzedni / następny …</div>
+
+          <div ref="{{ versionsRef }}" style="flex-shrink:0;display:flex;flex-direction:column;gap:10px;border-top:2px solid #e5e7eb;padding-top:18px">
+            <span style="font-size:22px;font-weight:700;color:#111827">Inne przepisy na makowiec ({{ othersCount }})</span>
+            <span style="font-size:16px;color:#374151;line-height:1.45">Różnice w porównaniu z przepisem, który oglądasz.</span>
+            <sc-for list="{{ versions }}" as="v" hint-placeholder-count="4">
+              <button onClick="{{ v.open }}" style="border:2px solid #e5e7eb;border-radius:16px;padding:14px;background:#fff;display:flex;flex-direction:column;gap:10px;text-align:left;cursor:pointer">
+                <span style="display:flex;gap:12px;align-items:flex-start">
+                  <span style="width:72px;height:72px;flex-shrink:0;border-radius:12px;background:repeating-linear-gradient(135deg,#fdf0e4 0 8px,#fbe6d3 8px 16px)"></span>
+                  <span style="flex:1;display:flex;flex-direction:column;gap:4px">
+                    <span style="font:700 19px Arial;color:#111827;line-height:1.25">{{ v.note }}</span>
+                    <span style="font:16px Arial;color:#374151">{{ v.t }}</span>
+                    <span style="font:16px Arial;color:#374151">{{ v.src }}</span>
+                  </span>
+                </span>
+                <span style="display:flex;flex-wrap:wrap;gap:6px">
+                  <span style="padding:6px 10px;border-radius:8px;background:#f3f4f6;font:16px Arial;color:#111827">{{ v.portionsText }}</span>
+                  <span style="padding:6px 10px;border-radius:8px;background:#f3f4f6;font:16px Arial;color:#111827">{{ v.timeText }}</span>
+                </span>
+                <sc-if value="{{ v.hasPlus }}" hint-placeholder-val="{{ true }}"><span style="font:16px Arial;color:#111827;line-height:1.45;display:flex;gap:6px"><b style="color:#15803d;white-space:nowrap">+ jest:</b><span>{{ v.plus }}</span></span></sc-if>
+                <sc-if value="{{ v.hasMinus }}" hint-placeholder-val="{{ false }}"><span style="font:16px Arial;color:#111827;line-height:1.45;display:flex;gap:6px"><b style="color:#b91c1c;white-space:nowrap">− nie ma:</b><span>{{ v.minus }}</span></span></sc-if>
+                <span style="display:flex;align-items:center;gap:6px;font:700 17px Arial;color:#9a3412;text-decoration:underline">Otwórz ten przepis<i data-lucide="chevron-right" width="20" height="20"></i></span>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="flex-shrink:0;display:flex;flex-direction:column;gap:10px;margin-top:6px">
+            <span style="font-size:22px;font-weight:700;color:#111827">Podobne przepisy</span>
+            <sc-for list="{{ similar }}" as="r" hint-placeholder-count="3">
+              <div style="border:2px solid #e5e7eb;border-radius:16px;padding:10px;display:flex;gap:12px;align-items:center">
+                <span style="width:64px;height:64px;flex-shrink:0;border-radius:12px;background:repeating-linear-gradient(135deg,#fdf0e4 0 8px,#fbe6d3 8px 16px)"></span>
+                <span style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font:700 18px Arial;color:#111827">{{ r.t }}</span><span style="font:16px Arial;color:#374151">{{ r.why }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:460px;font-size:16px;line-height:1.55;color:#374151">
+      <div style="font-size:20px;font-weight:700;color:#111827">Zasady</div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <span><b style="color:#111827">Pod tytułem</b> linijka „Mamy jeszcze N inne przepisy na makowiec”, która przewija do sekcji. Gdy innych wersji nie ma, linijki nie ma.</span>
+        <span><b style="color:#111827">Na karcie wersji</b> najważniejsza jest różnica: krótki opis jako tytuł (np. „Na kruchym cieście, bez drożdży”), potem nazwa przepisu i źródło.</span>
+        <span><b style="color:#111827">Porcje i czas</b> z porównaniem: „8 porcji (o 4 mniej)”, „1 godz. 30 min (krócej)”.</span>
+        <span><b style="color:#111827">Składniki:</b> „+ jest” i „− nie ma” względem oglądanego przepisu, do 4 pozycji. Kolor i znak +/− razem, nie sam kolor.</span>
+        <span><b style="color:#111827">Kolejność:</b> najczęściej dodawane do ulubionych.</span>
+        <span><b style="color:#111827">„Podobne przepisy”</b> pod spodem pomijają wersje makowca, więc nic się nie powtarza.</span>
+      </div>
+      <div style="font-size:15px;color:#374151">W danych: nowe pole <span style="font-family:monospace">dish</span> (nazwa dania, np. „makowiec”) i krótki opis wersji, oba uzupełniane przez AI przy spisywaniu przepisu. Różnice w składnikach liczone przy wyświetlaniu na podstawie znormalizowanych nazw.</div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { cur: 0 };
+  scrollRef = React.createRef();
+  versionsRef = React.createRef();
+  componentDidMount() { this.icons(); }
+  componentDidUpdate(_, prev) { this.icons(); if (prev.cur !== this.state.cur && this.scrollRef.current) this.scrollRef.current.scrollTop = 0; }
+  icons() { setTimeout(() => window.lucide && window.lucide.createIcons(), 0); }
+  data = [
+    { t: 'Makowiec drożdżowy babci', slug: 'makowiec-drozdzowy-babci', src: 'kwestiasmaku.com', by: 'Dodała Helena W.', portions: 12, min: 180, note: 'Klasyczny, na drożdżowym cieście', ing: [['mąka pszenna', '500 g'], ['drożdże', '25 g'], ['mak', '500 g'], ['miód', '3 łyżki'], ['rodzynki', '50 g']], likes: 0 },
+    { t: 'Makowiec japoński', slug: 'makowiec-japonski', src: 'aniagotuje.pl', by: 'Dodała Ania K.', portions: 10, min: 70, note: 'Biszkoptowy, bez drożdży', ing: [['jajka', '6 szt.'], ['mak', '250 g'], ['cukier', '200 g'], ['mąka ziemniaczana', '2 łyżki']], likes: 412 },
+    { t: 'Makowiec z bakaliami i lukrem', slug: 'makowiec-z-bakaliami', src: 'YouTube · Kuchnia Marka', by: 'Dodał Marek S.', portions: 16, min: 210, note: 'Z bakaliami i lukrem', ing: [['mąka pszenna', '600 g'], ['drożdże', '30 g'], ['mak', '600 g'], ['miód', '4 łyżki'], ['rodzynki', '100 g'], ['orzechy włoskie', '100 g'], ['skórka pomarańczowa', '50 g'], ['cukier puder', '150 g']], likes: 268 },
+    { t: 'Makowiec na kruchym cieście', slug: 'makowiec-na-kruchym', src: 'mojewypieki.com', by: 'Dodała Kasia M.', portions: 8, min: 90, note: 'Na kruchym cieście, bez drożdży', ing: [['mąka pszenna', '300 g'], ['masło', '200 g'], ['mak', '400 g'], ['miód', '2 łyżki']], likes: 190 },
+    { t: 'Makowiec bez glutenu', slug: 'makowiec-bez-glutenu', src: 'Facebook · Zdrowe Wypieki', by: 'Dodała Ewa P.', portions: 10, min: 150, note: 'Bez glutenu, z mąką ryżową', ing: [['mąka ryżowa', '400 g'], ['drożdże', '25 g'], ['mak', '450 g'], ['miód', '3 łyżki']], likes: 85 },
+  ];
+  fmt(m) { const h = Math.floor(m / 60), r = m % 60; return h ? `${h} godz.${r ? ' ' + r + ' min' : ''}` : `${r} min`; }
+  renderVals() {
+    const cur = this.data[this.state.cur];
+    const names = new Set(cur.ing.map(i => i[0]));
+    const versions = this.data.map((v, i) => ({ ...v, i })).filter(v => v.i !== this.state.cur).sort((a, b) => b.likes - a.likes).map(v => {
+      const vn = new Set(v.ing.map(i => i[0]));
+      const plus = v.ing.map(i => i[0]).filter(n => !names.has(n)).slice(0, 4);
+      const minus = cur.ing.map(i => i[0]).filter(n => !vn.has(n)).slice(0, 4);
+      const dp = v.portions - cur.portions, dt = v.min - cur.min;
+      const pw = (n) => n === 1 ? 'porcję' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 'porcje' : 'porcji';
+      return {
+        t: v.t, src: v.src, note: v.note,
+        portionsText: `${v.portions} porcji` + (dp ? ` (o ${Math.abs(dp)} ${dp > 0 ? 'więcej' : 'mniej'})` : ' (tyle samo)'),
+        timeText: this.fmt(v.min) + (Math.abs(dt) >= 10 ? ` (${dt > 0 ? 'dłużej' : 'krócej'})` : ''),
+        hasPlus: plus.length > 0, plus: plus.join(', '),
+        hasMinus: minus.length > 0, minus: minus.join(', '),
+        open: () => this.setState({ cur: v.i }),
+      };
+    });
+    return {
+      url: '/przepis/' + cur.slug,
+      cur: { ...cur, time: this.fmt(cur.min) },
+      curIng: cur.ing.map(([n, a]) => ({ n, a })),
+      othersCount: versions.length,
+      versions,
+      scrollRef: this.scrollRef, versionsRef: this.versionsRef,
+      jump: () => { const s = this.scrollRef.current, t = this.versionsRef.current; if (s && t) s.scrollTo({ top: t.offsetTop - s.offsetTop - 8, behavior: 'smooth' }); },
+      similar: [
+        { t: 'Strucla z makiem i jabłkiem', why: 'też drożdżowe, świąteczne' },
+        { t: 'Kutia', why: 'też z makiem, świąteczne' },
+        { t: 'Sernik wiedeński', why: 'też świąteczne' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
