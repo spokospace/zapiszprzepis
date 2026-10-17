@@ -5,16 +5,27 @@ export type FailedShare = {
   id: number
   shared_url: string
   error_message: string | null
+  created_at: string
 }
 
 /**
  * `error` means the bell could not check: it must say so rather than show a
  * confident zero, which would hide failed shares exactly when it matters.
+ * `unreadReady` counts recipes saved but not opened yet from /powiadomienia
+ * (E01-S15): the bell shows problems + unread ready recipes.
  */
-export type FailedSharesResult = { status: 'ok'; shares: FailedShare[] } | { status: 'error' }
+export type FailedSharesResult = { status: 'ok'; shares: FailedShare[]; unreadReady: number } | { status: 'error' }
 
 /** A guest has no shares and no bell (E01-S02); used instead of querying for one. */
-export const NO_FAILED_SHARES: FailedSharesResult = { status: 'ok', shares: [] }
+export const NO_FAILED_SHARES: FailedSharesResult = { status: 'ok', shares: [], unreadReady: 0 }
+
+/** How far back a ready recipe still counts and shows on /powiadomienia (E01-S15). */
+export const READY_WINDOW_DAYS = 14
+
+/** The start of the ready-recipe window, as an ISO timestamp. */
+export function readyWindowStart(now: Date = new Date()): string {
+  return new Date(now.getTime() - READY_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+}
 
 type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
 
@@ -87,9 +98,39 @@ async function pendingSourceUrls(supabase: ServerClient, userId: string, urls: s
  * is bounded to their URLs.
  */
 export async function getFailedShares(supabase: ServerClient, userId: string): Promise<FailedSharesResult> {
+  const [shares, unreadReady] = await Promise.all([
+    loadFailedShares(supabase, userId),
+    countUnreadReady(supabase, userId),
+  ])
+  return shares === null ? { status: 'error' } : { status: 'ok', shares, unreadReady }
+}
+
+/**
+ * Ready recipes not opened yet (E01-S15): a head-only count backed by the
+ * partial unread index. It must never break the bell — before the read-state
+ * migration is applied (or on any error) it counts 0 and logs.
+ */
+async function countUnreadReady(supabase: ServerClient, userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('recipe_shares')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .is('read_at', null)
+    .is('cleared_at', null)
+    .gte('created_at', readyWindowStart())
+  if (error) {
+    console.error('[failed-shares] Failed to count unread ready recipes:', error)
+    return 0
+  }
+  return count ?? 0
+}
+
+/** `null` = could not check. */
+async function loadFailedShares(supabase: ServerClient, userId: string): Promise<FailedShare[] | null> {
   const { data: failed, error: failedError } = await supabase
     .from('recipe_shares')
-    .select('id, shared_url, error_message')
+    .select('id, shared_url, error_message, created_at')
     .eq('status', 'failed')
     .is('recipe_id', null)
     .order('created_at', { ascending: false })
@@ -98,9 +139,9 @@ export async function getFailedShares(supabase: ServerClient, userId: string): P
     // Don't let a query failure render an empty bell — that would silently hide
     // failed shares, the exact NFR this feature upholds.
     console.error('[failed-shares] Failed to load failed shares:', failedError)
-    return { status: 'error' }
+    return null
   }
-  if (!failed || failed.length === 0) return { status: 'ok', shares: [] }
+  if (!failed || failed.length === 0) return []
 
   const failedUrls = [...new Set(failed.map((s) => s.shared_url))]
   const [{ data: recipes, error: recipesError }, favoritedUrls, pendingUrls] = await Promise.all([
@@ -120,11 +161,10 @@ export async function getFailedShares(supabase: ServerClient, userId: string): P
   )
 
   const seen = new Set<string>()
-  const shares = failed.filter((s) => {
+  return failed.filter((s) => {
     if (savedUrls.has(s.shared_url) || favoritedUrls.has(s.shared_url) || pendingUrls.has(s.shared_url)) return false
     if (seen.has(s.shared_url)) return false
     seen.add(s.shared_url)
     return true
   })
-  return { status: 'ok', shares }
 }

@@ -18,6 +18,7 @@ function makeSupabase(
   favorites: Result = { data: [], error: null },
   favoritedRecipes: Result = { data: [], error: null },
   pending: Result = { data: [], error: null },
+  unread: { count: number | null; error: unknown } = { count: 0, error: null },
 ) {
   // The failed-rows query ends in order(); the pending-URL lookup (E01-S15) ends in in().
   const sharesQuery = {
@@ -26,6 +27,8 @@ function makeSupabase(
     is: () => sharesQuery,
     order: async () => shares,
     in: async () => pending,
+    // The unread-ready count (E01-S15) ends in gte().
+    gte: async () => unread,
   }
   const recipesQuery = { select: () => recipesQuery, eq: () => recipesQuery, in: async () => recipes }
   const favoritesQuery = { select: () => favoritesQuery, eq: async () => favorites }
@@ -62,6 +65,7 @@ describe('getFailedShares — the bell never shows a silent zero', () => {
 
     expect(await getFailedShares(supabase, USER)).toEqual({
       status: 'ok',
+      unreadReady: 0,
       shares: [share(3, 'https://a.example'), share(1, 'https://b.example')],
     })
   })
@@ -72,13 +76,13 @@ describe('getFailedShares — the bell never shows a silent zero', () => {
       { data: [{ source_url: 'https://a.example' }], error: null },
     )
 
-    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(2, 'https://b.example')] })
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(2, 'https://b.example')] })
   })
 
   it('reports an empty bell when nothing failed', async () => {
     const supabase = makeSupabase({ data: [], error: null })
 
-    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [] })
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [] })
   })
 
   // E01-S02 regression: the auto-resolve lookup must be scoped to the current user
@@ -104,7 +108,7 @@ describe('getFailedShares — a link that landed in favorites is resolved (E01-S
       { data: [{ source_url: 'https://a.example' }], error: null },
     )
 
-    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(1, 'https://b.example')] })
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(1, 'https://b.example')] })
   })
 
   it('resolves nothing through favorites when their lookup fails', async () => {
@@ -115,7 +119,7 @@ describe('getFailedShares — a link that landed in favorites is resolved (E01-S
       { data: null, error: { message: 'upstream 503' } },
     )
 
-    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(1, 'https://a.example')] })
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(1, 'https://a.example')] })
   })
 
   it('resolves nothing when the favorited recipes cannot be read', async () => {
@@ -127,7 +131,7 @@ describe('getFailedShares — a link that landed in favorites is resolved (E01-S
       { data: null, error: { message: 'upstream 503' } },
     )
 
-    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(1, 'https://a.example')] })
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(1, 'https://a.example')] })
   })
 })
 
@@ -142,7 +146,7 @@ describe('getFailedShares — a re-added link is in progress, not a problem (E01
     )
     const eq = vi.spyOn(supabase.from('recipe_shares'), 'eq')
 
-    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(1, 'https://b.example')] })
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(1, 'https://b.example')] })
     expect(eq).toHaveBeenCalledWith('user_id', USER)
     expect(eq).toHaveBeenCalledWith('status', 'pending')
   })
@@ -157,6 +161,28 @@ describe('getFailedShares — a re-added link is in progress, not a problem (E01
       { data: null, error: { message: 'boom' } },
     )
 
-    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', shares: [share(1, 'https://a.example')] })
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(1, 'https://a.example')] })
+  })
+})
+
+describe('getFailedShares — unread ready recipes for the badge (E01-S15)', () => {
+  it('returns the unread count next to the problems', async () => {
+    const supabase = makeSupabase({ data: [], error: null }, undefined, undefined, undefined, undefined, { count: 3, error: null })
+
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 3, shares: [] })
+  })
+
+  it('counts 0 instead of failing when the count errors (migration not applied yet)', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const supabase = makeSupabase(
+      { data: [share(1, 'https://a.example')], error: null },
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { count: null, error: { message: 'column recipe_shares.read_at does not exist' } },
+    )
+
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(1, 'https://a.example')] })
   })
 })

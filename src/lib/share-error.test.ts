@@ -6,8 +6,8 @@ import {
   REASON_BLOCKED,
   REASON_GENERIC,
   REASON_NO_RECIPE,
-  REASON_OUR_SIDE,
-  REASON_UNREADABLE,
+  REASON_NOT_RESPONDING,
+  notificationTime,
   shareDomain,
 } from '@/lib/share-error'
 
@@ -15,18 +15,18 @@ describe('explainShareError — the raw pipeline message is never shown', () => 
   it.each([
     ['Firecrawl failed: HTTP 403 Forbidden', REASON_BLOCKED],
     ['Firecrawl failed: HTTP 404', REASON_BLOCKED],
-    ['Firecrawl failed: HTTP 429 Too Many Requests', REASON_OUR_SIDE],
-    ['Firecrawl failed: HTTP 502 Bad Gateway', REASON_OUR_SIDE],
-    ['OpenAI failed: HTTP 500 — upstream detail', REASON_OUR_SIDE],
-    ['No response from OpenAI', REASON_OUR_SIDE],
-    ['Failed to queue extraction', REASON_OUR_SIDE],
-    ['fetch failed', REASON_OUR_SIDE],
-    ['The operation timed out', REASON_OUR_SIDE],
+    ['Firecrawl failed: HTTP 429 Too Many Requests', REASON_NOT_RESPONDING],
+    ['Firecrawl failed: HTTP 502 Bad Gateway', REASON_NOT_RESPONDING],
+    ['fetch failed', REASON_NOT_RESPONDING],
+    ['The operation timed out', REASON_NOT_RESPONDING],
+    ['OpenAI failed: HTTP 500 — upstream detail', REASON_GENERIC],
+    ['No response from OpenAI', REASON_GENERIC],
+    ['Failed to queue extraction', REASON_GENERIC],
     ['No recipe title extracted — source page may not contain a recipe', REASON_NO_RECIPE],
     ['Extracted content has no usable recipe (title present but no ingredients or steps)', REASON_NO_RECIPE],
     [
       'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)',
-      REASON_UNREADABLE,
+      REASON_NO_RECIPE,
     ],
     ['Database insert failed: duplicate key value violates unique constraint', REASON_GENERIC],
     ['Share update failed: JWT expired', REASON_GENERIC],
@@ -81,5 +81,25 @@ describe('attentionLabel — Polish plural', () => {
     [112, '112 przepisów wymaga uwagi'],
   ])('%i → %s', (n, expected) => {
     expect(attentionLabel(n)).toBe(expected)
+  })
+})
+
+describe('notificationTime — Polish time of day', () => {
+  // 2026-10-17 12:00 in Warsaw (UTC+2).
+  const NOW = new Date('2026-10-17T10:00:00Z')
+
+  it.each([
+    ['2026-10-17T09:59:00Z', 'przed chwilą'],
+    ['2026-10-17T07:40:00Z', 'dziś o 9:40'],
+    ['2026-10-16T16:12:00Z', 'wczoraj o 18:12'],
+    // 23:30 UTC on the 15th is already the 16th in Warsaw → "wczoraj".
+    ['2026-10-15T23:30:00Z', 'wczoraj o 1:30'],
+    ['2026-10-14T08:00:00Z', '14 października'],
+  ])('%s → %s', (iso, expected) => {
+    expect(notificationTime(iso, NOW)).toBe(expected)
+  })
+
+  it('is empty for an unparseable date', () => {
+    expect(notificationTime('nope', NOW)).toBe('')
   })
 })

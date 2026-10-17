@@ -7,11 +7,11 @@ import type { FailedSharesResult } from '@/lib/failed-shares'
 import { NOTIFICATIONS_PATH } from '@/lib/routes'
 
 /**
- * Header notification bell (S-06). Since E01-S15 it is a link to the
- * full-screen /powiadomienia page instead of a 320 px dropdown; the retry and
- * dismiss actions live there. The badge counts what needs the user ("Wymaga
- * uwagi"), and the number is part of the link's name, so the badge itself is
- * decorative.
+ * Header "Powiadomienia" (S-06, rebuilt in E01-S15 per handoff §Nagłówek):
+ * bell icon over a 13 px caption, min 100 px wide, linking to the full-screen
+ * /powiadomienia page instead of a 320 px dropdown. The badge counts problems
+ * + ready recipes not opened yet; the number is part of the link's name, so
+ * the badge itself is decorative.
  *
  * When the failed shares could not be loaded, the bell says so instead of
  * claiming there is nothing to show (#137).
@@ -19,7 +19,7 @@ import { NOTIFICATIONS_PATH } from '@/lib/routes'
 export function NotificationBell({ failedShares: result }: { failedShares: FailedSharesResult }) {
   const pathname = usePathname()
   const loadFailed = result.status === 'error'
-  const count = result.status === 'ok' ? result.shares.length : 0
+  const count = result.status === 'ok' ? result.shares.length + result.unreadReady : 0
 
   return (
     <Link
@@ -32,18 +32,21 @@ export function NotificationBell({ failedShares: result }: { failedShares: Faile
             : 'Powiadomienia'
       }
       aria-current={pathname === NOTIFICATIONS_PATH ? 'page' : undefined}
-      className="relative inline-flex h-12 w-12 items-center justify-center rounded-field text-ink-soft no-underline! hover:bg-surface-3"
+      className="relative inline-flex h-14 min-w-[100px] flex-col items-center justify-center gap-0.5 rounded-field px-1 text-[13px] font-bold text-ink no-underline! hover:bg-surface-3"
     >
       <Bell aria-hidden="true" className="h-6 w-6" />
+      Powiadomienia
       {count > 0 && (
         <span
           aria-hidden="true"
-          className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-pill bg-danger px-1 text-[12px] font-bold leading-none text-white"
+          className="absolute top-0 right-[26px] flex h-[22px] min-w-[22px] items-center justify-center rounded-pill border-2 border-white bg-danger px-1 text-[13px] leading-none font-bold text-white"
         >
           {count}
         </span>
       )}
-      {loadFailed && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-pill bg-amber-500" aria-hidden="true" />}
+      {loadFailed && (
+        <span aria-hidden="true" className="absolute top-1 right-[30px] h-3 w-3 rounded-pill border-2 border-white bg-amber-500" />
+      )}
     </Link>
   )
 }
