@@ -1,18 +1,16 @@
 import 'server-only'
-import type { User } from '@supabase/supabase-js'
-import type { createSupabaseServerClient } from '@/lib/supabase/server'
-
-type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Whether the user may add recipes ("pełny dostęp": an access code or a
- * payment). The single seam for that decision: the menu lock (E01-S09) and the
- * add gate read it from here.
+ * Whether the signed-in user may add recipes ("pełny dostęp": an access code
+ * or a payment). Callers pass `false` for a guest instead of calling this.
  *
- * Until E01-S11 (#214) stores the real flag, every signed-in user keeps the
- * capability they have today, so this returns true for any user. S11 replaces
- * the body (hence the unused `supabase` parameter); callers stay unchanged.
+ * Placeholder with E01-S11's (#214) exact signature so the two changes merge
+ * in either order: S11's version calls the has_full_access() RPC (auth.uid(),
+ * fails closed). Until it lands, every signed-in user keeps the capability
+ * they have today.
  */
-export async function hasFullAccess(_supabase: ServerClient, user: User | null): Promise<boolean> {
-  return user !== null
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- signature shared with S11's implementation
+export async function getFullAccess(_supabase: SupabaseClient): Promise<boolean> {
+  return true
 }

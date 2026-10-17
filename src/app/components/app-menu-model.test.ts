@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ADD_RECIPE_HREF, buildMenuModel, recipesNoun } from './app-menu-model'
+import { ACCESS_GATE_HREF, ADD_RECIPE_HREF, buildMenuModel, recipesNoun } from './app-menu-model'
 
 const keys = (model: ReturnType<typeof buildMenuModel>) => model.mine?.map((e) => e.key)
 
@@ -30,7 +30,9 @@ describe('buildMenuModel', () => {
       summary: { hasFullAccess: false, myRecipesCount: 0, favoritesCount: 2 },
     })
     expect(keys(model)).toEqual(['favorites', 'add'])
-    expect(model.mine?.find((e) => e.key === 'add')?.locked).toBe(true)
+    const add = model.mine?.find((e) => e.key === 'add')
+    expect(add?.locked).toBe(true)
+    expect(add?.href).toBe(ACCESS_GATE_HREF)
   })
 
   it('keeps a zero counter but drops a failed (null) one', () => {

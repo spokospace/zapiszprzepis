@@ -1,7 +1,10 @@
 import type { MenuSummary } from '@/lib/menu-summary'
 
-/** Today's add flow; E01-S10 moves it to /dodaj, which also renders the 3c code gate. */
+/** Today's add flow; E01-S10 moves it to /dodaj. */
 export const ADD_RECIPE_HREF = '/?tab=add'
+
+/** The 3c code gate (E01-S11): the home page shows it in place of the add form until S10 builds /dodaj. */
+export const ACCESS_GATE_HREF = '/'
 
 export type MineEntryKey = 'my-recipes' | 'favorites' | 'add'
 
@@ -50,7 +53,13 @@ export function buildMenuModel({
   }
   mine.push(
     { key: 'favorites', href: '/ulubione', label: 'Ulubione', count: summary?.favoritesCount ?? null, locked: false },
-    { key: 'add', href: ADD_RECIPE_HREF, label: 'Dodaj przepis', count: null, locked: !fullAccess },
+    {
+      key: 'add',
+      href: fullAccess ? ADD_RECIPE_HREF : ACCESS_GATE_HREF,
+      label: 'Dodaj przepis',
+      count: null,
+      locked: !fullAccess,
+    },
   )
   return { mine, showAccountFooter: true }
 }
