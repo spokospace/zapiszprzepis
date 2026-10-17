@@ -4,7 +4,8 @@ export interface SpeechRecognitionLike {
   interimResults: boolean
   maxAlternatives: number
   onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
-  onerror: (() => void) | null
+  /** `error` is the SpeechRecognitionErrorEvent code: 'aborted' follows our own abort(), 'no-speech' a silent timeout. */
+  onerror: ((event: { error: string }) => void) | null
   onend: (() => void) | null
   start(): void
   stop(): void

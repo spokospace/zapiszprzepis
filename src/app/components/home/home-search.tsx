@@ -54,7 +54,12 @@ export function HomeSearch({ id }: { id: string }) {
       inputRef.current.value = transcript
       formRef.current?.requestSubmit()
     }
-    recognition.onerror = () => setMicState('error')
+    recognition.onerror = (event) => {
+      // Chrome fires 'aborted' after our own abort() (second tap, unmount): a
+      // deliberate cancel, not a failure. Silence just returns to idle.
+      if (event.error === 'aborted') return
+      setMicState(event.error === 'no-speech' ? 'idle' : 'error')
+    }
     recognition.onend = () => setMicState((prev) => (prev === 'listening' ? 'idle' : prev))
     recognitionRef.current = recognition
     setMicState('listening')
