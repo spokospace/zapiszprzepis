@@ -38,3 +38,23 @@ export function recipeMetaLine(r: RecipeTimes & { category: string; times_estima
   if (minutes == null || minutes <= 0) return category
   return `${category} · ${r.times_estimated ? '≈ ' : ''}${formatMinutes(minutes)}`
 }
+
+/**
+ * The two lines under a list card's title (E01-S22). Search and profile (C2, 7):
+ * "Kategoria · czas" and the source. Inside a category (6) the category is the
+ * page itself: "czas · źródło" and the recipe's tags ("kruche · maślane").
+ * An unknown time is left out; an empty line is dropped.
+ */
+export function listCardLines(r: {
+  category: string
+  minutes: number | null
+  source: string
+  tagLabels?: readonly string[]
+  inCategory?: boolean
+}): string[] {
+  const time = r.minutes != null && r.minutes > 0 ? formatMinutes(r.minutes) : null
+  const lines = r.inCategory
+    ? [[time, r.source].filter(Boolean).join(' · '), (r.tagLabels ?? []).join(' · ')]
+    : [[categoryLabel(r.category), time].filter(Boolean).join(' · '), r.source]
+  return lines.filter(Boolean)
+}

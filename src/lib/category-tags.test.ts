@@ -1,5 +1,73 @@
 import { describe, it, expect } from 'vitest'
-import { parsePageParam, parseTagParam, rankSimilar, tagFacets } from '@/lib/category-tags'
+import {
+  joinWithAnd,
+  parsePageParam,
+  parseTagParam,
+  rankSimilar,
+  sharedTagsCaption,
+  categoryNoun,
+  similarHeading,
+  tagFacets,
+  tagSummary,
+} from '@/lib/category-tags'
+
+describe('joinWithAnd', () => {
+  it('joins with commas and a final "i"', () => {
+    expect(joinWithAnd([])).toBe('')
+    expect(joinWithAnd(['kruche'])).toBe('kruche')
+    expect(joinWithAnd(['kruche', 'maślane'])).toBe('kruche i maślane')
+    expect(joinWithAnd(['a', 'b', 'c'])).toBe('a, b i c')
+  })
+})
+
+describe('tagSummary (E01-S22)', () => {
+  it('reads "N przepisy: tag i tag" with the Polish plural', () => {
+    expect(tagSummary(3, ['kruche', 'maslane'])).toBe('3 przepisy: kruche i maślane')
+    expect(tagSummary(1, ['kruche'])).toBe('1 przepis: kruche')
+    expect(tagSummary(5, ['kruche'])).toBe('5 przepisów: kruche')
+  })
+})
+
+describe('sharedTagsCaption', () => {
+  it('lists the shared tags in the recipe’s order', () => {
+    expect(sharedTagsCaption(['kruche', 'maslane'], ['maslane', 'kruche', 'owocowe'])).toBe('też kruche i maślane')
+  })
+
+  it('is null when nothing is shared', () => {
+    expect(sharedTagsCaption(['kruche'], ['owocowe'])).toBeNull()
+    expect(sharedTagsCaption(['kruche'], null)).toBeNull()
+  })
+})
+
+describe('similarHeading', () => {
+  it('names the tag most similar recipes share', () => {
+    const similar = [{ tags: ['maslane'] }, { tags: ['maslane', 'kruche'] }, { tags: null }]
+    expect(similarHeading(['kruche', 'maslane'], similar, 'Ciasteczka')).toBe('Podobne: maślane ciasteczka')
+  })
+
+  it('breaks a tie by the recipe’s own tag order', () => {
+    expect(similarHeading(['kruche', 'maslane'], [{ tags: ['maslane', 'kruche'] }], 'Ciasteczka')).toBe(
+      'Podobne: kruche ciasteczka',
+    )
+  })
+
+  it('skips capitalised tags and falls back to the category alone', () => {
+    expect(similarHeading(['wielkanoc'], [{ tags: ['wielkanoc'] }], 'Ciasta')).toBe('Podobne: ciasta')
+    expect(similarHeading(['kruche'], [{ tags: ['owocowe'] }], 'Ciasta')).toBe('Podobne: ciasta')
+  })
+
+  it('puts a phrase tag after the category and skips noun tags', () => {
+    expect(similarHeading(['na-zimno'], [{ tags: ['na-zimno'] }], 'Zupy')).toBe('Podobne: zupy na zimno')
+    expect(similarHeading(['dla-dzieci'], [{ tags: ['dla-dzieci'] }], 'Obiady')).toBe('Podobne: obiady dla dzieci')
+    expect(similarHeading(['grill', 'impreza'], [{ tags: ['grill', 'impreza'] }], 'Obiady')).toBe('Podobne: obiady')
+  })
+
+  it('reads "przepisy" for the Inne category', () => {
+    expect(similarHeading(['szybkie'], [{ tags: ['szybkie'] }], 'Inne')).toBe('Podobne: szybkie przepisy')
+    expect(categoryNoun('Inne')).toBe('przepisy')
+    expect(categoryNoun('Syropy i napary')).toBe('syropy i napary')
+  })
+})
 
 describe('parseTagParam', () => {
   it('reads comma-separated and repeated params, closed list only, deduplicated', () => {

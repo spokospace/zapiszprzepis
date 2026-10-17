@@ -95,15 +95,22 @@ export const SEARCH_SCOPES = ['wszystkie', 'moje', 'ulubione'] as const
 export type SearchScope = (typeof SEARCH_SCOPES)[number]
 
 /**
- * A search for `query` (trimmed) in `scope`, showing `page` pages of results.
- * Defaults are left out so links stay short and canonical; a blank query is
- * the bare search page (still keeping the scope).
+ * A search for `query` (trimmed) in `scope`, showing `page` pages of results,
+ * optionally narrowed to one `category` (E01-S22). Defaults are left out so
+ * links stay short and canonical; a blank query is the bare search page (still
+ * keeping the scope).
  */
-export function searchPath(query: string, scope: SearchScope = 'wszystkie', page = 1): string {
+export function searchPath(
+  query: string,
+  scope: SearchScope = 'wszystkie',
+  page = 1,
+  category: string | null = null,
+): string {
   const params = new URLSearchParams()
   const q = query.trim()
   if (q) params.set('q', q)
   if (scope !== 'wszystkie') params.set('zakres', scope)
+  if (category) params.set('kategoria', category)
   if (page > 1) params.set('strona', String(page))
   const qs = params.toString()
   return qs ? `${SEARCH_PATH}?${qs}` : SEARCH_PATH

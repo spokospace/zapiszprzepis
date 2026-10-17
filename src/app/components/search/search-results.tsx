@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { buttonClasses } from '@/app/components/ui/button'
-import { RecipeCard } from '@/app/components/recipe-card'
+import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { searchPath, type SearchScope } from '@/lib/routes'
 import { recipeTotalMinutes } from '@/lib/recipe-meta'
@@ -10,6 +10,8 @@ interface SearchResultsProps {
   q: string
   scope: SearchScope
   page: number
+  /** The "Kategoria" filter in effect, kept on "Pokaż kolejne" and the list bar. */
+  category: string | null
   rows: SearchResult[]
   total: number
   /** Ids among `rows` the signed-in user has in Ulubione; null for a guest. */
@@ -17,11 +19,11 @@ interface SearchResultsProps {
 }
 
 /**
- * The result list of /szukaj (E01-S05): row cards with a favorites bar, then
- * „Pokaż kolejne 14” — a plain link that re-renders with one more page and
- * jumps to the first new card (no infinite scroll).
+ * The result list of /szukaj (E01-S05, cards per E01-S22): list cards with a
+ * favorites bar, then „Pokaż kolejne 14” — a plain link that re-renders with
+ * one more page and jumps to the first new card (no infinite scroll).
  */
-export function SearchResults({ q, scope, page, rows, total, favoriteIds }: SearchResultsProps) {
+export function SearchResults({ q, scope, page, category, rows, total, favoriteIds }: SearchResultsProps) {
   const remaining = total - rows.length
   const canShowMore = remaining > 0 && page < SEARCH_MAX_PAGES
   return (
@@ -29,20 +31,15 @@ export function SearchResults({ q, scope, page, rows, total, favoriteIds }: Sear
       <RecipeListSnapshot
         listKey="szukaj"
         label="Wyniki wyszukiwania"
-        href={searchPath(q, scope, page)}
+        href={searchPath(q, scope, page, category)}
         items={rows.map((r) => ({ slug: r.slug, title: r.title }))}
       />
-      {/* Two columns from lg (E01-S17) so the row cards don't stretch to 1088 px. */}
-      <ol className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3">
+      <ol className={LIST_CARDS_CLASS}>
         {rows.map((r, i) => (
-          <li
-            key={r.id}
-            id={`wynik-${i + 1}`}
-            // scroll-mt clears the sticky header (~73 px) when "Pokaż kolejne" jumps here.
-            className="scroll-mt-28 overflow-hidden rounded-card border border-border-card bg-white"
-          >
+          // scroll-mt clears the sticky header (~73 px) when "Pokaż kolejne" jumps here.
+          <li key={r.id} id={`wynik-${i + 1}`} className="scroll-mt-28">
             <RecipeCard
-              variant="row"
+              variant="list"
               from="szukaj"
               slug={r.slug}
               title={r.title}
@@ -59,7 +56,7 @@ export function SearchResults({ q, scope, page, rows, total, favoriteIds }: Sear
       </ol>
       {canShowMore && (
         <Link
-          href={`${searchPath(q, scope, page + 1)}#wynik-${rows.length + 1}`}
+          href={`${searchPath(q, scope, page + 1, category)}#wynik-${rows.length + 1}`}
           className={`${buttonClasses('outline', 'lg')} mt-4 w-full`}
         >
           Pokaż kolejne {Math.min(SEARCH_PAGE_SIZE, remaining)}
