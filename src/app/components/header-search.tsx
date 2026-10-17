@@ -26,7 +26,8 @@ export function HeaderSearch({ className = '' }: { className?: string }) {
         required
         enterKeyHint="search"
         autoComplete="off"
-        placeholder="Szukaj przepisu lub składnika"
+        // Short enough to stay whole at 1024 px, where the field shrinks to ~200 px.
+        placeholder="Przepis lub składnik"
         className="h-12 min-w-0 flex-1 rounded-field border-2 border-field bg-white px-3 text-[17px] text-ink placeholder:text-ink-muted"
       />
       <button

@@ -13,8 +13,8 @@ const NAV_ITEM =
 /**
  * The guest desktop header's "Przepisy" + "Kategorie ▾" (E01-S17, A8).
  * "Kategorie" is a disclosure: a button with aria-expanded that shows every
- * category; Escape or a click outside closes it (Escape returns focus to the
- * button), and so does navigating. Without JS the same categories stay
+ * category; Escape, a click outside or focus leaving it closes it (Escape
+ * returns focus to the button), and so does navigating. Without JS the same categories stay
  * reachable from the home grid.
  */
 export function HeaderNav({ className = '' }: { className?: string }) {
@@ -50,7 +50,14 @@ export function HeaderNav({ className = '' }: { className?: string }) {
       <Link href={SEARCH_PATH} className={NAV_ITEM}>
         Przepisy
       </Link>
-      <div ref={rootRef} className="relative">
+      <div
+        ref={rootRef}
+        className="relative"
+        // Tabbing past the last category (or back before the button) closes the panel.
+        onBlur={(event) => {
+          if (!rootRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false)
+        }}
+      >
         <button
           ref={buttonRef}
           type="button"
