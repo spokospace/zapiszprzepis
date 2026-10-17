@@ -129,17 +129,17 @@ describe('triggerRecipeExtraction — full-access gate (E01-S11)', () => {
     vi.clearAllMocks()
   })
 
-  it('refuses a user without full access before any dedup or insert', async () => {
+  it('refuses a new link from a user without full access before any insert', async () => {
     const from = vi.fn()
     vi.mocked(createSupabaseServerClient).mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
       from,
     } as any)
+    vi.mocked(findExistingRecipeForUrl).mockResolvedValue({ status: 'new', normalizedUrl: 'https://example.com/tiramisu' })
     vi.mocked(getFullAccess).mockResolvedValueOnce(false)
 
     await expect(triggerRecipeExtraction('https://example.com/tiramisu')).rejects.toThrow('No full access')
 
-    expect(findExistingRecipeForUrl).not.toHaveBeenCalled()
     expect(from).not.toHaveBeenCalled()
     expect(inngest.send).not.toHaveBeenCalled()
   })

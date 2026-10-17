@@ -31,15 +31,6 @@ comment on table public.access_codes is
   'E01-S11 access codes (hash only). Service-only: no API-role grants. '
   'Create codes with public.create_access_code().';
 
--- The "used by" audit trail. One redemption per (code, user).
-create table if not exists public.access_code_redemptions (
-  id bigint generated always as identity primary key,
-  code_id bigint not null references public.access_codes(id) on delete restrict,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  redeemed_at timestamp with time zone not null default now(),
-  unique (code_id, user_id)
-);
-
 -- Failed redemption attempts, for the per-user rate limit.
 create table if not exists public.access_code_attempts (
   id bigint generated always as identity primary key,
@@ -51,6 +42,8 @@ create index if not exists idx_access_code_attempts_user_time
   on public.access_code_attempts(user_id, attempted_at);
 
 -- The entitlement itself. Private (NOT on the anon-readable profiles table).
+-- code_id is the "used by" record: a user redeems at most once (a user who
+-- already has access gets 'already'), so no separate redemptions table.
 create table if not exists public.user_full_access (
   user_id uuid primary key references auth.users(id) on delete cascade,
   source text not null check (source in ('code', 'grandfathered', 'payment')),
@@ -65,14 +58,12 @@ comment on table public.user_full_access is
 -- ── RLS + grants ────────────────────────────────────────────────────────────
 
 alter table public.access_codes enable row level security;
-alter table public.access_code_redemptions enable row level security;
 alter table public.access_code_attempts enable row level security;
 alter table public.user_full_access enable row level security;
 
 -- Supabase's default privileges grant ALL on new public tables to anon and
--- authenticated; take them back. Codes, redemptions and attempts are service-only.
+-- authenticated; take them back. Codes and attempts are service-only.
 revoke all on public.access_codes from anon, authenticated;
-revoke all on public.access_code_redemptions from anon, authenticated;
 revoke all on public.access_code_attempts from anon, authenticated;
 revoke all on public.user_full_access from anon, authenticated;
 
@@ -89,18 +80,26 @@ create policy user_full_access_owner_select
 
 -- ── Functions ───────────────────────────────────────────────────────────────
 
--- Normalized code → hex SHA-256. Case and any whitespace do not matter.
--- sha256() is built in (pg_catalog), so no extension is needed.
+-- Normalized form of a code: case, whitespace and hyphens do not matter, so
+-- "ABCD 1234" and "abcd-1234" are the same code.
+create or replace function public.access_code_normalize(p_code text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select lower(regexp_replace(coalesce(p_code, ''), '[\s-]', '', 'g'))
+$$;
+
+-- Normalized code → hex SHA-256. sha256() is built in (pg_catalog), so no
+-- extension is needed.
 create or replace function public.access_code_hash(p_code text)
 returns text
 language sql
 immutable
 set search_path = ''
 as $$
-  select encode(
-    sha256(convert_to(lower(regexp_replace(coalesce(p_code, ''), '\s', '', 'g')), 'UTF8')),
-    'hex'
-  )
+  select encode(sha256(convert_to(public.access_code_normalize(p_code), 'UTF8')), 'hex')
 $$;
 
 -- Does the current user have full access? Used by RLS and by the app
@@ -118,8 +117,8 @@ $$;
 -- Redeem a code for the current user. Returns one of:
 --   'ok'           — access granted now
 --   'already'      — the user already had full access (no use consumed)
---   'invalid'      — unknown, expired, used up, or already redeemed by this user
---                    (one token for all: no enumeration oracle)
+--   'invalid'      — unknown, expired or used up (one token for all: no
+--                    enumeration oracle)
 --   'rate_limited' — 5 failed attempts in the last 15 minutes; code not checked
 -- Never raises for these cases: a raise would roll back the recorded attempt
 -- and defeat the rate limit.
@@ -136,6 +135,10 @@ begin
   if uid is null then
     raise exception 'not_authenticated' using errcode = '28000';
   end if;
+
+  -- Serialize this user's concurrent calls (double submit, two tabs with two
+  -- codes): the second waits here, then sees the grant and spends nothing.
+  perform pg_advisory_xact_lock(hashtext('redeem_access_code:' || uid::text));
 
   if exists (select 1 from public.user_full_access where user_id = uid) then
     return 'already';
@@ -157,11 +160,7 @@ begin
 
   if not found
      or (code.expires_at is not null and code.expires_at <= now())
-     or code.use_count >= code.max_uses
-     or exists (
-       select 1 from public.access_code_redemptions r
-       where r.code_id = code.id and r.user_id = uid
-     ) then
+     or code.use_count >= code.max_uses then
     insert into public.access_code_attempts (user_id) values (uid);
     -- Keep the table small: a day-old failure no longer counts for anything.
     delete from public.access_code_attempts
@@ -169,25 +168,20 @@ begin
     return 'invalid';
   end if;
 
-  -- Grant first, so a concurrent redemption by the same user (double submit
-  -- with two codes) waits on the PK and then consumes nothing.
+  -- user_full_access.code_id is the "used by" record.
   insert into public.user_full_access (user_id, source, code_id)
-  values (uid, 'code', code.id)
-  on conflict (user_id) do nothing;
-  if not found then
-    return 'already';
-  end if;
-
+  values (uid, 'code', code.id);
   update public.access_codes set use_count = use_count + 1 where id = code.id;
-  insert into public.access_code_redemptions (code_id, user_id) values (code.id, uid);
   delete from public.access_code_attempts where user_id = uid;
   return 'ok';
 end;
 $$;
 
 -- Owner tooling: create a code (SQL editor / Management API / service role).
--- Returns the new code id. Codes need ≥ 8 normalized characters; prefer ≥ 10
--- random alphanumerics.
+-- Returns the new code id. Codes need ≥ 10 normalized characters (new accounts
+-- are free since S12, so code length — not the per-user rate limit — is what
+-- stops guessing). Generate them at random, e.g.
+--   select upper(substr(md5(gen_random_uuid()::text), 1, 12));
 create or replace function public.create_access_code(
   p_code text,
   p_max_uses integer default 1,
@@ -202,8 +196,8 @@ as $$
 declare
   new_id bigint;
 begin
-  if length(regexp_replace(coalesce(p_code, ''), '\s', '', 'g')) < 8 then
-    raise exception 'access code must have at least 8 characters';
+  if length(public.access_code_normalize(p_code)) < 10 then
+    raise exception 'access code must have at least 10 characters';
   end if;
   insert into public.access_codes (code_hash, max_uses, expires_at, note)
   values (public.access_code_hash(p_code), p_max_uses, p_expires_at, p_note)
@@ -214,6 +208,7 @@ $$;
 
 -- Function grants: Supabase grants EXECUTE on new functions to the API roles by
 -- default; revoke everything, then grant only what the app calls.
+revoke all on function public.access_code_normalize(text) from public, anon, authenticated;
 revoke all on function public.access_code_hash(text) from public, anon, authenticated;
 revoke all on function public.has_full_access() from public, anon, authenticated;
 revoke all on function public.redeem_access_code(text) from public, anon, authenticated;
@@ -282,12 +277,17 @@ create policy recipes_owner_delete
   using (user_id = public.current_user_id());
 
 -- ── Backfill: grandfather today's adders ────────────────────────────────────
--- Everyone who already owns a recipe or a share keeps adding. Accounts with no
--- recipes (e.g. fresh social sign-ups) need a code.
+-- 1) Every email-identity account: before S12 the only way to create one was
+--    the S-07 signup, which demands INVITE_CODE — all of them are invited adders,
+--    even those who have not added anything yet.
+-- 2) Anyone who already owns a recipe or a share.
+-- A social-login (S12) account with no recipes needs a code; S12 keeps its OAuth
+-- buttons off until this gate is live.
 insert into public.user_full_access (user_id, source)
 select u.id, 'grandfathered'
 from auth.users u
-where exists (select 1 from public.recipes r where r.user_id = u.id)
+where exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email')
+   or exists (select 1 from public.recipes r where r.user_id = u.id)
    or exists (select 1 from public.recipe_shares s where s.user_id = u.id)
 on conflict (user_id) do nothing;
 
@@ -298,6 +298,6 @@ on conflict (user_id) do nothing;
 --   using (user_id = public.current_user_id()) with check (user_id = public.current_user_id());
 -- (same for recipes → recipes_user_isolation)
 -- drop function public.create_access_code(text, integer, timestamp with time zone, text),
---   public.redeem_access_code(text), public.has_full_access(), public.access_code_hash(text);
--- drop table public.user_full_access, public.access_code_attempts,
---   public.access_code_redemptions, public.access_codes;
+--   public.redeem_access_code(text), public.has_full_access(), public.access_code_hash(text),
+--   public.access_code_normalize(text);
+-- drop table public.user_full_access, public.access_code_attempts, public.access_codes;

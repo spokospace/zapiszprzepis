@@ -30,11 +30,6 @@ export async function triggerRecipeExtraction(
     throw new Error('Not authenticated')
   }
 
-  // E01-S11: adding needs full access (RLS refuses the insert too).
-  if (!(await getFullAccess(supabase))) {
-    throw new Error(NO_FULL_ACCESS)
-  }
-
   const dedup = await findExistingRecipeForUrl(supabase, user.id, url)
   if (dedup.status === 'completed') {
     return { duplicate: 'completed', slug: dedup.slug }
@@ -46,6 +41,12 @@ export async function triggerRecipeExtraction(
     await favoriteExistingRecipe(supabase, user.id, dedup.recipeId, dedup.normalizedUrl)
     revalidatePath('/ulubione')
     return { duplicate: 'in_favorites', slug: dedup.slug }
+  }
+
+  // E01-S11: a NEW extraction needs full access (RLS refuses the insert too).
+  // After dedup: an existing link only goes to favorites, which need no access.
+  if (!(await getFullAccess(supabase))) {
+    throw new Error(NO_FULL_ACCESS)
   }
 
   const sourceType = detectSourceType(url)

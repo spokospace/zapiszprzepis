@@ -71,21 +71,32 @@ describe('addRecipeFromUrl — full-access gate (E01-S11)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(getFullAccess).mockResolvedValue(true)
     vi.mocked(createSupabaseServerClient).mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
       from,
     } as any)
   })
 
-  it('sends a user without full access to the code gate before any dedup or insert', async () => {
+  it('sends a user without full access to the code gate before inserting a new link', async () => {
+    vi.mocked(findExistingRecipeForUrl).mockResolvedValue({ status: 'new', normalizedUrl: URL_IN })
     vi.mocked(getFullAccess).mockResolvedValueOnce(false)
 
     await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /?add_error=no_access')
 
-    expect(findExistingRecipeForUrl).not.toHaveBeenCalled()
-    expect(favoriteExistingRecipe).not.toHaveBeenCalled()
     expect(from).not.toHaveBeenCalled()
     expect(inngest.send).not.toHaveBeenCalled()
+  })
+
+  it('still favorites someone else’s link without full access (favorites need no access)', async () => {
+    vi.mocked(findExistingRecipeForUrl).mockResolvedValue(OTHER)
+    vi.mocked(favoriteExistingRecipe).mockResolvedValue(undefined)
+    vi.mocked(getFullAccess).mockResolvedValue(false)
+
+    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /przepis/tiramisu?in_favorites=1')
+
+    expect(favoriteExistingRecipe).toHaveBeenCalled()
+    expect(getFullAccess).not.toHaveBeenCalled()
   })
 
   it('still sends a guest to login first', async () => {

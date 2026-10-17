@@ -26,10 +26,6 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
 
   if (!user) redirect('/login')
 
-  // E01-S11: adding needs full access. Checked before dedup so a user without it
-  // cannot even favorite-by-link through this path (RLS refuses the insert too).
-  if (!(await getFullAccess(supabase))) redirect('/?add_error=no_access')
-
   const dedup = await findExistingRecipeForUrl(supabase, user.id, url)
   if (dedup.status === 'completed') redirect(`${recipePath(dedup.slug)}?duplicate=1`)
   if (dedup.status === 'pending') redirect('/recipes?duplicate=pending')
@@ -47,6 +43,11 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
     revalidatePath('/ulubione')
     redirect(`${recipePath(dedup.slug)}?in_favorites=1`)
   }
+
+  // E01-S11: a NEW extraction needs full access (RLS refuses the insert too).
+  // Checked after dedup: a link someone else already added only goes to
+  // favorites, which need no full access.
+  if (!(await getFullAccess(supabase))) redirect('/?add_error=no_access')
 
   const sourceType = detectSourceType(url)
 
