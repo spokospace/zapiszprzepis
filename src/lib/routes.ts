@@ -64,3 +64,16 @@ export function isPublicRoute(pathname: string): boolean {
     PRZEPISY_CATEGORY_RE.test(pathname)
   )
 }
+
+/**
+ * Where a recipe search goes. The home search form submits a GET here with `q`.
+ * Interim (E01-S04): the owner list's own search; E01-S05 repoints this to
+ * /szukaj, the public results page, without touching the screens that link here.
+ */
+export const SEARCH_PATH = '/recipes'
+
+/** A search for `query` (trimmed); a blank query is the bare search page. */
+export function searchPath(query: string): string {
+  const q = query.trim()
+  return q ? `${SEARCH_PATH}?q=${encodeURIComponent(q)}` : SEARCH_PATH
+}

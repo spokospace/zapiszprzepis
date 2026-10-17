@@ -1,113 +1,143 @@
-import Link from 'next/link'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
+import { getMenuSummary } from '@/lib/menu-summary'
+import { homeGreeting } from '@/lib/home'
 import { AppHeader } from '@/app/components/app-header'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
 import { AccessCodeGate } from '@/app/components/access-code-gate'
-import { getFullAccess } from '@/lib/full-access'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { PageContainer } from '@/app/components/page-container'
+import { HomeSearch } from '@/app/components/home/home-search'
+import { PopularSearches } from '@/app/components/home/popular-searches'
+import { CategoryGrid } from '@/app/components/home/category-grid'
+import { MemberTiles } from '@/app/components/home/member-tiles'
+import { GuestCta } from '@/app/components/home/guest-cta'
 
 type SearchParams = Promise<{ add_error?: string }>
+
+/** Recent public recipes on the guest home: 4 fills the 2-column grid (E01-S04). */
+const RECENT_LIMIT = 4
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
   const { add_error } = await searchParams
   const supabase = await createSupabaseServerClient()
   const user = await getCurrentUser()
 
-  // Public since E01-S02: a guest sees the home too. "Ostatnio dodane" is the
-  // public feed across all users, read through the guest-safe public_recipes view
-  // (recipes itself is owner-only), not the visitor's own list.
-  // E01-S11: only full-access users get the add form; the rest see screen 3c.
-  const [failedShares, hasFullAccess, { data: recentRecipes }] = await Promise.all([
-    user ? getFailedShares(supabase, user.id) : Promise.resolve(NO_FAILED_SHARES),
-    user ? getFullAccess(supabase) : Promise.resolve(false),
-    supabase
-      .from('public_recipes')
-      .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
-      .order('created_at', { ascending: false })
-      .limit(3),
+  // Public since E01-S02: a guest sees the home too; the signed-in home (C1) has no feed.
+  // The menu summary (E01-S09) also carries the E01-S11 full-access flag, which
+  // decides the "Moje przepisy" tile and add form vs the access-code gate (3c).
+  const [failedShares, menu, recentRecipes] = await Promise.all([
+    user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
+    getMenuSummary(supabase, user),
+    user ? [] : getRecentPublicRecipes(supabase),
   ])
 
   return (
     <>
-      <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} />
-      <main className="min-h-screen bg-white">
-        <PageContainer className="py-6 sm:py-12">
-          {user ? (
-            <>
-              {hasFullAccess ? (
-                <>
-                  <p className="mb-6 text-sm text-gray-500">Znajdź przepis i zapisz go jednym kliknięciem.</p>
-                  <AddRecipeForm addError={add_error} />
-                </>
-              ) : (
-                <AccessCodeGate notice={add_error === 'no_access'} />
-              )}
-              <Link
-                href="/recipes"
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-200 bg-orange-50 px-6 py-4 text-base font-semibold text-orange-700 shadow-sm hover:bg-orange-100 hover:border-orange-300 transition-colors"
-              >
-                Zapisane przepisy →
-              </Link>
-            </>
-          ) : (
-            <section aria-labelledby="guest-heading" className="rounded-xl bg-orange-50 px-5 py-6">
-              <h1 id="guest-heading" className="text-2xl font-bold text-gray-900">
-                Przepisy z całego internetu w jednym miejscu
-              </h1>
-              <p className="mt-2 text-base text-gray-700">
-                Przeglądaj przepisy bez logowania. Zaloguj się, żeby zapisywać własne.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <Link
-                  href="/login"
-                  className="inline-flex min-h-[48px] items-center rounded-lg bg-orange-700 px-5 font-semibold text-white hover:bg-orange-800"
-                >
-                  Zaloguj się
-                </Link>
-                <Link
-                  href="/signup"
-                  className="inline-flex min-h-[48px] items-center rounded-lg border-2 border-gray-500 px-5 font-semibold text-gray-900 hover:bg-gray-50"
-                >
-                  Załóż konto
-                </Link>
-              </div>
-            </section>
-          )}
-          {recentRecipes && recentRecipes.length > 0 && (
-            <div className="mt-8">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Ostatnio dodane
-              </h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <RecipeListSnapshot
-                  listKey="home"
-                  label="Ostatnio dodane"
-                  href="/"
-                  items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
-                />
-                {recentRecipes.map((r) => (
-                  <RecipeCard
-                    // id, not slug: slugs are unique per user only, and this feed spans users.
-                    key={r.id}
-                    from="home"
-                    slug={r.slug}
-                    title={r.title}
-                    imageUrl={r.image_url}
-                    category={r.category}
-                    description={r.description}
-                    sourceType={r.source_type}
-                    sourceUrl={r.source_url}
-                    sourceAuthor={r.source_author}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </PageContainer>
+      <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} menu={menu} />
+      <main className="min-h-screen bg-white pb-10">
+        {/* E01-S15 slot: the "N przepisów wymaga uwagi" notifications banner goes here. */}
+        {user ? (
+          <MemberHome addError={add_error} hasFullAccess={menu?.hasFullAccess ?? false} />
+        ) : (
+          <GuestHome recentRecipes={recentRecipes} />
+        )}
       </main>
     </>
+  )
+}
+
+/**
+ * "Ostatnio dodane": the public feed across all users, read through the
+ * guest-safe public_recipes view (recipes itself is owner-only).
+ */
+async function getRecentPublicRecipes(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const { data } = await supabase
+    .from('public_recipes')
+    .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
+    .order('created_at', { ascending: false })
+    .limit(RECENT_LIMIT)
+  return data ?? []
+}
+
+type RecentRecipe = Awaited<ReturnType<typeof getRecentPublicRecipes>>[number]
+
+function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
+  return (
+    <>
+      <section aria-labelledby="hero-heading" className="bg-surface-accent">
+        <PageContainer className="py-6">
+          <h1 id="hero-heading" className="mb-4 text-[30px] leading-tight font-bold text-ink">
+            Czego dziś szukasz?
+          </h1>
+          <HomeSearch id="home-search-guest" />
+        </PageContainer>
+      </section>
+      <PageContainer className="flex flex-col gap-8 pt-6">
+        <PopularSearches />
+        <CategoryGrid columns={3} />
+        {recentRecipes.length > 0 && (
+          <section aria-labelledby="recent-heading">
+            <h2 id="recent-heading" className="mb-3 text-[22px] font-bold text-ink">
+              Ostatnio dodane
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {/* E01-S07: lets the recipe page show "← Ostatnio dodane" + prev/next. */}
+              <RecipeListSnapshot
+                listKey="home"
+                label="Ostatnio dodane"
+                href="/"
+                items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
+              />
+              {recentRecipes.map((r) => (
+                <RecipeCard
+                  // id, not slug: the feed spans users, and the id is the stable key.
+                  key={r.id}
+                  from="home"
+                  slug={r.slug}
+                  title={r.title}
+                  imageUrl={r.image_url}
+                  category={r.category}
+                  description={r.description}
+                  sourceType={r.source_type}
+                  sourceUrl={r.source_url}
+                  sourceAuthor={r.source_author}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+        <GuestCta />
+      </PageContainer>
+    </>
+  )
+}
+
+function MemberHome({ addError, hasFullAccess }: { addError?: string; hasFullAccess: boolean }) {
+  // Interim until E01-S12 lands: it supplies the vocative (null → "Dzień dobry!").
+  const vocative: string | null = null
+
+  return (
+    <PageContainer className="flex flex-col gap-8 pt-6">
+      <div>
+        <h1 className="mb-4 text-[30px] leading-tight font-bold text-ink">{homeGreeting(vocative)}</h1>
+        <HomeSearch id="home-search-member" />
+      </div>
+      <MemberTiles hasFullAccess={hasFullAccess} />
+      <CategoryGrid columns={2} />
+      {/* E01-S10 slot: adding moves to /dodaj; until then the form lives here (?tab=add focuses it).
+          Without full access (E01-S11) the access-code gate (3c) stands in its place. */}
+      {hasFullAccess ? (
+        <section aria-labelledby="add-heading">
+          <h2 id="add-heading" className="mb-3 text-[22px] font-bold text-ink">
+            Dodaj przepis z linku
+          </h2>
+          <AddRecipeForm addError={addError} />
+        </section>
+      ) : (
+        <AccessCodeGate notice={addError === 'no_access'} />
+      )}
+    </PageContainer>
   )
 }

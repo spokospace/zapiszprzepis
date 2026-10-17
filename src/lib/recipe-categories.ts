@@ -53,3 +53,9 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
 export function isRecipeCategory(value: string): value is RecipeCategory {
   return RECIPE_CATEGORIES.some((c) => c.value === value)
 }
+
+/**
+ * The categories the home page shows (E01-S04, 8 tiles): the first eight in
+ * RECIPE_CATEGORIES order. Reorder RECIPE_CATEGORIES to change them.
+ */
+export const HOME_CATEGORIES = RECIPE_CATEGORIES.slice(0, 8)

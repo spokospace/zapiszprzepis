@@ -7,6 +7,8 @@ import {
   RECIPE_PAGE_RE,
   PRZEPIS_PAGE_RE,
   legacyRecipePathToCanonical,
+  searchPath,
+  SEARCH_PATH,
 } from './routes'
 
 describe('recipePath', () => {
@@ -88,5 +90,16 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/przepis')).toBe(false)
     expect(isPublicRoute('/settings')).toBe(false)
     expect(isPublicRoute('/ulubione')).toBe(false)
+  })
+})
+
+describe('searchPath', () => {
+  it('trims and encodes the query', () => {
+    expect(searchPath('  zupa pomidorowa ')).toBe(`${SEARCH_PATH}?q=zupa%20pomidorowa`)
+    expect(searchPath('a&b')).toBe(`${SEARCH_PATH}?q=a%26b`)
+  })
+
+  it('drops a blank query', () => {
+    expect(searchPath('   ')).toBe(SEARCH_PATH)
   })
 })

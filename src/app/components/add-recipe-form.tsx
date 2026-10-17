@@ -6,6 +6,7 @@ import { Link, Mic, Search, X } from 'lucide-react'
 import { addRecipeFromUrl } from '@/app/(authenticated)/recipes/add-recipe-action'
 import { searchViaExa, type ExaResult } from '@/app/(authenticated)/recipes/search-via-exa-action'
 import { stripSearchParam } from '@/lib/strip-search-param'
+import { isSpeechRecognitionSupported, speechRecognitionCtor } from '@/lib/speech'
 
 type SearchState = 'idle' | 'loading' | 'searching' | 'results' | 'error' | 'recording' | 'mic_error'
 
@@ -122,7 +123,7 @@ export function AddRecipeForm({ addError, autoFocus }: { addError?: string | nul
     // read during render without breaking SSR and desyncing hydration, and the
     // empty dep array means this runs once and settles.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsSpeechSupported('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+    setIsSpeechSupported(isSpeechRecognitionSupported(window))
   }, [])
 
   useEffect(() => {
@@ -152,16 +153,15 @@ export function AddRecipeForm({ addError, autoFocus }: { addError?: string | nul
   }
 
   const startVoiceSearch = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR = ((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition) as new () => any
+    const SR = speechRecognitionCtor(window)
+    if (!SR) return
     const recognition = new SR()
     recognition.lang = 'pl-PL'
     recognition.interimResults = false
     recognition.maxAlternatives = 1
     setSearchState('recording')
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = async (event: any) => {
+    recognition.onresult = async (event) => {
       const transcript = event.results[0][0].transcript
       setSearchState('searching')
       const res = await searchViaExa(transcript)
