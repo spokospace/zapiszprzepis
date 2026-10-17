@@ -3,6 +3,7 @@ import { parseOAuthProviders } from '@/lib/oauth-providers'
 import { withFavoriteIntent } from '@/lib/favorites'
 import { OAuthButtons } from './oauth-buttons'
 import { SignInForm } from './signin-form'
+import { LegalLinks } from '@/app/components/legal-page'
 
 type SearchParams = Promise<{
   error?: string
@@ -42,6 +43,8 @@ export default async function LoginPage({
         </h1>
         <OAuthButtons providers={providers} next={next} />
         <SignInForm error={error} email={email} sent={sent} success={success} next={next} />
+        {/* Minimal until E01-S12b redesigns the 3a footer; it can reuse the path constants in routes.ts. */}
+        <LegalLinks />
       </div>
     </main>
   )

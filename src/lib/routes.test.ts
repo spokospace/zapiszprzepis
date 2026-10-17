@@ -12,6 +12,9 @@ import {
   ADD_RECIPE_PATH,
   addRecipeErrorPath,
   parseAddRecipeError,
+  TERMS_PATH,
+  PRIVACY_POLICY_PATH,
+  DATA_DELETION_PATH,
 } from './routes'
 
 describe('recipePath', () => {
@@ -112,6 +115,21 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/przepis')).toBe(false)
     expect(isPublicRoute('/settings')).toBe(false)
     expect(isPublicRoute('/ulubione')).toBe(false)
+  })
+
+  it('allows the terms, the privacy policy and the data deletion page without a session', () => {
+    expect(TERMS_PATH).toBe('/regulamin')
+    expect(PRIVACY_POLICY_PATH).toBe('/polityka-prywatnosci')
+    expect(DATA_DELETION_PATH).toBe('/usuwanie-danych')
+    expect(isPublicRoute(TERMS_PATH)).toBe(true)
+    expect(isPublicRoute(PRIVACY_POLICY_PATH)).toBe(true)
+    expect(isPublicRoute(DATA_DELETION_PATH)).toBe(true)
+  })
+
+  it('matches the legal pages exactly, not their subpaths', () => {
+    expect(isPublicRoute('/regulamin/x')).toBe(false)
+    expect(isPublicRoute('/polityka-prywatnosci/')).toBe(false)
+    expect(isPublicRoute('/usuwanie-danych/konto')).toBe(false)
   })
 })
 
