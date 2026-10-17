@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { DATA_DELETION_PATH, TERMS_PATH } from '@/lib/routes'
-import { Fill, LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
+import { LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
 
 export const metadata: Metadata = {
   title: 'Polityka prywatności — ZapiszPrzepis',
@@ -145,9 +145,8 @@ export default function PrivacyPolicyPage() {
           przypadkach Twoja przeglądarka łączy się z tymi serwisami, które mogą zobaczyć m.in. Twój adres IP.
         </p>
         <p>
-          Część dostawców (m.in. OpenAI, Exa, Firecrawl, Inngest) działa w Stanach Zjednoczonych, więc dane mogą być
-          przekazywane poza Europejski Obszar Gospodarczy na podstawie mechanizmów z RODO, np. standardowych klauzul
-          umownych. <Fill>potwierdź podstawę transferu u każdego dostawcy i region bazy Supabase</Fill>
+          Baza danych (Supabase) działa w regionie eu-west-1 (Irlandia), w EOG. Przekazanie danych do dostawców w
+          USA (OpenAI, Exa, Firecrawl, Inngest) odbywa się na podstawie standardowych klauzul umownych (SCC).
         </p>
       </LegalSection>
 
