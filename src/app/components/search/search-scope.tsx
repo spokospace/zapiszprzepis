@@ -25,7 +25,7 @@ export function SearchScopeSwitch({ q, scope }: { q: string; scope: SearchScope 
               <Link
                 href={searchPath(q, value)}
                 aria-current={active ? 'page' : undefined}
-                className={`flex h-full min-h-[52px] items-center justify-center rounded-field border-2 px-1 text-center text-[16px] leading-tight min-[360px]:text-[18px] font-bold ${
+                className={`flex h-full min-h-[52px] min-w-0 items-center justify-center rounded-field border-2 px-1 text-center text-[16px] leading-tight wrap-anywhere min-[360px]:text-[18px] font-bold ${
                   active
                     ? 'border-surface-dark bg-surface-dark text-white'
                     : 'border-field bg-white text-ink hover:bg-surface-3'
