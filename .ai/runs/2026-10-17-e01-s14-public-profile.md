@@ -24,15 +24,17 @@ Ship the public `/u/{username}` page and switch on S07's recipe-page author link
 
 ## Progress
 
+PR: #259
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Helpers and routing seam
 
-- [ ] 1.1 public-profile helpers and tests
-- [ ] 1.2 PROFILE_PAGE_RE in isPublicRoute
+- [x] 1.1 public-profile helpers and tests — 91bdf5b
+- [x] 1.2 PROFILE_PAGE_RE in isPublicRoute — 7033f4a
 
 ### Phase 2: The page
 
-- [ ] 2.1 Avatar tokens and ProfileAvatar
-- [ ] 2.2 Profile route, layout and profilePath switch
-- [ ] 2.3 Dev-server verification and full gate
+- [x] 2.1 Avatar tokens and ProfileAvatar — e7422ff
+- [x] 2.2 Profile route, layout and profilePath switch — de2454a, ae50ac2
+- [x] 2.3 Dev-server verification and full gate — ae50ac2
