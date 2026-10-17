@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
@@ -35,8 +36,17 @@ const CANDIDATES = 50
  * the same category, most shared tags first, topped up with the newest — plus
  * "Wszystkie przepisy: {Kategoria} (N) →". Loads its own data so the page only
  * mounts it; non-critical, so a failed query logs and hides the lists.
+ * Streamed behind Suspense so its three queries never hold up the recipe itself.
  */
-export async function SimilarRecipes({ recipe }: SimilarRecipesProps) {
+export function SimilarRecipes(props: SimilarRecipesProps) {
+  return (
+    <Suspense fallback={null}>
+      <SimilarRecipesSection {...props} />
+    </Suspense>
+  )
+}
+
+async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
   const supabase = await createSupabaseServerClient()
   // Same category, not this recipe, newest first.
   const others = (limit: number, tags?: string[]) => {

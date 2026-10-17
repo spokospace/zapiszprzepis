@@ -38,14 +38,20 @@ export function TagFilter({ chips }: { chips: TagChip[] }) {
         {shown.map((chip) => (
           <li key={chip.value}>
             <Link href={chip.href} scroll={false} className={chipClasses(chip.selected)}>
+              {/* Name reads "kruche 12 przepisów, wybrany": the visible "kruche 12" stays
+                  one contiguous run (WCAG 2.5.3), the explicit spaces keep the two
+                  flex items from merging into "kruche12". */}
               <span>
                 {chip.selected && <span aria-hidden="true">✓ </span>}
-                {chip.label}
-                {chip.selected && <span className="sr-only">, wybrany</span>}
+                {chip.label}{' '}
               </span>
               <span className="text-[16px] font-normal opacity-80">
                 {chip.count}
-                <span className="sr-only"> {recipesNoun(chip.count)}</span>
+                <span className="sr-only">
+                  {' '}
+                  {recipesNoun(chip.count)}
+                  {chip.selected && ', wybrany'}
+                </span>
               </span>
             </Link>
           </li>
