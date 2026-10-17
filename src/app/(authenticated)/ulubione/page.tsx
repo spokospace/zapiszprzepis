@@ -58,7 +58,8 @@ export default async function FavoritesPage() {
             Nie masz jeszcze ulubionych przepisów. Otwórz przepis i kliknij „Dodaj do ulubionych”.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          // One card a row on a phone, so its photo spans the screen; three from sm.
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <RecipeListSnapshot
               listKey="fav"
               label="Ulubione"

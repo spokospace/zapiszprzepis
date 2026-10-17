@@ -6,7 +6,7 @@ import { homeGreeting } from '@/lib/home'
 import { getGreetingName } from '@/lib/first-name'
 import { vocative } from '@/lib/vocative'
 import { AppHeader } from '@/app/components/app-header'
-import { RecipeCard } from '@/app/components/recipe-card'
+import { CAROUSEL_CLASS, CAROUSEL_ITEM_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { PageContainer } from '@/app/components/page-container'
 import { HomeSearch } from '@/app/components/home/home-search'
@@ -98,31 +98,32 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
             <h2 id="recent-heading" className="mb-3 text-[22px] font-bold text-ink">
               Ostatnio dodane
             </h2>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
-              {/* E01-S07: lets the recipe page show "← Ostatnio dodane" + prev/next. */}
-              <RecipeListSnapshot
-                listKey="home"
-                label="Ostatnio dodane"
-                href="/"
-                items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
-              />
+            {/* E01-S07: lets the recipe page show "← Ostatnio dodane" + prev/next. */}
+            <RecipeListSnapshot
+              listKey="home"
+              label="Ostatnio dodane"
+              href="/"
+              items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
+            />
+            <ul className={CAROUSEL_CLASS}>
               {recentRecipes.map((r) => (
-                <RecipeCard
-                  // id, not slug: the feed spans users, and the id is the stable key.
-                  key={r.id}
-                  from="home"
-                  slug={r.slug}
-                  title={r.title}
-                  imageUrl={r.image_url}
-                  category={r.category}
-                  description={r.description}
-                  sourceType={r.source_type}
-                  sourceUrl={r.source_url}
-                  sourceAuthor={r.source_author}
-                  favorite={{ recipeId: r.id, favorited: false, isAuthenticated: false }}
-                />
+                // id, not slug: the feed spans users, and the id is the stable key.
+                <li key={r.id} className={CAROUSEL_ITEM_CLASS}>
+                  <RecipeCard
+                    from="home"
+                    slug={r.slug}
+                    title={r.title}
+                    imageUrl={r.image_url}
+                    category={r.category}
+                    description={r.description}
+                    sourceType={r.source_type}
+                    sourceUrl={r.source_url}
+                    sourceAuthor={r.source_author}
+                    favorite={{ recipeId: r.id, favorited: false, isAuthenticated: false }}
+                  />
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         )}
         <GuestCta />

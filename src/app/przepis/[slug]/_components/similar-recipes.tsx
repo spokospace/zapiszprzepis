@@ -6,7 +6,7 @@ import { rankSimilar, sharedTagsCaption, similarHeading, SIMILAR_LIMIT } from '@
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { chipClasses } from '@/app/components/ui/chip'
-import { RecipeCard } from '@/app/components/recipe-card'
+import { CAROUSEL_CLASS, CAROUSEL_ITEM_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { dishExclusionFilter } from '@/lib/dish-versions'
 import type { RecipeSource } from '@/lib/recipe-source'
 
@@ -107,23 +107,24 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
           <h2 id="podobne" className="mb-4 text-[26px] font-bold text-ink">
             {similarHeading(recipe.tags, similar, label)}
           </h2>
-          {/* Two cards a row, four from lg (E01-S17, A9). */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
+          {/* A swipeable strip on a phone; two cards a row from sm, four from lg (E01-S17, A9). */}
+          <ul className={CAROUSEL_CLASS}>
             {similar.map((r) => (
-              <RecipeCard
-                key={r.id}
-                slug={r.slug}
-                title={r.title}
-                imageUrl={r.image_url}
-                category={r.category}
-                // "też kruche i czekoladowe" (screen 6); a top-up card with no shared tag keeps its note.
-                description={sharedTagsCaption(recipe.tags, r.tags) ?? r.description}
-                sourceType={r.source_type}
-                sourceUrl={r.source_url}
-                sourceAuthor={r.source_author}
-              />
+              <li key={r.id} className={CAROUSEL_ITEM_CLASS}>
+                <RecipeCard
+                  slug={r.slug}
+                  title={r.title}
+                  imageUrl={r.image_url}
+                  category={r.category}
+                  // "też kruche i czekoladowe" (screen 6); a top-up card with no shared tag keeps its note.
+                  description={sharedTagsCaption(recipe.tags, r.tags) ?? r.description}
+                  sourceType={r.source_type}
+                  sourceUrl={r.source_url}
+                  sourceAuthor={r.source_author}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       )}
       {showAll && (

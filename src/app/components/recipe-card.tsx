@@ -24,13 +24,14 @@ interface RecipeCardProps {
   favorite?: { recipeId: number; favorited: boolean; isAuthenticated: boolean }
   /**
    * `tile` (default): the grid card (home, Ulubione, Moje przepisy, Podobne).
-   * `list` (E01-S22): the one list card of search, category and profile — a
-   * thumbnail beside the full title, with the favorites bar inside its frame.
+   * `list` (E01-S22): the one list card of search, category and profile — on a
+   * phone the photo across the card's full width over the title, from sm a
+   * thumbnail beside it; the favorites bar sits inside its frame.
    */
   variant?: 'tile' | 'list'
   /** List only: total time ("Zupy · 45 min"), left out when unknown. */
   minutes?: number | null
-  /** List only: 96 px thumbnail + 20 px title (search, C2) or 84 + 19 (category 6, profile 7). */
+  /** List only: from sm a 96 px thumbnail + 20 px title (search, C2) or 84 + 19 (category 6, profile 7). */
   thumb?: 84 | 96
   /** List only, on a category page: "czas · źródło" and these tag labels instead of the category. */
   inCategory?: { tagLabels: readonly string[] }
@@ -38,6 +39,20 @@ interface RecipeCardProps {
 
 /** The list cards' container: one column, two from lg so they don't stretch to 1088 px (E01-S17). */
 export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
+
+/**
+ * A row of tiles inside a page (home "Ostatnio dodane", recipe "Podobne"). On a
+ * phone it is a swipeable strip running to the screen edges (it cancels
+ * PageContainer's px-4), each card ~3/4 of the width so the next one peeks in;
+ * from sm the 2-column grid, 4 from lg (E01-S17). Put each card in a
+ * CAROUSEL_ITEM_CLASS <li>. The strip scrolls inside itself, so the page never
+ * scrolls sideways; its links stay reachable with Tab, which scrolls them in.
+ */
+export const CAROUSEL_CLASS =
+  '-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4 lg:gap-5'
+
+/** One card of CAROUSEL_CLASS: 3/4 of the screen on a phone, a grid cell from sm. */
+export const CAROUSEL_ITEM_CLASS = 'w-3/4 shrink-0 snap-start sm:w-auto'
 
 export function RecipeCard({
   slug,
@@ -77,19 +92,30 @@ export function RecipeCard({
     return (
       <article className="@container flex h-full flex-col rounded-card border-2 border-border-card bg-white">
         {/* Only the title is underlined: it names the link; the meta lines would just be noise. */}
-        <Link href={recipePath(slug, { from })} className="group flex flex-1 gap-3 rounded-[14px] p-3 no-underline!">
-          {/* Under 280 px of card (320 px at 130 % zoom) a smaller thumbnail leaves the title room for whole words. */}
+        <Link
+          href={recipePath(slug, { from })}
+          className="group flex flex-1 flex-col rounded-[14px] no-underline! sm:flex-row sm:gap-3 sm:p-3"
+        >
+          {/* A phone gets the photo across the whole card, 4:3 like the tiles; from sm it is a
+              thumbnail beside the title, and a card there is always wider than the old 280 px cut. */}
           <div
-            className={`relative shrink-0 overflow-hidden rounded-[12px] bg-surface-3 @max-[280px]:h-16 @max-[280px]:w-16 ${thumb === 84 ? 'h-[84px] w-[84px]' : 'h-24 w-24'}`}
+            className={`relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-t-[14px] bg-surface-3 sm:aspect-auto sm:rounded-[12px] ${thumb === 84 ? 'sm:h-[84px] sm:w-[84px]' : 'sm:h-24 sm:w-24'}`}
           >
             {imageUrl ? (
-              // The title sits right beside it, so the image is decorative here.
-              <Image src={imageUrl} alt="" fill className="object-cover" sizes={`${thumb}px`} unoptimized={!isArchivedImageUrl(imageUrl)} />
+              // The title sits right under (or beside) it, so the image is decorative here.
+              <Image
+                src={imageUrl}
+                alt=""
+                fill
+                className="object-cover"
+                sizes={`(max-width: 639px) 100vw, ${thumb}px`}
+                unoptimized={!isArchivedImageUrl(imageUrl)}
+              />
             ) : (
               <div aria-hidden="true" className="h-full w-full bg-surface-accent-2" />
             )}
           </div>
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-1.5 p-3 sm:p-0">
             {/* Two lines at most (C2), words wrapped whole. A tiny card gets 18 px and a third line,
                 so a long word still fits instead of being cut; only a word wider than that breaks. */}
             <h3

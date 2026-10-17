@@ -9,7 +9,7 @@ export default function FavoritesLoading() {
         <LoadingStatus>Ładowanie ulubionych…</LoadingStatus>
         <div aria-hidden="true" className="motion-safe:animate-pulse">
           <div className="mb-6 text-2xl font-bold text-ink">Ulubione</div>
-          <RecipeGridSkeleton count={6} className="grid grid-cols-2 gap-3 sm:grid-cols-3" />
+          <RecipeGridSkeleton count={6} className="grid grid-cols-1 gap-3 sm:grid-cols-3" />
         </div>
       </PageContainer>
     </main>
