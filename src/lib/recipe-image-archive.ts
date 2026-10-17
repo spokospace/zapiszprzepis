@@ -10,14 +10,23 @@ const ALLOWED_MIME: Record<string, string> = {
 const MAX_BYTES = 5 * 1024 * 1024
 const FETCH_TIMEOUT_MS = 15_000
 
-// Private/loopback/cloud-metadata hostnames and prefixes that must never be
-// fetched server-side. A content-controlled og:image could point here (SSRF).
-const BLOCKED_HOSTS = new Set(['localhost', '169.254.169.254', 'metadata.google.internal'])
+// Loopback/cloud-metadata hostnames that must never be fetched server-side.
+// A content-controlled og:image could point here (SSRF).
+const BLOCKED_HOSTS = new Set(['localhost', 'metadata.google.internal'])
+
+const IPV4_RE = /^(\d+)\.(\d+)\.\d+\.\d+$/
 
 /**
- * Returns true when the URL resolves to a private, loopback, link-local, or
+ * Returns true when the URL points at a private, loopback, link-local, or
  * cloud-metadata address that must not be fetched from the server side.
  * Returns true on parse failure — an invalid URL should never be fetched.
+ *
+ * Only an IP literal is judged by its address range. `new URL` already turns
+ * every IPv4 spelling (2130706433, 0x7f.1, 0177.0.0.1) into dotted decimal and
+ * every IPv6 one into its compressed hex form, so a DNS name like
+ * fcdn.example.com or 0.cdn.example.com is never mistaken for an address
+ * (#136). A DNS name that resolves to a private address is not caught here;
+ * the Worker's global_fetch_strictly_public flag covers that in production.
  */
 export function isPrivateUrl(url: string): boolean {
   let hostname: string
@@ -27,26 +36,35 @@ export function isPrivateUrl(url: string): boolean {
     return true
   }
   if (BLOCKED_HOSTS.has(hostname)) return true
-  // Strip IPv6 brackets: [::1] → ::1
-  const h = hostname.replace(/^\[|\]$/g, '')
-  if (h === '::1' || h === '0:0:0:0:0:0:0:1') return true
-  // IPv6 link-local (fe80::/10), unique-local (fc00::/7 → fc/fd prefixes)
-  if (h.startsWith('fe80') || h.startsWith('fc') || h.startsWith('fd')) return true
-  // IPv4 private / loopback ranges
-  if (
-    h.startsWith('127.') ||
-    h.startsWith('0.') ||
-    h.startsWith('10.') ||
-    h.startsWith('169.254.') ||
-    h.startsWith('192.168.')
-  ) return true
-  // 172.16.0.0/12 → 172.16.x.x – 172.31.x.x
-  const parts = h.split('.')
-  if (parts.length === 4 && parts[0] === '172') {
-    const second = Number(parts[1])
-    if (second >= 16 && second <= 31) return true
-  }
-  return false
+  if (hostname.startsWith('[')) return isPrivateIPv6(hostname.slice(1, -1))
+  const ipv4 = IPV4_RE.exec(hostname)
+  return ipv4 != null && isPrivateIPv4(Number(ipv4[1]), Number(ipv4[2]))
+}
+
+// 0.0.0.0/8, 10/8, 127/8, 169.254/16 (cloud metadata), 172.16/12, 192.168/16.
+function isPrivateIPv4(a: number, b: number): boolean {
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168)
+  )
+}
+
+function isPrivateIPv6(address: string): boolean {
+  const [head, tail] = address.split('::')
+  const left = head ? head.split(':') : []
+  const right = tail ? tail.split(':') : []
+  const words = [...left, ...Array(8 - left.length - right.length).fill('0'), ...right].map((w) => parseInt(w, 16))
+  const zeroPrefix = (n: number) => words.slice(0, n).every((w) => w === 0)
+  // ::ffff:a.b.c.d (written in hex by `new URL`) reaches the embedded IPv4 address.
+  if (zeroPrefix(5) && words[5] === 0xffff) return isPrivateIPv4(words[6] >> 8, words[6] & 0xff)
+  // :: (unspecified) and ::1 (loopback)
+  if (zeroPrefix(7)) return words[7] <= 1
+  // fe80::/10 link-local, fc00::/7 unique-local
+  return (words[0] & 0xffc0) === 0xfe80 || (words[0] & 0xfe00) === 0xfc00
 }
 
 // Some hosts refuse requests coming from Cloudflare's address space (seen
