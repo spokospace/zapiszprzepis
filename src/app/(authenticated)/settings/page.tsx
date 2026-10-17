@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { SUPABASE_URL } from '@/lib/env'
 import { avatarColorIndex, avatarUrl } from '@/lib/avatar'
 import { profilePath } from '@/lib/routes'
+import { genderFormOf, youAddedLine } from '@/lib/gender-form'
 import { signOut } from '@/app/(actions)/sign-out'
 import { PageContainer } from '@/app/components/page-container'
 import { Button } from '@/app/components/ui/button'
@@ -27,14 +28,16 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [profile, priv] = await Promise.all([
+  const [profile, priv, own] = await Promise.all([
     readProfile(supabase, user.id),
-    // Owner-only RLS; a read error just means "no first name yet".
+    // Owner-only RLS; a read error just means "no first name / gender yet".
     supabase
       .from('profiles_private')
-      .select('first_name')
+      .select('first_name, gender')
       .eq('id', user.id)
-      .maybeSingle<{ first_name: string | null }>(),
+      .maybeSingle<{ first_name: string | null; gender: string | null }>(),
+    // How many recipes this person added (owner-only recipes RLS), for "Dodałaś N przepisów".
+    supabase.from('recipes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
   ])
 
   return (
@@ -47,6 +50,8 @@ export default async function SettingsPage() {
           avatarSrc={avatarUrl(SUPABASE_URL, profile?.avatar_path)}
           colorIndex={avatarColorIndex(user.id, profile?.avatar_color)}
           profileHref={profilePath(profile?.username)}
+          // Only the finished sentence reaches the client, never the gender (E01-S23).
+          addedLine={youAddedLine(genderFormOf(priv.data?.gender), own.count ?? 0)}
         />
         <dl className="mt-8 border-t border-border-card pt-5">
           <dt className="text-[16px] text-ink-soft">Adres email</dt>
