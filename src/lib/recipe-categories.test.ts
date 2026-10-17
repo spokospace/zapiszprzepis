@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { categoryLabel, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
+import { categoryLabel, isRecipeCategory, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 
 // recipes.category is a strict enum: whatever the LLM returns must be mapped
 // onto it, or the insert fails and the extraction is lost (#134).
@@ -46,5 +46,13 @@ describe('categoryLabel', () => {
   it('never returns a label that still looks like a raw slug', () => {
     // Guards the inverse mistake: a label pasted in without diacritics.
     expect(RECIPE_CATEGORIES.every(({ value, label }) => label !== value)).toBe(true)
+  })
+})
+
+describe('isRecipeCategory', () => {
+  it('accepts every listed value and rejects anything else', () => {
+    for (const { value } of RECIPE_CATEGORIES) expect(isRecipeCategory(value)).toBe(true)
+    expect(isRecipeCategory('kolacje')).toBe(false)
+    expect(isRecipeCategory('Zupy')).toBe(false)
   })
 })

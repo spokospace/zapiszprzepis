@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { recipePath, isPublicRoute, RECIPE_PAGE_RE, PRZEPIS_PAGE_RE, legacyRecipePathToCanonical } from './routes'
+import { categoryPath, recipePath, isPublicRoute, RECIPE_PAGE_RE, PRZEPIS_PAGE_RE, legacyRecipePathToCanonical } from './routes'
 
 describe('recipePath', () => {
   it('builds the canonical /przepis/{slug} path', () => {
@@ -52,6 +52,14 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/przepis/tiramisu')).toBe(true)
     // kept public so middleware can 301 it instead of bouncing to /login
     expect(isPublicRoute('/recipes/tiramisu')).toBe(true)
+  })
+
+  it('allows the category listing categoryPath builds (E01-S09)', () => {
+    expect(categoryPath('sniadania')).toBe('/przepisy/sniadania')
+    expect(isPublicRoute(categoryPath('sniadania'))).toBe(true)
+    // the bare listing root and deeper paths stay gated
+    expect(isPublicRoute('/przepisy')).toBe(false)
+    expect(isPublicRoute('/przepisy/zupy/x')).toBe(false)
   })
 
   it('keeps the owner list and everything else gated', () => {
