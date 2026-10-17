@@ -48,3 +48,18 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'syropy', label: 'Syropy i napary' },
   { value: 'inne', label: 'Inne' },
 ]
+
+/** Narrows a URL segment or query value to an enum member. */
+export function isRecipeCategory(value: string): value is RecipeCategory {
+  return RECIPE_CATEGORIES.some((c) => c.value === value)
+}
+
+/**
+ * The public listing of one category (E01-S09). Every "browse by category"
+ * link goes through here, so moving the listing (e.g. onto `/szukaj`, E01-S05)
+ * is a one-line change. Public on purpose: `/recipes?category=` is owner-only
+ * and would bounce a guest to /login.
+ */
+export function categoryHref(value: RecipeCategory): string {
+  return `/kategoria/${value}`
+}

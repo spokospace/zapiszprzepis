@@ -3,37 +3,83 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Heart, LogIn, LogOut, Menu, Settings, UserPlus, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, Heart, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
+import { buttonClasses } from '@/app/components/ui/button'
+import { categoryHref, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import type { MenuSummary } from '@/lib/menu-summary'
+import { buildMenuModel, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
 
-type MenuLink = { href: string; label: string; icon: LucideIcon }
-
-// Navigation entries of the drawer. Later additions (category shortcuts etc.)
-// go here; "Wyloguj" is rendered separately at the bottom.
-const MENU_LINKS: MenuLink[] = [
-  { href: '/ulubione', label: 'Ulubione', icon: Heart },
-  { href: '/settings', label: 'Ustawienia', icon: Settings },
-]
-
-// A guest (E01-S02) has no settings and nothing to sign out of.
-const GUEST_LINKS: MenuLink[] = [
-  { href: '/login', label: 'Zaloguj się', icon: LogIn },
-  { href: '/signup', label: 'Załóż konto', icon: UserPlus },
-]
+const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
+  'my-recipes': BookOpen,
+  favorites: Heart,
+  add: Plus,
+}
 
 const LABELED_ICON_BUTTON =
-  'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100'
+  'inline-flex min-h-[48px] items-center gap-1.5 rounded-field px-3 text-[17px] font-semibold text-ink hover:bg-surface-3'
+
+const SECTION_HEADING = 'px-5 pb-2 text-[17px] font-bold text-ink-soft'
+
+/** Active route: colour plus a left bar, never colour alone. */
+function activeClasses(active: boolean): string {
+  return active ? 'text-action-text border-l-4 border-action' : 'text-ink border-l-4 border-transparent'
+}
+
+function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: boolean; onNavigate: () => void }) {
+  const Icon = entry.locked ? Lock : MINE_ICONS[entry.key]
+  return (
+    <Link
+      href={entry.href}
+      onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
+      // Only the label is underlined: the global (unlayered) `a` underline would
+      // otherwise run through the counter pill and the lock caption, and only an
+      // !important utility outranks it.
+      className={`flex min-h-[56px] items-center gap-3 px-5 py-3 text-[19px] font-semibold no-underline! hover:bg-surface-2 ${activeClasses(active)}`}
+    >
+      <Icon aria-hidden="true" className="h-6 w-6 shrink-0" />
+      <span className="flex flex-col">
+        <span className="underline underline-offset-4">{entry.label}</span>
+        {entry.locked && (
+          <span className="text-[16px] font-normal text-ink-soft">Wymaga kodu lub pełnego dostępu</span>
+        )}
+      </span>
+      {entry.count !== null && (
+        <>
+          <span
+            aria-hidden="true"
+            className="ml-auto min-w-[2.25rem] rounded-pill bg-surface-3 px-2.5 py-0.5 text-center text-[17px] font-bold text-ink"
+          >
+            {entry.count}
+          </span>
+          <span className="sr-only">
+            , {entry.count} {recipesNoun(entry.count)}
+          </span>
+        </>
+      )}
+    </Link>
+  )
+}
 
 /**
- * Header "MENU" button + right-side drawer. The button carries a visible label
- * next to the hamburger icon, because a bare icon is not obvious to every user.
- * Built on a native `<dialog>` opened with `showModal()`, which gives Escape to
- * close, a focus trap and an inert page behind it without extra code.
+ * Header "MENU" button + drawer (E01-S09): "Moje" (or the guest's sign-in
+ * CTA), every category, and the "Ustawienia | Wyloguj" footer. Full screen on
+ * phones, a 330px right-side panel from `sm` up. Built on a native `<dialog>`
+ * opened with `showModal()`, which gives Escape to close, a focus trap, focus
+ * return to the MENU button and an inert page behind it without extra code.
  */
-export function AppMenu({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function AppMenu({
+  isAuthenticated,
+  summary,
+}: {
+  isAuthenticated: boolean
+  /** Counters + full access; undefined where the page did not load it. */
+  summary?: MenuSummary | null
+}) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const pathname = usePathname()
-  const links = isAuthenticated ? MENU_LINKS : GUEST_LINKS
+  const { mine, showAccountFooter } = buildMenuModel({ isAuthenticated, summary })
 
   function close() {
     dialogRef.current?.close()
@@ -51,7 +97,7 @@ export function AppMenu({ isAuthenticated }: { isAuthenticated: boolean }) {
         onClick={() => dialogRef.current?.showModal()}
         aria-haspopup="dialog"
         aria-controls="app-menu"
-        className={LABELED_ICON_BUTTON}
+        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-100"
       >
         <Menu aria-hidden="true" className="h-5 w-5" />
         MENU
@@ -60,61 +106,102 @@ export function AppMenu({ isAuthenticated }: { isAuthenticated: boolean }) {
       <dialog
         id="app-menu"
         ref={dialogRef}
-        aria-label="Menu"
+        aria-labelledby="app-menu-title"
         // A click on the backdrop lands on the <dialog> element itself; clicks
         // inside the panel land on its children.
         onClick={(event) => {
           if (event.target === event.currentTarget) close()
         }}
-        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-80 max-w-[85vw] bg-white p-0 shadow-xl transition-transform duration-200 ease-out backdrop:bg-black/40 starting:open:translate-x-full"
+        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full max-w-none bg-surface p-0 text-ink shadow-xl transition-transform duration-200 ease-out backdrop:bg-black/40 starting:open:translate-x-full sm:w-[330px]"
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-            <span className="text-lg font-semibold text-gray-900">Menu</span>
-            <button
-              type="button"
-              onClick={close}
-              className={LABELED_ICON_BUTTON}
-            >
-              <X aria-hidden="true" className="h-5 w-5" />
+          <div className="flex items-center justify-between border-b border-border-card px-5 py-3">
+            <h2 id="app-menu-title" className="text-[21px] font-bold text-ink">
+              Menu
+            </h2>
+            <button type="button" onClick={close} className={LABELED_ICON_BUTTON}>
+              <X aria-hidden="true" className="h-6 w-6" />
               Zamknij
             </button>
           </div>
 
-          <nav aria-label="Menu główne" className="flex-1 overflow-y-auto py-2">
-            <ul>
-              {links.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href
-                return (
-                  <li key={href}>
-                    <Link
-                      href={href}
-                      onClick={close}
-                      aria-current={active ? 'page' : undefined}
-                      className={[
-                        'flex items-center gap-3 px-5 py-4 text-lg font-medium hover:bg-gray-50',
-                        active ? 'text-orange-600' : 'text-gray-800',
-                      ].join(' ')}
-                    >
-                      <Icon aria-hidden="true" className="h-6 w-6 shrink-0" />
-                      {label}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
+          <nav aria-label="Menu główne" className="flex-1 overflow-x-hidden overflow-y-auto py-4">
+            {mine ? (
+              <section aria-labelledby="app-menu-mine" className="pb-4">
+                <h3 id="app-menu-mine" className={SECTION_HEADING}>
+                  Moje
+                </h3>
+                <ul>
+                  {mine.map((entry) => (
+                    <li key={entry.key}>
+                      <MineRow entry={entry} active={pathname === entry.href} onNavigate={close} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : (
+              <section aria-label="Konto" className="px-5 pb-6">
+                <p className="mb-3 text-[17px] text-ink-soft">Zaloguj się, żeby zapisywać ulubione przepisy.</p>
+                <div className="flex flex-col gap-3">
+                  <Link href="/login" onClick={close} className={`${buttonClasses('primary', 'lg')} w-full`}>
+                    Zaloguj się
+                  </Link>
+                  <Link href="/signup" onClick={close} className={`${buttonClasses('outline', 'lg')} w-full`}>
+                    Załóż konto
+                  </Link>
+                </div>
+              </section>
+            )}
+
+            <section aria-labelledby="app-menu-categories" className="border-t border-border-card pt-4">
+              <h3 id="app-menu-categories" className={SECTION_HEADING}>
+                Wszystkie przepisy według kategorii
+              </h3>
+              <ul className="grid grid-cols-2 gap-2 px-5">
+                {RECIPE_CATEGORIES.map(({ value, label }) => {
+                  const href = categoryHref(value)
+                  const active = pathname === href
+                  return (
+                    <li key={value}>
+                      <Link
+                        href={href}
+                        onClick={close}
+                        aria-current={active ? 'page' : undefined}
+                        className={[
+                          'flex h-full min-h-[56px] items-center rounded-field border-2 px-3 py-2 text-[17px] font-semibold break-words hover:bg-surface-2',
+                          active ? 'border-action bg-surface-accent text-action-text' : 'border-field text-ink',
+                        ].join(' ')}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
           </nav>
 
-          {isAuthenticated && (
-            <form action={signOut} className="border-t border-gray-100 p-2">
-              <button
-                type="submit"
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-4 text-left text-lg font-medium text-gray-800 hover:bg-gray-50"
+          {showAccountFooter && (
+            <div className="grid grid-cols-2 divide-x divide-border-card border-t border-border-card">
+              <Link
+                href="/settings"
+                onClick={close}
+                aria-current={pathname === '/settings' ? 'page' : undefined}
+                className={`flex min-h-[56px] items-center justify-center gap-2 text-[17px] font-semibold hover:bg-surface-2 ${pathname === '/settings' ? 'text-action-text underline decoration-2 underline-offset-4' : 'text-ink'}`}
               >
-                <LogOut aria-hidden="true" className="h-6 w-6 shrink-0" />
-                Wyloguj
-              </button>
-            </form>
+                <Settings aria-hidden="true" className="h-6 w-6 shrink-0" />
+                Ustawienia
+              </Link>
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="flex min-h-[56px] w-full items-center justify-center gap-2 text-[17px] font-semibold text-ink hover:bg-surface-2"
+                >
+                  <LogOut aria-hidden="true" className="h-6 w-6 shrink-0" />
+                  Wyloguj
+                </button>
+              </form>
+            </div>
           )}
         </div>
       </dialog>

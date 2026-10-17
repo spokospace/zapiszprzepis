@@ -8,6 +8,9 @@ export const RECIPE_PAGE_RE = /^\/recipes\/[^/]+$/
 /** The canonical public recipe page: /przepis/{slug} (one segment) — E01-S03b. */
 export const PRZEPIS_PAGE_RE = /^\/przepis\/[^/]+$/
 
+/** A public category listing: /kategoria/{value} (one segment) — E01-S09. */
+const KATEGORIA_PAGE_RE = /^\/kategoria\/[^/]+$/
+
 /**
  * The canonical path to a recipe. Encodes the slug once; the single place every
  * link builder goes through, so the URL shape changes in one spot (E01-S03b).
@@ -30,8 +33,14 @@ export function legacyRecipePathToCanonical(pathname: string): string {
  * Routes a guest may open without a session (E01-S02). Data visibility is RLS's
  * job. Both the canonical /przepis/{slug} and the legacy /recipes/{slug} are
  * public: the legacy path must be reachable so middleware can issue its 301
- * instead of bouncing the visitor to /login first (E01-S03b).
+ * instead of bouncing the visitor to /login first (E01-S03b). The category
+ * listings are linked from the guest's MENU drawer (E01-S09).
  */
 export function isPublicRoute(pathname: string): boolean {
-  return pathname === '/' || PRZEPIS_PAGE_RE.test(pathname) || RECIPE_PAGE_RE.test(pathname)
+  return (
+    pathname === '/' ||
+    PRZEPIS_PAGE_RE.test(pathname) ||
+    RECIPE_PAGE_RE.test(pathname) ||
+    KATEGORIA_PAGE_RE.test(pathname)
+  )
 }

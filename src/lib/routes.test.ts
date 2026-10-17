@@ -54,6 +54,12 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/recipes/tiramisu')).toBe(true)
   })
 
+  it('allows a category listing, linked from the guest MENU (E01-S09)', () => {
+    expect(isPublicRoute('/kategoria/zupy')).toBe(true)
+    expect(isPublicRoute('/kategoria')).toBe(false)
+    expect(isPublicRoute('/kategoria/zupy/x')).toBe(false)
+  })
+
   it('keeps the owner list and everything else gated', () => {
     expect(isPublicRoute('/recipes')).toBe(false)
     expect(isPublicRoute('/przepis')).toBe(false)
