@@ -12,6 +12,17 @@ Git commit subjects **and** bodies must be written in English, even when the res
 - When proposing a commit message via `AskUserQuestion`, draft it in English; the user can still override.
 - PR titles/descriptions, `plan.md`, `change.md`, and chat stay in whichever language they were started in. The rule is specific to git commit text.
 
+## One account (`spokospace`) — review and merge
+
+The project has exactly one GitHub account, `spokospace`: owner, author of every PR (Claude sessions included) and the reviewer. **A PR whose tests pass may be merged.**
+
+**Why:** GitHub blocks approving or requesting changes on your own PR, and every PR here is "your own". Rules built for several people (skip self-authored PRs, wait for an approval or a separate QA reviewer) would block every PR forever.
+
+**How to apply:**
+- Never skip a PR because its author is `spokospace` (`om-review-prs` and the other `om-*` skills included). Post the review as a `COMMENT`; the pipeline label (`merge-queue` / `changes-requested`) carries the verdict.
+- Merge (squash) when the validation gate — `pnpm typecheck`, `pnpm lint`, `pnpm test` — passes on the PR head merged with the current `master`, and `Workers Builds` is green. Manual QA (`needs-qa`) is advisory for this account; this rule overrides the QA gate in `SDLC.md`. Note on the PR that it merged on green tests without manual QA.
+- Still never merge: a draft, a PR with a merge conflict, a PR labeled `do-not-merge` / `blocked`, or one whose description or runbook requires a manual production step first (e.g. a migration applied through the Management API) until the owner confirms that step is done.
+
 ## Przebudowa (epik E01) — zasady projektowe: WCAG, czytelność, model
 
 Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelność; grupa docelowa obejmuje osoby starsze). Backlog: `.ai/specs/backlog-przebudowa.md`. Tokeny i prymitywy: `src/app/globals.css` + `src/app/components/ui/`.
