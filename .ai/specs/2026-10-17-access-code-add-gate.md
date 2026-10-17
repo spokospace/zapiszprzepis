@@ -90,7 +90,7 @@ Migration `supabase/migrations/20261017140000_full_access_gate.sql` (idempotent 
 - **Server action** `redeemAccessCode(prev: RedeemState, formData: FormData): Promise<RedeemState>`, used with `useActionState`:
   - It reads `code` and trims it. An empty value returns `{ status: 'invalid' }` without calling the RPC.
   - It calls `requireUser()`, then `supabase.rpc('redeem_access_code', { p_code })`.
-  - It maps `'ok' | 'already'` to `{ status: 'ok' }` plus `revalidatePath('/')`, `'invalid'` to `{ status: 'invalid' }`, `'rate_limited'` to `{ status: 'rate_limited' }`, and an RPC error to `{ status: 'error' }`. The mapping uses an exact-equality lookup, never `includes` (lessons.md).
+  - It maps `'ok' | 'already'` to `{ status: 'ok' }` (no `revalidatePath`: the gate itself swaps to the add form, and the home page is dynamic), `'invalid'` to `{ status: 'invalid' }`, `'rate_limited'` to `{ status: 'rate_limited' }`, and an RPC error to `{ status: 'error' }`. The mapping uses an exact-equality lookup, never `includes` (lessons.md).
 - **`getFullAccess(supabase): Promise<boolean>`** returns `false` on an RPC error. It fails closed.
 - **Add paths:**
   - `addRecipeFromUrl` runs dedup first. `completed`/`pending`/`other` (someone else's recipe goes to favorites) behave as today for everyone. Only before the **new-share insert** does it check access and redirect to `/?add_error=no_access`.
