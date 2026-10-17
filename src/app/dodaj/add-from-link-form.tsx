@@ -142,7 +142,11 @@ export function AddFromLinkForm({ error = null, autoFocus }: { error?: AddRecipe
   return (
     <AddFromLinkFormView
       value={value}
-      onValueChange={setValue}
+      onValueChange={(next) => {
+        setValue(next)
+        // Typing or a long-press paste answers the hint.
+        setPasteFailed(false)
+      }}
       error={error}
       canPaste={canPaste}
       pasteFailed={pasteFailed}

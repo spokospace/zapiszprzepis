@@ -59,9 +59,7 @@ export function AppHeader({
               <Link
                 href={ADD_RECIPE_PATH}
                 aria-label="Dodaj przepis"
-                className="mr-1 inline-flex h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] bg-action text-[13px] leading-none font-bold text-white transition-colors hover:bg-action-hover"
-                // A button, not running text: the global unlayered `a { underline }` beats Tailwind's no-underline.
-                style={{ textDecoration: 'none' }}
+                className="mr-1 inline-flex h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] bg-action text-[13px] leading-none font-bold text-white no-underline! transition-colors hover:bg-action-hover"
               >
                 <Plus aria-hidden="true" className="h-6 w-6" />
                 Dodaj
