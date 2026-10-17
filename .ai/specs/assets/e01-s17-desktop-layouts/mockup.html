@@ -29,8 +29,8 @@
   .cta { margin:32px 0; padding:24px; border-radius:16px; background:var(--s2); border:1px solid var(--card); }
   .bar { display:flex; align-items:center; gap:12px; border:1px solid var(--card2); border-radius:16px; padding:12px; margin:24px 0; font-size:17px; font-weight:700; }
   .bar .nl { flex:0 0 260px; border:2px solid var(--field); border-radius:14px; padding:6px 12px; min-height:56px; }
-  .rh { display:grid; grid-template-columns:1fr 1.6fr; gap:32px; align-items:start; }
-  .cover { aspect-ratio:4/3; border-radius:16px; background:var(--acc2); }
+  .rh { display:grid; grid-template-columns:1.2fr 1fr; gap:40px; align-items:center; }
+  .cover { aspect-ratio:16/10; border-radius:16px; background:var(--acc2); }
   .cols { display:grid; grid-template-columns:1fr 1.6fr; gap:32px; align-items:start; margin-top:32px; }
   .panel { background:var(--s2); border:1px solid var(--card); border-radius:16px; padding:24px; }
   .row { display:flex; gap:12px; min-height:48px; align-items:flex-start; } .box { width:32px; height:32px; border:2px solid var(--field); border-radius:6px; flex:none; }
@@ -46,13 +46,12 @@
     <span class="logo">Zapisz<b>Przepis</b></span>
     <a class="nav">Przepisy</a>
     <a class="nav">Kategorie ▾</a>
-    <form class="hs"><input placeholder="Szukaj przepisu"><span class="btn outline">🔍 Szukaj</span></form>
-    <div class="ml"><span class="btn outline">Zaloguj się / Załóż konto</span><span class="btn">☰ MENU</span></div>
+    <div class="ml"><span class="btn outline">Zaloguj się</span><span class="btn primary">Załóż konto</span></div>
   </div></header>
-  <section class="hero"><div class="c">
+  <section class="hero"><div class="c" style="text-align:center">
     <h1>Czego dziś szukasz?</h1>
     <div class="soft" style="font-size:18px;margin-bottom:8px">Szukaj przepisu po nazwie lub składniku</div>
-    <div class="field"><input placeholder="np. sernik, pierogi"><span class="btn outline" style="height:64px">🎤 Mów</span><span class="btn primary" style="height:64px">🔍 Szukaj przepisu</span></div>
+    <div class="field" style="margin:0 auto"><input placeholder="np. sernik, pierogi"><span class="btn outline" style="height:64px">🎤 Mów</span><span class="btn primary" style="height:64px">🔍 Szukaj</span></div>
   </div></section>
   <div class="c" style="padding-bottom:8px">
     <h2>Często szukane</h2>
@@ -65,21 +64,19 @@
   </div>
 </div>
 
-<div class="label">A8 — header, signed in (full access)</div>
+<div class="label">A8/A9 — header, signed in (full access)</div>
 <div class="frame">
   <header><div class="c">
     <span class="logo">Zapisz<b>Przepis</b></span>
-    <a class="nav">Przepisy</a>
-    <a class="nav">Kategorie ▾</a>
-    <form class="hs"><input placeholder="Szukaj przepisu"><span class="btn outline">🔍 Szukaj</span></form>
+    <form class="hs"><input placeholder="Szukaj przepisu lub składnika"><span class="btn outline">🔍 Szukaj</span></form>
     <div class="ml"><span class="btn primary">+ Dodaj przepis</span><span class="btn">🔔 Powiadomienia</span><span class="btn">☰ MENU</span></div>
   </div></header>
 </div>
 
-<div class="label">A9 — recipe page at 1440 px: header 1fr | 1.6fr, list bar in one row, ingredients panel | steps + gallery 4 col, similar 4 col</div>
+<div class="label">A9 — recipe page at 1440 px: header 1.2fr | 1fr (16:10 photo), list bar in one row, ingredients panel | steps + gallery 4 col, similar 4 col</div>
 <div class="frame">
   <header><div class="c">
-    <span class="logo">Zapisz<b>Przepis</b></span><a class="nav">Przepisy</a><a class="nav">Kategorie ▾</a>
+    <span class="logo">Zapisz<b>Przepis</b></span>
     <form class="hs"><input placeholder="Szukaj przepisu"><span class="btn outline">🔍 Szukaj</span></form>
     <div class="ml"><span class="btn primary">+ Dodaj przepis</span><span class="btn">🔔</span><span class="btn">☰ MENU</span></div>
   </div></header>
@@ -87,7 +84,7 @@
     <nav class="bar"><span style="text-decoration:underline">← Ciasta</span><span>2 z 203</span><span style="flex:1"></span><span class="nl">← Poprzedni<br><span class="soft">Ciasto widelcem mieszane</span></span><span class="nl" style="text-align:right">Następny →<br><span class="soft">Babeczki cytrynowe</span></span></nav>
     <div class="rh"><div class="cover"></div><div>
       <div class="soft"><u>Strona główna</u> › <u>Ciasta</u> › Ciasto z truskawkami i kruszonką</div>
-      <h1 style="font-size:32px;margin:8px 0">Ciasto z truskawkami i kruszonką</h1>
+      <h1 style="font-size:44px;margin:8px 0">Ciasto z truskawkami i kruszonką</h1>
       <div class="soft" style="font-size:17px">Ciasta · 1 godz 10 min</div>
       <p style="font-size:17px">🌐 Źródło: beszamel.se.pl · <b style="color:var(--atext)"><u>Otwórz oryginał</u></b></p>
       <p>Puszyste ciasto z truskawkami i chrupiącą kruszonką…</p>
