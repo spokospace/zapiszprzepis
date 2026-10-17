@@ -5,11 +5,13 @@ import { qaSessionFile, type QaAccount } from './qa-session'
 /**
  * WCAG 1.4.10 Reflow guard for the E01 screens: at 320 px wide with the recipe text
  * scale at A++ (1.3), worst-case user/extracted strings must wrap, never scroll the
- * page sideways. Guest-only and read-only (local dev runs against the production DB):
- * the worst-case strings are a search query typed into the URL, a seeded list
- * snapshot in sessionStorage, and text swapped into the rendered DOM.
+ * page sideways. Read-only (local dev runs against the production DB): the
+ * worst-case strings are a search query typed into the URL, a seeded list snapshot
+ * in sessionStorage, and text swapped into the rendered DOM. Signed-in screens use
+ * the dev QA sessions saved by reflow.setup.ts and skip when /api/dev/login is off.
  *
- * Run: pnpm test:reflow (starts `next dev` unless one is already on E2E_PORT).
+ * Run: pnpm test:reflow (starts `next dev` unless one is already on E2E_PORT;
+ * needs .env.local). Docs: context/foundation/test-plan.md §6.5a.
  */
 
 // 40 characters with no break opportunity: a run-together title, a URL-ish author.
