@@ -32,10 +32,13 @@ interface RecipeChecklistsProps {
 function CheckRow({
   checked,
   onToggle,
+  describedBy,
   children,
 }: {
   checked: boolean
   onToggle: () => void
+  /** id of a visible label to announce with the row ("Krok N z M"). */
+  describedBy?: string
   children: React.ReactNode
 }) {
   return (
@@ -44,6 +47,7 @@ function CheckRow({
         type="checkbox"
         checked={checked}
         onChange={onToggle}
+        aria-describedby={describedBy}
         className="mt-0.5 h-8 w-8 shrink-0 cursor-pointer accent-action"
       />
       <span className={checked ? 'text-ink-soft line-through' : 'text-ink'}>{children}</span>
@@ -126,13 +130,14 @@ export function RecipeChecklists({ recipeId, ingredientGroups, steps }: RecipeCh
           <ol className="space-y-4">
             {steps.map((step, i) => (
               <li key={i}>
-                <p className="text-[16px] font-bold text-ink-soft">
+                <p id={`step-${i}-label`} className="text-[16px] font-bold text-ink-soft">
                   Krok {i + 1} z {steps.length}
                 </p>
                 <div className="text-scalable text-[19px]">
                   <CheckRow
                     checked={state.steps.includes(i)}
                     onToggle={() => toggle('steps', i)}
+                    describedBy={`step-${i}-label`}
                   >
                     {step}
                   </CheckRow>

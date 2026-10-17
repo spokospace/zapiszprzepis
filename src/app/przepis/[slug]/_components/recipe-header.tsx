@@ -43,6 +43,7 @@ export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
   const category = categoryLabel(recipe.category)
   const categoryHref = categoryListPath(recipe.category)
   const authorHref = profilePath(recipe.author_username)
+  const [before, after] = recipeMetaLine(recipe).split('≈ ')
 
   return (
     <header className="mb-8">
@@ -85,7 +86,17 @@ export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
       </nav>
 
       <h1 className="mb-2 text-[32px] font-bold leading-tight text-ink">{recipe.title}</h1>
-      <p className="mb-3 text-[17px] text-ink-soft">{recipeMetaLine(recipe)}</p>
+      <p className="mb-3 text-[17px] text-ink-soft">
+        {/* "≈" reads as "almost equal to" in screen readers; they get "około" instead. */}
+        {before}
+        {after != null && (
+          <>
+            <span aria-hidden="true">≈ </span>
+            <span className="sr-only">około </span>
+            {after}
+          </>
+        )}
+      </p>
 
       <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[17px] text-ink">
         <Globe aria-hidden="true" size={20} className="shrink-0 text-ink-soft" />

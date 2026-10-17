@@ -34,7 +34,7 @@ function NavLink({ item, from, direction }: { item: ListItem | null; from: ListK
   if (!item) {
     // Kept in place (not hidden) at the list ends, so the layout stays put.
     return (
-      <span aria-disabled="true" className={`${NAV} ${align} border-border-card text-ink-muted`}>
+      <span role="link" aria-disabled="true" className={`${NAV} ${align} border-border-card text-ink-muted`}>
         <span className="text-[17px] font-bold">{label}</span>
       </span>
     )
@@ -64,7 +64,11 @@ export function RecipeListBar({ slug, from, fallback }: RecipeListBarProps) {
   // SSR and hydration cannot read sessionStorage: with ?from, hold the space with an
   // empty placeholder until the client knows which list (if any) this tab came from,
   // so no "N z M" is ever shown and then replaced.
-  if (from && !hydrated) return <div aria-hidden="true" className={BAR} />
+  // The placeholder is reserved only when the category fallback would show a bar
+  // anyway, so a fallback that renders nothing never collapses after hydration.
+  if (from && !hydrated) {
+    return fallback && fallback.total >= 2 ? <div aria-hidden="true" className={BAR} /> : null
+  }
 
   const position = fromList ?? fallback
   if (!position || position.total < 2) return null

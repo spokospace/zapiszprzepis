@@ -44,6 +44,7 @@ describe('parseSnapshot', () => {
     expect(parseSnapshot(JSON.stringify({ ...snapshot, href: 'https://evil.example' }))).toBeNull()
     expect(parseSnapshot(JSON.stringify({ ...snapshot, href: '//evil.example' }))).toBeNull()
     expect(parseSnapshot(JSON.stringify({ ...snapshot, href: 'javascript:alert(1)' }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ ...snapshot, href: '/\\evil.example' }))).toBeNull()
   })
 })
 

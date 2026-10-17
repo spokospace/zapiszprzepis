@@ -1,5 +1,5 @@
 -- E01-S07 — rolled-back production rehearsal of
--- supabase/migrations/20261017130000_public_recipes_author_username_gallery_count.sql (= M).
+-- supabase/migrations/20261017150000_public_recipes_author_username_gallery_count.sql (= M).
 --
 -- Build the script as: `begin;` + M + this file, then run it with
 -- `supabase db query --linked --project-ref <ref> -f <script>`. M only redefines a

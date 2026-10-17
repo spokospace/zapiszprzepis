@@ -53,8 +53,9 @@ export function parseSnapshot(raw: string | null): ListSnapshot | null {
     const parsed: unknown = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return null
     const { label, href, items } = parsed as Record<string, unknown>
-    // href must be a same-site path: it becomes a link on the recipe page.
-    if (typeof label !== 'string' || typeof href !== 'string' || !href.startsWith('/') || href.startsWith('//')) {
+    // href must be a same-site path: it becomes a link on the recipe page. Browsers
+    // read both "//" and "/\" as protocol-relative, so neither may start it.
+    if (typeof label !== 'string' || typeof href !== 'string' || !href.startsWith('/') || href.startsWith('//') || href.startsWith('/\\')) {
       return null
     }
     if (!Array.isArray(items) || !items.every(isItem)) return null

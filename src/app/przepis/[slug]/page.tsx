@@ -8,6 +8,7 @@ import { PageContainer } from '@/app/components/page-container'
 import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
+import { getSiteUrl } from '@/lib/site-url'
 import { refreshRecipe } from './refresh-action'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
@@ -75,7 +76,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: recipe.title,
     description,
     // ?from= list-context variants (E01-S07) must not compete with the canonical URL.
-    alternates: { canonical: recipePath(recipe.slug) },
+    // Absolute: the root layout sets no metadataBase, so a relative canonical would
+    // resolve against Next's localhost fallback in production.
+    alternates: { canonical: `${await getSiteUrl()}${recipePath(recipe.slug)}` },
     openGraph: {
       title: recipe.title,
       description,

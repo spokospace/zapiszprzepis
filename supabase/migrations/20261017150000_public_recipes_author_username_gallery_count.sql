@@ -15,6 +15,10 @@
 -- Rollback: re-run the view definition from 20261016230000_recipe_meta_description.sql
 -- (drop view + create without the two columns; the app degrades as above).
 -- Rehearsal: .ai/qa/s07-rehearse-public-recipes-view.sql (rolled back).
+-- Ordering: independent of 20261017130000 (profiles_private, E01-S12) and
+-- 20261017140000 (full access gate, E01-S11): neither touches this view or the
+-- columns it reads, and the view runs as its owner, so recipes RLS changes do not
+-- affect it.
 
 create or replace view public.public_recipes
 with (security_invoker = false)
