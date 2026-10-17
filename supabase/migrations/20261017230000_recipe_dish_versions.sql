@@ -217,5 +217,8 @@ comment on function public.dish_vocabulary() is
   'Distinct dish names with a representative accusative and recipe count (E01-S21), for the '
   'runtime classifier to reuse existing names. One row per dish; service_role only.';
 
-revoke all on function public.dish_vocabulary() from public;
+-- Revoke from anon/authenticated explicitly too: Supabase's default privileges
+-- can grant EXECUTE to them on a new public function, which `revoke … from public`
+-- alone would not remove. dish_vocabulary is service_role only.
+revoke all on function public.dish_vocabulary() from public, anon, authenticated;
 grant execute on function public.dish_vocabulary() to service_role;

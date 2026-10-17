@@ -146,6 +146,12 @@ describe('resolveVariantNote', () => {
     expect(resolveVariantNote(123, 'sernik')).toBeNull()
     expect(resolveVariantNote(null, 'sernik')).toBeNull()
   })
+
+  it('rejects a note with a URL or non-prose characters (public card)', () => {
+    expect(resolveVariantNote('Zobacz na blog.example/przepis', 'sernik')).toBeNull()
+    expect(resolveVariantNote('Kup teraz!! 50% taniej', 'sernik')).toBeNull()
+    expect(resolveVariantNote('Na kruchym cieście, bez drożdży', 'sernik')).toBe('Na kruchym cieście, bez drożdży')
+  })
 })
 
 describe('dishVocabularyFor', () => {

@@ -610,6 +610,12 @@ Rules:
     // user's own recipes (minus this one, on a refresh) so the note tells
     // same-titled ones apart. The dish vocabulary is read alongside.
     const [{ data: existingRecipes }, vocabularyResult] = await Promise.all([existingRecipesQuery, dishVocabularyQuery])
+    // An errored RPC (migration not applied, grant missing) yields an empty
+    // vocabulary that looks like the legitimate bootstrap state, so the classifier
+    // could coin a synonym and stamp it. Log it so the two cases are told apart.
+    if (vocabularyResult.error) {
+      console.warn('[extract-recipe] dish_vocabulary RPC failed; classifying without existing names:', vocabularyResult.error)
+    }
     const vocabulary = (vocabularyResult.data ?? []) as DishVocabularyEntry[]
     // A truncated vocabulary would silently split dish groups; the RPC returns
     // one row per dish, well under PostgREST's row cap today. Warn (never fail a

@@ -89,18 +89,36 @@ function isSubset(a: Set<string>, b: Set<string>): boolean {
   return true
 }
 
-/** Two ingredients are "the same" when both keys are non-empty and one contains
- *  the other ("mąka" ≈ "mąka pszenna", "mąka pszenna" ≠ "mąka ziemniaczana"). */
-function keysMatch(a: Set<string>, b: Set<string>): boolean {
-  if (a.size === 0 || b.size === 0) return false
-  return isSubset(a, b) || isSubset(b, a)
+interface KeyedName {
+  name: string
+  key: Set<string>
+  /** Lowercased, bracket-stripped name, for the empty-key fallback. */
+  norm: string
 }
 
-function keyedNames(raw: unknown): { name: string; key: Set<string> }[] {
+/**
+ * Two ingredients are "the same" when both keys are non-empty and one contains
+ * the other ("mąka" ≈ "mąka pszenna", "mąka pszenna" ≠ "mąka ziemniaczana"). A
+ * short name stems() can't take ("sól", "ser", "ryż") reduces to an empty key;
+ * for those, fall back to the normalized full name so identical short names
+ * still match — while an empty key never matches a non-empty one (no vacuous
+ * containment).
+ */
+function sameIngredient(a: KeyedName, b: KeyedName): boolean {
+  if (a.key.size > 0 && b.key.size > 0) return isSubset(a.key, b.key) || isSubset(b.key, a.key)
+  if (a.key.size === 0 && b.key.size === 0) return a.norm === b.norm
+  return false
+}
+
+function keyedNames(raw: unknown): KeyedName[] {
   return parseIngredients(raw)
     .map((i) => i.name?.trim())
     .filter((n): n is string => Boolean(n))
-    .map((name) => ({ name, key: ingredientKey(name) }))
+    .map((name) => ({
+      name,
+      key: ingredientKey(name),
+      norm: name.toLocaleLowerCase('pl').replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim(),
+    }))
 }
 
 /**
@@ -115,8 +133,8 @@ export function ingredientDiff(
 ): { plus: string[]; minus: string[] } {
   const current = keyedNames(currentRaw)
   const other = keyedNames(otherRaw)
-  const plus = other.filter((o) => !current.some((c) => keysMatch(c.key, o.key))).map((o) => o.name)
-  const minus = current.filter((c) => !other.some((o) => keysMatch(c.key, o.key))).map((c) => c.name)
+  const plus = other.filter((o) => !current.some((c) => sameIngredient(c, o))).map((o) => o.name)
+  const minus = current.filter((c) => !other.some((o) => sameIngredient(c, o))).map((c) => c.name)
   return { plus: plus.slice(0, max), minus: minus.slice(0, max) }
 }
 
@@ -186,15 +204,20 @@ export function versionsHeading(n: number, dishAccusative: string | null): strin
 
 // --- "Podobne" exclusion ---------------------------------------------------
 
+// Letters, spaces and hyphens only (the same shape normalizeDish enforces).
+// Re-checked here so the embedded value is safe even if a backfill or a
+// service-role write stored a dish the laxer DB CHECK would have let through
+// (the DB constraint only bars uppercase and bounds the length).
+const SAFE_DISH = /^\p{L}[\p{L} -]*\p{L}$/u
+
 /**
  * The PostgREST `or()` filter that drops this dish's other recipes from
  * "Podobne" while keeping null-dish rows — a plain `neq` would drop those too,
- * since `null <> x` is not true in SQL. Null when there is no dish to exclude.
- * The value is safe to embed because `normalizeDish` limits a dish to letters,
- * spaces and hyphens.
+ * since `null <> x` is not true in SQL. Null when there is no dish, or a dish
+ * outside the safe charset (then "Podobne" simply keeps today's behaviour).
  */
 export function dishExclusionFilter(dish: string | null | undefined): string | null {
-  return dish ? `dish.is.null,dish.neq."${dish}"` : null
+  return dish && SAFE_DISH.test(dish) ? `dish.is.null,dish.neq."${dish}"` : null
 }
 
 // --- Sort ------------------------------------------------------------------

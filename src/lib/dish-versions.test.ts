@@ -49,6 +49,16 @@ describe('ingredientDiff', () => {
     expect(ingredientDiff([], many).plus).toHaveLength(4)
   })
 
+  it('does not treat a shared short-named ingredient (empty key) as a difference', () => {
+    // "sól" / "ser" are under 4 letters, so stems() gives an empty key; identical
+    // names must still match on the normalized name, not show as + jest / − nie ma.
+    const diff = ingredientDiff([{ name: 'sól' }, { name: 'ser' }], [{ name: 'sól' }, { name: 'mleko' }])
+    expect(diff.plus).toEqual(['mleko'])
+    expect(diff.minus).toEqual(['ser'])
+    // Different short names stay distinct.
+    expect(ingredientDiff([{ name: 'sól' }], [{ name: 'ryż' }]).plus).toEqual(['ryż'])
+  })
+
   it('flattens sections and tolerates malformed input', () => {
     const sectioned = [{ name: 'mąka', section: 'Ciasto' }, { name: 'ser', section: 'Masa' }]
     expect(ingredientDiff([{ name: 'mąka' }], sectioned).plus).toEqual(['ser'])
@@ -135,6 +145,12 @@ describe('dishExclusionFilter', () => {
     expect(dishExclusionFilter('sernik na zimno')).toBe('dish.is.null,dish.neq."sernik na zimno"')
     expect(dishExclusionFilter(null)).toBeNull()
     expect(dishExclusionFilter(undefined)).toBeNull()
+  })
+
+  it('returns null for a dish outside the safe charset (defends the embedded value)', () => {
+    expect(dishExclusionFilter('sernik"')).toBeNull()
+    expect(dishExclusionFilter('a,b')).toBeNull()
+    expect(dishExclusionFilter('x)')).toBeNull()
   })
 })
 
