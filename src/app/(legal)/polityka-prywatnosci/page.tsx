@@ -102,9 +102,7 @@ export default function PrivacyPolicyPage() {
         <LegalList>
           <li>
             <strong>Supabase</strong> — baza danych, logowanie i przechowywanie plików (zdjęcia profilowe i zdjęcia
-            przepisów). Wysyła też e-maile z linkiem do logowania i do ustawienia hasła.{' '}
-            <Fill>czy e-maile idą przez serwer pocztowy Supabase, czy przez własnego dostawcę SMTP — jeśli własnego,
-            dopisz go</Fill>
+            przepisów). Wysyła też e-maile z linkiem do logowania i do ustawienia hasła.
           </li>
           <li>
             <strong>Cloudflare</strong> — hosting serwisu (Cloudflare Workers) i codzienne kopie zapasowe przepisów
@@ -175,8 +173,7 @@ export default function PrivacyPolicyPage() {
           <li>Dane konta, profilu i aktywności — dopóki masz konto.</li>
           <li>
             Kopie zapasowe przepisów i historii dodawania linków robimy codziennie i trzymamy przez 90 dni. Po
-            usunięciu konta Twoje dane mogą pozostać w tych kopiach najdłużej 90 dni.{' '}
-            <Fill>potwierdź, że reguła kasowania po 90 dniach jest włączona w Cloudflare R2</Fill>
+            usunięciu konta Twoje dane mogą pozostać w tych kopiach najdłużej 90 dni.
           </li>
           <li>Logi techniczne — tak długo, jak przechowują je nasi dostawcy hostingu.</li>
         </LegalList>
