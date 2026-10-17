@@ -1,6 +1,13 @@
 # HANDOFF — E01-S21 Phase 1
 
-**Resume point:** Step 1.1 (not started). Nothing committed beyond the run folder.
+**Resume point:** Step 1.6 (recipe-page UI). Steps 1.1–1.5 committed and pushed; full gate green at checkpoint 1 (1071 tests pass). PR #301 (draft).
+
+**Remaining:** 1.6 UI components (`dish-versions-bar.tsx`, `dish-versions.tsx`, `dish-versions-sort.tsx`), `RecipeHeader` `versionsBar` slot, `page.tsx` RPC-only-when-`recipe.dish`; 1.7 `SimilarRecipes` `dish` prop + `.or()`; 1.8 reflow confirm + final gate. Then labels, review, QA, ready.
+
+**UI build notes:** server client untyped → `supabase.rpc('dish_versions',{p_recipe_id})` then cast rows to `DishVersionRow[]`. Add optional `dish?`/`dish_accusative?`/`variant_note?` to `PublicRecipe` in `load-recipe.ts`. Tokens: `bg-surface-accent` (#fff7ed), `border-border-accent` (#fed7aa), `text-ink`, chip look via `chipClasses()`. Bar = `<a href="#inne-przepisy">`; section heading `<h2 id="inne-przepisy" tabIndex={-1}>`. Sort control = links `?wersje=` + JS island (localStorage `zp.versionsSort`, history.replaceState, live region). Stretched-link card pattern (see `RecipeCard` tile variant). `sourceLabel` for source line. Green `#15803d` / red `#b91c1c` for +jest/−niema.
+
+---
+**Original context (still valid):**
 
 **Context already gathered (no need to re-explore):**
 - Columns `dish`/`dish_accusative`/`variant_note`/`dish_classified_at` already live on prod via #298 (`supabase/migrations/20261017220000_recipe_dish_columns.sql`). New migration = view append + index + 2 RPCs + grants (idempotent column/check adds for self-containment).
