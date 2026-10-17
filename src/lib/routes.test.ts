@@ -9,6 +9,9 @@ import {
   legacyRecipePathToCanonical,
   searchPath,
   SEARCH_PATH,
+  ADD_RECIPE_PATH,
+  addRecipeErrorPath,
+  parseAddRecipeError,
 } from './routes'
 
 describe('recipePath', () => {
@@ -135,5 +138,24 @@ describe('searchPath', () => {
 
   it('keeps the scope on a cleared search', () => {
     expect(searchPath('', 'moje')).toBe('/szukaj?zakres=moje')
+  })
+})
+
+describe('addRecipeErrorPath (E01-S10)', () => {
+  it('sends every add error to /dodaj with its code', () => {
+    expect(addRecipeErrorPath('no_access')).toBe('/dodaj?add_error=no_access')
+    expect(addRecipeErrorPath('invalid_url')).toBe('/dodaj?add_error=invalid_url')
+  })
+
+  it('reads ?add_error, mapping anything unknown to the generic server error', () => {
+    expect(parseAddRecipeError(undefined)).toBeNull()
+    expect(parseAddRecipeError('')).toBeNull()
+    expect(parseAddRecipeError('empty')).toBe('empty')
+    expect(parseAddRecipeError(['no_access', 'server'])).toBe('no_access')
+    expect(parseAddRecipeError('<script>')).toBe('server')
+  })
+
+  it('keeps /dodaj behind login', () => {
+    expect(isPublicRoute(ADD_RECIPE_PATH)).toBe(false)
   })
 })

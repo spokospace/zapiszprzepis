@@ -24,7 +24,7 @@ export async function dismissShare(shareId: number): Promise<void> {
     console.error('[dismiss] Failed to dismiss share:', error)
   }
 
-  revalidatePath('/recipes')
+  revalidatePath('/', 'layout')
 }
 
 export async function dismissAllFailedShares(): Promise<void> {
@@ -38,5 +38,5 @@ export async function dismissAllFailedShares(): Promise<void> {
     console.error('[dismiss] Failed to dismiss all shares:', error)
   }
 
-  revalidatePath('/recipes')
+  revalidatePath('/', 'layout')
 }

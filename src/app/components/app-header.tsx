@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronLeft, Link as LinkIcon, Plus } from 'lucide-react'
+import { ChevronLeft, Plus } from 'lucide-react'
 import { AppMenu } from './app-menu'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
@@ -11,7 +11,7 @@ import { HeaderNav } from './header-nav'
 import { HeaderSearch } from './header-search'
 import type { FailedSharesResult } from '@/lib/failed-shares'
 import type { MenuSummary } from '@/lib/menu-summary'
-import { PRZEPIS_PAGE_RE } from '@/lib/routes'
+import { ADD_RECIPE_PATH, PRZEPIS_PAGE_RE } from '@/lib/routes'
 
 export function AppHeader({
   failedShares,
@@ -66,13 +66,14 @@ export function AppHeader({
         <div className="flex items-center gap-1 lg:ml-auto lg:gap-2">
           {isAuthenticated ? (
             <>
+              {/* 1c header (E01-S10): icon over label, 64x56, #c2410c. Shown without full
+                  access too: /dodaj then shows the access-code gate (3c). */}
               <Link
-                href="/?tab=add"
-                aria-label="Dodaj przepis z linku"
-                className="mr-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-action px-3 py-1.5 text-sm font-medium text-white hover:bg-action-hover transition-colors lg:mr-0 lg:min-h-[48px] lg:rounded-field lg:px-4 lg:text-[18px] lg:font-bold"
+                href={ADD_RECIPE_PATH}
+                aria-label="Dodaj przepis"
+                className="mr-1 inline-flex h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[12px] bg-action text-[13px] leading-none font-bold text-white no-underline! transition-colors hover:bg-action-hover lg:mr-0 lg:h-12 lg:w-auto lg:flex-row lg:gap-1.5 lg:whitespace-nowrap lg:rounded-field lg:px-4 lg:text-[18px]"
               >
-                <LinkIcon aria-hidden="true" className="h-4 w-4 lg:hidden" />
-                <Plus aria-hidden="true" className="hidden h-5 w-5 lg:block" />
+                <Plus aria-hidden="true" className="h-6 w-6 lg:h-5 lg:w-5" />
                 Dodaj<span className="-ml-1.5 hidden lg:inline">&nbsp;przepis</span>
               </Link>
               <NotificationBell failedShares={failedShares} />

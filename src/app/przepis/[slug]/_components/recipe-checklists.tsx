@@ -12,6 +12,7 @@ import {
   type ChecklistKind,
 } from '@/lib/recipe-checklist'
 import type { Ingredient } from '@/lib/ingredients'
+import { CookingMode } from './cooking-mode'
 
 interface IngredientGroup {
   section: string | null
@@ -20,6 +21,8 @@ interface IngredientGroup {
 
 interface RecipeChecklistsProps {
   recipeId: number
+  /** Recipe title, shown at the top of cooking mode. */
+  title: string
   ingredientGroups: IngredientGroup[]
   steps: string[]
   /** Rendered under the steps: in the steps column from lg (video, gallery; E01-S17). */
@@ -60,10 +63,11 @@ function CheckRow({
 /**
  * Składniki + Przygotowanie for the recipe page (E01-S07): ticks are kept per tab in
  * sessionStorage, steps read "Krok N z M", and "Wielkość tekstu" scales both lists.
+ * "Tryb gotowania" (E01-S08) follows "Wielkość tekstu", as in the design handoff (C3, item 7).
  * From lg (E01-S17, A9) a `1fr 1.6fr` grid: the ingredients in a panel | the steps
  * plus `children`. Below lg it is one column, in the same order.
  */
-export function RecipeChecklists({ recipeId, ingredientGroups, steps, children }: RecipeChecklistsProps) {
+export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, children }: RecipeChecklistsProps) {
   const { level, setLevel, scaleStyle } = useTextScale()
   const [raw, setRaw] = useSessionStorage(checklistStorageKey(recipeId))
   const state = useMemo(() => parseChecklist(raw), [raw])
@@ -90,6 +94,12 @@ export function RecipeChecklists({ recipeId, ingredientGroups, steps, children }
           </button>
         )}
       </div>
+
+      {steps.length > 0 && (
+        <div className="mb-8 lg:col-span-2">
+          <CookingMode title={title} steps={steps} />
+        </div>
+      )}
 
       <section
         aria-labelledby="ingredients-heading"

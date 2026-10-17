@@ -136,7 +136,12 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         />
         {/* Video and gallery sit in the steps column from lg (E01-S17); below lg they
             follow the steps exactly as before. */}
-        <RecipeChecklists recipeId={typedRecipe.id} ingredientGroups={ingredientGroups} steps={steps}>
+        <RecipeChecklists
+          recipeId={typedRecipe.id}
+          title={typedRecipe.title}
+          ingredientGroups={ingredientGroups}
+          steps={steps}
+        >
           {typedRecipe.youtube_id && (
             <section className="mb-12">
               <h2 className="mb-4 text-[26px] font-bold text-ink">Wideo</h2>

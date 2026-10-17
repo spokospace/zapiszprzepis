@@ -35,6 +35,11 @@ describe('buildMenuModel', () => {
     expect(add?.href).toBe(ACCESS_GATE_HREF)
   })
 
+  it('leads both the add entry and the locked one to /dodaj (E01-S10)', () => {
+    expect(ADD_RECIPE_HREF).toBe('/dodaj')
+    expect(ACCESS_GATE_HREF).toBe('/dodaj')
+  })
+
   it('keeps a zero counter but drops a failed (null) one', () => {
     const model = buildMenuModel({
       isAuthenticated: true,

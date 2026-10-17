@@ -95,3 +95,28 @@ export function searchPath(query: string, scope: SearchScope = 'wszystkie', page
   const qs = params.toString()
   return qs ? `${SEARCH_PATH}?${qs}` : SEARCH_PATH
 }
+
+/** The full-screen notifications page (E01-S15). */
+export const NOTIFICATIONS_PATH = '/powiadomienia'
+
+/**
+ * Adding a recipe (E01-S10): the link form for users with full access, the
+ * access-code gate (3c) for everyone else. Behind login — not in isPublicRoute.
+ */
+export const ADD_RECIPE_PATH = '/dodaj'
+
+/** Why an add failed; /dodaj shows the matching message next to the form. */
+export const ADD_RECIPE_ERRORS = ['empty', 'invalid_url', 'server', 'no_access'] as const
+export type AddRecipeError = (typeof ADD_RECIPE_ERRORS)[number]
+
+/** The ?add_error value /dodaj received: null when absent, the generic `server` for anything unknown. */
+export function parseAddRecipeError(raw: string | string[] | undefined): AddRecipeError | null {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  if (!value) return null
+  return (ADD_RECIPE_ERRORS as readonly string[]).includes(value) ? (value as AddRecipeError) : 'server'
+}
+
+/** Where a failed add lands — the add page, whichever entry point (form or Web Share Target) failed. */
+export function addRecipeErrorPath(error: AddRecipeError): string {
+  return `${ADD_RECIPE_PATH}?add_error=${error}`
+}

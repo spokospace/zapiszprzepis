@@ -38,12 +38,14 @@
   --color-surface-2: #f9fafb;
   --color-surface-3: #f3f4f6;
   --color-surface-dark: #111827;
+  --color-border-dark: #6b7280;  /* outlined button on surface-dark (3:1+) */
   --color-border-card: #e5e7eb;
   --color-border-card-2: #d1d5db;
   --color-field: #4b5563;        /* form field border, 2px */
 
   /* Status */
   --color-danger: #b91c1c;
+  --color-danger-bg: #fef2f2;     /* problem surface; danger text on it is 5.9:1 */
   --color-success: #15803d;
   --color-success-bg: #dcfce7;
   --color-facebook: #1877f2;

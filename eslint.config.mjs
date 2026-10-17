@@ -16,7 +16,7 @@ const eslintConfig = defineConfig([
     ".claude/**",
     // OpenNext build output (git-ignored), same category as .next/**.
     ".open-next/**",
-    // Vendored design-handoff prototypes (#266): reference HTML/JS, not app code.
+    // Design handoff bundles (#266): third-party prototype runtime, reference only, never shipped.
     ".ai/design/**",
   ]),
   {

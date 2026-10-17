@@ -91,7 +91,8 @@ export function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; on
 }
 
 export function AddRecipeForm({ addError, autoFocus }: { addError?: string | null; autoFocus?: boolean }) {
-  // `?tab=add` comes from the header's quick-add button.
+  // `?tab=add` came from the header's quick-add button; links now go to /dodaj
+  // (E01-S10), but old bookmarks still focus this home form.
   const wantsAddTab = useSearchParams().get('tab') === 'add'
   const inputRef = useRef<HTMLInputElement>(null)
   // Adding from a link is the primary action, so it is the default/first tab.

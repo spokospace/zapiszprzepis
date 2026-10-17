@@ -55,7 +55,7 @@ describe('addRecipeFromUrl — one recipe per link (E01-S03a)', () => {
     vi.mocked(findExistingRecipeForUrl).mockResolvedValue(OTHER)
     vi.mocked(favoriteExistingRecipe).mockRejectedValue(new Error('db down'))
 
-    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /?add_error=server')
+    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /dodaj?add_error=server')
   })
 
   it('still says "you already have it" for the user’s own recipe', async () => {
@@ -82,7 +82,7 @@ describe('addRecipeFromUrl — full-access gate (E01-S11)', () => {
     vi.mocked(findExistingRecipeForUrl).mockResolvedValue({ status: 'new', normalizedUrl: URL_IN })
     vi.mocked(getFullAccess).mockResolvedValueOnce(false)
 
-    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /?add_error=no_access')
+    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /dodaj?add_error=no_access')
 
     expect(from).not.toHaveBeenCalled()
     expect(inngest.send).not.toHaveBeenCalled()

@@ -1,5 +1,5 @@
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
-import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
+import { getFailedShares, NO_FAILED_SHARES, type FailedSharesResult } from '@/lib/failed-shares'
 import { getMenuSummary } from '@/lib/menu-summary'
 import { homeGreeting } from '@/lib/home'
 import { getGreetingName } from '@/lib/first-name'
@@ -15,6 +15,7 @@ import { PopularSearches } from '@/app/components/home/popular-searches'
 import { CategoryGrid } from '@/app/components/home/category-grid'
 import { MemberTiles } from '@/app/components/home/member-tiles'
 import { GuestCta } from '@/app/components/home/guest-cta'
+import { AttentionBanner } from '@/app/components/home/attention-banner'
 import { FavoriteAddedNotice } from '@/app/components/favorite-button'
 import { parseRecipeId } from '@/lib/favorites'
 
@@ -42,9 +43,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     <>
       <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} menu={menu} />
       <main className="min-h-screen bg-white pb-10">
-        {/* E01-S15 slot: the "N przepisów wymaga uwagi" notifications banner goes here. */}
         {user ? (
           <MemberHome
+            failedShares={failedShares}
             addError={add_error}
             hasFullAccess={menu?.hasFullAccess ?? false}
             vocative={vocative(greetingName)}
@@ -127,11 +128,14 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
 }
 
 function MemberHome({
+  failedShares,
   addError,
   hasFullAccess,
   vocative,
   favoriteAdded,
 }: {
+  /** The header's result, reused for the E01-S15 banner (no extra query). */
+  failedShares: FailedSharesResult
   addError?: string
   hasFullAccess: boolean
   /** "Aniu" from the S13 first name (else the display name) via the S12 rule; null → "Dzień dobry!". */
@@ -143,6 +147,8 @@ function MemberHome({
     <PageContainer className="flex flex-col gap-8 pt-6">
       <div>
         <h1 className="mb-4 text-[30px] leading-tight font-bold text-ink">{homeGreeting(vocative)}</h1>
+        {/* E01-S15 (handoff C1): "N przepisów wymaga uwagi" sits under the greeting. */}
+        <AttentionBanner failedShares={failedShares} className="mb-4" />
         <HomeSearch id="home-search-member" />
       </div>
       {favoriteAdded !== null && <FavoriteAddedNotice recipeId={favoriteAdded} />}
