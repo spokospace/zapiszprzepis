@@ -6,6 +6,7 @@ import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine } from '@/lib/recipe-meta'
 import { tagLabel } from '@/lib/recipe-tags'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { categoryListPath, profilePath } from '@/lib/routes'
 
 export interface RecipeHeaderData {
   title: string
@@ -22,6 +23,7 @@ export interface RecipeHeaderData {
   source_url: string | null
   source_author: string | null
   author_name: string | null
+  author_username?: string | null
 }
 
 interface RecipeHeaderProps {
@@ -39,6 +41,8 @@ const TAG_CHIP =
  */
 export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
   const category = categoryLabel(recipe.category)
+  const categoryHref = categoryListPath(recipe.category)
+  const authorHref = profilePath(recipe.author_username)
 
   return (
     <header className="mb-8">
@@ -64,7 +68,15 @@ export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
             </Link>
           </li>
           <li aria-hidden="true">›</li>
-          <li>{category}</li>
+          <li>
+            {categoryHref ? (
+              <Link href={categoryHref} className="underline hover:text-action-hover">
+                {category}
+              </Link>
+            ) : (
+              category
+            )}
+          </li>
           <li aria-hidden="true">›</li>
           <li aria-current="page" className="line-clamp-1">
             {recipe.title}
@@ -94,10 +106,18 @@ export function RecipeHeader({ recipe, isAuthenticated }: RecipeHeaderProps) {
         )}
       </p>
 
-      {/* Gender-neutral until E01-S12 supplies gender ("Dodała/Dodał"). */}
+      {/* Gender-neutral until E01-S12 supplies gender ("Dodała/Dodał"); a link once
+          E01-S14 turns profilePath on, so it never points at a 404. */}
       {recipe.author_name && (
         <p className="text-[17px] text-ink-soft">
-          Dodane przez <span className="font-bold text-ink">{recipe.author_name}</span>
+          Dodane przez{' '}
+          {authorHref ? (
+            <Link href={authorHref} className="font-bold text-ink underline hover:text-action-hover">
+              {recipe.author_name}
+            </Link>
+          ) : (
+            <span className="font-bold text-ink">{recipe.author_name}</span>
+          )}
         </p>
       )}
 

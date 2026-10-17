@@ -17,6 +17,8 @@ import { RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
 import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar } from './_components/recipe-list-bar'
+import { LockedGallery } from './_components/locked-gallery'
+import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
 
@@ -25,6 +27,9 @@ type Recipe = Database['public']['Tables']['recipes']['Row']
 /** A row of the guest-safe public_recipes view: no user_id, no gallery, plus the author. */
 type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_fingerprint' | 'extracted_at' | 'updated_at'> & {
   author_name: string | null
+  /** Optional until the E01-S07 view migration is applied; the page degrades without them. */
+  author_username?: string | null
+  gallery_count?: number | null
 }
 
 /**
@@ -191,6 +196,10 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             guest: the gallery view is not granted to anon (decision Q3). */}
         {galleryImages.length > 1 && (
           <RecipeGallery images={galleryImages} title={typedRecipe.title} />
+        )}
+        {/* A guest gets a locked teaser with the count only (E01-S07). */}
+        {!user && (typedRecipe.gallery_count ?? 0) > 1 && (
+          <LockedGallery count={typedRecipe.gallery_count ?? 0} loginHref={loginPath(recipePath(typedRecipe.slug))} />
         )}
 
         {/* E01-S16: <SimilarRecipes … /> ("Ten przepis jest" + "Podobne") */}

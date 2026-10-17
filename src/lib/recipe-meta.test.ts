@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { recipeMetaLine, recipeTotalMinutes } from '@/lib/recipe-meta'
+import { photosLabel, recipeMetaLine, recipeTotalMinutes } from '@/lib/recipe-meta'
 
 const base = { prep_time_minutes: null, cook_time_minutes: null, total_time_minutes: null }
 
@@ -15,6 +15,19 @@ describe('recipeTotalMinutes', () => {
 
   it('is null when no time is known', () => {
     expect(recipeTotalMinutes(base)).toBeNull()
+  })
+})
+
+describe('photosLabel', () => {
+  it('uses the right Polish plural form', () => {
+    expect(photosLabel(1)).toBe('1 zdjęcie')
+    expect(photosLabel(2)).toBe('2 zdjęcia')
+    expect(photosLabel(4)).toBe('4 zdjęcia')
+    expect(photosLabel(5)).toBe('5 zdjęć')
+    expect(photosLabel(12)).toBe('12 zdjęć')
+    expect(photosLabel(14)).toBe('14 zdjęć')
+    expect(photosLabel(22)).toBe('22 zdjęcia')
+    expect(photosLabel(25)).toBe('25 zdjęć')
   })
 })
 

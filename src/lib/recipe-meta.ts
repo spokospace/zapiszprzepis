@@ -14,6 +14,14 @@ export function recipeTotalMinutes(r: RecipeTimes): number | null {
   return (r.prep_time_minutes ?? 0) + (r.cook_time_minutes ?? 0)
 }
 
+/** "1 zdjęcie", "2 zdjęcia", "5 zdjęć", "22 zdjęcia" — Polish plural (gallery teaser). */
+export function photosLabel(count: number): string {
+  if (count === 1) return '1 zdjęcie'
+  const last = count % 10
+  const lastTwo = count % 100
+  return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? `${count} zdjęcia` : `${count} zdjęć`
+}
+
 /**
  * The recipe header's "Kategoria · czas" line (E01-S07). "≈" marks an estimated
  * time; with no known time the line is just the category.
