@@ -21,9 +21,21 @@ export async function insertFavorite(
   return error && error.code !== UNIQUE_VIOLATION ? error : null
 }
 
-/** Which of `recipeIds` the user has in Ulubione (favorites is owner-only under RLS); empty on error. */
-export async function getFavoriteIds(supabase: SupabaseClient, userId: string, recipeIds: number[]): Promise<Set<number>> {
-  const { data, error } = await supabase.from('favorites').select('recipe_id').eq('user_id', userId).in('recipe_id', recipeIds)
-  if (error) console.error('[favorites] lookup failed:', error.message)
-  return new Set((data ?? []).map((f) => f.recipe_id as number))
+/** Which of `recipeIds` the user has favorited, in one query per page of cards. Empty on error. */
+export async function getFavoriteIds(
+  supabase: SupabaseClient,
+  userId: string,
+  recipeIds: readonly number[],
+): Promise<Set<number>> {
+  if (recipeIds.length === 0) return new Set()
+  const { data, error } = await supabase
+    .from('favorites')
+    .select('recipe_id')
+    .eq('user_id', userId)
+    .in('recipe_id', [...recipeIds])
+  if (error) {
+    console.error('[favorites] lookup failed', { code: error.code })
+    return new Set()
+  }
+  return new Set((data ?? []).map((row: { recipe_id: number }) => row.recipe_id))
 }
