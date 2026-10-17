@@ -52,7 +52,7 @@ Takeaway: one predicate (`has_full_access`) decides everywhere, and only the def
 
 ## 📝 Data Model
 
-Migration `supabase/migrations/20261017130000_full_access_gate.sql` (idempotent where practical):
+Migration `supabase/migrations/20261017140000_full_access_gate.sql` (idempotent where practical):
 
 | Table | Columns | Access |
 |---|---|---|
@@ -148,7 +148,7 @@ Each phase leaves the app working. Phase 2 against a DB without the migration fa
 ## 📋 Implementation Plan
 
 **Phase 1 — DB gate**
-1. Write `20261017130000_full_access_gate.sql`: the tables, revokes, `user_full_access` select-own policy, `has_full_access`, `redeem_access_code`, `create_access_code`, the RLS split and the backfill.
+1. Write `20261017140000_full_access_gate.sql`: the tables, revokes, `user_full_access` select-own policy, `has_full_access`, `redeem_access_code`, `create_access_code`, the RLS split and the backfill.
 2. Write `.ai/qa/s11-rehearse-full-access-gate.sql`, a rolled-back `do` block ending in `raise exception 'REHEARSAL_RESULT …'`. It asserts: an invalid code returns `invalid`; case/space variants return `ok`; the second use of a `max_uses=1` code returns `invalid`; an expired code returns `invalid`; 5 failures lead to `rate_limited`; an insert into `recipe_shares` without access fails with 42501 and with access succeeds; the grandfathered count is reported.
 3. Add the new tables and RPCs to `src/lib/supabase.types.ts`.
 
