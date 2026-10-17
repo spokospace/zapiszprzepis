@@ -6,7 +6,7 @@ import { rankSimilar, sharedTagsCaption, similarHeading, SIMILAR_LIMIT } from '@
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { chipClasses } from '@/app/components/ui/chip'
-import { RecipeCard } from '@/app/components/recipe-card'
+import { RecipeCard, TILE_SIZES_2_TO_4 } from '@/app/components/recipe-card'
 import type { RecipeSource } from '@/lib/recipe-source'
 
 interface SimilarRecipesProps {
@@ -115,6 +115,7 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
                 sourceType={r.source_type}
                 sourceUrl={r.source_url}
                 sourceAuthor={r.source_author}
+                sizes={TILE_SIZES_2_TO_4}
               />
             ))}
           </div>

@@ -34,10 +34,23 @@ interface RecipeCardProps {
   thumb?: 84 | 96
   /** List only, on a category page: "czas · źródło" and these tag labels instead of the category. */
   inCategory?: { tagLabels: readonly string[] }
+  /**
+   * Tile only: the image's `sizes`, matching the caller's grid (#253). The default fits
+   * Moje przepisy (one column on a phone); the two-column grids pass a `TILE_SIZES_*`.
+   */
+  sizes?: string
 }
 
 /** The list cards' container: one column, two from lg so they don't stretch to 1088 px (E01-S17). */
 export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
+
+// A tile's `sizes` in a two-column grid, so a phone fetches an archived image at the
+// width of half the screen, not all of it (#253). The grids sit in PageContainer:
+// 1088 px of content at most, so from there a column has a fixed width.
+/** Two a row, four from lg (home „Ostatnio dodane”, Podobne): (1088 − 3 × 20) / 4 = 257. */
+export const TILE_SIZES_2_TO_4 = '(min-width: 1024px) 257px, 50vw'
+/** Two a row, three from sm (Ulubione): (1088 − 2 × 12) / 3 ≈ 355. */
+export const TILE_SIZES_2_TO_3 = '(min-width: 1152px) 355px, (min-width: 640px) 33vw, 50vw'
 
 export function RecipeCard({
   slug,
@@ -54,6 +67,7 @@ export function RecipeCard({
   minutes,
   thumb = 96,
   inCategory,
+  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
 }: RecipeCardProps) {
   const heart = (size: 'compact' | 'bar') =>
     favorite && (
@@ -121,7 +135,7 @@ export function RecipeCard({
             alt={title}
             fill
             className="object-cover group-hover:scale-105 transition-transform"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes={sizes}
             unoptimized={!isArchivedImageUrl(imageUrl)}
           />
         ) : (
