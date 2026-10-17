@@ -14,12 +14,18 @@ export function recipeTotalMinutes(r: RecipeTimes): number | null {
   return (r.prep_time_minutes ?? 0) + (r.cook_time_minutes ?? 0)
 }
 
-/** "1 zdjęcie", "2 zdjęcia", "5 zdjęć", "22 zdjęcia" — Polish plural (gallery teaser). */
-export function photosLabel(count: number): string {
-  if (count === 1) return '1 zdjęcie'
+/** The Polish plural form for `count`: `one` for 1, `few` for 2–4, 22–24, … (not
+ *  12–14), `many` otherwise. */
+export function polishPlural(count: number, one: string, few: string, many: string): string {
+  if (count === 1) return one
   const last = count % 10
   const lastTwo = count % 100
-  return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? `${count} zdjęcia` : `${count} zdjęć`
+  return last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? few : many
+}
+
+/** "1 zdjęcie", "2 zdjęcia", "5 zdjęć", "22 zdjęcia" — Polish plural (gallery teaser). */
+export function photosLabel(count: number): string {
+  return `${count} ${polishPlural(count, 'zdjęcie', 'zdjęcia', 'zdjęć')}`
 }
 
 /**

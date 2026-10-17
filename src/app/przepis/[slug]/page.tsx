@@ -144,6 +144,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           title={typedRecipe.title}
           ingredientGroups={ingredientGroups}
           steps={steps}
+          servings={typedRecipe.servings}
         >
           {typedRecipe.youtube_id && (
             <section className="mb-12">
