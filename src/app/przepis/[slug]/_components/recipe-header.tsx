@@ -5,7 +5,7 @@ import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine } from '@/lib/recipe-meta'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
-import { categoryPath, profilePath } from '@/lib/routes'
+import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 
 export interface RecipeHeaderData {
   title: string
@@ -60,7 +60,8 @@ export function RecipeHeader({ recipe }: RecipeHeaderProps) {
         <nav aria-label="Okruszki" className="mb-2 text-[16px] text-ink-soft">
           <ol className="flex flex-wrap items-center gap-x-2">
             <li>
-              <Link href="/" className="underline hover:text-action-hover">
+              {/* "Przepisy" goes where the desktop header's "Przepisy" goes (E01-S17). */}
+              <Link href={SEARCH_PATH} className="underline hover:text-action-hover">
                 Przepisy
               </Link>
             </li>
