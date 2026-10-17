@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { jsonLdServings } from '../src/lib/servings'
 
 // Gives blog recipes saved before the servings column (migration
-// 20261017220000_recipe_servings) the count their page states, by re-reading
+// 20261017200000_recipe_servings) the count their page states, by re-reading
 // each page's schema.org JSON-LD recipeYield — the same deterministic parse the
 // extraction uses, so no LLM call and no guess. A page without a JSON-LD yield,
 // with conflicting Recipe yields, or no longer reachable keeps servings null and

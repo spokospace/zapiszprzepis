@@ -13,12 +13,12 @@
 --
 -- Coexists with 20261017210000_author_gender_form.sql (E01-S23, PR #291), which
 -- appends author_gender_form to the same view. Postgres matches view columns by
--- POSITION, so this migration must not redefine the view without that column once
--- it is there: the view is rebuilt from a DO block that keeps author_gender_form
--- when the live view already has it, and appends servings after it. Apply order:
--- 20261017210000 (if it ships) BEFORE this one, as the versions sort. Applying
--- this first and S23 afterwards would make S23's create-or-replace fail
--- ("cannot drop columns from view"), so S23 would then need servings appended.
+-- POSITION, so each migration keeps the other's column. Apply order, as the
+-- versions sort: THIS one first (servings at position 23), then S23, which keeps
+-- r.servings and appends author_gender_form after it. Either order still works:
+-- run after S23, this one keeps author_gender_form and appends servings last.
+-- Once the view has servings (applied, or re-run after S23 reordered nothing),
+-- the view is left as it is, so a re-run never moves a column.
 --
 -- Ordering vs the app: apply BEFORE deploying the app build that writes
 -- `servings` — the extraction inserts the column, and an insert naming a missing
@@ -26,7 +26,8 @@
 -- column, so applying this first changes nothing for it.
 --
 -- Rollback: drop view public.public_recipes; re-create it from the newest earlier
--- definition (20261017210000 if applied, else 20261017150000) plus its grants,
+-- definition without servings (20261017150000, or S23's with no servings) plus its
+-- grants,
 -- then `alter table public.recipes drop column servings`.
 -- Rehearsal: .ai/qa/s07b-rehearse-recipe-servings.sql (rolled back).
 
@@ -54,6 +55,12 @@ declare
     where table_schema = 'public' and table_name = 'public_recipes' and column_name = 'author_gender_form'
   );
 begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'public_recipes' and column_name = 'servings'
+  ) then
+    return;
+  end if;
   execute format($view$
     create or replace view public.public_recipes
     with (security_invoker = false)

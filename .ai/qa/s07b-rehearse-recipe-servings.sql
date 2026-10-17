@@ -1,18 +1,19 @@
 -- E01-S07b follow-up — rolled-back production rehearsal of
--- supabase/migrations/20261017220000_recipe_servings.sql (= M).
+-- supabase/migrations/20261017200000_recipe_servings.sql (= M).
 --
--- Build the script as: `begin;` + [S23] + M + M + this file + `rollback;`, and send
--- it to the Management API query endpoint (or `supabase db query --linked -f`).
+-- Build the script as `begin;` + M + M + [S23] + [M] + this file + `rollback;`, and
+-- send it to the Management API query endpoint (or `supabase db query --linked -f`).
 -- M runs twice to prove it is idempotent. [S23] is
--- 20261017210000_author_gender_form.sql (PR #291), included for the second run
--- to prove the two view appends coexist in apply order. The DO block always ends
--- by RAISING REHEARSAL_RESULT, so M, the throwaway user and its recipe all roll
--- back even if the trailing `rollback;` were never reached.
+-- 20261017210000_author_gender_form.sql (PR #291), which applies AFTER M. Including
+-- it, plus one more M re-run, proves the two view appends coexist and that a late
+-- re-run of M moves no column. The DO block always ends by RAISING
+-- REHEARSAL_RESULT, so everything (M, the throwaway user and its recipe) rolls back
+-- even if the trailing `rollback;` were never reached.
 --
 -- Expected (healthy):
 --   REHEARSAL_RESULT type[smallint] check[ok] range[0:23514 100:23514 null:ok]
 --     view_head[ok] view_tail[...,gallery_count,servings] or
---     [...,gallery_count,author_gender_form,servings] (with S23)
+--     [...,gallery_count,servings,author_gender_form] (with S23)
 --     fixture_view[4] anon_grant[ok] anon_read[ok] search[ok]
 --     recipes[<n>] servings_null[<n>]
 
