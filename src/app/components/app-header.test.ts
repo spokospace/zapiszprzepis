@@ -3,7 +3,11 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 vi.mock('server-only', () => ({}))
-vi.mock('next/navigation', () => ({ usePathname: () => '/' }))
+let pathname = '/'
+vi.mock('next/navigation', () => ({
+  usePathname: () => pathname,
+  useSearchParams: () => new URLSearchParams(),
+}))
 vi.mock('./app-menu', () => ({ AppMenu: () => createElement('div', { 'data-testid': 'menu' }) }))
 vi.mock('./notification-bell', () => ({ NotificationBell: () => createElement('div', { 'data-testid': 'bell' }) }))
 
@@ -41,5 +45,45 @@ describe('AppHeader "Dodaj" (1c header, E01-S10)', () => {
     const html = render(false)
     expect(html).not.toContain('href="/dodaj"')
     expect(html).toContain('Zaloguj się')
+  })
+})
+
+describe('AppHeader mobile 1c layout (E01-S19)', () => {
+  it('has the 2 px bottom border and the 4/12/4/16 padding below lg', () => {
+    pathname = '/'
+    const html = render(true)
+    expect(html).toContain('border-b-2 border-border-card')
+    expect(html).toContain('py-1 pr-3 pl-4')
+  })
+
+  it('gives a guest an outlined 52 px "Zaloguj się"', () => {
+    pathname = '/'
+    const login = render(false).match(/<a[^>]*href="\/login"[^>]*>Zaloguj się<\/a>/)?.[0] ?? ''
+    expect(login).toContain('min-h-[52px]')
+    expect(login).toContain('border-2 border-field')
+  })
+
+  it('shows the lettering logo, with the compact icon only where the buttons leave no room', () => {
+    pathname = '/'
+    const html = render(true)
+    expect(html).toContain('src="/logo-lettering.svg"')
+    expect(html).toContain('min-[390px]:block')
+  })
+
+  it('replaces the logo with "← Wróć" on a recipe page, for guests too, below lg only', () => {
+    pathname = '/przepis/sernik'
+    for (const signedIn of [true, false]) {
+      const html = render(signedIn)
+      const back = html.match(/<a[^>]*aria-label="Wróć[^"]*"[^>]*>.*?<\/a>/)?.[0] ?? ''
+      // Without list context it returns to the start page.
+      expect(back).toContain('href="/"')
+      expect(back).toContain('lg:hidden')
+      expect(back).toContain('h-14')
+      expect(back).toContain('>Wróć</a>')
+      expect(html).toContain('hidden lg:flex')
+      // The old chevron to the owner-only /recipes is gone.
+      expect(html).not.toContain('href="/recipes"')
+    }
+    pathname = '/'
   })
 })
