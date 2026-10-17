@@ -8,8 +8,8 @@ describe('parseOAuthProviders', () => {
     expect(parseOAuthProviders('')).toEqual([])
   })
 
-  it('trims, lower-cases, dedupes and keeps canonical order', () => {
-    expect(parseOAuthProviders(' Facebook , google,GOOGLE ')).toEqual(['google', 'facebook'])
+  it('trims, lower-cases, dedupes and keeps canonical order (Facebook first, as on 3a)', () => {
+    expect(parseOAuthProviders(' google , Facebook,GOOGLE ')).toEqual(['facebook', 'google'])
   })
 
   it('drops unknown providers', () => {

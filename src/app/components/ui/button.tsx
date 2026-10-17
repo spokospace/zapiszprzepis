@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react'
 
-export type ButtonVariant = 'primary' | 'outline' | 'danger'
+export type ButtonVariant = 'primary' | 'outline' | 'danger' | 'facebook'
 export type ButtonSize = 'md' | 'lg' | 'xl'
 
 /** Min touch target 48px (WCAG 2.5.8); lg = primary action 56px; xl = cooking mode 72px. */
@@ -15,6 +15,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-action text-white hover:bg-action-hover',
   outline: 'bg-white text-ink border-2 border-field hover:bg-surface-3',
   danger: 'bg-white text-danger border-2 border-danger hover:bg-surface-3',
+  // Brand blue: white text only at 19px+ bold (large text, 4.2:1 vs AA's 3:1).
+  facebook: 'bg-facebook text-white hover:brightness-90',
 }
 
 const BASE =

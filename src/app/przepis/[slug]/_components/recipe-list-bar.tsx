@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useSyncExternalStore } from 'react'
+import { useMemo } from 'react'
+import { useHydrated } from '@/app/components/ui/use-hydrated'
 import Link from 'next/link'
 import { useSessionStorage } from '@/app/components/ui/use-session-storage'
 import { listStorageKey, locate, parseSnapshot, type ListItem, type ListKey, type ListPosition } from '@/lib/recipe-list-context'
@@ -22,13 +23,6 @@ const BAR =
 
 const NAV =
   'flex min-h-[56px] flex-col justify-center rounded-field border-2 px-3 py-1.5 leading-tight'
-
-const noop = () => () => {}
-
-/** false during SSR and hydration, true afterwards — without a setState-in-effect. */
-function useHydrated(): boolean {
-  return useSyncExternalStore(noop, () => true, () => false)
-}
 
 function NavLink({ item, from, direction }: { item: ListItem | null; from: ListKey | null; direction: 'prev' | 'next' }) {
   const label = direction === 'prev' ? '← Poprzedni' : 'Następny →'

@@ -1,9 +1,14 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { parseOAuthProviders } from '@/lib/oauth-providers'
 import { withFavoriteIntent } from '@/lib/favorites'
+import { PRIVACY_POLICY_PATH, TERMS_PATH } from '@/lib/routes'
 import { OAuthButtons } from './oauth-buttons'
 import { SignInForm } from './signin-form'
-import { LegalLinks } from '@/app/components/legal-page'
+
+export const metadata: Metadata = { title: 'Zaloguj się · ZapiszPrzepis' }
 
 type SearchParams = Promise<{
   error?: string
@@ -15,6 +20,10 @@ type SearchParams = Promise<{
   fav?: string
 }>
 
+/**
+ * Screen 3a (E01-S12b): Facebook/Google first, then email + password, which the
+ * owner keeps for existing and QA accounts.
+ */
 export default async function LoginPage({
   searchParams,
 }: {
@@ -26,26 +35,53 @@ export default async function LoginPage({
   const next = withFavoriteIntent(rawNext, fav)
   // E01-S12: off unless the owner lists providers (see oauth-providers.ts).
   const providers = parseOAuthProviders(process.env.AUTH_OAUTH_PROVIDERS)
+  const hasOAuth = providers.length > 0
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <h1>
+    <div className="flex flex-1 flex-col">
+      <header className="border-b-2 border-border-card px-2 py-1">
+        <Link
+          href="/"
+          className="inline-flex min-h-[56px] items-center gap-1.5 px-2 text-[18px] font-bold text-ink no-underline!"
+        >
+          <ArrowLeft aria-hidden="true" className="h-6 w-6" />
+          Wróć
+        </Link>
+      </header>
+      <main className="flex flex-1 flex-col items-center px-5 py-8">
+        <div className="flex w-full max-w-sm flex-1 flex-col gap-5">
           <Image
-            src="/logo.svg"
+            src="/logo-lettering.svg"
             alt="ZapiszPrzepis"
-            width={1970}
-            height={668}
+            width={160}
+            height={40}
             priority
             unoptimized
-            className="block h-auto w-48"
+            className="block h-10 w-40"
           />
-        </h1>
-        <OAuthButtons providers={providers} next={next} />
-        <SignInForm error={error} email={email} sent={sent} success={success} next={next} />
-        {/* Minimal until E01-S12b redesigns the 3a footer; it can reuse the path constants in routes.ts. */}
-        <LegalLinks />
-      </div>
-    </main>
+          <h1 className="text-[30px] leading-tight font-bold text-ink">Zaloguj się</h1>
+          {hasOAuth && (
+            <>
+              <p className="text-[18px] leading-normal text-ink-soft">Bez nowego hasła. Użyj konta, które już masz.</p>
+              <OAuthButtons providers={providers} next={next} />
+              <p className="text-[16px] leading-normal text-ink-soft">
+                Pierwsze logowanie od razu zakłada konto. Nic nie publikujemy na Twoim Facebooku.
+              </p>
+              <p className="flex items-center gap-3 text-[16px] text-ink-soft before:h-0.5 before:flex-1 before:bg-border-card after:h-0.5 after:flex-1 after:bg-border-card">
+                albo emailem
+              </p>
+            </>
+          )}
+          <SignInForm error={error} email={email} sent={sent} success={success} next={next} />
+          <p className="mt-auto pt-4 text-[16px] leading-normal text-ink-soft">
+            Logując się, akceptujesz <Link href={TERMS_PATH} className="font-bold text-action-text hover:text-action-hover">regulamin</Link> i{' '}
+            <Link href={PRIVACY_POLICY_PATH} className="font-bold text-action-text hover:text-action-hover">
+              politykę prywatności
+            </Link>
+            .
+          </p>
+        </div>
+      </main>
+    </div>
   )
 }

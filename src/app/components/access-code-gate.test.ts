@@ -38,10 +38,21 @@ describe('AccessCodeGateView — screen 3c (E01-S11)', () => {
     expect(html).not.toContain('data-testid="add-form"')
   })
 
+  it('follows the 3c copy and hides the payment option until payments exist (E01-S12b)', () => {
+    const html = render('idle')
+    expect(html).toContain('Dodawanie własnych przepisów')
+    expect(html).toContain('Masz kod?')
+    expect(html).toContain('font-mono')
+    expect(html).toContain('uppercase')
+    expect(html).toContain('Ulubione działają bez ograniczeń, z kodem i bez.')
+    expect(html).not.toContain('Zobacz pełny dostęp')
+    expect(html).not.toContain('albo')
+  })
+
   it('shows a wrong code as role=alert, with the danger border and aria-invalid', () => {
     const html = render('invalid')
     expect(html).toContain('role="alert"')
-    expect(html).toContain('Ten kod nie działa')
+    expect(html).toContain('Ten kod nie działa. Sprawdź litery i spróbuj jeszcze raz.')
     expect(html).toContain('border-danger')
     expect(html).toContain('aria-invalid="true"')
     expect(html).toContain('aria-describedby="access-code-error"')
@@ -59,7 +70,7 @@ describe('AccessCodeGateView — screen 3c (E01-S11)', () => {
   it('on success announces role=status with ✓ and shows the link form right away', () => {
     const html = render('ok')
     expect(html).toContain('role="status"')
-    expect(html).toContain('Gotowe — możesz dodawać przepisy.')
+    expect(html).toContain('Gotowe! Możesz dodawać przepisy.')
     expect(html).toContain('data-testid="add-form"')
     expect(html).toContain('data-autofocus="true"')
     expect(html).not.toContain('id="access-code"')
@@ -102,7 +113,7 @@ describe('AccessCodeGateView — repeated wrong codes (E01-S11)', () => {
         unlocked: createElement('div', { 'data-testid': 'add-panel' }),
       }),
     )
-    expect(html).toContain('Gotowe — możesz dodawać przepisy.')
+    expect(html).toContain('Gotowe! Możesz dodawać przepisy.')
     expect(html).toContain('data-testid="add-panel"')
     expect(html).not.toContain('data-testid="add-form"')
   })

@@ -151,6 +151,18 @@ export function firstNameOf(displayName: string | null | undefined): string | nu
  * known, otherwise a plain "Dzień dobry!" — never a guessed or raw name.
  */
 export function greeting(displayName: string | null | undefined): string {
+  return withVocative('Dzień dobry', displayName)
+}
+
+/**
+ * The first-login welcome (screen 3b): "Witamy, Aniu!" when the vocative is
+ * known, otherwise a plain "Witamy!" — same conservative rule as greeting().
+ */
+export function welcome(displayName: string | null | undefined): string {
+  return withVocative('Witamy', displayName)
+}
+
+function withVocative(prefix: string, displayName: string | null | undefined): string {
   const voc = vocative(firstNameOf(displayName))
-  return voc ? `Dzień dobry, ${voc}!` : 'Dzień dobry!'
+  return voc ? `${prefix}, ${voc}!` : `${prefix}!`
 }
