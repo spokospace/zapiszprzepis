@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
+  categoryPath,
   recipePath,
   isPublicRoute,
   RECIPE_PAGE_RE,
   PRZEPIS_PAGE_RE,
   legacyRecipePathToCanonical,
   searchPath,
-  categoryPath,
   SEARCH_PATH,
 } from './routes'
 
@@ -63,6 +63,14 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/recipes/tiramisu')).toBe(true)
   })
 
+  it('allows the category listing categoryPath builds (E01-S09)', () => {
+    expect(categoryPath('sniadania')).toBe('/przepisy/sniadania')
+    expect(isPublicRoute(categoryPath('sniadania'))).toBe(true)
+    // the bare listing root and deeper paths stay gated
+    expect(isPublicRoute('/przepisy')).toBe(false)
+    expect(isPublicRoute('/przepisy/zupy/x')).toBe(false)
+  })
+
   it('keeps the owner list and everything else gated', () => {
     expect(isPublicRoute('/recipes')).toBe(false)
     expect(isPublicRoute('/przepis')).toBe(false)
@@ -79,11 +87,5 @@ describe('searchPath', () => {
 
   it('drops a blank query', () => {
     expect(searchPath('   ')).toBe(SEARCH_PATH)
-  })
-})
-
-describe('categoryPath', () => {
-  it('filters by the category value', () => {
-    expect(categoryPath('sniadania')).toBe('/recipes?category=sniadania')
   })
 })

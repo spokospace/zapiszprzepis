@@ -8,15 +8,19 @@ import { AppMenu } from './app-menu'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
 import type { FailedSharesResult } from '@/lib/failed-shares'
+import type { MenuSummary } from '@/lib/menu-summary'
 import { PRZEPIS_PAGE_RE } from '@/lib/routes'
 
 export function AppHeader({
   failedShares,
   isAuthenticated,
+  menu,
 }: {
   failedShares: FailedSharesResult
   /** Guest (E01-S02) vs signed-in: guests get "Zaloguj się" instead of Dodaj + the bell. */
   isAuthenticated: boolean
+  /** MENU counters + full access (E01-S09); the drawer degrades without it. */
+  menu?: MenuSummary | null
 }) {
   const pathname = usePathname()
   // Shown on the canonical recipe page (/przepis/{slug}, E01-S03b); the back link
@@ -68,7 +72,7 @@ export function AppHeader({
               Zaloguj się
             </Link>
           )}
-          <AppMenu isAuthenticated={isAuthenticated} />
+          <AppMenu isAuthenticated={isAuthenticated} summary={menu} />
         </div>
       </PageContainer>
     </header>

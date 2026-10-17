@@ -8,6 +8,19 @@ export const RECIPE_PAGE_RE = /^\/recipes\/[^/]+$/
 /** The canonical public recipe page: /przepis/{slug} (one segment) — E01-S03b. */
 export const PRZEPIS_PAGE_RE = /^\/przepis\/[^/]+$/
 
+/** A public category listing: /przepisy/{kategoria} (one segment) — E01-S09, extended by E01-S16. */
+const PRZEPISY_CATEGORY_RE = /^\/przepisy\/[^/]+$/
+
+/**
+ * The public listing of one category (E01-S09), shared by the MENU drawer and
+ * the home category tiles (E01-S04) so both link the same URL — the route
+ * E01-S16 later extends with tag chips. Public on purpose: /recipes?category=
+ * is owner-only and would bounce a guest to /login.
+ */
+export function categoryPath(category: string): string {
+  return `/przepisy/${encodeURIComponent(category)}`
+}
+
 /**
  * The canonical path to a recipe. Encodes the slug once; the single place every
  * link builder goes through, so the URL shape changes in one spot (E01-S03b).
@@ -30,10 +43,16 @@ export function legacyRecipePathToCanonical(pathname: string): string {
  * Routes a guest may open without a session (E01-S02). Data visibility is RLS's
  * job. Both the canonical /przepis/{slug} and the legacy /recipes/{slug} are
  * public: the legacy path must be reachable so middleware can issue its 301
- * instead of bouncing the visitor to /login first (E01-S03b).
+ * instead of bouncing the visitor to /login first (E01-S03b). The category
+ * listings are linked from the guest's MENU drawer (E01-S09).
  */
 export function isPublicRoute(pathname: string): boolean {
-  return pathname === '/' || PRZEPIS_PAGE_RE.test(pathname) || RECIPE_PAGE_RE.test(pathname)
+  return (
+    pathname === '/' ||
+    PRZEPIS_PAGE_RE.test(pathname) ||
+    RECIPE_PAGE_RE.test(pathname) ||
+    PRZEPISY_CATEGORY_RE.test(pathname)
+  )
 }
 
 /**
@@ -47,12 +66,4 @@ export const SEARCH_PATH = '/recipes'
 export function searchPath(query: string): string {
   const q = query.trim()
   return q ? `${SEARCH_PATH}?q=${encodeURIComponent(q)}` : SEARCH_PATH
-}
-
-/**
- * A category listing. Interim (E01-S04): the owner list's category filter;
- * E01-S16 repoints this to /przepisy/{kategoria}.
- */
-export function categoryPath(category: string): string {
-  return `/recipes?category=${encodeURIComponent(category)}`
 }
