@@ -34,7 +34,7 @@ const CANDIDATES = 50
  * The bottom of the recipe page (E01-S16): "Ten przepis jest" (its tags, each
  * linking to the category filtered by it) and "Podobne" — up to 4 recipes from
  * the same category, most shared tags first, topped up with the newest — plus
- * "Wszystkie przepisy: {Kategoria} (N) →". Loads its own data so the page only
+ * "Wszystkie {kategoria} (N) →". Loads its own data so the page only
  * mounts it; non-critical, so a failed query logs and hides the lists.
  * Streamed behind Suspense so its three queries never hold up the recipe itself.
  */
@@ -122,9 +122,9 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
       {showAll && (
         <Link
           href={categoryPath(recipe.category)}
-          className="mt-4 inline-flex min-h-[48px] items-center text-[19px] font-bold text-action-text underline underline-offset-4 hover:text-action-hover"
+          className="mt-4 inline-flex min-h-[56px] items-center text-[19px] font-bold text-action-text underline underline-offset-4 hover:text-action-hover"
         >
-          Wszystkie przepisy: {label}
+          Wszystkie {label.toLocaleLowerCase('pl')}
           {total != null && ` (${total})`} →
         </Link>
       )}
