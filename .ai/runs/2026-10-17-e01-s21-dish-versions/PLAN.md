@@ -16,7 +16,7 @@
 | 1 | 1.5 | `src/lib/dish-versions.ts` render helpers (`ingredientKey`/`ingredientDiff`/`versionBadges`/`versionsBarLabel`/`versionsHeading`/`sortVersions`/`parseVersionsSort`) + tests | inline | done | this commit |
 | 1 | 1.6 | Recipe-page UI: `dish-versions-bar.tsx`, `dish-versions.tsx`, `dish-versions-sort.tsx`; `RecipeHeader` `versionsBar` slot; `page.tsx` RPC only when `recipe.dish` non-null + tests | inline | done | this commit |
 | 1 | 1.7 | `SimilarRecipes` `dish` prop + `.or('dish.is.null,dish.neq."<dish>"')` filter + test | inline | done | this commit |
-| 1 | 1.8 | Reflow: confirm recipe page covered at 320 px / A++ (empty-data shell already in `e2e/reflow.spec.ts`); final gate | inline | todo | |
+| 1 | 1.8 | Reflow: confirm recipe page covered at 320 px / A++ (empty-data shell already in `e2e/reflow.spec.ts`); final gate | inline | done | this commit |
 
 ## Goal
 Every recipe can carry a normalized `dish` + `variant_note`; the recipe page shows a "N inne przepisy na {danie}" bar and an "Inne przepisy na {danie}" versions section (sortable), and "Podobne" stops repeating same-dish recipes. New recipes get classified in the labelling pass. Renders gracefully behind empty data (no bar/section/RPC call until a `dish` exists).
