@@ -40,15 +40,21 @@ export function AppHeader({
               <ChevronLeft className="h-5 w-5" />
             </Link>
           )}
-          <Link href="/">
+          <Link href="/" aria-label="ZapiszPrzepis — strona główna" className="flex items-center gap-2 no-underline!">
             <Image
-              src="/logo-lettering.svg"
-              alt="ZapiszPrzepis"
-              width={120}
-              height={30}
+              src="/logo-icon.svg"
+              alt=""
+              width={32}
+              height={32}
               unoptimized
               priority
+              className="h-8 w-8 sm:h-10 sm:w-10"
             />
+            {/* Wordmark only from tablet up; on phones the icon alone is the logo. */}
+            <span aria-hidden="true" className="hidden text-[1.625rem] font-bold tracking-wide sm:inline">
+              <span className="text-gray-900">Zapisz</span>
+              <span className="text-orange-700">Przepis</span>
+            </span>
           </Link>
         </div>
         <div className="flex items-center gap-1">
