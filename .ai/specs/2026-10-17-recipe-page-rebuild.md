@@ -109,7 +109,7 @@ helper, so the S04/S05/S16 rebuilds can adopt it without touching the recipe pag
 
 ## 📝 Data Model
 
-One additive, owner-gated migration, `supabase/migrations/2026101713xxxx_public_recipes_author_username_gallery_count.sql`:
+One additive, owner-gated migration, `supabase/migrations/20261017130000_public_recipes_author_username_gallery_count.sql`:
 `create or replace view public.public_recipes` keeps every current column in its current
 order and **appends** two columns:
 
@@ -218,8 +218,8 @@ rendered as `mockup-mobile.png`).
   `supabase.types.ts`) are unaffected. Rollback means re-running the previous definition.
 - **`recipePath` signature:** the change is additive (an optional second argument). All
   current call sites keep their output.
-- **Category context cost:** about three small queries per page view on
-  `public_recipes(category, created_at)`. That is fine at the current data size. If needed
+- **Category context cost:** four small parallel queries per page view (two `count: exact, head`
+  for total and position, two `limit 1` for the neighbours) on `public_recipes(category, created_at)`. That is fine at the current data size. If needed
   later, an index on `recipes(category, created_at desc)` is a follow-up, not part of this
   story.
 - **Product direction call, not a defect:** the `←` back link in the category fallback and
