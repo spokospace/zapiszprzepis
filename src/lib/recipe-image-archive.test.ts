@@ -113,6 +113,35 @@ describe('isPrivateUrl — SSRF guard (Risk 6)', () => {
   ] as const)('%s → %s', (url, expected) => {
     expect(isPrivateUrl(url)).toBe(expected)
   })
+
+  // #136: a DNS name is never judged as if it were an IP address.
+  it.each([
+    'https://fcdn.example.com/photo.jpg',
+    'https://fd-assets.example.pl/photo.jpg',
+    'https://fcbarcelona.com/photo.jpg',
+    'https://fe80.example.com/photo.jpg',
+    'https://0.cdn.example.com/photo.jpg',
+    'http://[2001:4860:4860::8888]/photo.jpg',
+    'http://[::ffff:8.8.8.8]/photo.jpg',
+  ])('a public host: %s → false', (url) => {
+    expect(isPrivateUrl(url)).toBe(false)
+  })
+
+  // #136: every spelling of a private address is caught.
+  it.each([
+    'http://2130706433/',
+    'http://0x7f.1/',
+    'http://0177.0.0.1/',
+    'http://127.1/',
+    'http://0.0.0.0/',
+    'http://[::]/',
+    'http://[::ffff:127.0.0.1]/',
+    'http://[::ffff:169.254.169.254]/latest/meta-data/',
+    'http://[::ffff:192.168.0.1]/',
+    'http://[febf::1]/',
+  ])('a private address: %s → true', (url) => {
+    expect(isPrivateUrl(url)).toBe(true)
+  })
 })
 
 describe('archiveImage — fetch not called for private URLs (Risk 6)', () => {
