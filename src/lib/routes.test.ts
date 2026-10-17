@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { recipePath, isPublicRoute, RECIPE_PAGE_RE, PRZEPIS_PAGE_RE, legacyRecipePathToCanonical } from './routes'
+import {
+  recipePath,
+  isPublicRoute,
+  RECIPE_PAGE_RE,
+  PRZEPIS_PAGE_RE,
+  legacyRecipePathToCanonical,
+  searchPath,
+  categoryPath,
+  SEARCH_PATH,
+} from './routes'
 
 describe('recipePath', () => {
   it('builds the canonical /przepis/{slug} path', () => {
@@ -59,5 +68,22 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/przepis')).toBe(false)
     expect(isPublicRoute('/settings')).toBe(false)
     expect(isPublicRoute('/ulubione')).toBe(false)
+  })
+})
+
+describe('searchPath', () => {
+  it('trims and encodes the query', () => {
+    expect(searchPath('  zupa pomidorowa ')).toBe(`${SEARCH_PATH}?q=zupa%20pomidorowa`)
+    expect(searchPath('a&b')).toBe(`${SEARCH_PATH}?q=a%26b`)
+  })
+
+  it('drops a blank query', () => {
+    expect(searchPath('   ')).toBe(SEARCH_PATH)
+  })
+})
+
+describe('categoryPath', () => {
+  it('filters by the category value', () => {
+    expect(categoryPath('sniadania')).toBe('/recipes?category=sniadania')
   })
 })
