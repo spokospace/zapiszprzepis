@@ -32,7 +32,8 @@ export function SearchResults({ q, scope, page, rows, total, favoriteIds }: Sear
         href={searchPath(q, scope, page)}
         items={rows.map((r) => ({ slug: r.slug, title: r.title }))}
       />
-      <ol className="flex flex-col gap-2">
+      {/* Two columns from lg (E01-S17) so the row cards don't stretch to 1088 px. */}
+      <ol className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:gap-3">
         {rows.map((r, i) => (
           <li
             key={r.id}

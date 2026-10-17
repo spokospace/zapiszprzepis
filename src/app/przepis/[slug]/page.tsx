@@ -124,7 +124,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {refresh_error === 'no_access' && (
         <Toast message="Odświeżanie przepisów wymaga kodu dostępu." type="error" duration={5000} clearParam="refresh_error" />
       )}
-      <PageContainer narrow>
+      {/* Not `narrow`: the desktop layout (E01-S17, A9) uses the full 1152 px; below lg
+          both widths are the viewport anyway. */}
+      <PageContainer>
         <RecipeListBar slug={typedRecipe.slug} from={parseListKey(from)} fallback={categoryContext} />
         <RecipeHeader recipe={typedRecipe} />
         <RecipeActions
@@ -132,39 +134,41 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           isFavorite={isFavorite}
           isAuthenticated={Boolean(user)}
         />
+        {/* Video and gallery sit in the steps column from lg (E01-S17); below lg they
+            follow the steps exactly as before. */}
         <RecipeChecklists
           recipeId={typedRecipe.id}
           title={typedRecipe.title}
           ingredientGroups={ingredientGroups}
           steps={steps}
-        />
+        >
+          {typedRecipe.youtube_id && (
+            <section className="mb-12">
+              <h2 className="mb-4 text-[26px] font-bold text-ink">Wideo</h2>
+              <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${typedRecipe.youtube_id}`}
+                  title={`${typedRecipe.title} — wideo`}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              </div>
+            </section>
+          )}
 
-        {typedRecipe.youtube_id && (
-          <section className="mb-12">
-            <h2 className="mb-4 text-[26px] font-bold text-ink">Wideo</h2>
-            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${typedRecipe.youtube_id}`}
-                title={`${typedRecipe.title} — wideo`}
-                className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
-            </div>
-          </section>
-        )}
-
-        {/* A gallery of one would only repeat the cover. galleryImages is empty for a
-            guest: the gallery view is not granted to anon (decision Q3). */}
-        {galleryImages.length > 1 && (
-          <RecipeGallery images={galleryImages} title={typedRecipe.title} />
-        )}
-        {/* A guest gets a locked teaser with the count only (E01-S07). */}
-        {!user && galleryCount > 1 && (
-          <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
-        )}
+          {/* A gallery of one would only repeat the cover. galleryImages is empty for a
+              guest: the gallery view is not granted to anon (decision Q3). */}
+          {galleryImages.length > 1 && (
+            <RecipeGallery images={galleryImages} title={typedRecipe.title} />
+          )}
+          {/* A guest gets a locked teaser with the count only (E01-S07). */}
+          {!user && galleryCount > 1 && (
+            <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
+          )}
+        </RecipeChecklists>
 
         <SimilarRecipes recipe={typedRecipe} />
 

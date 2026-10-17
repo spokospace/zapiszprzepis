@@ -25,7 +25,8 @@ describe('AppHeader "Dodaj" (1c header, E01-S10)', () => {
     const html = render(true)
     const dodaj = html.match(/<a[^>]*href="\/dodaj"[^>]*>.*?<\/a>/)?.[0] ?? ''
     expect(dodaj).toContain('aria-label="Dodaj przepis"')
-    expect(dodaj).toContain('>Dodaj</a>')
+    // "Dodaj" below lg; the desktop header (E01-S17, A9) appends " przepis" from lg only.
+    expect(dodaj).toContain('>Dodaj<span class="-ml-1.5 hidden lg:inline">')
     expect(dodaj).toContain('h-14 w-16')
     expect(dodaj).toContain('flex-col')
     expect(dodaj).toContain('bg-action')

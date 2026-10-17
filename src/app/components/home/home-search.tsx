@@ -23,6 +23,8 @@ interface HomeSearchProps {
   scope?: SearchScope
   label?: string
   autoFocus?: boolean
+  /** Centre the field row from lg (the guest hero, E01-S17). */
+  centered?: boolean
 }
 
 /**
@@ -37,6 +39,7 @@ export function HomeSearch({
   scope = 'wszystkie',
   label = 'Szukaj przepisu po nazwie lub składniku',
   autoFocus,
+  centered,
 }: HomeSearchProps) {
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -89,7 +92,9 @@ export function HomeSearch({
         {label}
       </label>
       {scope !== 'wszystkie' && <input type="hidden" name="zakres" value={scope} />}
-      <div className="flex gap-2">
+      {/* Below lg the submit wraps to its own full-width line (gap-y = the old mt-3);
+          from lg (E01-S17, A8) it sits inline in a 760×64 row. */}
+      <div className={`flex flex-wrap gap-x-2 gap-y-3 lg:max-w-[760px] ${centered ? 'lg:mx-auto' : ''}`}>
         <input
           ref={inputRef}
           id={id}
@@ -102,27 +107,28 @@ export function HomeSearch({
           autoComplete="off"
           onInput={() => setMicState((prev) => (prev === 'error' ? 'idle' : prev))}
           placeholder="np. sernik, pierogi"
-          className="h-[60px] min-w-0 flex-1 rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink placeholder:text-ink-muted"
+          className="h-[60px] min-w-0 flex-1 rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink placeholder:text-ink-muted lg:h-16"
         />
         {micSupported && (
           <button
             type="button"
             onClick={toggleMic}
             aria-pressed={micState === 'listening'}
-            className="inline-flex h-[60px] shrink-0 items-center gap-1.5 rounded-field border-2 border-field bg-white px-3 text-[17px] font-bold text-ink hover:bg-surface-3"
+            className="inline-flex h-[60px] shrink-0 items-center gap-1.5 rounded-field border-2 border-field bg-white px-3 text-[17px] font-bold text-ink hover:bg-surface-3 lg:h-16"
           >
             <Mic aria-hidden="true" className="h-5 w-5" />
             Mów
           </button>
         )}
+        <button type="submit" className={`${buttonClasses('primary', 'lg')} w-full text-[19px] lg:h-16 lg:w-auto lg:px-8`}>
+          <Search aria-hidden="true" className="h-5 w-5" />
+          <span className="lg:hidden">Szukaj przepisu</span>
+          <span className="hidden lg:inline">Szukaj</span>
+        </button>
       </div>
       <p role="status" aria-live="polite" className="mt-2 text-[16px] text-ink-soft empty:sr-only">
         {MIC_STATUS[micState]}
       </p>
-      <button type="submit" className={`${buttonClasses('primary', 'lg')} mt-3 w-full text-[19px]`}>
-        <Search aria-hidden="true" className="h-5 w-5" />
-        Szukaj przepisu
-      </button>
       {defaultValue && (
         <div className="mt-1 flex justify-end">
           <Link
