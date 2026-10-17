@@ -103,6 +103,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function ProfilePage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   const { username: rawUsername } = await params
   const username = decodeParam(rawUsername)
+  // Auth is independent of the profile reads; start it now instead of after them.
+  const userPromise = getCurrentUser()
   const data = await loadProfile(username)
   if (!data) notFound()
 
@@ -111,7 +113,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
   const category = parseProfileCategory(query.kategoria, categories)
   const page = parseProfilePage(query.strona)
   const shown = page * PROFILE_PAGE_SIZE
-  const user = await getCurrentUser()
+  const user = await userPromise
   const isOwner = isProfileOwner(user?.id, profile.id)
 
   let recipes: {

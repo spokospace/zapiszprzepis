@@ -61,6 +61,8 @@ const MONTHS_GENITIVE = [
   'grudnia',
 ]
 
+const MONTH_YEAR_WARSAW = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', month: 'numeric', year: 'numeric' })
+
 /**
  * "października 2026" for "W ZapiszPrzepis od …". Uses the earlier of the
  * profile's creation and the person's oldest recipe: profiles.created_at is the
@@ -72,8 +74,7 @@ export function memberSinceLabel(profileCreatedAt: string, oldestRecipeCreatedAt
   const recipe = oldestRecipeCreatedAt ? new Date(oldestRecipeCreatedAt) : null
   const since = recipe && recipe < profile ? recipe : profile
   // Europe/Warsaw, not the server's zone: a midnight-UTC date must not slip a month.
-  const [month, year] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', month: 'numeric', year: 'numeric' })
-    .format(since)
+  const [month, year] = MONTH_YEAR_WARSAW.format(since)
     .split('/')
   return `${MONTHS_GENITIVE[Number(month) - 1]} ${year}`
 }
