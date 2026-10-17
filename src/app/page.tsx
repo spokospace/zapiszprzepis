@@ -1,5 +1,6 @@
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
+import { getMenuSummary } from '@/lib/menu-summary'
 import { homeGreeting } from '@/lib/home'
 import { AppHeader } from '@/app/components/app-header'
 import { AddRecipeForm } from '@/app/components/add-recipe-form'
@@ -22,18 +23,20 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const user = await getCurrentUser()
 
   // Public since E01-S02: a guest sees the home too; the signed-in home (C1) has no feed.
-  const [failedShares, recentRecipes] = await Promise.all([
+  // The menu summary (E01-S09) also carries the full-access flag the tiles use.
+  const [failedShares, menu, recentRecipes] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
+    getMenuSummary(supabase, user),
     user ? [] : getRecentPublicRecipes(supabase),
   ])
 
   return (
     <>
-      <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} />
+      <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} menu={menu} />
       <main className="min-h-screen bg-white pb-10">
         {/* E01-S15 slot: the "N przepisów wymaga uwagi" notifications banner goes here. */}
         {user ? (
-          <MemberHome addError={add_error} />
+          <MemberHome addError={add_error} hasFullAccess={menu?.hasFullAccess ?? true} />
         ) : (
           <GuestHome recentRecipes={recentRecipes} />
         )}
@@ -100,12 +103,9 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
   )
 }
 
-function MemberHome({ addError }: { addError?: string }) {
-  // Interim inputs until their stories land: E01-S12 supplies the vocative
-  // (null → "Dzień dobry!"), E01-S11 the full-access flag (no add gate exists
-  // before it, so every signed-in user has full access today).
+function MemberHome({ addError, hasFullAccess }: { addError?: string; hasFullAccess: boolean }) {
+  // Interim until E01-S12 lands: it supplies the vocative (null → "Dzień dobry!").
   const vocative: string | null = null
-  const hasFullAccess = true
 
   return (
     <PageContainer className="flex flex-col gap-8 pt-6">
