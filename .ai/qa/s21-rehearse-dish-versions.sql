@@ -80,7 +80,7 @@ begin
   select count(*)::int into total from public.dish_versions(rid1);
   t_rows := case when total = 2 then 'ok' else 'FAIL:' || total end;
 
-  select v.id, v.total_count into first_id, total from public.dish_versions(rid1)
+  select v.id, v.total_count into first_id, total from public.dish_versions(rid1) v
   order by v.favorites_count desc, v.created_at desc, v.id desc limit 1;
   t_order := case when first_id = rid2 then 'ok' else 'FAIL:first=' || coalesce(first_id::text, 'null') end;
   t_total := case when total = 2 then 'ok' else 'FAIL:' || coalesce(total::text, 'null') end;
