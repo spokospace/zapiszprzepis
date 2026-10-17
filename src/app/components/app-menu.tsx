@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation'
 import { BookOpen, Heart, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { buttonClasses } from '@/app/components/ui/button'
-import { categoryHref, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { categoryPath } from '@/lib/routes'
 import type { MenuSummary } from '@/lib/menu-summary'
 import { buildMenuModel, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
 
@@ -159,7 +160,7 @@ export function AppMenu({
               </h3>
               <ul className="grid grid-cols-2 gap-2 px-5">
                 {RECIPE_CATEGORIES.map(({ value, label }) => {
-                  const href = categoryHref(value)
+                  const href = categoryPath(value)
                   const active = pathname === href
                   return (
                     <li key={value}>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { recipePath, isPublicRoute, RECIPE_PAGE_RE, PRZEPIS_PAGE_RE, legacyRecipePathToCanonical } from './routes'
+import { categoryPath, recipePath, isPublicRoute, RECIPE_PAGE_RE, PRZEPIS_PAGE_RE, legacyRecipePathToCanonical } from './routes'
 
 describe('recipePath', () => {
   it('builds the canonical /przepis/{slug} path', () => {
@@ -54,7 +54,9 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/recipes/tiramisu')).toBe(true)
   })
 
-  it('allows a category listing, linked from the guest MENU (E01-S09)', () => {
+  it('allows the category listing categoryPath builds (E01-S09)', () => {
+    expect(categoryPath('sniadania')).toBe('/kategoria/sniadania')
+    expect(isPublicRoute(categoryPath('sniadania'))).toBe(true)
     expect(isPublicRoute('/kategoria/zupy')).toBe(true)
     expect(isPublicRoute('/kategoria')).toBe(false)
     expect(isPublicRoute('/kategoria/zupy/x')).toBe(false)

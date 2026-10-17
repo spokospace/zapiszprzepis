@@ -12,6 +12,16 @@ export const PRZEPIS_PAGE_RE = /^\/przepis\/[^/]+$/
 const KATEGORIA_PAGE_RE = /^\/kategoria\/[^/]+$/
 
 /**
+ * The public listing of one category (E01-S09), shared by the MENU drawer and
+ * the home category tiles (E01-S04), so both move together if the listing
+ * moves (e.g. onto /szukaj, E01-S05). Public on purpose: /recipes?category=
+ * is owner-only and would bounce a guest to /login.
+ */
+export function categoryPath(category: string): string {
+  return `/kategoria/${encodeURIComponent(category)}`
+}
+
+/**
  * The canonical path to a recipe. Encodes the slug once; the single place every
  * link builder goes through, so the URL shape changes in one spot (E01-S03b).
  */

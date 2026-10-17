@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { categoryHref, categoryLabel, isRecipeCategory, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
+import { categoryLabel, isRecipeCategory, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 
 // recipes.category is a strict enum: whatever the LLM returns must be mapped
 // onto it, or the insert fails and the extraction is lost (#134).
@@ -49,14 +49,10 @@ describe('categoryLabel', () => {
   })
 })
 
-describe('isRecipeCategory / categoryHref', () => {
+describe('isRecipeCategory', () => {
   it('accepts every listed value and rejects anything else', () => {
     for (const { value } of RECIPE_CATEGORIES) expect(isRecipeCategory(value)).toBe(true)
     expect(isRecipeCategory('kolacje')).toBe(false)
     expect(isRecipeCategory('Zupy')).toBe(false)
-  })
-
-  it('points at the public category listing', () => {
-    expect(categoryHref('zupy')).toBe('/kategoria/zupy')
   })
 })
