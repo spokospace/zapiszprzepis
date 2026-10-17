@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PRIVACY_POLICY_PATH } from '@/lib/routes'
-import { Fill, LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
+import { LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
 
 export const metadata: Metadata = {
   title: 'Usuwanie danych — ZapiszPrzepis',
@@ -22,7 +22,7 @@ export default function DataDeletionPage() {
         </p>
         <ol className="flex list-decimal flex-col gap-2 pl-6">
           <li>
-            Napisz na adres <Fill>adres e-mail do kontaktu</Fill> z tematem „Usunięcie konta”.
+            Napisz na adres <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a> z tematem „Usunięcie konta”.
           </li>
           <li>
             Wyślij wiadomość z adresu e-mail, którego używasz do logowania (przy Facebooku lub Google: z adresu
