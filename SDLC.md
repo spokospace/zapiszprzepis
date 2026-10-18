@@ -82,6 +82,8 @@ One label lives outside this taxonomy: `do-not-close`, applied by humans to issu
 
 ## The QA gate
 
+> **In this repository the QA gate is off** (`qaGate: false` in `.ai/agentic.config.json`). There is one GitHub account (`spokospace`), so a PR may merge once the validation gate passes and `needs-qa` is advisory. See "One account" in `CLAUDE.md`. The rest of this section describes the gate as it works when `qaGate` is on.
+
 The one hard rule of this process: **a PR carrying `needs-qa` must not merge until it also carries `qa-approved`, even when every other check is green.** `om-merge-buddy` classifies such a PR as blocked; `om-approve-merge-pr` refuses to merge it.
 
 - Apply `needs-qa` to UI changes, new features, and other user-facing behavior that needs manual exercise.
