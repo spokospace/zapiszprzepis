@@ -15,8 +15,8 @@ describe('CardCarousel', () => {
     const ul = html.match(/<ul id="([^"]+)" class="([^"]+)"/)
     expect(ul?.[2]).toMatch(/(^| )overflow-x-auto( |$)/)
     expect(ul?.[2]).toContain('snap-x')
-    expect(ul?.[2]).toContain('sm:grid sm:grid-cols-2')
-    expect(ul?.[2]).toContain('lg:grid-cols-4')
+    expect(ul?.[2]).toMatch(/(^| )sm:grid( |$)/)
+    expect(ul?.[2]).toMatch(/(^| )sm:grid-cols-2 lg:grid-cols-4( |$)/)
     expect(html.match(/<li class="w-3\/4 shrink-0 snap-start sm:w-auto"><article>/g)).toHaveLength(3)
   })
 
@@ -39,5 +39,17 @@ describe('CardCarousel', () => {
     expect(prev).toContain('aria-disabled="true"')
     expect(next).toContain('aria-disabled="false"')
     expect(prev).not.toMatch(/\sdisabled(=|\s|>)/)
+  })
+})
+
+describe('CardCarousel rows layout', () => {
+  it('lays out wide cards one a row from sm and two from lg, with room for a card focus ring', () => {
+    const rows = renderToStaticMarkup(
+      createElement(CardCarousel, { label: 'Inne przepisy', layout: 'rows', items: [{ key: 1, card: 'x' }] }),
+    )
+    const cls = rows.match(/<ul id="[^"]+" class="([^"]+)"/)?.[1] ?? ''
+    expect(cls).toMatch(/(^| )sm:grid-cols-1 sm:gap-6 lg:grid-cols-2( |$)/)
+    expect(cls).not.toContain('lg:grid-cols-4')
+    expect(cls).toMatch(/(^| )-mt-2 .*(^| )pt-2( |$)/)
   })
 })

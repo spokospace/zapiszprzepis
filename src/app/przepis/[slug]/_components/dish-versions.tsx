@@ -20,6 +20,7 @@ interface DishVersionsProps {
  */
 export function DishVersions({ versions, totalCount, dishAccusative, order, current }: DishVersionsProps) {
   if (versions.length === 0) return null
+  const heading = versionsHeading(totalCount, dishAccusative)
   return (
     <section aria-labelledby="inne-przepisy" className="mb-12 border-t border-border-card pt-8">
       <h2
@@ -27,10 +28,10 @@ export function DishVersions({ versions, totalCount, dishAccusative, order, curr
         tabIndex={-1}
         className="mb-1 scroll-mt-4 text-[26px] font-bold text-ink focus:outline-none"
       >
-        {versionsHeading(totalCount, dishAccusative)}
+        {heading}
       </h2>
       <p className="mb-4 text-[16px] text-ink-soft">Różnice w porównaniu z przepisem, który oglądasz.</p>
-      <DishVersionsSort versions={versions} initialOrder={order} current={current} />
+      <DishVersionsSort versions={versions} initialOrder={order} current={current} label={heading} />
     </section>
   )
 }
