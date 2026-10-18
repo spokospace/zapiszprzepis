@@ -515,6 +515,11 @@ function wixFullSize(url: URL): string | null {
   return file ? `${url.origin}${file}/v1/fit/w_1600,h_1600,q_85/${file.slice('/media/'.length)}` : null
 }
 
+// Symfony's LiipImagine: `/media/cache/<filter>/uploads/…` (or
+// `/media/cache/resolve/<filter>/…`) is one upload rendered by a named filter;
+// mojegotowanie.pl's og:image is `big`, the same photo in the post `default_big_format`.
+const LIIP_FILTER_SEGMENT_RE = /\/media\/cache\/(?:resolve\/)?[^/]+\//
+
 /**
  * Identity of a photo across its renditions — the same file at another size
  * or on another CDN edge (`scontent-waw2-1` vs `-2`) is one photo.
@@ -524,6 +529,7 @@ function photoKey(url: string): string {
     const { hostname, pathname } = new URL(url)
     return (hostname === WIX_HOST ? pathname.replace(WIX_RENDITION_RE, '$1') : pathname)
       .toLowerCase()
+      .replace(LIIP_FILTER_SEGMENT_RE, '/')
       .replace(BLOGGER_SIZE_SEGMENT_RE, '/')
       .replace(WP_RESIZE_SUFFIX_RE, '')
       .replace(/-scaled(?=\.\w+$)/, '')
@@ -537,9 +543,12 @@ function photoKey(url: string): string {
 // sidebars. Matched against whole `-`/`_`-separated words, so kuron's
 // `jku-similar-posts-wrapper` and `empik-banner` match, while its
 // `UFICommentBody` — a Facebook post pasted into the recipe, the dish's photos
-// included — does not.
+// included — does not. Burda Media's shop-offer box (mojegotowanie.pl) hides
+// behind obfuscated class names; only its `ecomm-boxd` wrapper and
+// `discount-code` cards name it, and their shop logos are photo-sized.
 const NOISE_SECTION_WORDS = new Set([
   'ad', 'ads', 'advert', 'advertisement', 'reklama', 'banner', 'sponsor', 'sponsored',
+  'ecomm', 'discount',
   'related', 'similar', 'recommended', 'popular',
   'comment', 'comments', 'author', 'sidebar', 'widget', 'newsletter',
   'printfriendly',
