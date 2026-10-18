@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   classifyExisting,
   findExistingRecipeForUrl,
+  findRecipeByYoutubeId,
   findSameRecipe,
   ingredientFingerprint,
   ingredientKey,
@@ -178,7 +179,7 @@ function makeClient(rows: Record<string, unknown>) {
   const calls: Call[] = []
   const from = (table: string) => {
     const chain: Record<string, unknown> = {}
-    for (const method of ['select', 'eq', 'like', 'limit']) {
+    for (const method of ['select', 'eq', 'like', 'limit', 'order']) {
       chain[method] = (...args: unknown[]) => {
         calls.push({ table, method, args })
         return chain
@@ -238,5 +239,34 @@ describe('findExistingRecipeForUrl — one recipe per link across the site', () 
 
     const fresh = makeClient({})
     expect(await findExistingRecipeForUrl(fresh.client, USER, 'https://example.com/x')).toMatchObject({ status: 'new' })
+  })
+})
+
+describe('findRecipeByYoutubeId — the same film under another link', () => {
+  it('matches any recipe carrying the video id for a video share', async () => {
+    const { client, calls } = makeClient({ recipes: { id: 368, slug: 'babeczki-lesny-mech' } })
+
+    expect(await findRecipeByYoutubeId(client, 'dQw4w9WgXcQ', { fromVideo: true })).toMatchObject({ id: 368 })
+    expect(calls.filter((c) => c.method === 'eq')).toEqual([{ table: 'recipes', method: 'eq', args: ['youtube_id', 'dQw4w9WgXcQ'] }])
+  })
+
+  it("matches only the video's own recipe for a page that embeds it", async () => {
+    const { client, calls } = makeClient({})
+
+    expect(await findRecipeByYoutubeId(client, 'dQw4w9WgXcQ', { fromVideo: false })).toBeNull()
+    expect(calls).toContainEqual({ table: 'recipes', method: 'eq', args: ['source_type', 'youtube'] })
+  })
+
+  it('throws when the lookup fails, rather than reading it as no match', async () => {
+    const { client } = makeClient({})
+    const failing = {
+      from: (table: string) => {
+        const chain = (client as { from: (t: string) => Record<string, unknown> }).from(table)
+        chain.maybeSingle = async () => ({ data: null, error: { message: 'timeout' } })
+        return chain
+      },
+    } as never
+
+    await expect(findRecipeByYoutubeId(failing, 'dQw4w9WgXcQ', { fromVideo: true })).rejects.toThrow('YouTube lookup failed: timeout')
   })
 })

@@ -67,3 +67,8 @@ context/foundation/test-accounts.md
 
 # Supabase personal access token written by the CLI into the working dir — a secret.
 .sbp_token
+
+# Recipe fix batches carry recipe text from third-party sites — never commit them
+# (public repo). Only the list of reviewed ids is tracked.
+scripts/data-fixes/*
+!scripts/data-fixes/steps-reviewed.json

@@ -218,6 +218,28 @@ export async function findSameRecipe(
   return null
 }
 
+/**
+ * The recipe saved for the same YouTube video under another link: a blog post
+ * that embeds the film, or the film itself. A video share matches any recipe
+ * carrying its id; a page that only embeds the video matches the video's own
+ * recipe, never another page embedding it too — a roundup can embed someone
+ * else's film. Anyone's recipe: the site-wide form needs the service key.
+ */
+export async function findRecipeByYoutubeId(
+  supabase: SupabaseClient,
+  youtubeId: string,
+  { fromVideo }: { fromVideo: boolean },
+): Promise<SavedRecipe | null> {
+  const query = supabase.from('recipes').select(SAVED_RECIPE_COLUMNS).eq('youtube_id', youtubeId)
+  const { data, error } = await (fromVideo ? query : query.eq('source_type', 'youtube'))
+    .order('id')
+    .limit(1)
+    .maybeSingle()
+  // A failed lookup is not a miss: saving here would make the duplicate this guards against.
+  if (error) throw new Error(`YouTube lookup failed: ${error.message}`)
+  return data
+}
+
 /** The recipe saved from the same author text (see fingerprintText): the user's own when `userId` is given, else anyone's. */
 export async function findRecipeBySourceFingerprint(
   supabase: SupabaseClient,

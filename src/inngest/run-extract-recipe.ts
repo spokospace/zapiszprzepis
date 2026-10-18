@@ -12,13 +12,21 @@ import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutu
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { publicFacebookAuthor } from '@/lib/facebook-authors'
-import { classifyExisting, findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe, ingredientFingerprint } from '@/lib/recipe-dedup'
+import {
+  classifyExisting,
+  findRecipeBySourceFingerprint,
+  findRecipeBySourceUrl,
+  findRecipeByYoutubeId,
+  findSameRecipe,
+  ingredientFingerprint,
+} from '@/lib/recipe-dedup'
 import { insertFavorite } from '@/lib/favorites'
 import { fingerprintText } from '@/lib/source-fingerprint'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
+import { STEP_FORM_RULE } from '@/lib/step-form'
 import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantNoteSibling } from '@/lib/recipe-dish'
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
 import { jsonLdServings, toServings } from '@/lib/servings'
@@ -370,6 +378,17 @@ export async function runExtractRecipe(
     // page embeds a player (found in the Blogger feed html / the embed scan).
     const youtubeId = youtubeIdFromUrl(sharedUrl) ?? findEmbeddedYoutubeId(embedHtml || html)
 
+    // The same film saved under another link — the video itself, or a blog
+    // post that embeds it (see findRecipeByYoutubeId). Before the junk
+    // gate too: a page whose only content is the embedded player is still that film.
+    if (!forceRefresh && youtubeId != null) {
+      const sameVideo = await findRecipeByYoutubeId(supabase, youtubeId, { fromVideo: sourceType === 'youtube' })
+      if (sameVideo) {
+        console.log('[extract-recipe] same YouTube video already saved:', sameVideo.slug)
+        return await linkToSaved(sameVideo)
+      }
+    }
+
     // Fail fast on junk (Google Translate interstitial, empty main content)
     // before spending an OpenAI call — throwing lets Inngest retry, since the
     // junk is usually transient, and yields a clear error if it persists.
@@ -453,11 +472,14 @@ Rules:
 - Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml).
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
-- Category: cookies, biscuits, gingerbread cookies and macarons ("ciasteczka", "herbatniki", "pierniczki", "makaroniki") are "ciasteczka". Cakes, tortes, cheesecakes, gingerbread cakes, sponge cakes, muffins/cupcakes and apple pies ("ciasto", "tort", "sernik", "piernik", "biszkopt", "babeczki", "szarlotka", "mazurek", "babka", named layer cakes like "Marysieńka") are "ciasta". Reserve "desery" for non-cake sweets only: ice cream, doughnuts ("pączki"), choux ("ptysie"), tiramisu, creams/mousses, jellies ("galaretka"), yeast buns ("drożdżówki", "rogaliki").
-- Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast bakes (drożdżówki, rogaliki z dżemem) stay "desery"/"ciasteczka".
+- Category: cookies, biscuits, gingerbread cookies, macarons and crescent rolls ("ciasteczka", "herbatniki", "pierniczki", "makaroniki", "rogaliki", "faworki") are "ciasteczka". Cakes, tortes, cheesecakes, gingerbread cakes, sponge cakes and apple pies ("ciasto", "tort", "sernik", "piernik", "biszkopt", "szarlotka", "mazurek", "babka", named layer cakes like "Marysieńka", no-bake layer cakes "bez pieczenia") are "ciasta". Reserve "desery" for non-cake sweets only: sweet muffins and cupcakes ("babeczki", "muffiny"), ice cream, doughnuts ("pączki"), choux ("ptysie"), tiramisu, creams/mousses, jellies ("galaretka"), sweet yeast buns ("drożdżówki", "jagodzianki", "ślimaczki").
+- Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast buns (drożdżówki, jagodzianki) stay "desery", rogaliki "ciasteczka".
+- Category: salads and slaws ("sałatka", "surówka", "coleslaw") are "salatki", not "przekaski" or "inne"; preserves in jars for winter ("na zimę") are "inne".
 - Category: homemade syrups, tinctures and herbal remedies made for health ("syrop na odporność/na kaszel", "mikstura na zatoki", "napar prozdrowotny") are "syropy". Everyday drinks (lemoniada, herbata, kompot, soki, koktajle) stay "napoje".
 - Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
+- Title names the dish the way a menu would: not a question or how-to ("Jak zrobić domowe lody?" → "Domowe lody"), no praise words ("najlepszy", "pyszny", "idealny"), no first person ("moje", "mojej mamy") and no add-ons like "+ przepis na lukier". Proper names keep their capitals ("Prince Polo", "KFC", "Boże Narodzenie").
 - Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
+- ${STEP_FORM_RULE}
 - Return null for any non-time field the source does not specify. Do not guess.
 - Times stated in the source, or computed from durations it states (a sum of step times, a stated "razem 1,5 godz"), are source data: set "timesEstimated" to false.
 - When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
@@ -702,8 +724,9 @@ Rules:
           tags,
           ingredient_fingerprint: ingredientFp,
           source_type: sourceType,
-          youtube_id: youtubeId,
-          // Keep the author a previous run found when this one saw none.
+          // Keep the video and the author a previous run found when this one
+          // saw none (an embed the page no longer renders, a header it lost).
+          ...(youtubeId != null ? { youtube_id: youtubeId } : {}),
           ...(sourceAuthor != null ? { source_author: sourceAuthor } : {}),
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,

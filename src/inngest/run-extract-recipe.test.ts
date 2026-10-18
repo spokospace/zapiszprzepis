@@ -229,6 +229,51 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(mock.insertArgs('recipes')?.title).toBe('Naleśniki')
   })
 
+  it('asks for steps as impersonal infinitive instructions, not the author narration', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
+    expect(system).toContain('Steps are short, plain instructions in Polish')
+    expect(system).toContain('"Pokroić mięso w kostkę."')
+    expect(system).toContain('"pokroiłam", "zeszkliłam"')
+    expect(system).toContain('"Następnie", "Potem"')
+  })
+
+  it('files sweet cupcakes and muffins under desserts, not cakes', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
+    const cakes = system.slice(system.indexOf('Cakes, tortes'), system.indexOf('Reserve "desery"'))
+    expect(cakes).not.toContain('babeczki')
+    expect(system).toContain('Reserve "desery" for non-cake sweets only: sweet muffins and cupcakes ("babeczki", "muffiny")')
+    expect(system).toContain('"rogaliki", "faworki") are "ciasteczka"')
+    expect(system).toContain('salads and slaws ("sałatka", "surówka", "coleslaw") are "salatki"')
+  })
+
+  it('asks for a title that names the dish, not a how-to question or praise', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
+    expect(system).toContain('("Jak zrobić domowe lody?" → "Domowe lody")')
+    expect(system).toContain('no praise words ("najlepszy", "pyszny", "idealny")')
+    expect(system).toContain('no first person ("moje", "mojej mamy")')
+  })
+
   it('fails with a Polish message, not a SyntaxError, when the answer is not JSON', async () => {
     const mock = makeSupabaseMock()
 
@@ -730,6 +775,41 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
     const prompt = JSON.parse(String(openaiCall?.[1]?.body)).messages[1].content
     expect(prompt).toContain('2 szklanki wiórków')
     expect(prompt).not.toContain('Website Unavailable')
+  })
+})
+
+describe('runExtractRecipe — the same YouTube video under another link', () => {
+  const VIDEO = 'dQw4w9WgXcQ'
+  const videoEvent = { ...BASE_EVENT, sharedUrl: `https://www.youtube.com/watch?v=${VIDEO}`, sourceType: 'youtube' as const }
+
+  it('links a video share to the saved blog recipe that embeds it, before any LLM call', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { id: 298, slug: 'babeczki', title: 'Babeczki', category: 'desery', user_id: 'user-1' }, error: null })
+    const fetch = makeFetchMock()
+
+    const result = await runExtractRecipe(videoEvent, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 298, status: 'duplicate' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('openai.com'))).toBe(false)
+  })
+
+  it('extracts the video when no recipe carries its id', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 8 }, error: null })
+
+    await runExtractRecipe(videoEvent, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ youtube_id: VIDEO })
+  })
+
+  it('keeps the stored video on a refresh that finds none', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.updateArgs('recipes')[0]).not.toHaveProperty('youtube_id')
   })
 })
 
