@@ -229,6 +229,20 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(mock.insertArgs('recipes')?.title).toBe('Naleśniki')
   })
 
+  it('asks for steps as impersonal infinitive instructions, not the author narration', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
+    expect(system).toContain('Steps are impersonal instructions in Polish')
+    expect(system).toContain('"Pokroić mięso w kostkę."')
+    expect(system).toContain('"pokroiłam", "zeszkliłam"')
+  })
+
   it('fails with a Polish message, not a SyntaxError, when the answer is not JSON', async () => {
     const mock = makeSupabaseMock()
 
