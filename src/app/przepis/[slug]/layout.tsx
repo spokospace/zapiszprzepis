@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
+import { recipePath } from '@/lib/routes'
 import { loadRecipe } from './load-recipe'
+import { findMergedRecipeSlug } from './merged-redirect'
 
 /**
  * Answers a missing recipe with a real 404 (#227). loading.tsx streams the skeleton
@@ -8,6 +10,9 @@ import { loadRecipe } from './load-recipe'
  * started, so the existence check runs here, above it. The lookup is the page's own
  * (React cache()), so this adds no query. In-app navigation still shows the skeleton
  * at once: a prefetch renders this layout ahead of the click.
+ *
+ * A link to a duplicate since folded into another recipe redirects there
+ * (308) instead — decided here for the same reason, before streaming starts.
  */
 export default async function RecipeLayout({
   children,
@@ -20,6 +25,8 @@ export default async function RecipeLayout({
   const { recipe, error } = await loadRecipe(slug)
   if (error || !recipe) {
     if (error) console.error('[recipe] Query error:', error)
+    const mergedInto = error ? null : await findMergedRecipeSlug(slug)
+    if (mergedInto) permanentRedirect(recipePath(mergedInto))
     notFound()
   }
   return children
