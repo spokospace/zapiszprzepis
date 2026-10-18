@@ -378,6 +378,17 @@ export async function runExtractRecipe(
     // page embeds a player (found in the Blogger feed html / the embed scan).
     const youtubeId = youtubeIdFromUrl(sharedUrl) ?? findEmbeddedYoutubeId(embedHtml || html)
 
+    // The same film saved under another link — the video itself, or a blog
+    // post that embeds it (see findRecipeByYoutubeId). Before the junk
+    // gate too: a page whose only content is the embedded player is still that film.
+    if (!forceRefresh && youtubeId != null) {
+      const sameVideo = await findRecipeByYoutubeId(supabase, youtubeId, { fromVideo: sourceType === 'youtube' })
+      if (sameVideo) {
+        console.log('[extract-recipe] same YouTube video already saved:', sameVideo.slug)
+        return await linkToSaved(sameVideo)
+      }
+    }
+
     // Fail fast on junk (Google Translate interstitial, empty main content)
     // before spending an OpenAI call — throwing lets Inngest retry, since the
     // junk is usually transient, and yields a clear error if it persists.
@@ -414,16 +425,6 @@ export async function runExtractRecipe(
       if (sameText) {
         console.log('[extract-recipe] same post text already saved:', sameText.slug)
         return await linkToSaved(sameText)
-      }
-    }
-
-    // The same film saved under another link — the video itself, or a blog
-    // post that embeds it (see findRecipeByYoutubeId). Before any LLM call.
-    if (!forceRefresh && youtubeId != null) {
-      const sameVideo = await findRecipeByYoutubeId(supabase, youtubeId, { fromVideo: sourceType === 'youtube' })
-      if (sameVideo) {
-        console.log('[extract-recipe] same YouTube video already saved:', sameVideo.slug)
-        return await linkToSaved(sameVideo)
       }
     }
 

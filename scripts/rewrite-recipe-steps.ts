@@ -39,14 +39,26 @@ const all = process.argv.includes('--all')
 const slug = argValue('--slug')
 const sqlFile = argValue('--sql')
 const fromFile = argValue('--from')
-const limit = argValue('--limit') ? Number(argValue('--limit')) : undefined
+const rawLimit = argValue('--limit')
+const limit = rawLimit === undefined ? undefined : Number(rawLimit)
+if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) {
+  console.error('✗ --limit must be a positive integer.')
+  process.exit(1)
+}
 // Parallel model calls: a few hundred recipes in minutes, well under the rate limit.
 const CONCURRENCY = 5
 const PAGE = 1000
 
+/** The operand after `flag`; a flag given without one stops the script rather than being ignored. */
 function argValue(flag: string): string | undefined {
   const i = process.argv.indexOf(flag)
-  return i >= 0 ? process.argv[i + 1] : undefined
+  if (i < 0) return undefined
+  const value = process.argv[i + 1]
+  if (value === undefined || value.startsWith('-')) {
+    console.error(`✗ ${flag} requires a value.`)
+    process.exit(1)
+  }
+  return value
 }
 
 /** A public var from wrangler.jsonc (the Supabase URL, the publishable key). */
@@ -164,9 +176,17 @@ async function main(): Promise<void> {
   }
 
   if (apply) {
+    // Guarded by the steps read above, like the SQL path: a recipe edited
+    // while the model rewrote it keeps the newer steps.
     for (const { row, steps } of changed) {
-      const { error } = await supabase.from('recipes').update({ steps }).eq('id', row.id)
+      const { data, error } = await supabase
+        .from('recipes')
+        .update({ steps })
+        .eq('id', row.id)
+        .eq('steps', JSON.stringify(row.steps))
+        .select('id')
       if (error) console.error(`  ✗ ${row.id}: ${error.message}`)
+      else if (!data?.length) console.error(`  ⚠ ${row.id}: steps changed since they were read, left as they are`)
     }
   }
 

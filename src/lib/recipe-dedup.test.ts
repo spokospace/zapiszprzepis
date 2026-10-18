@@ -256,4 +256,17 @@ describe('findRecipeByYoutubeId — the same film under another link', () => {
     expect(await findRecipeByYoutubeId(client, 'dQw4w9WgXcQ', { fromVideo: false })).toBeNull()
     expect(calls).toContainEqual({ table: 'recipes', method: 'eq', args: ['source_type', 'youtube'] })
   })
+
+  it('throws when the lookup fails, rather than reading it as no match', async () => {
+    const { client } = makeClient({})
+    const failing = {
+      from: (table: string) => {
+        const chain = (client as { from: (t: string) => Record<string, unknown> }).from(table)
+        chain.maybeSingle = async () => ({ data: null, error: { message: 'timeout' } })
+        return chain
+      },
+    } as never
+
+    await expect(findRecipeByYoutubeId(failing, 'dQw4w9WgXcQ', { fromVideo: true })).rejects.toThrow('YouTube lookup failed: timeout')
+  })
 })

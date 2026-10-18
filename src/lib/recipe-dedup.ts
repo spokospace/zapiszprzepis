@@ -231,10 +231,12 @@ export async function findRecipeByYoutubeId(
   { fromVideo }: { fromVideo: boolean },
 ): Promise<SavedRecipe | null> {
   const query = supabase.from('recipes').select(SAVED_RECIPE_COLUMNS).eq('youtube_id', youtubeId)
-  const { data } = await (fromVideo ? query : query.eq('source_type', 'youtube'))
+  const { data, error } = await (fromVideo ? query : query.eq('source_type', 'youtube'))
     .order('id')
     .limit(1)
     .maybeSingle()
+  // A failed lookup is not a miss: saving here would make the duplicate this guards against.
+  if (error) throw new Error(`YouTube lookup failed: ${error.message}`)
   return data
 }
 

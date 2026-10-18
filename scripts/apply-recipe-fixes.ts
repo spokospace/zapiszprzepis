@@ -31,6 +31,24 @@ function wranglerVar(name: string): string | undefined {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 const holds = (row: Fields, fields: Fields) => Object.entries(fields).every(([k, v]) => same(row[k], v))
+const isFields = (v: unknown): v is Fields => typeof v === 'object' && v !== null && !Array.isArray(v) && Object.keys(v).length > 0
+
+/**
+ * The fixes in the file, or the reason it is refused — before anything is
+ * read or written. Every fix names its recipe and guards each field it sets
+ * with the value it expects there: an empty "where" would match any row.
+ */
+function parseFixes(raw: unknown): Fix[] | string {
+  if (!Array.isArray(raw)) return 'the file is not a list of fixes'
+  for (const [i, fix] of raw.entries()) {
+    const { id, where, set } = (fix ?? {}) as Partial<Fix>
+    if (!Number.isInteger(id) || (id as number) <= 0) return `fix ${i + 1}: "id" is not a recipe id`
+    if (!isFields(where) || !isFields(set)) return `fix ${i + 1} (#${id}): "where" and "set" must be non-empty objects`
+    const unguarded = Object.keys(set).filter((k) => !(k in where))
+    if (unguarded.length) return `fix ${i + 1} (#${id}): no expected value in "where" for ${unguarded.join(', ')}`
+  }
+  return raw as Fix[]
+}
 
 async function main(): Promise<void> {
   const file = process.argv.slice(2).find((a) => !a.startsWith('--'))
@@ -39,7 +57,11 @@ async function main(): Promise<void> {
     console.error('✗ Give the fixes file: pnpm apply:recipe-fixes <file.json> [--apply]')
     process.exit(1)
   }
-  const fixes = JSON.parse(readFileSync(file, 'utf8')) as Fix[]
+  const fixes = parseFixes(JSON.parse(readFileSync(file, 'utf8')))
+  if (typeof fixes === 'string') {
+    console.error(`✗ Nothing applied: ${fixes}.`)
+    process.exit(1)
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? wranglerVar('NEXT_PUBLIC_SUPABASE_URL')
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -80,9 +102,15 @@ async function main(): Promise<void> {
       const summary = Object.keys(fix.set).map((k) => (k === 'steps' ? 'steps' : `${k}: ${row[k]} → ${fix.set[k]}`))
       console.log(`#${fix.id} ${row.title} — ${summary.join('; ')}`)
       if (apply) {
-        const { error: updateError } = await supabase.from('recipes').update(fix.set).eq('id', fix.id)
-        if (updateError) {
-          skipped.push(`#${fix.id}: ${updateError.message}`)
+        // The update itself is guarded by "where" too, so a recipe edited
+        // between the read above and this write is left alone.
+        const guarded = Object.entries(fix.where).reduce(
+          (q, [k, v]) => (v === null ? q.is(k, null) : q.eq(k, typeof v === 'object' ? JSON.stringify(v) : (v as string))),
+          supabase.from('recipes').update(fix.set).eq('id', fix.id),
+        )
+        const { data: updated, error: updateError } = await guarded.select('id')
+        if (updateError || !updated?.length) {
+          skipped.push(`#${fix.id}: ${updateError?.message ?? 'changed while applying'}`)
           continue
         }
       }
