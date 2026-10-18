@@ -6,7 +6,8 @@ import { homeGreeting } from '@/lib/home'
 import { getGreetingName } from '@/lib/first-name'
 import { vocative } from '@/lib/vocative'
 import { AppHeader } from '@/app/components/app-header'
-import { CAROUSEL_CLASS, CAROUSEL_ITEM_CLASS, CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
+import { CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
+import { CardCarousel } from '@/app/components/card-carousel'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { PageContainer } from '@/app/components/page-container'
 import { HomeSearch } from '@/app/components/home/home-search'
@@ -105,10 +106,12 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
               href="/"
               items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
             />
-            <ul className={CAROUSEL_CLASS}>
-              {recentRecipes.map((r) => (
+            <CardCarousel
+              label="Ostatnio dodane"
+              items={recentRecipes.map((r) => ({
                 // id, not slug: the feed spans users, and the id is the stable key.
-                <li key={r.id} className={CAROUSEL_ITEM_CLASS}>
+                key: r.id,
+                card: (
                   <RecipeCard
                     from="home"
                     slug={r.slug}
@@ -122,9 +125,9 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
                     sizes={CAROUSEL_SIZES}
                     favorite={{ recipeId: r.id, favorited: false, isAuthenticated: false }}
                   />
-                </li>
-              ))}
-            </ul>
+                ),
+              }))}
+            />
           </section>
         )}
         <GuestCta />

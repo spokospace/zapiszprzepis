@@ -46,20 +46,6 @@ interface RecipeCardProps {
 export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
 
 /**
- * A row of tiles inside a page (home "Ostatnio dodane", recipe "Podobne"). On a
- * phone it is a swipeable strip running to the screen edges (it cancels
- * PageContainer's px-4), each card ~3/4 of the width so the next one peeks in;
- * from sm the 2-column grid, 4 from lg (E01-S17). Put each card in a
- * CAROUSEL_ITEM_CLASS <li>. The strip scrolls inside itself, so the page never
- * scrolls sideways; its links stay reachable with Tab, which scrolls them in.
- */
-export const CAROUSEL_CLASS =
-  '-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4 lg:gap-5'
-
-/** One card of CAROUSEL_CLASS: 3/4 of the screen on a phone, a grid cell from sm. */
-export const CAROUSEL_ITEM_CLASS = 'w-3/4 shrink-0 snap-start sm:w-auto'
-
-/**
  * The photo slot of a recipe without a photo: its category icon on the accent
  * tint, so a full-width slot on a phone does not read as an image that failed
  * to load. Decorative: the title and the category line name the recipe.
@@ -79,7 +65,7 @@ function NoPhoto({ category, iconClassName }: { category: string; iconClassName:
 // Tailwind's breakpoints and widths: with a larger browser font a grid keeps fewer
 // columns longer, and px values would then pick a blurry, too-small image.
 /**
- * CAROUSEL_CLASS (home „Ostatnio dodane”, Podobne): 3/4 of the strip on a phone,
+ * CardCarousel (home „Ostatnio dodane”, Podobne): 3/4 of the strip on a phone,
  * 0.75 × (100vw − 2rem); two a row from sm; four from lg, (68 − 3 × 1.25) / 4 ≈ 16.1rem (257 px).
  */
 export const CAROUSEL_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 40rem) 50vw, calc(75vw - 1.5rem)'

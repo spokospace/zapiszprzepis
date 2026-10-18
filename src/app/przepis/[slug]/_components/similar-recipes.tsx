@@ -6,7 +6,8 @@ import { rankSimilar, sharedTagsCaption, similarHeading, SIMILAR_LIMIT } from '@
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { chipClasses } from '@/app/components/ui/chip'
-import { CAROUSEL_CLASS, CAROUSEL_ITEM_CLASS, CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
+import { CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
+import { CardCarousel } from '@/app/components/card-carousel'
 import { dishExclusionFilter } from '@/lib/dish-versions'
 import type { RecipeSource } from '@/lib/recipe-source'
 
@@ -79,6 +80,7 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
   }
 
   const label = categoryLabel(recipe.category)
+  const heading = similarHeading(recipe.tags, similar, label)
   // "Wszystkie" only makes sense when the category holds more than this recipe.
   const showAll = similar.length > 0 || (total ?? 0) > 1
   if (recipe.tags.length === 0 && !showAll) return null
@@ -105,12 +107,14 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
       {similar.length > 0 && (
         <section aria-labelledby="podobne">
           <h2 id="podobne" className="mb-4 text-[26px] font-bold text-ink">
-            {similarHeading(recipe.tags, similar, label)}
+            {heading}
           </h2>
-          {/* A swipeable strip on a phone; two cards a row from sm, four from lg (E01-S17, A9). */}
-          <ul className={CAROUSEL_CLASS}>
-            {similar.map((r) => (
-              <li key={r.id} className={CAROUSEL_ITEM_CLASS}>
+          {/* A swipeable strip with buttons on a phone; two cards a row from sm, four from lg (E01-S17, A9). */}
+          <CardCarousel
+            label={heading}
+            items={similar.map((r) => ({
+              key: r.id,
+              card: (
                 <RecipeCard
                   slug={r.slug}
                   title={r.title}
@@ -123,9 +127,9 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
                   sourceAuthor={r.source_author}
                   sizes={CAROUSEL_SIZES}
                 />
-              </li>
-            ))}
-          </ul>
+              ),
+            }))}
+          />
         </section>
       )}
       {showAll && (

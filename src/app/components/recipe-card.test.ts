@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { CAROUSEL_CLASS, CAROUSEL_ITEM_CLASS, CAROUSEL_SIZES, RecipeCard, TILE_SIZES_1_TO_3 } from './recipe-card'
+import { CAROUSEL_SIZES, RecipeCard, TILE_SIZES_1_TO_3 } from './recipe-card'
 
 // The heart pulls in server actions; a marker shows where the card puts it.
 vi.mock('./favorite-button', () => ({
@@ -42,16 +42,6 @@ describe('RecipeCard without a photo', () => {
 
   it('falls back to the "Inne" icon for a category it does not know', () => {
     expect(card({ variant: 'list', category: 'nieznana' })).toContain('lucide-utensils-crossed')
-  })
-})
-
-describe('carousel row', () => {
-  it('is a snapping strip on a phone and a grid from sm', () => {
-    expect(CAROUSEL_CLASS).toMatch(/(^| )overflow-x-auto( |$)/)
-    expect(CAROUSEL_CLASS).toContain('snap-x')
-    expect(CAROUSEL_CLASS).toContain('sm:grid sm:grid-cols-2')
-    expect(CAROUSEL_CLASS).toContain('lg:grid-cols-4')
-    expect(CAROUSEL_ITEM_CLASS).toMatch(/^w-3\/4 .*snap-start.*sm:w-auto$/)
   })
 })
 
