@@ -244,6 +244,20 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(system).toContain('"Następnie", "Potem"')
   })
 
+  it('files sweet cupcakes and muffins under desserts, not cakes', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
+    const cakes = system.slice(system.indexOf('Cakes, tortes'), system.indexOf('Reserve "desery"'))
+    expect(cakes).not.toContain('babeczki')
+    expect(system).toContain('Reserve "desery" for non-cake sweets only: sweet muffins and cupcakes ("babeczki", "muffiny")')
+  })
+
   it('fails with a Polish message, not a SyntaxError, when the answer is not JSON', async () => {
     const mock = makeSupabaseMock()
 
