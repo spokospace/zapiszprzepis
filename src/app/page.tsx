@@ -6,7 +6,8 @@ import { homeGreeting } from '@/lib/home'
 import { getGreetingName } from '@/lib/first-name'
 import { vocative } from '@/lib/vocative'
 import { AppHeader } from '@/app/components/app-header'
-import { RecipeCard, TILE_SIZES_2_TO_4 } from '@/app/components/recipe-card'
+import { CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
+import { CardCarousel } from '@/app/components/card-carousel'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { PageContainer } from '@/app/components/page-container'
 import { HomeSearch } from '@/app/components/home/home-search'
@@ -98,32 +99,35 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
             <h2 id="recent-heading" className="mb-3 text-[22px] font-bold text-ink">
               Ostatnio dodane
             </h2>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
-              {/* E01-S07: lets the recipe page show "← Ostatnio dodane" + prev/next. */}
-              <RecipeListSnapshot
-                listKey="home"
-                label="Ostatnio dodane"
-                href="/"
-                items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
-              />
-              {recentRecipes.map((r) => (
-                <RecipeCard
-                  // id, not slug: the feed spans users, and the id is the stable key.
-                  key={r.id}
-                  from="home"
-                  slug={r.slug}
-                  title={r.title}
-                  imageUrl={r.image_url}
-                  category={r.category}
-                  description={r.description}
-                  sourceType={r.source_type}
-                  sourceUrl={r.source_url}
-                  sourceAuthor={r.source_author}
-                  favorite={{ recipeId: r.id, favorited: false, isAuthenticated: false }}
-                  sizes={TILE_SIZES_2_TO_4}
-                />
-              ))}
-            </div>
+            {/* E01-S07: lets the recipe page show "← Ostatnio dodane" + prev/next. */}
+            <RecipeListSnapshot
+              listKey="home"
+              label="Ostatnio dodane"
+              href="/"
+              items={recentRecipes.map((r) => ({ slug: r.slug, title: r.title }))}
+            />
+            <CardCarousel
+              label="Ostatnio dodane"
+              items={recentRecipes.map((r) => ({
+                // id, not slug: the feed spans users, and the id is the stable key.
+                key: r.id,
+                card: (
+                  <RecipeCard
+                    from="home"
+                    slug={r.slug}
+                    title={r.title}
+                    imageUrl={r.image_url}
+                    category={r.category}
+                    description={r.description}
+                    sourceType={r.source_type}
+                    sourceUrl={r.source_url}
+                    sourceAuthor={r.source_author}
+                    sizes={CAROUSEL_SIZES}
+                    favorite={{ recipeId: r.id, favorited: false, isAuthenticated: false }}
+                  />
+                ),
+              }))}
+            />
           </section>
         )}
         <GuestCta />

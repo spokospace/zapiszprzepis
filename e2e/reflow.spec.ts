@@ -195,8 +195,8 @@ const SCREENS: Screen[] = [
   { name: 'menu (guest)', path: '/', overlay: openMenu },
   { name: 'menu (signed in)', path: '/', as: 'full', overlay: openMenu },
   { name: 'recipe, all text', path: recipePath },
-  // The S22 list card and its favorites bar: guest ("Dodaj do ulubionych" → login)
-  // and signed in (the live heart), on all three lists that use it.
+  // The S22 list card and the heart on its photo: guest (a link to login) and
+  // signed in (the live heart), on all three lists that use it.
   { name: 'category, all text', path: '/przepisy/desery' },
   { name: 'category (signed in)', path: '/przepisy/desery', as: 'full' },
   { name: 'search, all text', path: '/szukaj?q=ciasto' },
