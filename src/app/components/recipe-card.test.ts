@@ -3,8 +3,11 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { CAROUSEL_CLASS, CAROUSEL_ITEM_CLASS, RecipeCard } from './recipe-card'
 
-// The heart pulls in server actions; these cards render without one.
-vi.mock('./favorite-button', () => ({ FavoriteButton: () => null }))
+// The heart pulls in server actions; a marker shows where the card puts it.
+vi.mock('./favorite-button', () => ({
+  FavoriteButton: ({ size, recipeTitle }: { size: string; recipeTitle: string }) =>
+    createElement('i', { 'data-heart': size, 'data-title': recipeTitle }),
+}))
 
 const card = (props: Partial<Parameters<typeof RecipeCard>[0]> = {}) =>
   renderToStaticMarkup(
@@ -49,5 +52,22 @@ describe('carousel row', () => {
     expect(CAROUSEL_CLASS).toContain('sm:grid sm:grid-cols-2')
     expect(CAROUSEL_CLASS).toContain('lg:grid-cols-4')
     expect(CAROUSEL_ITEM_CLASS).toMatch(/^w-3\/4 .*snap-start.*sm:w-auto$/)
+  })
+})
+
+describe('RecipeCard heart', () => {
+  const favorite = { recipeId: 1, favorited: false, isAuthenticated: true }
+
+  it('sits on the photo corner of both variants, with no bar under the card', () => {
+    for (const variant of ['list', 'tile'] as const) {
+      const html = card({ variant, favorite })
+      expect(html).toContain('<div class="absolute top-2 right-2 z-10"><i data-heart="photo" data-title="Sernik"></i></div>')
+      expect(html).not.toContain('border-t-2')
+    }
+  })
+
+  it('keeps a list card title clear of the heart beside it from sm', () => {
+    expect(card({ variant: 'list', favorite })).toContain('sm:pr-14')
+    expect(card({ variant: 'list' })).not.toContain('sm:pr-14')
   })
 })

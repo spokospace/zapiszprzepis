@@ -16,10 +16,10 @@ Git commit subjects **and** bodies must be written in English, even when the res
 
 Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelność; grupa docelowa obejmuje osoby starsze). Backlog: `.ai/specs/backlog-przebudowa.md`. Tokeny i prymitywy: `src/app/globals.css` + `src/app/components/ui/`.
 
-- **WCAG 2.2 AA to standard każdego ekranu:** kontrast tekstu ≥ 4,5:1 (duże nagłówki 3:1), elementy UI i obramowania pól 3:1, cele dotyku ≥ 48 px, widoczny focus (`outline: 3px solid #1d4ed8; offset 2px`), linki podkreślone, ikony zawsze z podpisem.
+- **WCAG 2.2 AA to standard każdego ekranu:** kontrast tekstu ≥ 4,5:1 (duże nagłówki 3:1), elementy UI i obramowania pól 3:1, cele dotyku ≥ 48 px, widoczny focus (`outline: 3px solid #1d4ed8; offset 2px`), linki podkreślone, ikony zawsze z podpisem (jedyny wyjątek: serce na zdjęciu karty — patrz „Ulubione” niżej).
 - **Czytelność dla starszych osób:** treść 19 px (mobile), tekst pomocniczy ≥ 16 px w kolorze `#374151`, przyciski główne 56 px, bez przewijania w poziomie.
 - **Pomarańcz z białym tekstem to `#c2410c`** — nigdy `#f97316` ani `#ea580c` z białym tekstem (2,8:1). Używaj tokenów (`bg-action`, `text-ink`, `border-field`…), nie surowych hexów.
-- **Model:** jeden przepis na dany link źródłowy (globalny dedup, bez duplikatów). Publiczny slug bez loginu: `/przepis/{nazwa}`. „Moje przepisy” = dodane przeze mnie jako pierwsza osoba; gdy ktoś doda link, który już jest, przepis trafia do jego Ulubionych. „Ulubione” = serce z podpisem, dowolne przepisy (nigdy gwiazdka).
+- **Model:** jeden przepis na dany link źródłowy (globalny dedup, bez duplikatów). Publiczny slug bez loginu: `/przepis/{nazwa}`. „Moje przepisy” = dodane przeze mnie jako pierwsza osoba; gdy ktoś doda link, który już jest, przepis trafia do jego Ulubionych. „Ulubione” = serce, dowolne przepisy (nigdy gwiazdka): na stronie przepisu przycisk z podpisem; na kartach list samo serce w białym kółku 48 px na zdjęciu, z nazwą dostępną dla czytników („Dodaj do ulubionych: {tytuł}”).
 - **Źródło zamiast loginu** na kartach i przepisie (np. `aniagotuje.pl`, „YouTube · {kanał}”). „Kto dodał”: drobna linijka „Dodała/Dodał {nazwa}” z linkiem do `/u/{username}`.
 - **Dostęp:** gość przegląda i szuka; zalogowany (Facebook/Google) ma ulubione i galerię; dodawanie przepisów tylko z pełnym dostępem (kod lub płatność). Płeć wybierana raz przy pierwszym logowaniu, nieedytowalna.
 - **Wariant projektowy:** styl 1c (wysoka czytelność) + struktura nawigacji 1a. Wariant 1b (dolna nawigacja) niewdrażany.

@@ -20,13 +20,13 @@ interface RecipeCardProps {
   sourceAuthor: string | null
   /** The list this card sits in, for the recipe page's list bar (E01-S07). */
   from?: ListKey
-  /** The labelled heart in the card's footer (E01-S06); no heart without it. */
+  /** The heart on the card's photo (E01-S06); no heart without it. */
   favorite?: { recipeId: number; favorited: boolean; isAuthenticated: boolean }
   /**
    * `tile` (default): the grid card (home, Ulubione, Moje przepisy, Podobne).
    * `list` (E01-S22): the one list card of search, category and profile — on a
    * phone the photo across the card's full width over the title, from sm a
-   * thumbnail beside it; the favorites bar sits inside its frame.
+   * thumbnail beside it.
    */
   variant?: 'tile' | 'list'
   /** List only: total time ("Zupy · 45 min"), left out when unknown. */
@@ -84,15 +84,19 @@ export function RecipeCard({
   thumb = 96,
   inCategory,
 }: RecipeCardProps) {
-  const heart = (size: 'compact' | 'bar') =>
-    favorite && (
+  // The top-right corner of the card: on the photo on a phone and on a tile; beside
+  // the title of a list card from sm, whose text column leaves it room (sm:pr-14).
+  const heart = favorite && (
+    <div className="absolute top-2 right-2 z-10">
       <FavoriteButton
         recipeId={favorite.recipeId}
         initialFavorited={favorite.favorited}
         isAuthenticated={favorite.isAuthenticated}
-        size={size}
+        size="photo"
+        recipeTitle={title}
       />
-    )
+    </div>
+  )
 
   if (variant === 'list') {
     const lines = listCardLines({
@@ -102,9 +106,9 @@ export function RecipeCard({
       tagLabels: inCategory?.tagLabels,
       inCategory: Boolean(inCategory),
     })
-    // No overflow-hidden on the frame: it would clip the focus outline of the link and the bar.
+    // No overflow-hidden on the frame: it would clip the focus outline of the link.
     return (
-      <article className="@container flex h-full flex-col rounded-card border-2 border-border-card bg-white">
+      <article className="@container relative flex h-full flex-col rounded-card border-2 border-border-card bg-white">
         {/* Only the title is underlined: it names the link; the meta lines would just be noise. */}
         <Link
           href={recipePath(slug, { from })}
@@ -129,7 +133,7 @@ export function RecipeCard({
               <NoPhoto category={category} iconClassName="h-14 w-14 sm:h-9 sm:w-9" />
             )}
           </div>
-          <div className="flex min-w-0 flex-col gap-1.5 p-3 sm:p-0">
+          <div className={`flex min-w-0 flex-col gap-1.5 p-3 sm:p-0 ${favorite ? 'sm:pr-14' : ''}`}>
             {/* Two lines at most (C2), words wrapped whole. A tiny card gets 18 px and a third line,
                 so a long word still fits instead of being cut; only a word wider than that breaks. */}
             <h3
@@ -144,7 +148,7 @@ export function RecipeCard({
             ))}
           </div>
         </Link>
-        {heart('bar')}
+        {heart}
       </article>
     )
   }
@@ -183,7 +187,7 @@ export function RecipeCard({
         </span>
       </div>
 
-      {favorite && <div className="relative z-10 px-3 pb-3">{heart('compact')}</div>}
+      {heart}
     </article>
   )
 }
