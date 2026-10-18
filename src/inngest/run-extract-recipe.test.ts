@@ -778,6 +778,41 @@ describe('runExtractRecipe — Facebook post linking out to a blog', () => {
   })
 })
 
+describe('runExtractRecipe — the same YouTube video under another link', () => {
+  const VIDEO = 'dQw4w9WgXcQ'
+  const videoEvent = { ...BASE_EVENT, sharedUrl: `https://www.youtube.com/watch?v=${VIDEO}`, sourceType: 'youtube' as const }
+
+  it('links a video share to the saved blog recipe that embeds it, before any LLM call', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { id: 298, slug: 'babeczki', title: 'Babeczki', category: 'desery', user_id: 'user-1' }, error: null })
+    const fetch = makeFetchMock()
+
+    const result = await runExtractRecipe(videoEvent, { fetch, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 298, status: 'duplicate' })
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(fetch.mock.calls.some((c) => String(c[0]).includes('openai.com'))).toBe(false)
+  })
+
+  it('extracts the video when no recipe carries its id', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 8 }, error: null })
+
+    await runExtractRecipe(videoEvent, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ youtube_id: VIDEO })
+  })
+
+  it('keeps the stored video on a refresh that finds none', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.updateArgs('recipes')[0]).not.toHaveProperty('youtube_id')
+  })
+})
+
 describe('runExtractRecipe — the same post text saved before', () => {
   it('links the share to the saved recipe before any LLM call', async () => {
     const mock = makeSupabaseMock()

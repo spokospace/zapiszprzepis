@@ -12,7 +12,14 @@ import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutu
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { publicFacebookAuthor } from '@/lib/facebook-authors'
-import { classifyExisting, findRecipeBySourceFingerprint, findRecipeBySourceUrl, findSameRecipe, ingredientFingerprint } from '@/lib/recipe-dedup'
+import {
+  classifyExisting,
+  findRecipeBySourceFingerprint,
+  findRecipeBySourceUrl,
+  findRecipeByYoutubeId,
+  findSameRecipe,
+  ingredientFingerprint,
+} from '@/lib/recipe-dedup'
 import { insertFavorite } from '@/lib/favorites'
 import { fingerprintText } from '@/lib/source-fingerprint'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
@@ -410,6 +417,16 @@ export async function runExtractRecipe(
       }
     }
 
+    // The same film saved under another link — the video itself, or a blog
+    // post that embeds it (see findRecipeByYoutubeId). Before any LLM call.
+    if (!forceRefresh && youtubeId != null) {
+      const sameVideo = await findRecipeByYoutubeId(supabase, youtubeId, { fromVideo: sourceType === 'youtube' })
+      if (sameVideo) {
+        console.log('[extract-recipe] same YouTube video already saved:', sameVideo.slug)
+        return await linkToSaved(sameVideo)
+      }
+    }
+
     // Who published the recipe, for the source label ("Kulinarna Wiola ·
     // Facebook"): the Facebook poster — a private person only as "Elżbieta
     // K." — or the YouTube channel, fetched while the LLM extracts. A blog is
@@ -706,8 +723,9 @@ Rules:
           tags,
           ingredient_fingerprint: ingredientFp,
           source_type: sourceType,
-          youtube_id: youtubeId,
-          // Keep the author a previous run found when this one saw none.
+          // Keep the video and the author a previous run found when this one
+          // saw none (an embed the page no longer renders, a header it lost).
+          ...(youtubeId != null ? { youtube_id: youtubeId } : {}),
           ...(sourceAuthor != null ? { source_author: sourceAuthor } : {}),
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
