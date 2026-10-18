@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { categoryLabel } from '@/lib/recipe-categories'
+import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { listCardLines } from '@/lib/recipe-meta'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
@@ -20,23 +20,24 @@ interface RecipeCardProps {
   sourceAuthor: string | null
   /** The list this card sits in, for the recipe page's list bar (E01-S07). */
   from?: ListKey
-  /** The labelled heart in the card's footer (E01-S06); no heart without it. */
+  /** The heart on the card's photo (E01-S06); no heart without it. */
   favorite?: { recipeId: number; favorited: boolean; isAuthenticated: boolean }
   /**
    * `tile` (default): the grid card (home, Ulubione, Moje przepisy, Podobne).
-   * `list` (E01-S22): the one list card of search, category and profile — a
-   * thumbnail beside the full title, with the favorites bar inside its frame.
+   * `list` (E01-S22): the one list card of search, category and profile — on a
+   * phone the photo across the card's full width over the title, from sm a
+   * thumbnail beside it.
    */
   variant?: 'tile' | 'list'
   /** List only: total time ("Zupy · 45 min"), left out when unknown. */
   minutes?: number | null
-  /** List only: 96 px thumbnail + 20 px title (search, C2) or 84 + 19 (category 6, profile 7). */
+  /** List only: from sm a 96 px thumbnail + 20 px title (search, C2) or 84 + 19 (category 6, profile 7). */
   thumb?: 84 | 96
   /** List only, on a category page: "czas · źródło" and these tag labels instead of the category. */
   inCategory?: { tagLabels: readonly string[] }
   /**
    * Tile only: the image's `sizes`, matching the caller's grid (#253). The default fits
-   * Moje przepisy (one column on a phone); the two-column grids pass a `TILE_SIZES_*`.
+   * Moje przepisy (one column on a phone); the carousel passes CAROUSEL_SIZES, Ulubione TILE_SIZES_1_TO_3.
    */
   sizes?: string
 }
@@ -44,15 +45,32 @@ interface RecipeCardProps {
 /** The list cards' container: one column, two from lg so they don't stretch to 1088 px (E01-S17). */
 export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
 
-// A tile's `sizes` in a two-column grid, so a phone fetches an archived image at the
-// width of half the screen, not all of it (#253). The grids sit in PageContainer:
-// 68rem (1088 px) of content at most, so from there a column has a fixed width.
-// In rem, like Tailwind's breakpoints and widths: with a larger browser font the grid
-// keeps two columns longer, and px values would then pick a blurry, too-small image.
-/** Two a row, four from lg (home „Ostatnio dodane”, Podobne): (68 − 3 × 1.25) / 4 ≈ 16.1rem (257 px). */
-export const TILE_SIZES_2_TO_4 = '(min-width: 64rem) 16.1rem, 50vw'
-/** Two a row, three from sm (Ulubione): (68 − 2 × 0.75) / 3 ≈ 22.2rem (355 px). */
-export const TILE_SIZES_2_TO_3 = '(min-width: 72rem) 22.2rem, (min-width: 40rem) 33vw, 50vw'
+/**
+ * The photo slot of a recipe without a photo: its category icon on the accent
+ * tint, so a full-width slot on a phone does not read as an image that failed
+ * to load. Decorative: the title and the category line name the recipe.
+ */
+function NoPhoto({ category, iconClassName }: { category: string; iconClassName: string }) {
+  const Icon = isRecipeCategory(category) ? CATEGORY_ICONS[category] : CATEGORY_ICONS.inne
+  return (
+    <div aria-hidden="true" className="flex h-full w-full items-center justify-center bg-surface-accent-2">
+      <Icon strokeWidth={1.5} className={`text-action-text ${iconClassName}`} />
+    </div>
+  )
+}
+
+// A tile's `sizes` per grid, so a phone fetches an archived image at the width the card
+// really has, not the whole screen (#253). The grids sit in PageContainer: 68rem
+// (1088 px) of content at most, so from there a column has a fixed width. In rem, like
+// Tailwind's breakpoints and widths: with a larger browser font a grid keeps fewer
+// columns longer, and px values would then pick a blurry, too-small image.
+/**
+ * CardCarousel (home „Ostatnio dodane”, Podobne): 3/4 of the strip on a phone,
+ * 0.75 × (100vw − 2rem); two a row from sm; four from lg, (68 − 3 × 1.25) / 4 ≈ 16.1rem (257 px).
+ */
+export const CAROUSEL_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 40rem) 50vw, calc(75vw - 1.5rem)'
+/** Ulubione: one a row on a phone (100vw − 2rem), three from sm, (68 − 2 × 0.75) / 3 ≈ 22.2rem (355 px) at most. */
+export const TILE_SIZES_1_TO_3 = '(min-width: 72rem) 22.2rem, (min-width: 40rem) 33vw, calc(100vw - 2rem)'
 
 export function RecipeCard({
   slug,
@@ -71,15 +89,19 @@ export function RecipeCard({
   inCategory,
   sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
 }: RecipeCardProps) {
-  const heart = (size: 'compact' | 'bar') =>
-    favorite && (
+  // The top-right corner of the card: on the photo on a phone and on a tile; beside
+  // the title of a list card from sm, whose text column leaves it room (sm:pr-14).
+  const heart = favorite && (
+    <div className="absolute top-2 right-2 z-10">
       <FavoriteButton
         recipeId={favorite.recipeId}
         initialFavorited={favorite.favorited}
         isAuthenticated={favorite.isAuthenticated}
-        size={size}
+        size="photo"
+        recipeTitle={title}
       />
-    )
+    </div>
+  )
 
   if (variant === 'list') {
     const lines = listCardLines({
@@ -89,23 +111,34 @@ export function RecipeCard({
       tagLabels: inCategory?.tagLabels,
       inCategory: Boolean(inCategory),
     })
-    // No overflow-hidden on the frame: it would clip the focus outline of the link and the bar.
+    // No overflow-hidden on the frame: it would clip the focus outline of the link.
     return (
-      <article className="@container flex h-full flex-col rounded-card border-2 border-border-card bg-white">
+      <article className="@container relative flex h-full flex-col rounded-card border-2 border-border-card bg-white">
         {/* Only the title is underlined: it names the link; the meta lines would just be noise. */}
-        <Link href={recipePath(slug, { from })} className="group flex flex-1 gap-3 rounded-[14px] p-3 no-underline!">
-          {/* Under 280 px of card (320 px at 130 % zoom) a smaller thumbnail leaves the title room for whole words. */}
+        <Link
+          href={recipePath(slug, { from })}
+          className="group flex flex-1 flex-col rounded-[14px] no-underline! sm:flex-row sm:gap-3 sm:p-3"
+        >
+          {/* A phone gets the photo across the whole card, 4:3 like the tiles; from sm it is a
+              thumbnail beside the title, and a card there is always wider than the old 280 px cut. */}
           <div
-            className={`relative shrink-0 overflow-hidden rounded-[12px] bg-surface-3 @max-[280px]:h-16 @max-[280px]:w-16 ${thumb === 84 ? 'h-[84px] w-[84px]' : 'h-24 w-24'}`}
+            className={`relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-t-[14px] bg-surface-3 sm:aspect-auto sm:rounded-[12px] ${thumb === 84 ? 'sm:h-[84px] sm:w-[84px]' : 'sm:h-24 sm:w-24'}`}
           >
             {imageUrl ? (
-              // The title sits right beside it, so the image is decorative here.
-              <Image src={imageUrl} alt="" fill className="object-cover" sizes={`${thumb}px`} unoptimized={!isArchivedImageUrl(imageUrl)} />
+              // The title sits right under (or beside) it, so the image is decorative here.
+              <Image
+                src={imageUrl}
+                alt=""
+                fill
+                className="object-cover"
+                sizes={`(min-width: 40rem) ${thumb === 84 ? '84px' : '6rem'}, calc(100vw - 2rem)`}
+                unoptimized={!isArchivedImageUrl(imageUrl)}
+              />
             ) : (
-              <div aria-hidden="true" className="h-full w-full bg-surface-accent-2" />
+              <NoPhoto category={category} iconClassName="h-14 w-14 sm:h-9 sm:w-9" />
             )}
           </div>
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <div className={`flex min-w-0 flex-col gap-1.5 p-3 sm:p-0 ${favorite ? 'sm:pr-14' : ''}`}>
             {/* Two lines at most (C2), words wrapped whole. A tiny card gets 18 px and a third line,
                 so a long word still fits instead of being cut; only a word wider than that breaks. */}
             <h3
@@ -120,7 +153,7 @@ export function RecipeCard({
             ))}
           </div>
         </Link>
-        {heart('bar')}
+        {heart}
       </article>
     )
   }
@@ -141,22 +174,7 @@ export function RecipeCard({
             unoptimized={!isArchivedImageUrl(imageUrl)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-surface-accent-2">
-            <svg
-              aria-hidden="true"
-              className="h-12 w-12 text-action-text"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6v6m0 0v6m0-6h6m0 0h6m0-6H6m0 0H0M12 6h6"
-              />
-            </svg>
-          </div>
+          <NoPhoto category={category} iconClassName="h-12 w-12" />
         )}
       </div>
 
@@ -174,7 +192,7 @@ export function RecipeCard({
         </span>
       </div>
 
-      {favorite && <div className="relative z-10 px-3 pb-3">{heart('compact')}</div>}
+      {heart}
     </article>
   )
 }

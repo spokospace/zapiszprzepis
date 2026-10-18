@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { loginPath } from '@/lib/login-redirect'
 import { PageContainer } from '@/app/components/page-container'
-import { RecipeCard, TILE_SIZES_2_TO_3 } from '@/app/components/recipe-card'
+import { RecipeCard, TILE_SIZES_1_TO_3 } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import type { RecipeSource } from '@/lib/recipe-source'
 
@@ -58,7 +58,8 @@ export default async function FavoritesPage() {
             Nie masz jeszcze ulubionych przepisów. Otwórz przepis i kliknij „Dodaj do ulubionych”.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          // One card a row on a phone, so its photo spans the screen; three from sm.
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <RecipeListSnapshot
               listKey="fav"
               label="Ulubione"
@@ -78,7 +79,7 @@ export default async function FavoritesPage() {
                 sourceUrl={r.source_url}
                 sourceAuthor={r.source_author}
                 favorite={{ recipeId: r.id, favorited: true, isAuthenticated: true }}
-                sizes={TILE_SIZES_2_TO_3}
+                sizes={TILE_SIZES_1_TO_3}
               />
             ))}
           </div>

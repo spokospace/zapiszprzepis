@@ -1,7 +1,6 @@
 // E01-S21 — render-time helpers for the "Inne przepisy na {danie}" section: the
 // ingredient diff on each version card, the badges, the bar/heading wording, and
 // the client/server sort. All pure, so they are unit-tested without a DB or DOM.
-import { stems } from '@/lib/recipe-tags'
 import { parseIngredients } from '@/lib/ingredients'
 import { polishPlural } from '@/lib/recipe-meta'
 import { formatMinutes } from '@/lib/format-minutes'
@@ -30,56 +29,91 @@ export interface DishVersionRow {
 
 // --- Ingredient diff -------------------------------------------------------
 
-// Units/measures (dropped: "2 szklanki mąki" keys as {mąka}) and filler
-// adjectives, as the 5-letter stems stems() produces — enumerated across the
-// common Polish case endings, since a short word declines inside the 5 chars.
-const STOPWORD_STEMS = new Set<string>([
-  // units & measures
-  'szkla', // szklanka/i/ę/ek
-  'łyżka', 'łyżki', 'łyżkę', 'łyżek', 'łyżką', 'łyżce',
-  'łyżec', // łyżeczka/i
-  'szczy', // szczypta
-  'garść', 'garśc',
-  'opako', 'puszk', 'słoik',
-  'gram', 'gramó', 'gramy', 'grama',
-  'dekag', 'deka', 'deko',
-  'litr', 'litra', 'litró',
-  'sztuk', 'sztuc',
-  'plast', 'ząbek', 'ząbka', 'ząbki',
-  'liste', 'listk', 'gałąz', 'kropl', 'kubek', 'kubka', 'miark', 'miare',
-  // filler adjectives
-  'śwież', 'drobn', 'ulubi',
-  'duży', 'duże', 'dużą', 'dużej',
-  'mały', 'małe', 'małą', 'małej',
-  'średn', 'dojrz', 'młody', 'młode', 'młodą',
-  'natur', 'domow', 'dowol', 'opcjo', 'ewent',
-])
-
-// Synonyms collapsed to one canonical stem so "jajka" / "jaja" / "jajek" match.
-const SYNONYM_STEMS = new Map<string, string>([
-  ['jajko', 'jaj'],
-  ['jajka', 'jaj'],
-  ['jajek', 'jaj'],
-  ['jajca', 'jaj'],
-  ['jaja', 'jaj'],
-])
+// Case endings a stem drops, longest first (ó is already folded into o).
+const ENDINGS = [
+  'iego', 'iemu',
+  'ami', 'ach', 'ych', 'ich', 'ymi', 'imi', 'ego', 'emu', 'owi', 'iem', 'iej',
+  'om', 'ow', 'ej', 'em', 'ie', 'ia', 'iu', 'ią', 'ię',
+  'a', 'e', 'ę', 'i', 'o', 'u', 'y', 'ą',
+]
+const SOFT_FINAL: Record<string, string> = { ś: 's', ć: 'c', ń: 'n', ź: 'z' }
 
 /**
- * The comparable key of an ingredient name: its 5-letter stems with bracketed
- * text dropped, units and filler adjectives removed, and a small synonym table
- * applied. An ingredient reduced to nothing (only filler / units / quantities)
- * gives an EMPTY set, which — by the non-empty guard in `keysMatch` — matches
+ * A light Polish stem, so the inflected forms of one word meet: "ogórki" /
+ * "ogórek", "piersi" / "pierś", "oleju" / "olej", "mąki" / "mąka", "soli" /
+ * "sól". Folds ó into o, drops one case ending (keeping 3 letters), else the
+ * fleeting e (ogórek → ogórk, cukier → cukr), and hardens a final ś/ć/ń/ź to
+ * meet its si/ci/ni/zi forms.
+ */
+function stem(word: string): string {
+  let w = word.toLocaleLowerCase('pl').replace(/ó/g, 'o')
+  const ending = ENDINGS.find((e) => w.endsWith(e) && w.length - e.length >= 3)
+  if (ending) w = w.slice(0, -ending.length)
+  else if (/..ek$/.test(w)) w = `${w.slice(0, -2)}k`
+  else if (w.endsWith('ier')) w = `${w.slice(0, -3)}r`
+  const last = w.at(-1) ?? ''
+  return last in SOFT_FINAL ? w.slice(0, -1) + SOFT_FINAL[last] : w
+}
+
+// Units/measures (dropped: "2 szklanki mąki" keys as {mąk}, "mix sałat" as {sałat}), filler adjectives
+// (state, size, temperature: "zimna woda" is still "woda") and joining words.
+// Written as words; stem() maps their other forms onto the same stem. Checked
+// before the 5-letter cut, so "szczypiorek" is not taken for "szczypta".
+const STOPWORD_STEMS = new Set(
+  [
+    // units & measures
+    'szklanka', 'łyżka', 'łyżeczka', 'szczypta', 'garść', 'opakowanie', 'opak', 'paczka', 'puszka', 'słoik',
+    'gram', 'dekagram', 'deko', 'dag', 'kilogram', 'litr', 'mililitr', 'sztuka', 'szt', 'pół',
+    'plaster', 'plastry', 'plasterek', 'ząbek', 'listek', 'liść', 'gałązka', 'kropla', 'kubek', 'miarka', 'pęczek',
+    'mix', 'mieszanka',
+    // filler adjectives
+    'świeży', 'drobny', 'ulubiony', 'duży', 'mały', 'średni', 'dojrzały', 'młody',
+    'naturalny', 'domowy', 'dowolny', 'opcjonalnie', 'ewentualnie',
+    'mielony', 'posiekany', 'pokrojony', 'starty', 'roztopiony', 'miękki',
+    'zimny', 'ciepły', 'letni', 'gorący', 'wrzący', 'przegotowany',
+    // joining words: "szynka lub kiełbasa", "sól do smaku", "woda według potrzeby"
+    'lub', 'albo', 'oraz', 'około', 'smaku', 'według', 'potrzeby',
+  ].map(stem),
+)
+
+// Synonyms collapsed to one canonical stem so "jajka" / "jaja" / "jajca" match,
+// the fleeting e stem() can't see ("ocet" / "octu", "koper" / "kopru"), and the
+// same ingredient under two names ("filet z kurczaka" is its breast).
+const SYNONYM_STEMS = new Map<string, string>(
+  [
+    ['jajko', 'jajo'],
+    ['jajca', 'jajo'],
+    ['nać', 'natka'],
+    ['octu', 'ocet'],
+    ['kopru', 'koper'],
+    ['wrzątek', 'woda'],
+    ['filet', 'pierś'],
+    ['koktajlowe', 'cherry'],
+  ].map(([word, canonical]) => [stem(word), stem(canonical)]),
+)
+
+// Long enough to tell "mąka" from "makaron", short enough that "marchew" meets "marchwi".
+const STEM_LENGTH = 5
+
+/** The name without its bracketed asides ("(typ 450)", "[opcjonalnie]"). */
+function withoutAsides(name: string): string {
+  return name.replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ')
+}
+
+/**
+ * The comparable key of an ingredient name: the stems of its words of 3+
+ * letters ("ser", "sól" count) with bracketed text dropped, units and filler
+ * adjectives removed, a small synonym table applied, cut to 5 letters. An
+ * ingredient reduced to nothing (only filler / units / quantities) gives an
+ * EMPTY set, which — by the non-empty guard in `sameIngredient` — matches
  * nothing, so it stays its own distinct ingredient.
  */
 export function ingredientKey(name: string): Set<string> {
-  const cleaned = name
-    .toLocaleLowerCase('pl')
-    .replace(/\([^)]*\)/g, ' ')
-    .replace(/\[[^\]]*\]/g, ' ')
   const key = new Set<string>()
-  for (const stem of stems(cleaned)) {
-    if (STOPWORD_STEMS.has(stem)) continue
-    key.add(SYNONYM_STEMS.get(stem) ?? stem)
+  for (const word of withoutAsides(name).match(/\p{L}{3,}/gu) ?? []) {
+    const s = stem(word)
+    if (STOPWORD_STEMS.has(s)) continue
+    key.add((SYNONYM_STEMS.get(s) ?? s).slice(0, STEM_LENGTH))
   }
   return key
 }
@@ -90,7 +124,8 @@ function isSubset(a: Set<string>, b: Set<string>): boolean {
 }
 
 interface KeyedName {
-  name: string
+  /** The name as the card shows it (`shownName`). */
+  shown: string
   key: Set<string>
   /** Lowercased, bracket-stripped name, for the empty-key fallback. */
   norm: string
@@ -99,10 +134,9 @@ interface KeyedName {
 /**
  * Two ingredients are "the same" when both keys are non-empty and one contains
  * the other ("mąka" ≈ "mąka pszenna", "mąka pszenna" ≠ "mąka ziemniaczana"). A
- * short name stems() can't take ("sól", "ser", "ryż") reduces to an empty key;
- * for those, fall back to the normalized full name so identical short names
- * still match — while an empty key never matches a non-empty one (no vacuous
- * containment).
+ * name of only units / filler ("2 łyżki") reduces to an empty key; for those,
+ * fall back to the normalized full name so identical names still match — while
+ * an empty key never matches a non-empty one (no vacuous containment).
  */
 function sameIngredient(a: KeyedName, b: KeyedName): boolean {
   if (a.key.size > 0 && b.key.size > 0) return isSubset(a.key, b.key) || isSubset(b.key, a.key)
@@ -110,21 +144,43 @@ function sameIngredient(a: KeyedName, b: KeyedName): boolean {
   return false
 }
 
+/**
+ * A name as it reads inside the card's ", "-joined line: no bracketed asides,
+ * no commas of its own ("zielony, mrożony groszek" would read as two
+ * ingredients; a "przyprawy: sól, pieprz" list keeps its label), and the first
+ * letter lowercased mid-sentence ("Mleko" → "mleko", "BBQ" stays).
+ */
+function shownName(name: string): string {
+  const shown = withoutAsides(name).split(':')[0].replace(/\s*,\s*/g, ' ').replace(/\s+/g, ' ').trim() || name
+  return /^\p{Lu}\p{Ll}/u.test(shown) ? shown.charAt(0).toLocaleLowerCase('pl') + shown.slice(1) : shown
+}
+
 function keyedNames(raw: unknown): KeyedName[] {
   return parseIngredients(raw)
-    .map((i) => i.name?.trim())
-    .filter((n): n is string => Boolean(n))
+    .map((i) => (typeof i?.name === 'string' ? i.name.trim() : ''))
+    .filter(Boolean)
     .map((name) => ({
-      name,
+      shown: shownName(name),
       key: ingredientKey(name),
-      norm: name.toLocaleLowerCase('pl').replace(/\([^)]*\)/g, ' ').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim(),
+      norm: withoutAsides(name).toLocaleLowerCase('pl').replace(/\s+/g, ' ').trim(),
     }))
+}
+
+/**
+ * The first of each ingredient: a recipe repeats one across its sections
+ * ("woda" for the dough and the syrup), which must not list it twice.
+ */
+function distinct(names: KeyedName[]): KeyedName[] {
+  const kept: KeyedName[] = []
+  for (const n of names) if (!kept.some((k) => k.shown === n.shown || sameIngredient(k, n))) kept.push(n)
+  return kept
 }
 
 /**
  * What the version has that the current recipe does not (`plus`), and what the
  * current recipe has that the version does not (`minus`) — each at most `max`
- * names, in source order. Sections are flattened and malformed jsonb yields [].
+ * distinct names, in source order. Sections are flattened and malformed jsonb
+ * yields [].
  */
 export function ingredientDiff(
   currentRaw: unknown,
@@ -133,9 +189,9 @@ export function ingredientDiff(
 ): { plus: string[]; minus: string[] } {
   const current = keyedNames(currentRaw)
   const other = keyedNames(otherRaw)
-  const plus = other.filter((o) => !current.some((c) => sameIngredient(c, o))).map((o) => o.name)
-  const minus = current.filter((c) => !other.some((o) => sameIngredient(c, o))).map((c) => c.name)
-  return { plus: plus.slice(0, max), minus: minus.slice(0, max) }
+  const plus = distinct(other.filter((o) => !current.some((c) => sameIngredient(c, o))))
+  const minus = distinct(current.filter((c) => !other.some((o) => sameIngredient(c, o))))
+  return { plus: plus.slice(0, max).map((n) => n.shown), minus: minus.slice(0, max).map((n) => n.shown) }
 }
 
 // --- Badges ----------------------------------------------------------------
