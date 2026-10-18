@@ -35,6 +35,11 @@ interface RecipeCardProps {
   thumb?: 84 | 96
   /** List only, on a category page: "czas · źródło" and these tag labels instead of the category. */
   inCategory?: { tagLabels: readonly string[] }
+  /**
+   * Tile only: the image's `sizes`, matching the caller's grid (#253). The default fits
+   * Moje przepisy (one column on a phone); the carousel passes CAROUSEL_SIZES, Ulubione TILE_SIZES_1_TO_3.
+   */
+  sizes?: string
 }
 
 /** The list cards' container: one column, two from lg so they don't stretch to 1088 px (E01-S17). */
@@ -68,6 +73,19 @@ function NoPhoto({ category, iconClassName }: { category: string; iconClassName:
   )
 }
 
+// A tile's `sizes` per grid, so a phone fetches an archived image at the width the card
+// really has, not the whole screen (#253). The grids sit in PageContainer: 68rem
+// (1088 px) of content at most, so from there a column has a fixed width. In rem, like
+// Tailwind's breakpoints and widths: with a larger browser font a grid keeps fewer
+// columns longer, and px values would then pick a blurry, too-small image.
+/**
+ * CAROUSEL_CLASS (home „Ostatnio dodane”, Podobne): 3/4 of the strip on a phone,
+ * 0.75 × (100vw − 2rem); two a row from sm; four from lg, (68 − 3 × 1.25) / 4 ≈ 16.1rem (257 px).
+ */
+export const CAROUSEL_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 40rem) 50vw, calc(75vw - 1.5rem)'
+/** Ulubione: one a row on a phone (100vw − 2rem), three from sm, (68 − 2 × 0.75) / 3 ≈ 22.2rem (355 px) at most. */
+export const TILE_SIZES_1_TO_3 = '(min-width: 72rem) 22.2rem, (min-width: 40rem) 33vw, calc(100vw - 2rem)'
+
 export function RecipeCard({
   slug,
   title,
@@ -83,6 +101,7 @@ export function RecipeCard({
   minutes,
   thumb = 96,
   inCategory,
+  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
 }: RecipeCardProps) {
   // The top-right corner of the card: on the photo on a phone and on a tile; beside
   // the title of a list card from sm, whose text column leaves it room (sm:pr-14).
@@ -126,7 +145,7 @@ export function RecipeCard({
                 alt=""
                 fill
                 className="object-cover"
-                sizes={`(max-width: 639px) 100vw, ${thumb}px`}
+                sizes={`(min-width: 40rem) ${thumb === 84 ? '84px' : '6rem'}, calc(100vw - 2rem)`}
                 unoptimized={!isArchivedImageUrl(imageUrl)}
               />
             ) : (
@@ -165,7 +184,7 @@ export function RecipeCard({
             alt={title}
             fill
             className="object-cover group-hover:scale-105 transition-transform"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes={sizes}
             unoptimized={!isArchivedImageUrl(imageUrl)}
           />
         ) : (

@@ -1,3 +1,5 @@
+import { sha256Hex } from './sha256'
+
 // Shorter texts are too generic to call two posts one recipe.
 const MIN_CHARS = 80
 
@@ -15,6 +17,5 @@ export async function fingerprintText(text: string): Promise<string | null> {
     .replace(/#[\p{L}\p{N}_]+/gu, '')
     .replace(/[^\p{L}\p{N}]+/gu, '')
   if (core.length < MIN_CHARS) return null
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(core))
-  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
+  return sha256Hex(core)
 }

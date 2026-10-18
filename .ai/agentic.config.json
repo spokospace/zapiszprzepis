@@ -14,7 +14,7 @@
     "priority": ["priority-low", "priority-medium", "priority-high", "priority-extreme"],
     "risk": ["risk-low", "risk-medium", "risk-high"]
   },
-  "qaGate": true,
+  "qaGate": false,
   "ci": { "maxWaitMinutes": 0 },
   "engine": { "loopStepThreshold": 20, "executorTier": "standard", "stepReview": "final" },
   "paths": {

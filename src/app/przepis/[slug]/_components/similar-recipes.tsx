@@ -6,7 +6,7 @@ import { rankSimilar, sharedTagsCaption, similarHeading, SIMILAR_LIMIT } from '@
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { chipClasses } from '@/app/components/ui/chip'
-import { CAROUSEL_CLASS, CAROUSEL_ITEM_CLASS, RecipeCard } from '@/app/components/recipe-card'
+import { CAROUSEL_CLASS, CAROUSEL_ITEM_CLASS, CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
 import { dishExclusionFilter } from '@/lib/dish-versions'
 import type { RecipeSource } from '@/lib/recipe-source'
 
@@ -121,6 +121,7 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
                   sourceType={r.source_type}
                   sourceUrl={r.source_url}
                   sourceAuthor={r.source_author}
+                  sizes={CAROUSEL_SIZES}
                 />
               </li>
             ))}
