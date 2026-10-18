@@ -58,8 +58,11 @@ function wranglerVar(name: string): string | undefined {
   }
 }
 
+// A ';' is written as its JSON escape: the Supabase SQL Editor splits a script
+// on semicolons without regard to quotes, so one inside a step would cut its
+// UPDATE in two and trip the "UPDATE without a WHERE clause" warning.
 function sqlJson(value: unknown): string {
-  return `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`
+  return `'${JSON.stringify(value).replace(/'/g, "''").replace(/;/g, '\\u003b')}'::jsonb`
 }
 
 type Row = { id: number; slug: string; title: string; steps: unknown }
