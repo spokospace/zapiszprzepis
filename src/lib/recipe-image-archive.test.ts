@@ -386,6 +386,28 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
     ])
   })
 
+  it("drops the shop logos of a publisher's offer box with obfuscated classes (mojegotowanie)", () => {
+    // Trimmed from the rendered mojegotowanie.pl (Burda Media): the
+    // "Szaleństwo zakupów" box sits in the post, its cards and the offer
+    // details layer — shop logos with no size and no link — under
+    // anti-adblock class names; only `ecomm-boxd` and `discount-code` say what it is.
+    const MG = 'https://www.mojegotowanie.pl/media/cache'
+    const AFFI = 'https://burdaffi.burdamedia.pl/media/cache/resolve/cropped/uploads/discount-code'
+    const html = `
+      <img src="${MG}/default_big_format/uploads/media/default/0002/66/babka-wiekanocna.jpg">
+      <div class="ecomm-boxd"><div class="obf4c5c382bc obf4c5c382bc-theme-szalenstwo_zakupow">
+        <div class="obfcd0fbefb3"><div class="obfd87288b9b discount-code" data-offer-hash="bd4312a7">
+          <div class="details-layer"><div class="texts"><div class="brand"><img class="brand-image" src="${AFFI}/6abca1092c149604713565.png"></div></div></div>
+        </div></div>
+      </div></div>
+      <div class="obfd87288b9b discount-code"><div class="brand"><img class="discount-code-image" src="${AFFI}/6ac8cf035a0dd666560984.png"></div></div>
+      <img src="${MG}/default_big_format/uploads/media/default/0002/66/babka-krok.jpg">`
+    expect(pickGalleryImages(html, 'https://www.mojegotowanie.pl/artykul/najbardziej-puszysta-babka')).toEqual([
+      `${MG}/default_big_format/uploads/media/default/0002/66/babka-wiekanocna.jpg`,
+      `${MG}/default_big_format/uploads/media/default/0002/66/babka-krok.jpg`,
+    ])
+  })
+
   it('keeps the post when a layout wrapper is named after its sidebar, still cutting the noise inside (krysiagotuje)', () => {
     // Trimmed from krysiagotuje.pl: the whole post sits in a
     // `layout-right-sidebar` container, and "sidebar" marks noise. Cutting the
@@ -517,6 +539,17 @@ describe('buildGallery', () => {
         'https://blog.example/a/krok.jpg',
       ]),
     ).toEqual(['https://blog.example/a/sernik.jpg', 'https://blog.example/a/krok.jpg'])
+  })
+
+  it('keeps a photo once across its LiipImagine filter renditions (mojegotowanie)', () => {
+    const MG = 'https://www.mojegotowanie.pl/media/cache'
+    const cover = `${MG}/big/uploads/media/default/0002/66/babka-wiekanocna.jpg`
+    const photos = [
+      `${MG}/default_big_format/uploads/media/default/0002/66/babka-wiekanocna.jpg`,
+      `${MG}/resolve/default_xsmall/uploads/media/default/0002/66/babka-wiekanocna.jpg`,
+      `${MG}/default_big_format/uploads/media/default/0002/66/babka-krok.jpg`,
+    ]
+    expect(buildGallery(cover, photos)).toEqual([cover, photos[2]])
   })
 
   it(`stops at ${GALLERY_LIMIT} photos`, () => {
