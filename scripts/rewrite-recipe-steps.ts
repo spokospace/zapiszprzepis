@@ -13,12 +13,18 @@
 // writing them: one transaction, each row guarded by its current steps, so a
 // recipe edited after the preview is left alone.
 //
+// Only --apply writes, so only --apply needs the service-role key. Without it
+// the script reads the public_recipes view (every recipe, steps included) with
+// the project's publishable key from wrangler.jsonc — a preview or --sql run
+// needs nothing but OPENAI_API_KEY, from .env.local or the command line.
+//
 //   pnpm rewrite:recipe-steps                      # preview, writes nothing
 //   pnpm rewrite:recipe-steps --slug <slug>        # preview one recipe
 //   pnpm rewrite:recipe-steps --limit 20           # preview the first 20 candidates
 //   pnpm rewrite:recipe-steps --sql steps.sql      # preview + write the UPDATEs to steps.sql
 //   pnpm rewrite:recipe-steps --apply              # write the changes
-import { writeFileSync } from 'node:fs'
+//   OPENAI_API_KEY=sk-… pnpm rewrite:recipe-steps  # no .env.local
+import { readFileSync, writeFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { needsStepRewrite, rewriteSteps } from '@/lib/step-form'
 import { parseSteps } from '@/lib/steps'
@@ -37,6 +43,15 @@ function argValue(flag: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined
 }
 
+/** A public var from wrangler.jsonc (the Supabase URL, the publishable key). */
+function wranglerVar(name: string): string | undefined {
+  try {
+    return readFileSync('wrangler.jsonc', 'utf8').match(new RegExp(`"${name}":\\s*"([^"]+)"`))?.[1]
+  } catch {
+    return undefined
+  }
+}
+
 function sqlJson(value: unknown): string {
   return `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`
 }
@@ -49,22 +64,32 @@ async function main(): Promise<void> {
     console.error('✗ --apply and --sql exclude each other: --sql only writes a file.')
     process.exit(1)
   }
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? wranglerVar('NEXT_PUBLIC_SUPABASE_URL')
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseKey = serviceRoleKey ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? wranglerVar('NEXT_PUBLIC_SUPABASE_ANON_KEY')
   const apiKey = process.env.OPENAI_API_KEY
-  if (!supabaseUrl || !serviceRoleKey || !apiKey) {
-    console.error('✗ Brak NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / OPENAI_API_KEY w .env.local')
+  if (!apiKey) {
+    console.error('✗ Brak OPENAI_API_KEY — w .env.local albo przed poleceniem: OPENAI_API_KEY=sk-… pnpm rewrite:recipe-steps')
+    process.exit(1)
+  }
+  if (apply && !serviceRoleKey) {
+    console.error('✗ --apply wymaga SUPABASE_SERVICE_ROLE_KEY — albo użyj --sql <plik> i uruchom go w Supabase SQL Editor.')
+    process.exit(1)
+  }
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('✗ Brak NEXT_PUBLIC_SUPABASE_URL / klucza Supabase (ani w env, ani w wrangler.jsonc)')
     process.exit(1)
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
+  const source = serviceRoleKey ? 'recipes' : 'public_recipes'
 
   // PostgREST caps a read at 1000 rows, so page through.
   const rows: Row[] = []
   for (let from = 0; ; from += PAGE) {
-    let query = supabase.from('recipes').select('id, slug, title, steps').order('id').range(from, from + PAGE - 1)
+    let query = supabase.from(source).select('id, slug, title, steps').order('id').range(from, from + PAGE - 1)
     if (slug) query = query.eq('slug', slug)
     const { data, error } = await query
     if (error || !data) {
