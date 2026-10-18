@@ -7,10 +7,12 @@ import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { chipClasses } from '@/app/components/ui/chip'
 import { RecipeCard, TILE_SIZES_2_TO_4 } from '@/app/components/recipe-card'
+import { dishExclusionFilter } from '@/lib/dish-versions'
 import type { RecipeSource } from '@/lib/recipe-source'
 
 interface SimilarRecipesProps {
-  recipe: { id: number; category: string; tags: string[] }
+  /** `dish` (E01-S21): when set, same-dish recipes are excluded — they show in "Inne przepisy na …". */
+  recipe: { id: number; category: string; tags: string[]; dish?: string | null }
 }
 
 interface SimilarCard {
@@ -48,9 +50,13 @@ export function SimilarRecipes(props: SimilarRecipesProps) {
 
 async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
   const supabase = await createSupabaseServerClient()
-  // Same category, not this recipe, newest first.
+  // Same category, not this recipe, newest first. When the recipe has a dish,
+  // its other versions are excluded here (they show in "Inne przepisy na …"),
+  // keeping null-dish rows eligible.
+  const dishFilter = dishExclusionFilter(recipe.dish)
   const others = (limit: number, tags?: string[]) => {
     let q = supabase.from('public_recipes').select(CARD_COLUMNS).eq('category', recipe.category).neq('id', recipe.id)
+    if (dishFilter) q = q.or(dishFilter)
     if (tags) q = q.overlaps('tags', tags)
     return q.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(limit)
   }

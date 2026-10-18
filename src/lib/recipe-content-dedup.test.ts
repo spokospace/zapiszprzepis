@@ -34,10 +34,30 @@ describe('buildContentDuplicateGroups', () => {
     expect(buildContentDuplicateGroups(rows, null)).toEqual([])
   })
 
-  it('never groups across different titles', () => {
+  it('never groups across different titles on a subset (only on an identical set)', () => {
     const rows = [
       row({ id: 1, title: 'Makowiec', ingredients: ing('mąka', 'mak', 'cukier') }),
       row({ id: 2, title: 'Sernik', ingredients: ing('mąka', 'mak', 'cukier', 'ser') }),
+    ]
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([])
+  })
+
+  it('groups two differently-titled recipes with the identical ingredient set (#835/#836)', () => {
+    // The real case: one Facebook video the LLM titled two ways, extracted from
+    // two near-simultaneous shares to the identical 8-ingredient set.
+    const set = ing('masło', 'chleb', 'czarny pieprz', 'sól', 'jajka', 'oregano', 'szynka', 'ser')
+    const rows = [
+      row({ id: 835, title: 'Kanapki z jajkiem i szynką', ingredients: set, created_at: '2026-10-17T22:23:47Z' }),
+      row({ id: 836, title: 'Zapiekanka z szynką i serem', ingredients: set, created_at: '2026-10-17T22:24:18Z' }),
+    ]
+    // Completeness ties (same set), so the older #835 is kept.
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([{ canonicalId: 835, loserIds: [836] }])
+  })
+
+  it('keeps a differently-titled set below the fingerprint floor apart', () => {
+    const rows = [
+      row({ id: 1, title: 'Jajecznica', ingredients: ing('jajka', 'masło', 'sól') }),
+      row({ id: 2, title: 'Omlet', ingredients: ing('jajka', 'masło', 'sól') }),
     ]
     expect(buildContentDuplicateGroups(rows, null)).toEqual([])
   })

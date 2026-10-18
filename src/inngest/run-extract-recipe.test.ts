@@ -94,12 +94,22 @@ function makeSupabaseMock() {
     return chain
   }
 
+  const rpcQueues: Record<string, Array<{ data: any; error: any }>> = {}
   const supabase = {
     from: vi.fn().mockImplementation((table: string) => makeChain(table)),
+    // RPCs resolve directly (no chain). Default: an empty dish vocabulary.
+    rpc: vi.fn().mockImplementation((fn: string) =>
+      Promise.resolve(rpcQueues[fn]?.shift() ?? { data: [], error: null }),
+    ),
   }
 
   return {
     supabase,
+    /** Queue the next result for an RPC (e.g. 'dish_vocabulary'). */
+    queueRpc(fn: string, result: { data: any; error: any }) {
+      if (!rpcQueues[fn]) rpcQueues[fn] = []
+      rpcQueues[fn].push(result)
+    },
     /** Queue a .single() result for the next call on this table */
     queue(table: string, result: { data: any; error: any }) {
       if (!queues[table]) queues[table] = []
@@ -1442,5 +1452,102 @@ describe('runExtractRecipe — servings', () => {
 
       expect(mock.insertArgs('recipes')).toMatchObject({ servings: null })
     }
+  })
+})
+
+describe('runExtractRecipe — dish classification (E01-S21)', () => {
+  // Routes the two gpt-4.1 calls (labelling vs dish) and the extraction call by
+  // the request body, so the dish classifier gets a dish answer.
+  function makeDishFetchMock({
+    dishContent = JSON.stringify({ dish: 'Naleśniki', dishAccusative: 'naleśniki', confidence: 'high' }),
+    noteContent = JSON.stringify({ variantNote: 'Na maślance' }),
+    dishOk = true,
+  }: { dishContent?: string; noteContent?: string; dishOk?: boolean } = {}) {
+    return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url.includes('firecrawl.dev')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ data: { markdown: 'Przepis na naleśniki. '.repeat(30), html: '<p>x</p>' } }),
+        })
+      }
+      if (url.includes('openai.com')) {
+        const body = JSON.parse(String(init?.body))
+        const sys = String(body.messages?.[0]?.content ?? '')
+        if (body.model === 'gpt-4o-mini') {
+          return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: VALID_RECIPE_JSON } }] }) })
+        }
+        if (sys.includes('DISH grouping key')) {
+          return Promise.resolve({ ok: dishOk, status: dishOk ? 200 : 500, json: async () => ({ choices: [{ message: { content: dishContent } }] }) })
+        }
+        if (sys.includes('VARIANT NOTE')) {
+          return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: noteContent } }] }) })
+        }
+        // Labelling call.
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ choices: [{ message: { content: JSON.stringify({ title: 'Naleśniki', description: null, metaDescription: null, tags: [] }) } }] }),
+        })
+      }
+      return Promise.reject(new Error(`Unexpected fetch URL: ${url}`))
+    })
+  }
+
+  it('writes the four dish columns on insert when classification succeeds', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeDishFetchMock(), supabase: mock.supabase as any })
+
+    const args = mock.insertArgs('recipes')
+    expect(args.dish).toBe('naleśniki')
+    expect(args.dish_accusative).toBe('naleśniki')
+    expect(args.variant_note).toBe('Na maślance')
+    expect(typeof args.dish_classified_at).toBe('string')
+  })
+
+  it('reuses an existing vocabulary name and reads the vocabulary RPC', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queueRpc('dish_vocabulary', { data: [{ dish: 'naleśniki', dish_accusative: 'naleśniki', recipes: 3 }], error: null })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeDishFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.supabase.rpc).toHaveBeenCalledWith('dish_vocabulary')
+    expect(mock.insertArgs('recipes').dish).toBe('naleśniki')
+  })
+
+  it('leaves the dish columns unset when the classification call fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeDishFetchMock({ dishOk: false }), supabase: mock.supabase as any })
+
+    const args = mock.insertArgs('recipes')
+    expect('dish' in args).toBe(false)
+    expect('dish_classified_at' in args).toBe(false)
+  })
+
+  it('does not overwrite the dish on a refresh of an already-classified row', async () => {
+    const mock = makeSupabaseMock()
+    // The dish_classified_at pre-read: this row was classified before.
+    mock.queueMaybe('recipes', { data: { dish_classified_at: '2026-10-17T00:00:00Z' }, error: null })
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeDishFetchMock(), supabase: mock.supabase as any })
+
+    // The refresh update must carry none of the dish columns.
+    const updates = mock.updateArgs('recipes')
+    expect(updates.some((a) => 'dish' in a || 'dish_classified_at' in a)).toBe(false)
+  })
+
+  it('writes the dish on a refresh when the row was never classified', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { dish_classified_at: null }, error: null })
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeDishFetchMock(), supabase: mock.supabase as any })
+
+    expect(mock.didUpdate('recipes', { dish: 'naleśniki' })).toBe(true)
   })
 })
