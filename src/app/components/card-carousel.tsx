@@ -6,13 +6,23 @@ import { buttonClasses } from '@/app/components/ui/button'
 
 /**
  * On a phone a swipeable strip running to the screen edges (it cancels
- * PageContainer's px-4); from sm the 2-column grid, 4 from lg (E01-S17). The
- * strip scrolls inside itself, so the page never scrolls sideways (WCAG 1.4.10).
+ * PageContainer's px-4); a grid from sm. The strip scrolls inside itself, so the
+ * page never scrolls sideways (WCAG 1.4.10). Its 8 px top padding (pulled back
+ * up by -mt-2) keeps a card's own focus ring from being clipped by the scroller.
  * Not exported: a server component importing a string from a 'use client'
  * module gets a client reference, not the string.
  */
 const CAROUSEL_CLASS =
-  '-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4 lg:gap-5'
+  '-mx-4 -mt-2 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pt-2 pb-2 sm:mx-0 sm:mt-0 sm:grid sm:overflow-visible sm:px-0 sm:pt-0 sm:pb-0'
+
+/**
+ * The grid from sm. `tiles`: 2 columns, 4 from lg (home, Podobne; E01-S17).
+ * `rows`: one wide card a row, 2 from lg (Inne przepisy; E01-S21).
+ */
+const GRID = {
+  tiles: 'sm:grid-cols-2 lg:grid-cols-4 lg:gap-5',
+  rows: 'sm:grid-cols-1 sm:gap-6 lg:grid-cols-2',
+} as const
 
 /** One card: 3/4 of the screen on a phone, so the next one peeks in; a grid cell from sm. */
 const CAROUSEL_ITEM_CLASS = 'w-3/4 shrink-0 snap-start sm:w-auto'
@@ -32,13 +42,21 @@ function edgeOf(list: HTMLElement | null): Edge {
 const STEP_BUTTON = `${buttonClasses('outline', 'md')} grow whitespace-nowrap aria-disabled:cursor-not-allowed aria-disabled:opacity-50`
 
 /**
- * A row of cards inside a page (home "Ostatnio dodane", recipe "Podobne"). No
+ * A row of cards inside a page (home "Ostatnio dodane", recipe "Podobne" and "Inne przepisy"). No
  * gesture without a button (design handoff): on a phone "Poprzednie" /
  * "Następne" under the strip move it by one card, and its links stay reachable
  * with Tab, which scrolls them in. The buttons render on the server too, so the
  * page doesn't shift on hydration; they hide once every card turns out to fit.
  */
-export function CardCarousel({ label, items }: { label: string; items: { key: Key; card: ReactNode }[] }) {
+export function CardCarousel({
+  label,
+  items,
+  layout = 'tiles',
+}: {
+  label: string
+  items: { key: Key; card: ReactNode }[]
+  layout?: keyof typeof GRID
+}) {
   const listRef = useRef<HTMLUListElement>(null)
   const listId = useId()
   const subscribe = useCallback((onChange: () => void) => {
@@ -76,7 +94,7 @@ export function CardCarousel({ label, items }: { label: string; items: { key: Ke
 
   return (
     <>
-      <ul ref={listRef} id={listId} className={CAROUSEL_CLASS}>
+      <ul ref={listRef} id={listId} className={`${CAROUSEL_CLASS} ${GRID[layout]}`}>
         {items.map(({ key, card }) => (
           <li key={key} className={CAROUSEL_ITEM_CLASS}>
             {card}

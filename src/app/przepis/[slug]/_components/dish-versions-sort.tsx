@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { UtensilsCrossed } from 'lucide-react'
 import { recipePath } from '@/lib/routes'
 import { sourceLabel } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { chipClasses } from '@/app/components/ui/chip'
+import { CardCarousel } from '@/app/components/card-carousel'
 import {
   sortVersions,
   parseVersionsSort,
@@ -46,10 +48,13 @@ export function DishVersionsSort({
   versions,
   initialOrder,
   current,
+  label,
 }: {
   versions: DishVersionRow[]
   initialOrder: VersionsSort
   current: CurrentRecipe
+  /** The section heading, naming the carousel's buttons for screen readers. */
+  label: string
 }) {
   const [order, setOrder] = useState<VersionsSort>(initialOrder)
   const [announce, setAnnounce] = useState('')
@@ -116,11 +121,14 @@ export function DishVersionsSort({
         </div>
       )}
 
-      <ul className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {rows.map((v) => (
-          <VersionCard key={v.id} version={v} current={current} />
-        ))}
-      </ul>
+      {/* A swipeable strip with buttons on a phone; one card a row from sm, two from lg.
+          Keyed by the order, so a re-sort starts the strip again at its first card. */}
+      <CardCarousel
+        key={order}
+        label={label}
+        layout="rows"
+        items={rows.map((v) => ({ key: v.id, card: <VersionCard version={v} current={current} /> }))}
+      />
 
       <div role="status" aria-live="polite" className="sr-only">
         {announce}
@@ -136,17 +144,22 @@ function VersionCard({ version: v, current }: { version: DishVersionRow; current
   const badgeLabels = [badges.servings, badges.time].filter((b): b is string => Boolean(b))
 
   return (
-    <li className="relative flex gap-4 rounded-2xl border-2 border-border-card p-4 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-[3px] has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus">
-      <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-lg bg-surface-accent-2">
-        {v.image_url && (
+    // On a phone (a carousel card) the photo spans the card above the text; from sm a 72 px thumbnail beside it.
+    <article className="relative flex h-full flex-col gap-3 rounded-2xl border-2 border-border-card p-4 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-[3px] has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus sm:flex-row sm:gap-4">
+      <div className="relative flex aspect-[4/3] w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-accent-2 sm:aspect-auto sm:h-[72px] sm:w-[72px]">
+        {v.image_url ? (
           <Image
             src={v.image_url}
             alt=""
             fill
-            sizes="72px"
+            // 3/4 of the strip less the card's padding and frame; the thumbnail from 40rem.
+            sizes="(min-width: 40rem) 72px, calc(75vw - 3.5rem)"
             className="object-cover"
             unoptimized={!isArchivedImageUrl(v.image_url)}
           />
+        ) : (
+          // The RPC returns no category (a version may sit in another one), so a neutral icon.
+          <UtensilsCrossed aria-hidden="true" strokeWidth={1.5} className="h-12 w-12 text-action-text sm:h-8 sm:w-8" />
         )}
       </div>
 
@@ -187,6 +200,6 @@ function VersionCard({ version: v, current }: { version: DishVersionRow; current
           Otwórz ten przepis →
         </span>
       </div>
-    </li>
+    </article>
   )
 }
