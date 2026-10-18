@@ -238,9 +238,10 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
 
     const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
     const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
-    expect(system).toContain('Steps are impersonal instructions in Polish')
+    expect(system).toContain('Steps are short, plain instructions in Polish')
     expect(system).toContain('"Pokroić mięso w kostkę."')
     expect(system).toContain('"pokroiłam", "zeszkliłam"')
+    expect(system).toContain('"Następnie", "Potem"')
   })
 
   it('fails with a Polish message, not a SyntaxError, when the answer is not JSON', async () => {

@@ -5,7 +5,7 @@
 // (scripts/rewrite-recipe-steps.ts), so the two cannot drift.
 import { postChatJson, type LabelRecipeDeps } from '@/lib/recipe-labeling'
 
-export const STEP_FORM_RULE = `Steps are impersonal instructions in Polish: start each with a verb in the infinitive saying what to do ("Pokroić mięso w kostkę.", "Zeszklić cebulę.", "Dodać śmietanę i gotować 10 minut."). Rewrite the author's narration ("pokroiłam", "zeszkliłam", "dodałem", "gotujemy") and commands ("pokrój", "dodaj") into this form, and drop first-person asides ("u mnie", "ja dałam"). Change only the grammar: keep every amount, time, temperature and detail the source gives, in its order — do not shorten, merge or add steps.`
+export const STEP_FORM_RULE = `Steps are short, plain instructions in Polish, not prose: start each with a verb in the infinitive saying what to do ("Pokroić mięso w kostkę.", "Zeszklić cebulę.", "Dodać śmietanę i gotować 10 minut."). Rewrite the author's narration ("pokroiłam", "zeszkliłam", "dodałem", "gotujemy") and commands ("pokrój", "dodaj") into this form. Drop first-person asides ("u mnie", "ja użyłam") and words that only mean "next" ("Następnie", "Potem", "Teraz", "Na koniec") — the steps are numbered; keep words that say when ("W międzyczasie", "Gdy woda się zagotuje", "Po 20 minutach"). Keep every amount, time, temperature and detail the source gives, in its order — do not drop, merge or add steps.`
 
 export const STEP_REWRITE_PROMPT = `You fix the grammar of a saved Polish recipe's steps. Return ONLY JSON: {"steps": [...]} — exactly as many steps as given, in the same order, one rewritten step for each.
 - ${STEP_FORM_RULE}

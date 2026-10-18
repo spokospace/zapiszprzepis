@@ -18,21 +18,27 @@
 // the project's publishable key from wrangler.jsonc — a preview or --sql run
 // needs nothing but OPENAI_API_KEY, from .env.local or the command line.
 //
+// --from <file> takes the rewritten steps from a JSON file ({"<id>": [steps]},
+// e.g. written by Claude) instead of the model, for those recipes only; they
+// pass the same checks, and no OPENAI_API_KEY is needed.
+//
 //   pnpm rewrite:recipe-steps                      # preview, writes nothing
 //   pnpm rewrite:recipe-steps --slug <slug>        # preview one recipe
 //   pnpm rewrite:recipe-steps --limit 20           # preview the first 20 candidates
 //   pnpm rewrite:recipe-steps --sql steps.sql      # preview + write the UPDATEs to steps.sql
 //   pnpm rewrite:recipe-steps --apply              # write the changes
 //   OPENAI_API_KEY=sk-… pnpm rewrite:recipe-steps  # no .env.local
+//   pnpm rewrite:recipe-steps --from rewrites.json --sql steps.sql
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
-import { needsStepRewrite, rewriteSteps } from '@/lib/step-form'
+import { acceptRewrite, needsStepRewrite, rewriteSteps } from '@/lib/step-form'
 import { parseSteps } from '@/lib/steps'
 
 const apply = process.argv.includes('--apply')
 const all = process.argv.includes('--all')
 const slug = argValue('--slug')
 const sqlFile = argValue('--sql')
+const fromFile = argValue('--from')
 const limit = argValue('--limit') ? Number(argValue('--limit')) : undefined
 // Parallel model calls: a few hundred recipes in minutes, well under the rate limit.
 const CONCURRENCY = 5
@@ -68,7 +74,8 @@ async function main(): Promise<void> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const supabaseKey = serviceRoleKey ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? wranglerVar('NEXT_PUBLIC_SUPABASE_ANON_KEY')
   const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
+  const given: Record<string, unknown> | null = fromFile ? JSON.parse(readFileSync(fromFile, 'utf8')) : null
+  if (!apiKey && !given) {
     console.error('✗ Brak OPENAI_API_KEY — w .env.local albo przed poleceniem: OPENAI_API_KEY=sk-… pnpm rewrite:recipe-steps')
     process.exit(1)
   }
@@ -103,6 +110,7 @@ async function main(): Promise<void> {
   const candidates = rows
     .filter((r) => {
       const steps = parseSteps(r.steps)
+      if (given) return String(r.id) in given
       return steps.length > 0 && (all || slug != null || needsStepRewrite(steps))
     })
     .slice(0, limit)
@@ -114,7 +122,10 @@ async function main(): Promise<void> {
       candidates.slice(i, i + CONCURRENCY).map(async (row): Promise<Outcome> => {
         const steps = parseSteps(row.steps)
         try {
-          return { row, steps, rewritten: await rewriteSteps(steps, { fetch, apiKey }) }
+          const rewritten = given
+            ? acceptRewrite(steps, { steps: given[row.id] })
+            : await rewriteSteps(steps, { fetch, apiKey: apiKey! })
+          return { row, steps, rewritten }
         } catch (err) {
           return { row, error: (err as Error).message }
         }
