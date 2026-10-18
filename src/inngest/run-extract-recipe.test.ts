@@ -256,6 +256,22 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     const cakes = system.slice(system.indexOf('Cakes, tortes'), system.indexOf('Reserve "desery"'))
     expect(cakes).not.toContain('babeczki')
     expect(system).toContain('Reserve "desery" for non-cake sweets only: sweet muffins and cupcakes ("babeczki", "muffiny")')
+    expect(system).toContain('"rogaliki", "faworki") are "ciasteczka"')
+    expect(system).toContain('salads and slaws ("sałatka", "surówka", "coleslaw") are "salatki"')
+  })
+
+  it('asks for a title that names the dish, not a how-to question or praise', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
+    expect(system).toContain('("Jak zrobić domowe lody?" → "Domowe lody")')
+    expect(system).toContain('no praise words ("najlepszy", "pyszny", "idealny")')
+    expect(system).toContain('no first person ("moje", "mojej mamy")')
   })
 
   it('fails with a Polish message, not a SyntaxError, when the answer is not JSON', async () => {
