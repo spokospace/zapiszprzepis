@@ -6,7 +6,7 @@ import { homeGreeting } from '@/lib/home'
 import { getGreetingName } from '@/lib/first-name'
 import { vocative } from '@/lib/vocative'
 import { AppHeader } from '@/app/components/app-header'
-import { RecipeCard } from '@/app/components/recipe-card'
+import { RecipeCard, TILE_SIZES_2_TO_4 } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { PageContainer } from '@/app/components/page-container'
 import { HomeSearch } from '@/app/components/home/home-search'
@@ -120,6 +120,7 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
                   sourceUrl={r.source_url}
                   sourceAuthor={r.source_author}
                   favorite={{ recipeId: r.id, favorited: false, isAuthenticated: false }}
+                  sizes={TILE_SIZES_2_TO_4}
                 />
               ))}
             </div>

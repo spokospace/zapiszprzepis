@@ -34,10 +34,25 @@ interface RecipeCardProps {
   thumb?: 84 | 96
   /** List only, on a category page: "czas · źródło" and these tag labels instead of the category. */
   inCategory?: { tagLabels: readonly string[] }
+  /**
+   * Tile only: the image's `sizes`, matching the caller's grid (#253). The default fits
+   * Moje przepisy (one column on a phone); the two-column grids pass a `TILE_SIZES_*`.
+   */
+  sizes?: string
 }
 
 /** The list cards' container: one column, two from lg so they don't stretch to 1088 px (E01-S17). */
 export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
+
+// A tile's `sizes` in a two-column grid, so a phone fetches an archived image at the
+// width of half the screen, not all of it (#253). The grids sit in PageContainer:
+// 68rem (1088 px) of content at most, so from there a column has a fixed width.
+// In rem, like Tailwind's breakpoints and widths: with a larger browser font the grid
+// keeps two columns longer, and px values would then pick a blurry, too-small image.
+/** Two a row, four from lg (home „Ostatnio dodane”, Podobne): (68 − 3 × 1.25) / 4 ≈ 16.1rem (257 px). */
+export const TILE_SIZES_2_TO_4 = '(min-width: 64rem) 16.1rem, 50vw'
+/** Two a row, three from sm (Ulubione): (68 − 2 × 0.75) / 3 ≈ 22.2rem (355 px). */
+export const TILE_SIZES_2_TO_3 = '(min-width: 72rem) 22.2rem, (min-width: 40rem) 33vw, 50vw'
 
 export function RecipeCard({
   slug,
@@ -54,6 +69,7 @@ export function RecipeCard({
   minutes,
   thumb = 96,
   inCategory,
+  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
 }: RecipeCardProps) {
   const heart = (size: 'compact' | 'bar') =>
     favorite && (
@@ -121,7 +137,7 @@ export function RecipeCard({
             alt={title}
             fill
             className="object-cover group-hover:scale-105 transition-transform"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes={sizes}
             unoptimized={!isArchivedImageUrl(imageUrl)}
           />
         ) : (
