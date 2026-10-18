@@ -25,6 +25,22 @@ describe('ingredientKey', () => {
     expect(ingredientKey('2 łyżki').size).toBe(0)
     expect(ingredientKey('szczypta').size).toBe(0)
   })
+
+  it('gives the inflected forms of a word one key', () => {
+    const same = (a: string, b: string) => expect([...ingredientKey(a)]).toEqual([...ingredientKey(b)])
+    same('ogórki konserwowe', 'Ogórek konserwowy')
+    same('piersi', 'pierś')
+    same('oleju', 'olej')
+    same('mąki', 'mąka')
+    same('szczypta soli', 'sól')
+    same('cukru', 'cukier')
+    same('pęczek natki', 'natka')
+  })
+
+  it('keeps a word that only starts like a unit ("szczypiorek" is not "szczypta")', () => {
+    expect([...ingredientKey('szczypiorek')]).toEqual([...ingredientKey('pęczek szczypiorku')])
+    expect(ingredientKey('szczypiorek').size).toBe(1)
+  })
 })
 
 describe('ingredientDiff', () => {
@@ -45,13 +61,13 @@ describe('ingredientDiff', () => {
   })
 
   it('caps each line at 4 names', () => {
-    const many = [1, 2, 3, 4, 5, 6].map((n) => ({ name: `składnik${n}` }))
+    const many = ['mąka', 'cukier', 'masło', 'jajka', 'mleko', 'drożdże'].map((name) => ({ name }))
     expect(ingredientDiff([], many).plus).toHaveLength(4)
   })
 
-  it('does not treat a shared short-named ingredient (empty key) as a difference', () => {
-    // "sól" / "ser" are under 4 letters, so stems() gives an empty key; identical
-    // names must still match on the normalized name, not show as + jest / − nie ma.
+  it('does not treat a shared short-named ingredient as a difference', () => {
+    // 3-letter names ("sól", "ser") are keyed like any other: identical ones
+    // match, not show as + jest / − nie ma.
     const diff = ingredientDiff([{ name: 'sól' }, { name: 'ser' }], [{ name: 'sól' }, { name: 'mleko' }])
     expect(diff.plus).toEqual(['mleko'])
     expect(diff.minus).toEqual(['ser'])
@@ -63,6 +79,59 @@ describe('ingredientDiff', () => {
     const sectioned = [{ name: 'mąka', section: 'Ciasto' }, { name: 'ser', section: 'Masa' }]
     expect(ingredientDiff([{ name: 'mąka' }], sectioned).plus).toEqual(['ser'])
     expect(ingredientDiff('not json', 'also not')).toEqual({ plus: [], minus: [] })
+    expect(ingredientDiff([null, { name: 5 }, { name: 'mąka' }], [])).toEqual({ plus: [], minus: ['mąka'] })
+  })
+
+  // Production: "nie ma: woda, woda", "majeranek, granulowany czosnek, majeranek, granulowany czosnek".
+  it('lists an ingredient a recipe repeats across its sections once', () => {
+    const current = [
+      { name: 'woda', section: 'Zaczyn' },
+      { name: 'drożdże świeże', section: 'Zaczyn' },
+      { name: 'mąka', section: 'Ciasto' },
+      { name: 'woda', section: 'Ciasto' },
+      { name: 'drożdże świeże', section: 'Ciasto' },
+      { name: 'drożdże', section: 'Ciasto' },
+    ]
+    expect(ingredientDiff(current, [{ name: 'mąka' }]).minus).toEqual(['woda', 'drożdże świeże'])
+    expect(ingredientDiff([{ name: 'mąka' }], current).plus).toEqual(['woda', 'drożdże świeże'])
+  })
+
+  it('collapses repeats before the cap, so the line still names 4 different ingredients', () => {
+    const current = ['masło', 'masło', 'cukier', 'cukier', 'jajka', 'mleko', 'kakao'].map((name) => ({ name }))
+    expect(ingredientDiff(current, []).minus).toEqual(['masło', 'cukier', 'jajka', 'mleko'])
+  })
+
+  // Production: "+ jest: ogórki konserwowe" next to "− nie ma: Ogórek konserwowy".
+  it('never lists one ingredient under both + jest and − nie ma for a different word form or a filler word', () => {
+    const pairs: [string, string][] = [
+      ['ogórki konserwowe', 'Ogórek konserwowy'],
+      ['filet z piersi kurczaka', 'pierś z kurczaka'],
+      ['olej', 'oleju'],
+      ['pieprz czarny', 'świeżo mielony pieprz'],
+      ['zimna woda', 'ciepła woda'],
+      ['ser', 'ser żółty'],
+      ['liść laurowy', 'liście laurowe'],
+      ['ocet jabłkowy', 'octu'],
+    ]
+    for (const [a, b] of pairs) expect(ingredientDiff([{ name: a }], [{ name: b }]), `${a} / ${b}`).toEqual({ plus: [], minus: [] })
+  })
+
+  it('keeps different ingredients that share a word apart', () => {
+    expect(ingredientDiff([{ name: 'papryka czerwona' }], [{ name: 'słodka papryka w proszku' }])).toEqual({
+      plus: ['słodka papryka w proszku'],
+      minus: ['papryka czerwona'],
+    })
+    expect(ingredientDiff([{ name: 'pierś z kurczaka' }], [{ name: 'przyprawa do kurczaka' }]).plus).toEqual(['przyprawa do kurczaka'])
+    expect(ingredientDiff([{ name: 'mąka pszenna' }], [{ name: 'mąka kukurydziana' }]).plus).toEqual(['mąka kukurydziana'])
+  })
+
+  it('shows a name as it reads mid-sentence', () => {
+    const shown = (name: string) => ingredientDiff([], [{ name }]).plus[0]
+    expect(shown('Mleko')).toBe('mleko')
+    expect(shown('BBQ sos')).toBe('BBQ sos')
+    expect(shown('Sos adżika (opcjonalnie)')).toBe('sos adżika')
+    expect(shown('zielony, mrożony groszek')).toBe('zielony mrożony groszek')
+    expect(shown('przyprawy: sól, pieprz, majeranek')).toBe('przyprawy')
   })
 })
 
