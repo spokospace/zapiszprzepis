@@ -93,9 +93,12 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
           )}
         </p>
 
-        <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[17px] text-ink">
+        {/* C3: „Źródło: **YouTube · Kuchnia Ani**” — 18 px, the source in bold. */}
+        <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] text-ink">
           <Globe aria-hidden="true" size={20} className="shrink-0 text-ink-soft" />
-          <span className="min-w-0">Źródło: {sourceLabel(recipe.source_type, recipe.source_url, recipe.source_author)}</span>
+          <span className="min-w-0">
+            Źródło: <strong className="font-bold">{sourceLabel(recipe.source_type, recipe.source_url, recipe.source_author)}</strong>
+          </span>
           {/* From lg only (A9: "Oryginał" by the title); below lg the original is the
               outlined button at the end of the recipe (C3, item 11). */}
           {recipe.source_url && (
@@ -118,14 +121,15 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
             raw gender, which stays owner-only (E01-S12); neutral "Dodane przez" when
             unknown. A link to /u/{username} when the author has a username. */}
         {recipe.author_name && (
-          <p className="text-[17px] text-ink-soft">
+          // C3/A4: a small 16 px line, the name an underlined link in the accent colour.
+          <p className="text-[16px] text-ink-soft">
             {authorLinePrefix(parseGenderForm(recipe.author_gender_form))}{' '}
             {authorHref ? (
-              <Link href={authorHref} className="font-bold text-ink underline hover:text-action-hover">
+              <Link href={authorHref} className="text-action-text underline hover:text-action-hover">
                 {recipe.author_name}
               </Link>
             ) : (
-              <span className="font-bold text-ink">{recipe.author_name}</span>
+              <span className="text-ink">{recipe.author_name}</span>
             )}
           </p>
         )}

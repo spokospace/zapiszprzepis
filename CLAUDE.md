@@ -39,6 +39,8 @@ Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelnoś
 - **Nagłówek (decyzje właściciela, nadpisują starsze makiety i specy):**
   - Logo to ikona `logo-icon.svg` + napis „ZapiszPrzepis” tekstem od 640 px (na telefonie sama ikona); nigdy `logo-lettering.svg` (#320).
   - Zalogowany poniżej 1024 px widzi w nagłówku tylko „Dodaj” · „MENU”. „Powiadomienia” to wiersz w MENU („Moje”) + licznik na przycisku MENU; dzwonek w nagłówku tylko od `lg` (#323).
+  - Gość poniżej 1024 px: logo (lub „← Wróć”) + MENU; „Zaloguj się” / „Załóż konto” są w MENU (#324).
+  - Jeden link wstecz na ekran: „← Wróć” zastępuje logo pod stroną startową, ale strona przepisu zostawia logo, bo wraca pasek listy (#324).
   - Źródłem prawdy jest `src/app/components/app-header.tsx` i jego testy — handoff `.dc.html` w tych punktach jest nieaktualny.
 
 <!-- BEGIN @przeprogramowani/10x-cli -->

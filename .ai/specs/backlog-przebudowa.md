@@ -132,7 +132,7 @@ Strona główna, wyszukiwarka i przepis działają bez logowania; nagłówek ma 
 
 - **Given** niezalogowany gość, **When** wejdzie na stronę główną, wyszukiwarkę lub `/przepis/{slug}`, **Then** widzi treść (nie jest przekierowany na `/login`).
 - **Given** klient `anon` w Supabase, **When** czyta przepisy, **Then** RLS zezwala na odczyt opublikowanych przepisów, a zapisy/dane prywatne (ulubione, profile) pozostają chronione per użytkownik (test izolacji: `anon` nie czyta cudzych ulubionych).
-- **Given** gość na dowolnym ekranie, **When** patrzy na nagłówek, **Then** widzi „Zaloguj się” + MENU; zalogowany widzi Dodaj / MENU, a od 1024 px także dzwonek „Powiadomienia” (na telefonie powiadomienia są w MENU — zmiana 2026-10-19, #323; pierwotnie Dodaj / Powiadomienia / MENU).
+- **Given** gość na dowolnym ekranie, **When** patrzy na nagłówek, **Then** widzi MENU z „Zaloguj się” / „Załóż konto” w środku (od 1024 px oba w nagłówku — zmiana 2026-10-19, #324; pierwotnie „Zaloguj się” + MENU); zalogowany widzi Dodaj / MENU, a od 1024 px także dzwonek „Powiadomienia” (na telefonie powiadomienia są w MENU — zmiana 2026-10-19, #323; pierwotnie Dodaj / Powiadomienia / MENU).
 - **Pliki:** przeniesienie `page.tsx` (home), wyszukiwarki i przepisu poza grupę `(authenticated)`; `middleware.ts`; polityki RLS w `supabase/`; `src/app/components/app-header.tsx`.
 - **Uwaga risk-high:** wymaga testu integracyjnego ścieżki odmowy i odczytu w złym zakresie + review drugiej osoby (SDLC).
 

@@ -34,6 +34,8 @@ interface RecipeCardProps {
   /** List only: from sm a 96 px thumbnail + 20 px title (search, C2) or 84 + 19 (category 6, profile 7). */
   thumb?: 84 | 96
   /** List only, on a category page: "czas · źródło" and these tag labels instead of the category. */
+  /** Tile only: the category badge under the source. Off where every card shares the category (Podobne). */
+  showCategory?: boolean
   inCategory?: { tagLabels: readonly string[] }
   /**
    * Tile only: the image's `sizes`, matching the caller's grid (#253). The default fits
@@ -87,6 +89,7 @@ export function RecipeCard({
   minutes,
   thumb = 96,
   inCategory,
+  showCategory = true,
   sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
 }: RecipeCardProps) {
   // The top-right corner of the card: on the photo on a phone and on a tile; beside
@@ -187,9 +190,11 @@ export function RecipeCard({
         </h3>
         {description && <p className="mt-1 line-clamp-2 text-[16px] text-ink-soft">{description}</p>}
         <p className="mt-1 text-[16px] break-words text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
-        <span className="mt-2 inline-block rounded-pill bg-surface-accent-2 px-2.5 py-0.5 text-[16px] font-bold text-action-text">
-          {categoryLabel(category)}
-        </span>
+        {showCategory && (
+          <span className="mt-2 inline-block rounded-pill bg-surface-accent-2 px-2.5 py-0.5 text-[16px] font-bold text-action-text">
+            {categoryLabel(category)}
+          </span>
+        )}
       </div>
 
       {heart}

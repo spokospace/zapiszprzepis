@@ -88,7 +88,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                 favoriteIds={user ? (favoriteIds ?? new Set()) : null}
               />
             )}
-            <WebSearchFallback q={q} hasFullAccess={hasFullAccess} hasResults={rows.length > 0} />
+            <WebSearchFallback q={q} isAuthenticated={Boolean(user)} hasFullAccess={hasFullAccess} hasResults={rows.length > 0} />
           </>
         )}
       </PageContainer>

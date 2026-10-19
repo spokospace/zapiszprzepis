@@ -228,7 +228,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           current={currentRecipe}
         />
 
-        <SimilarRecipes recipe={typedRecipe} />
+        <SimilarRecipes recipe={typedRecipe} userId={user?.id ?? null} />
 
         {isOwner && delete_error === 'shared' && (
           <p role="alert" className="mb-4 border-t border-border-card pt-8 text-[17px] font-bold text-danger">
