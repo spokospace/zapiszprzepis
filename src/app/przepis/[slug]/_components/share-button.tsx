@@ -40,7 +40,15 @@ export const SHARE_MESSAGES: Partial<Record<ShareOutcome, string>> = {
  * "Udostępnij" in the desktop header (handoff A9), next to "W ulubionych" and
  * "Oryginał". The outcome is spoken from a status region that is always mounted.
  */
-export function ShareButton({ title, url, className = '' }: { title: string; url: string; className?: string }) {
+export function ShareButton({
+  title,
+  url,
+  className = buttonClasses('outline', 'md'),
+}: {
+  title: string
+  url: string
+  className?: string
+}) {
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null)
   const message = outcome ? SHARE_MESSAGES[outcome] : undefined
 
@@ -52,7 +60,7 @@ export function ShareButton({ title, url, className = '' }: { title: string; url
           setOutcome(null)
           setOutcome(await shareLink(navigator, { title, url }))
         }}
-        className={`${buttonClasses('outline', 'md')} ${className}`}
+        className={className}
       >
         <Share2 aria-hidden="true" size={22} className="shrink-0" />
         Udostępnij

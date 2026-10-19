@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Globe } from 'lucide-react'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
-import { recipeMetaLine } from '@/lib/recipe-meta'
+import { recipeMetaLine, recipeTimeStats } from '@/lib/recipe-meta'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
@@ -32,18 +32,31 @@ interface RecipeHeaderProps {
   recipe: RecipeHeaderData
   /** E01-S21: the "N inne przepisy na {danie}" bar, under the author line. */
   versionsBar?: ReactNode
+  /** The favourite (and from lg "Udostępnij" / "Oryginał") row, last in the text column (A9). */
+  actions?: ReactNode
+}
+
+/** "≈" reads as "almost equal to" in screen readers; they get "około" instead. */
+function Approx() {
+  return (
+    <>
+      <span aria-hidden="true">≈ </span>
+      <span className="sr-only">około </span>
+    </>
+  )
 }
 
 /**
  * The recipe page header (E01-S07, S07b): 4:3 photo, "Przepisy › {Kategoria}"
- * breadcrumbs, 32 px title, "Kategoria · czas", source (with "Otwórz oryginał"
- * from lg), and who added it. The tags
- * render at the bottom of the page, in "Ten przepis jest" (E01-S16).
+ * breadcrumbs, 32 px title, "Kategoria · czas" (from lg the A9 times row), source,
+ * who added it, and the actions. The tags render at the bottom of the page, in
+ * "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps) {
   const category = categoryLabel(recipe.category)
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
+  const times = recipeTimeStats(recipe)
 
   return (
     // Desktop (E01-S17, A9): a 16:10 photo | the text column (1.2fr 1fr) when there is a photo.
@@ -81,13 +94,13 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
         </nav>
 
         <h1 className="mb-2 text-[32px] font-bold leading-tight text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
-        <p className="mb-3 text-[17px] text-ink-soft">
-          {/* "≈" reads as "almost equal to" in screen readers; they get "około" instead. */}
+        {/* Below lg (C3). From lg the category is in the breadcrumbs and the times get
+            their own row (A9). */}
+        <p className="mb-3 text-[17px] text-ink-soft lg:hidden">
           {before}
           {after != null && (
             <>
-              <span aria-hidden="true">≈ </span>
-              <span className="sr-only">około </span>
+              <Approx />
               {after}
             </>
           )}
@@ -99,22 +112,6 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
           <span className="min-w-0">
             Źródło: <strong className="font-bold">{sourceLabel(recipe.source_type, recipe.source_url, recipe.source_author)}</strong>
           </span>
-          {/* From lg only (A9: "Oryginał" by the title); below lg the original is the
-              outlined button at the end of the recipe (C3, item 11). */}
-          {recipe.source_url && (
-            <span className="hidden lg:contents">
-              <span aria-hidden="true">·</span>
-              <a
-                href={recipe.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-[48px] items-center font-bold text-action-text underline hover:text-action-hover"
-              >
-                Otwórz oryginał
-                <span className="sr-only"> (otwiera nową kartę)</span>
-              </a>
-            </span>
-          )}
         </p>
 
         {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the
@@ -134,9 +131,25 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
           </p>
         )}
 
+        {times.length > 0 && (
+          // A9: "Przygotowanie / Gotowanie / Łącznie", the values 20 px bold.
+          <dl className="mt-4 hidden flex-wrap gap-x-8 gap-y-2 lg:flex">
+            {times.map((t) => (
+              <div key={t.label}>
+                <dt className="text-[16px] text-ink-soft">{t.label}</dt>
+                <dd className="text-[20px] font-bold text-ink">
+                  {recipe.times_estimated && <Approx />}
+                  {t.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
         {recipe.description && <p className="mt-4 text-[19px] text-ink-soft">{recipe.description}</p>}
         {recipe.meta_description && <p className="mt-3 text-[19px] leading-relaxed text-ink">{recipe.meta_description}</p>}
         {versionsBar}
+        {actions}
       </div>
     </header>
   )

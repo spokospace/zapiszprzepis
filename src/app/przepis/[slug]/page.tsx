@@ -127,6 +127,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
   const steps = parseSteps(typedRecipe.steps)
   const listKey = parseListKey(from)
+  const canonicalUrl = `${await getSiteUrl()}${recipePath(typedRecipe.slug)}`
 
   return (
     <main className="min-h-screen bg-white py-6 sm:py-8">
@@ -161,11 +162,16 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               <DishVersionsBar count={versionsTotal} dishAccusative={typedRecipe.dish_accusative ?? null} />
             ) : undefined
           }
-        />
-        <RecipeActions
-          recipeId={typedRecipe.id}
-          isFavorite={isFavorite}
-          isAuthenticated={Boolean(user)}
+          actions={
+            <RecipeActions
+              recipeId={typedRecipe.id}
+              isFavorite={isFavorite}
+              isAuthenticated={Boolean(user)}
+              title={typedRecipe.title}
+              shareUrl={canonicalUrl}
+              sourceUrl={typedRecipe.source_url}
+            />
+          }
         />
         {/* Video and gallery sit in the steps column from lg (E01-S17); below lg they
             follow the steps exactly as before. */}
@@ -205,13 +211,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         </RecipeChecklists>
 
         {/* The end of the recipe (handoff C3, items 11–13): the original, then
-            Poprzedni / Następny, then the tags and similar recipes. */}
+            Poprzedni / Następny, then the tags and similar recipes. From lg the
+            original is "Oryginał" in the header instead (A9). */}
         {typedRecipe.source_url && (
           <a
             href={typedRecipe.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`${buttonClasses('outline', 'md')} mb-6 w-full no-underline! sm:w-auto`}
+            className={`${buttonClasses('outline', 'md')} mb-6 w-full no-underline! sm:w-auto lg:hidden`}
           >
             <ExternalLink aria-hidden="true" size={20} className="shrink-0" />
             {originalLinkLabel(typedRecipe.source_type, typedRecipe.source_url)}
