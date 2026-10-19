@@ -10,7 +10,7 @@ export function GuestCta() {
   return (
     <section
       aria-labelledby="guest-cta-heading"
-      className="rounded-card bg-surface-dark px-5 py-5 text-white [&_:focus-visible]:outline-accent-dark!"
+      className="rounded-card bg-surface-dark px-5 py-5 text-white [&_*]:outline-accent-dark [&_:focus-visible]:outline-accent-dark!"
     >
       <h2 id="guest-cta-heading" className="text-[20px] leading-snug font-bold">
         Zapisuj przepisy z linku i zbieraj ulubione

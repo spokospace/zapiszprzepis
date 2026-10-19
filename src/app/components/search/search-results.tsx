@@ -30,7 +30,8 @@ export function SearchResults({ q, scope, page, category, rows, total, favoriteI
     <>
       <RecipeListSnapshot
         listKey="szukaj"
-        label="Wyniki wyszukiwania"
+        // A4: the list bar names the query, „← Wyniki: „dynia””.
+        label={`Wyniki: „${q}”`}
         href={searchPath(q, scope, page, category)}
         items={rows.map((r) => ({ slug: r.slug, title: r.title }))}
       />

@@ -32,7 +32,8 @@ const COPY = {
 // widening the page (WCAG 1.4.10).
 const BASE = 'inline-flex items-center justify-center gap-2 font-bold wrap-anywhere transition-colors'
 const SIZE = {
-  full: `${BASE} min-h-[58px] w-full rounded-field border-[2.5px] border-action px-5 text-[18px] sm:w-auto`,
+  // no-underline!: a guest gets this as a link to /login, shaped like the button.
+  full: `${BASE} min-h-[58px] w-full rounded-field border-[2.5px] border-action px-5 text-[18px] no-underline! sm:w-auto`,
   // The shadow sets the white circle off a light photo; the heart itself carries the contrast.
   photo: 'inline-flex h-12 w-12 items-center justify-center rounded-pill bg-white shadow-md transition-colors',
 } as const

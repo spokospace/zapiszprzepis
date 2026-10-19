@@ -44,7 +44,7 @@ describe('sourceLabel', () => {
   })
 
   it('names a known Facebook author before the platform, whatever the link shape', () => {
-    const wiola = 'Kulinarna Wiola · Facebook'
+    const wiola = 'Facebook · Kulinarna Wiola'
     expect(sourceLabel('facebook_text', 'https://www.facebook.com/100069645633702/posts/pfbid0289YMoX2fdF/')).toBe(wiola)
     expect(sourceLabel('facebook_reel', 'https://www.facebook.com/100069645633702/videos/sernik/1784278505620096/')).toBe(wiola)
     expect(
@@ -53,8 +53,8 @@ describe('sourceLabel', () => {
   })
 
   it('names the author stored at import, ahead of the known-profile map', () => {
-    expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Fefe Deni')).toBe('Fefe Deni · Facebook')
-    expect(sourceLabel('youtube', 'https://youtu.be/abc', 'PALCE LIZAĆ')).toBe('PALCE LIZAĆ · YouTube')
+    expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Fefe Deni')).toBe('Facebook · Fefe Deni')
+    expect(sourceLabel('youtube', 'https://youtu.be/abc', 'PALCE LIZAĆ')).toBe('YouTube · PALCE LIZAĆ')
     expect(sourceLabel('web_blog', 'https://www.polskiekulinaria.pl/tiramisu', 'Ania')).toBe('polskiekulinaria.pl')
   })
 

@@ -15,7 +15,8 @@ interface TextSizeControlsProps {
  */
 export function TextSizeControls({ level, onChange }: TextSizeControlsProps) {
   return (
-    <div className="flex items-center gap-3">
+    // C3: a #f3f4f6 panel, the label on the left and the buttons on the right.
+    <div className="flex w-full items-center justify-between gap-3 rounded-[14px] bg-surface-3 py-2 pr-2 pl-4">
       <span id="text-size-label" className="min-w-0 text-[16px] font-bold wrap-anywhere text-ink-soft">
         Wielkość tekstu
       </span>

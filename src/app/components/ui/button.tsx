@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react'
 
-export type ButtonVariant = 'primary' | 'outline' | 'danger' | 'facebook'
+export type ButtonVariant = 'primary' | 'dark' | 'outline' | 'danger' | 'facebook'
 export type ButtonSize = 'md' | 'lg' | 'xl'
 
 /** Min touch target 48px (WCAG 2.5.8); lg = primary action 56px; xl = cooking mode 72px. */
@@ -13,6 +13,8 @@ const SIZES: Record<ButtonSize, string> = {
 const VARIANTS: Record<ButtonVariant, string> = {
   // #c2410c + white text clears 4.5:1; never use #ea580c/#f97316 with white.
   primary: 'bg-action text-white hover:bg-action-hover',
+  // #111827 with white text (17:1): secondary actions on light surfaces (A5 gallery lock, cooking mode).
+  dark: 'bg-ink text-white hover:bg-ink-soft',
   outline: 'bg-white text-ink border-2 border-field hover:bg-surface-3',
   danger: 'bg-white text-danger border-2 border-danger hover:bg-surface-3',
   // Brand blue: white text only at 19px+ bold (large text, 4.2:1 vs AA's 3:1).

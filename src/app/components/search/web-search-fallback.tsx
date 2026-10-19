@@ -71,7 +71,15 @@ export function WebSearchFallback({
             <Globe aria-hidden="true" className="h-5 w-5 shrink-0" />
             {state.kind === 'searching' ? 'Szukam…' : `Szukaj „${q}” w internecie`}
           </button>
-          <div aria-live="polite">
+          {/* Only the outcome is announced (a count or an error), not the whole result list. */}
+          <p aria-live="polite" className="sr-only">
+            {state.kind === 'results'
+              ? state.results.length === 0
+                ? 'Nic nie znaleźliśmy w internecie.'
+                : `Znalezione w internecie: ${state.results.length}`
+              : ''}
+          </p>
+          <div>
             {state.kind === 'error' && (
               <p role="alert" className="mt-3 text-[17px] text-danger">
                 {state.rateLimited

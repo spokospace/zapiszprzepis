@@ -33,3 +33,18 @@ describe('searchViaExa — per-account cap', () => {
     expect(fetchSpy).toHaveBeenCalledOnce()
   })
 })
+
+describe('searchViaExa — query length', () => {
+  it('cuts a very long query before the paid Exa call', async () => {
+    vi.restoreAllMocks()
+    vi.mocked(requireUser).mockResolvedValue({ supabase: {}, user: { id: 'user-1' } } as any)
+    vi.mocked(exaSearchAllowed).mockResolvedValue(true)
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ results: [] }), { status: 200 }))
+
+    await searchViaExa('a'.repeat(5000))
+    const body = JSON.parse(String(fetchSpy.mock.calls[0][1]?.body))
+    expect(body.query).toHaveLength(200)
+  })
+})

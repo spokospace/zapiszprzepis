@@ -26,7 +26,11 @@ type ExaApiResponse = {
   results: ExaApiResult[]
 }
 
-export async function searchViaExa(query: string): Promise<ExaSearchResponse> {
+/** A dish or ingredient name fits easily; a longer string is cut before the paid call. */
+const MAX_QUERY_LENGTH = 200
+
+export async function searchViaExa(rawQuery: string): Promise<ExaSearchResponse> {
+  const query = String(rawQuery ?? '').slice(0, MAX_QUERY_LENGTH)
   try {
     const { supabase, user } = await requireUser()
     const userId = user.id

@@ -65,7 +65,7 @@ export function RecipeListBar(props: RecipeListProps) {
           instead of pushing "N z M" off screen (WCAG 1.4.10). */}
       <Link
         href={position.href}
-        className="inline-flex min-h-[48px] min-w-0 items-center underline wrap-anywhere hover:text-action-hover"
+        className="inline-flex min-h-[48px] min-w-0 items-center font-bold no-underline! wrap-anywhere hover:text-action-hover"
       >
         ← {position.label}
       </Link>
