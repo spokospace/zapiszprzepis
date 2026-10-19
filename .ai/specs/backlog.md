@@ -6,7 +6,7 @@ authority; this file keeps the id→issue mapping and reserved ids per source.
 ## .ai/specs/backlog-przebudowa.md
 
 Backlog source: `.ai/specs/backlog-przebudowa.md`
-Last filed: 2026-10-16 · re-synced 2026-10-19
+Last filed: 2026-10-16 · re-synced 2026-10-19 · extended 2026-10-19 (handoff v8)
 Tracker: GitHub `spokospace/zapiszprzepis`
 
 Epic E01 (public, high-readability rebuild): the first run filed 18 stories
@@ -27,6 +27,14 @@ adoption comment on each. S15–S17 statuses were refreshed to closed.
 S04–S11, S13, S14 were closed the same day on the owner's confirmation: their
 implementation PRs had merged but referenced the issues with `Refs`, so GitHub
 never closed them. Only S12 (#205) stays open, waiting on #299 / #288.
+
+Extension 2026-10-19 (handoff v8): four new stories S24–S27 filed from the
+owner's design handoff v8, imported to `.ai/design/przebudowa-handoff/`
+(`ZMIANY_nawigacja_mobile.md`, `ISSUE_lupa_szukaj.md`, screen 4 in README) — the
+two-word name „Zapisz Przepis”, the mobile header with „Szukaj” instead of
+„Dodaj” and a text-only logo (supersedes the #328/#331 mobile-logo rule),
+full-screen `/szukaj` and voice search. No adoptions: no open or closed issue
+covered them.
 
 | Id | Issue | Title | Epic | Depends on | Adopted | Status |
 |---|---|---|---|---|---|---|
@@ -60,10 +68,14 @@ never closed them. Only S12 (#205) stays open, waiting on #299 / #288.
 | E01-S21-T01 | [#298](https://github.com/spokospace/zapiszprzepis/issues/298) | Backfill dish / variant_note for existing recipes (Claude-authored data migration) | Story #296 | — | yes | closed · applied on prod |
 | E01-S22 | [#289](https://github.com/spokospace/zapiszprzepis/issues/289) | Shared list card + favorites bar (search, category, profile) | #201 | — | yes | closed · shipped #292 |
 | E01-S23 | [#290](https://github.com/spokospace/zapiszprzepis/issues/290) | Gendered wording in public texts (Dodała/Dodał) | #201 | — | yes | closed · shipped #291 |
+| E01-S24 | [#339](https://github.com/spokospace/zapiszprzepis/issues/339) | The app is called „Zapisz Przepis” everywhere | #201 | — | no | open |
+| E01-S25 | [#340](https://github.com/spokospace/zapiszprzepis/issues/340) | Below lg the header shows „Zapisz Przepis” · „Szukaj” · „MENU” for everyone | #201 | E01-S24 | no | open |
+| E01-S26 | [#341](https://github.com/spokospace/zapiszprzepis/issues/341) | Below lg, /szukaj opens as a full-screen search with recent and popular searches | #201 | E01-S25 | no | open |
+| E01-S27 | [#342](https://github.com/spokospace/zapiszprzepis/issues/342) | A user can search by voice with „Powiedz” and sees what was heard | #201 | E01-S26 | no | open |
 
-Reserved ids: E01-S01 … E01-S23, plus E01-S03a / E01-S03b (S03 split; the bare
+Reserved ids: E01-S01 … E01-S27, plus E01-S03a / E01-S03b (S03 split; the bare
 `E01-S03` id is retired, not reused), E01-S07b, E01-S12b, E01-S13b, and tasks
-E01-S12-T01, E01-S21-T01. Next new story would be E01-S24.
+E01-S12-T01, E01-S21-T01. Next new story would be E01-S28.
 
 Outside the tree (not E01 outcomes, deliberately not adopted): #225–#233
 (listing/performance refactors), #116, #132, #188, #307.

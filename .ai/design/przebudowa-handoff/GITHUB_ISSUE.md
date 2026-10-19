@@ -12,7 +12,7 @@ Warianty wybrane w README, sekcja „Decyzje (finalne)”: 1c + nawigacja MENU z
 ### Fundamenty
 - [ ] Tokeny: `#c2410c` dla przycisków z białym tekstem (zamiast `#f97316`), tekst pomocniczy min. `#374151` / 16 px, treść 19 px, cele dotyku min. 48 px, focus 3 px, podkreślone linki
 - [ ] Strony publiczne (start, wyszukiwarka, kategoria, przepis, profil) poza grupą `(authenticated)`; RLS: odczyt przepisów dla `anon`
-- [ ] Nagłówek zalogowanego: „Dodaj” · „MENU” z podpisami, „Powiadomienia” w MENU na telefonie (#323; pierwotnie trzeci przycisk w nagłówku); gość: „Zaloguj się” · „MENU”
+- [ ] Nagłówek poniżej lg (handoff v8): napis „Zapisz Przepis” · „Szukaj” · „MENU” dla wszystkich; „Dodaj” tylko od lg; „Powiadomienia” w MENU (#323)
 - [ ] Menu: sekcje „Moje” i „Wszystkie przepisy według kategorii”
 
 ### Model danych

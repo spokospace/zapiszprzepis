@@ -46,7 +46,10 @@ Pliki w `designs/` to **referencje projektowe w HTML** — prototypy pokazujące
 ## Decyzje (finalne)
 Wybrane warianty — wdrażać tylko je; pozostałe pliki to kontekst:
 - **Nawigacja mobile:** przycisk MENU w nagłówku (1a), bez dolnego paska zakładek.
-- **Nagłówek zalogowanego:** telefon i tablet (< 1024 px): Dodaj · MENU z podpisami (1c), **bez „Powiadomień”** — te są w MENU (wiersz w „Moje” + licznik na przycisku MENU). Decyzja właściciela 2026-10-19 (#323), zastępuje pierwotne „Dodaj · Powiadomienia · MENU”. Komputer: dzwonek w nagłówku (A8–A9, niżej).
+- **Nagłówek (mobile, handoff v8):** poniżej lg dla wszystkich (gość, zalogowany, pełny dostęp) napis „Zapisz Przepis” · „Szukaj” (lupa) · „MENU” — szczegóły w `ZMIANY_nawigacja_mobile.md` (E01-S25). „Dodaj” nie ma w nagłówku poniżej lg: „Dodaj przepis” jest w menu (sekcja „Moje”; bez pełnego dostępu z kłódką) i jako kafel na stronie głównej. Od lg „+ Dodaj przepis” zostaje w nagłówku. Zastępuje „Dodaj · MENU”. Bez zmian: **bez „Powiadomień”** w nagłówku telefonu — są w MENU (wiersz w „Moje” + licznik na przycisku MENU, #323); komputer: dzwonek w nagłówku (A8–A9, niżej).
+- **Logo (mobile, handoff v8):** w nagłówku poniżej lg sam napis „Zapisz Przepis” (bold, „Przepis” w `#c2410c`), bez ikony, 24 px. Link do „/”, `aria-label="Zapisz Przepis — strona główna"`. Ikona `logo-icon.svg` zostaje na logowaniu (3a), /signup, favicon i PWA; od lg nagłówek bez zmian (ikona + napis). Zastępuje progi 360/640 px z #328.
+- **Nazwa (handoff v8):** wszędzie „Zapisz Przepis” (dwa słowa, wielkie litery) — w nagłówku (napis: „Zapisz” `#111827`, „Przepis” `#c2410c`, odstęp `margin-left:.28em`), na logowaniu, w tytułach stron (`… · Zapisz Przepis`), e-mailach, `manifest.json` i `aria-label`. W zdaniach z odmianą: „w aplikacji Zapisz Przepis”. Adres = „zapiszprzepis.pl”. Zamienić wszystkie „ZapiszPrzepis” w UI i `LogoWordmark` (E01-S24).
+- **Wyszukiwanie (handoff v8):** poniżej lg na pełnym ekranie (ekran 4, E01-S26). Otwiera je lupa w nagłówku albo pole na stronie głównej; input dostaje focus. Szukanie głosem przyciskiem „Powiedz” (E01-S27).
 - **Menu:** na cały ekran, sekcje „Moje” i „Wszystkie przepisy według kategorii”, kategorie jako kafle 2 kolumny (1c, C5).
 - **Wyniki i kategorie:** lista kart (miniatura, pełny tytuł, pasek „Dodaj do ulubionych”) (1c, C2).
 - **Poprzedni / następny:** na końcu przepisu, jeden pod drugim z tytułami (1c, C3).
@@ -60,12 +63,12 @@ Wymiary mobilne: 390 px szerokości. Desktop: kontener `max-width: 1152px`, padd
 
 ### Nagłówek (mobile, 1c)
 - Wysokość ~64 px, `border-bottom: 2px solid #e5e7eb`, padding `4px 12px 4px 16px`.
-- Lewo: logo = ikona `public/logo-icon.svg` 40×40 + napis „Zapisz**Przepis**” tekstem (gość od 360 px, bo po prawej ma tylko MENU — #328; zalogowany od 640 px; poniżej sama ikona), albo „← Wróć” (18 px bold, cel 56 px) na ekranach pod startową. Strona przepisu zostawia logo — drogą powrotu jest pasek listy „← Ciasteczka · 7 z 91” (jeden link wstecz na ekran, #324). Źródło prawdy: `src/app/components/app-header.tsx` (#276, #320). **Nie** wracać do `public/logo-lettering.svg` — to stare logo, a ten wiersz raz już je przywrócił (#286).
-- Prawo, zalogowany (na **każdym** ekranie): dwa przyciski ikona nad podpisem, wysokość 56 px, podpis 13 px bold, ikona 24 px:
-  - **„Dodaj”** 64 px szer., tło `#c2410c`, biały, radius 12. Bez pełnego dostępu też widoczny → ekran 3c.
+- Lewo: logo = sam napis „Zapisz Przepis” 24 px bold, bez ikony (handoff v8, E01-S25; od lg ikona `public/logo-icon.svg` + napis — przed v8 ikona + napis od 360/640 px, #328), albo „← Wróć” (18 px bold, cel 56 px) na ekranach pod startową. Strona przepisu zostawia logo — drogą powrotu jest pasek listy „← Ciasteczka · 7 z 91” (jeden link wstecz na ekran, #324). Źródło prawdy: `src/app/components/app-header.tsx` (#276, #320). **Nie** wracać do `public/logo-lettering.svg` — to stare logo, a ten wiersz raz już je przywrócił (#286).
+- Prawo, wszyscy (gość i zalogowany, na **każdym** ekranie): dwa przyciski ikona nad podpisem, wysokość 56 px, podpis 13 px bold, ikona 24 px:
+  - **„Szukaj”** 64 px szer., ikona search, link do `/szukaj` (pełny ekran, ekran 4). Ukryty na `/szukaj` (handoff v8, E01-S25). Zastępuje „Dodaj” (64 px, tło `#c2410c`), który od v8 jest w nagłówku tylko od lg.
   - **„MENU”** 60 px. Gdy są powiadomienia: licznik na przycisku — koło 22 px `#b91c1c`, biały 13 px bold, obwódka 2 px biała; nazwa dostępna „MENU, N powiadomień”. Nieudane sprawdzenie: bursztynowa kropka.
 - **Bez „Powiadomień” w nagłówku telefonu** (#323): rzadko potrzebne, a zajmowały najszerszy przycisk (100 px). Wejście to wiersz „Powiadomienia” w MENU; dzwonek zostaje tylko w nagłówku komputera. Dzięki temu „← Wróć” mieści się w jednym wierszu 18 px także przy 320 px.
-- Gość: tylko MENU — „Zaloguj się” / „Załóż konto” otwierają MENU (#324). Od 1024 px „Zaloguj się” + „Załóż konto” w nagłówku.
+- Gość: „Szukaj” + MENU — „Zaloguj się” / „Załóż konto” są w MENU (#324). Od 1024 px „Zaloguj się” + „Załóż konto” w nagłówku.
 
 ### 8 — Wersje tego samego dania (`Wersje przepisu.dc.html`)
 - Pod blokiem źródła przycisk-pasek 60 px (`#fff7ed`, ramka `#fed7aa`, ikona layers): „Mamy jeszcze N inne przepisy na {danie}” + strzałka w dół → płynne przewinięcie do sekcji. Ukryty, gdy N = 0.
@@ -93,6 +96,13 @@ Wymiary mobilne: 390 px szerokości. Desktop: kontener `max-width: 1152px`, padd
 - Karta wyniku: miniatura 84 px, tytuł 19 px bold, „czas · źródło”, tagi „kruche · maślane” 16 px.
 - **Dół przepisu**: „Ten przepis jest” + tagi jako przyciski 48 px (`#fff7ed`/`#fed7aa`, ikona tag) → kategoria z tym tagiem; „Podobne: {tag} {kategoria}” — 3–4 przepisy z tej samej kategorii, sortowane po liczbie wspólnych tagów, z podpisem „też kruche i czekoladowe”; „Wszystkie {kategoria} (N) →” 56 px.
 - Dopisać do `RECIPE_TAGS`: `kokosowe`, `owsiane` (i inne brakujące rodzaje ciastek).
+
+### 4 — Wyszukiwarka na pełnym ekranie (`Wyszukiwarka.dc.html`, handoff v8)
+- Otwierana z lupy „Szukaj” w nagłówku (każdy ekran) lub z pola „Czego szukasz?” na stronie głównej. Mobile: pełny ekran (route `/szukaj` albo overlay z `history.pushState`, żeby przycisk Wstecz telefonu zamykał). Nagłówek: „✕ Zamknij” + „Szukaj przepisu”.
+- Pasek szybkich haseł przyklejony do dołu widoku (nad klawiaturą: `position: sticky; bottom: 0` + `visualViewport`/`interactive-widget=resizes-content`), widoczny bez wpisanego hasła i podczas pisania do 2 liter. Tytuł 16 px bold „Ostatnio i często szukane” (gość: „Często szukane”). Chipy 48 px, 17 px bold, radius pełny, gap 8 px, przewijanie w poziomie wewnątrz paska (strona nie przewija się w bok). Najpierw ostatnie (ikona `history`, ramka 2 px `#4b5563`, max 5 z localStorage), potem popularne (ikona `trending-up`, tło `#fff7ed`, ramka `#fdba74`, z `PopularSearches`). Naciśnięcie = `/szukaj?q=…`.
+- Pole 60 px, tekst 19 px, focus po otwarciu; obok „Powiedz” (mikrofon + podpis) gdy pole puste, „Wyczyść” gdy wpisano.
+- Głos: Web Speech API (`lang='pl-PL'`, `interimResults: true`). Ekran „Słucham…” 28 px, koło 120 px `#c2410c` z pulsowaniem (wyłączyć przy `prefers-reduced-motion`), rozpoznany tekst na żywo 24 px, po ciszy automatyczne szukanie. Przycisk „Przestań słuchać i pisz”. Brak wsparcia lub zgody → komunikat jak włączyć mikrofon, przycisk ukryty gdy API niedostępne.
+- Instrukcja wdrożenia: `ZMIANY_nawigacja_mobile.md` §3–§5, checklista: `ISSUE_lupa_szukaj.md`.
 
 ### 5 — Powiadomienia (`Powiadomienia.dc.html`)
 Zastępuje dropdown z `notification-bell.tsx` pełnoekranowym panelem (mobile) — dropdown 320 px z tekstem 12–14 px jest nieczytelny.
@@ -228,12 +238,14 @@ Rozmiary / odstępy:
 - `designs/Propozycja B.dc.html` — 1b: alternatywa z dolną nawigacją
 - `designs/Ustawienia profilu.dc.html` — 2a: Mój profil
 - `designs/Logowanie i dostęp.dc.html` — 3: macierz dostępu, 3a–3d
-- `designs/Wyszukiwarka.dc.html` — 4: wyszukiwarka (serwis + blogi)
+- `designs/Wyszukiwarka.dc.html` — 4: wyszukiwarka na pełnym ekranie (serwis + blogi + głos)
 - `designs/Powiadomienia.dc.html` — 5: powiadomienia
 - `designs/Kategoria i tagi.dc.html` — 6: kategoria z tagami i podobne
 - `designs/Profil publiczny.dc.html` — 7: profil publiczny
 - `designs/Wersje przepisu.dc.html` — 8: inne wersje tego samego dania
 - `designs/Obecna wersja.dc.html` — stan obecny
+- `ZMIANY_nawigacja_mobile.md` — handoff v8: nazwa „Zapisz Przepis”, nagłówek mobile z „Szukaj”, `/szukaj` na pełnym ekranie, głos (E01-S24…S27)
+- `ISSUE_lupa_szukaj.md` — handoff v8: checklista tych samych zmian
 - `ZASADY_PROJEKTU.md` — zasady projektu (WCAG, czytelność, model danych) do dopisania w `CLAUDE.md` repo
 
 Pliki w repo do zmiany (punkt wyjścia): `src/app/page.tsx`, `src/app/components/app-header.tsx`, `app-menu.tsx`, `recipe-card.tsx`, `recipe-search.tsx`, `category-filter.tsx`, `add-recipe-form.tsx`, `recipe-gallery.tsx`, `src/app/(authenticated)/recipes/*`, `src/app/(authenticated)/settings/page.tsx`, `src/app/auth/callback/route.ts`, `src/lib/recipe-categories.ts`. Strony publiczne (strona główna, wyszukiwarka, przepis) trzeba wyjąć z grupy `(authenticated)`, a RLS w Supabase otworzyć na odczyt przepisów dla `anon`.
