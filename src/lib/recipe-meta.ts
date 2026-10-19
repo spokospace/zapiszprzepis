@@ -39,6 +39,29 @@ export function recipeMetaLine(r: RecipeTimes & { category: string; times_estima
   return `${category} · ${r.times_estimated ? '≈ ' : ''}${formatMinutes(minutes)}`
 }
 
+export interface RecipeTimeStat {
+  label: 'Przygotowanie' | 'Gotowanie' | 'Łącznie'
+  /** "15 min", "1 godz 30 min". */
+  value: string
+}
+
+/**
+ * The desktop header's times row (handoff A9: "Przygotowanie / Gotowanie /
+ * Łącznie"): only the known, positive times. "Łącznie" shows when the source
+ * states a total or both parts are known, so it never just repeats the one part.
+ * The recipe's single `times_estimated` flag covers the whole row.
+ */
+export function recipeTimeStats(r: RecipeTimes): RecipeTimeStat[] {
+  const known = (m: number | null): m is number => m != null && m > 0
+  const stats: RecipeTimeStat[] = []
+  if (known(r.prep_time_minutes)) stats.push({ label: 'Przygotowanie', value: formatMinutes(r.prep_time_minutes) })
+  if (known(r.cook_time_minutes)) stats.push({ label: 'Gotowanie', value: formatMinutes(r.cook_time_minutes) })
+  const total = recipeTotalMinutes(r)
+  const totalStated = r.total_time_minutes != null || (known(r.prep_time_minutes) && known(r.cook_time_minutes))
+  if (known(total) && totalStated) stats.push({ label: 'Łącznie', value: formatMinutes(total) })
+  return stats
+}
+
 /**
  * The two lines under a list card's title (E01-S22). Search and profile (C2, 7):
  * "Kategoria · czas" and the source. Inside a category (6) the category is the

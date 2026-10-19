@@ -34,6 +34,10 @@ describe('FavoriteButton on a card photo', () => {
 })
 
 describe('FavoriteButton on the recipe page', () => {
+  it('is the C3 58 px button with a 19 px label', () => {
+    expect(heart({}).match(/<button[^>]*>/)?.[0]).toMatch(/min-h-\[58px\][^"]*text-\[19px\]/)
+  })
+
   it('keeps its visible label and no aria-label', () => {
     const html = heart({})
     expect(html).toContain('Dodaj do ulubionych</button>')
