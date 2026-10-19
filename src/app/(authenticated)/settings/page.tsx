@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { LogOut } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { SUPABASE_URL } from '@/lib/env'
 import { avatarColorIndex, avatarUrl } from '@/lib/avatar'
@@ -10,7 +11,7 @@ import { PageContainer } from '@/app/components/page-container'
 import { Button } from '@/app/components/ui/button'
 import { SettingsForm } from './settings-form'
 
-export const metadata: Metadata = { title: 'Ustawienia · ZapiszPrzepis' }
+export const metadata: Metadata = { title: 'Mój profil · ZapiszPrzepis' }
 
 type ProfileRow = {
   display_name: string
@@ -19,7 +20,7 @@ type ProfileRow = {
   avatar_color?: number | null
 }
 
-// Screen 2a (E01-S13). Deliberately shows neither gender (chosen once, not
+// Screen 2a „Mój profil” (E01-S13; the menu entry stays „Ustawienia”). Deliberately shows neither gender (chosen once, not
 // editable — S12) nor the username (immutable — S18).
 export default async function SettingsPage() {
   const supabase = await createSupabaseServerClient()
@@ -43,7 +44,7 @@ export default async function SettingsPage() {
   return (
     <main className="min-h-screen bg-white">
       <PageContainer narrow className="py-6 sm:py-12">
-        <h1 className="mb-6 text-[30px] leading-tight font-bold text-ink">Ustawienia</h1>
+        <h1 className="mb-6 text-[30px] leading-tight font-bold text-ink">Mój profil</h1>
         <SettingsForm
           initialDisplayName={profile?.display_name ?? ''}
           initialFirstName={priv.data?.first_name ?? ''}
@@ -53,12 +54,13 @@ export default async function SettingsPage() {
           // Only the finished sentence reaches the client, never the gender (E01-S23).
           addedLine={youAddedLine(genderFormOf(priv.data?.gender), own.count ?? 0)}
         />
-        <dl className="mt-8 border-t border-border-card pt-5">
+        <dl className="mt-8 border-t-2 border-border-card pt-5">
           <dt className="text-[16px] text-ink-soft">Adres email</dt>
           <dd className="mt-1 text-[19px] font-semibold break-all text-ink">{user.email ?? '—'}</dd>
         </dl>
-        <form action={signOut} className="mt-8 border-t border-border-card pt-5">
-          <Button type="submit" variant="outline" size="md" className="w-full">
+        <form action={signOut} className="mt-8 border-t-2 border-border-card pt-5">
+          <Button type="submit" variant="outline" size="lg" className="w-full">
+            <LogOut aria-hidden="true" className="h-5 w-5 shrink-0" />
             Wyloguj
           </Button>
         </form>

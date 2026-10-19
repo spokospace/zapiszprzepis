@@ -184,7 +184,7 @@ function VersionCard({ version: v, current }: { version: DishVersionRow; current
         )}
 
         {diff.plus.length > 0 && (
-          <p className="mt-1 text-[16px] break-words text-[#15803d]">
+          <p className="mt-1 text-[16px] break-words text-success">
             <span className="sr-only">Składniki, których nie ma w oglądanym przepisie: </span>
             <b>+ jest:</b> {diff.plus.join(', ')}
           </p>

@@ -45,7 +45,7 @@ export function NotificationBell({ failedShares: result }: { failedShares: Faile
         </span>
       )}
       {loadFailed && (
-        <span aria-hidden="true" className="absolute top-1 right-[30px] h-3 w-3 rounded-pill border-2 border-white bg-amber-500" />
+        <span aria-hidden="true" className="absolute top-1 right-[30px] h-3 w-3 rounded-pill border-2 border-white bg-ink" />
       )}
     </Link>
   )
