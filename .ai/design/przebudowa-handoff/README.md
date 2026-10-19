@@ -161,7 +161,7 @@ Jeden ekran, bez kroków:
 Płci i username **nie ma** na tym ekranie.
 
 ### 3a — Logowanie (`/login`)
-„← Wróć”; logo 160×40; „Zaloguj się” 30 px; „Bez nowego hasła. Użyj konta, które już masz.” 18 px; przyciski 60 px: „Zaloguj przez Facebooka” (tło `#1877f2`, biały) i „Zaloguj przez Google” (`border: 2px solid #4b5563`); „Pierwsze logowanie od razu zakłada konto. Nic nie publikujemy na Twoim Facebooku.”; stopka z linkami do regulaminu i polityki prywatności (podkreślone).
+„← Wróć”; logo jak w nagłówku — ikona `logo-icon.svg` + napis „Zapisz**Przepis**” tekstem, wspólny komponent `brand-logo.tsx` (#331; pierwotnie `logo-lettering.svg` 160×40); „Zaloguj się” 30 px; „Bez nowego hasła. Użyj konta, które już masz.” 18 px; przyciski 60 px: „Zaloguj przez Facebooka” (tło `#1877f2`, biały) i „Zaloguj przez Google” (`border: 2px solid #4b5563`); „Pierwsze logowanie od razu zakłada konto. Nic nie publikujemy na Twoim Facebooku.”; stopka z linkami do regulaminu i polityki prywatności (podkreślone).
 Implementacja: `supabase.auth.signInWithOAuth({ provider: 'facebook' | 'google', options: { redirectTo: `${origin}/auth/callback?next=…` } })` — istniejący `src/app/auth/callback/route.ts` obsługuje powrót. Konfiguracja: aplikacja w Meta for Developers (Facebook Login, publiczna polityka prywatności i instrukcja usuwania danych), klient OAuth w Google Cloud; włączenie obu providerów w Supabase. Obsłużyć konto Facebook bez emaila i łączenie kont o tym samym emailu.
 
 ### 3b — Pierwsze logowanie
