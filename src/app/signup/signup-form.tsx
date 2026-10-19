@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+import { INPUT, LABEL, NOTICE, SUBMIT } from '@/app/login/form-styles'
 import { signUp } from './actions'
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -16,14 +18,13 @@ interface SignUpFormProps {
   sent?: string
 }
 
+/** Email + invite code sign-up, in the 3a field style (kept by the owner beside Facebook/Google). */
 export function SignUpForm({ error, email, sent }: SignUpFormProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.unknown) : null
   const sentMessage =
-    sent === '1' && email
-      ? `Wysłaliśmy link na ${email} — kliknij go, aby dokończyć rejestrację.`
-      : null
+    sent === '1' && email ? `Wysłaliśmy link na ${email}. Kliknij go, aby dokończyć rejestrację.` : null
 
   const handleSubmit = async (formData: FormData) => {
     setIsLoading(true)
@@ -35,30 +36,22 @@ export function SignUpForm({ error, email, sent }: SignUpFormProps) {
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <h2 className="mt-4 text-sm text-zinc-600">Zarejestruj się kodem zaproszenia</h2>
-
+    <div className="w-full">
       {errorMessage && (
-        <div
-          role="alert"
-          className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-        >
+        <div role="alert" className={`${NOTICE} border-danger bg-danger-bg font-bold text-danger`}>
           {errorMessage}
         </div>
       )}
 
       {sentMessage && (
-        <div
-          role="status"
-          className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
-        >
+        <div role="status" className={`${NOTICE} border-success bg-success-bg font-bold text-success`}>
           {sentMessage}
         </div>
       )}
 
-      <form action={handleSubmit} className="mt-6 flex flex-col gap-3">
+      <form action={handleSubmit} className="mt-6 flex flex-col gap-4">
         <div>
-          <label htmlFor="email" className="text-sm font-medium text-zinc-700">
+          <label htmlFor="email" className={LABEL}>
             Email
           </label>
           <input
@@ -72,12 +65,12 @@ export function SignUpForm({ error, email, sent }: SignUpFormProps) {
             disabled={isLoading}
             defaultValue={email ?? ''}
             placeholder="ty@example.com"
-            className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+            className={`mt-1 ${INPUT}`}
           />
         </div>
 
         <div>
-          <label htmlFor="invite-code" className="text-sm font-medium text-zinc-700">
+          <label htmlFor="invite-code" className={LABEL}>
             Kod zaproszenia
           </label>
           <input
@@ -87,24 +80,23 @@ export function SignUpForm({ error, email, sent }: SignUpFormProps) {
             autoComplete="off"
             required
             disabled={isLoading}
-            placeholder="Wpisz kod otrzymany od autora"
-            className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+            aria-describedby="invite-code-help"
+            className={`mt-1 ${INPUT}`}
           />
+          <p id="invite-code-help" className="mt-1 text-[16px] text-ink-soft">
+            Kod otrzymany od autora aplikacji.
+          </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="mt-2 rounded-md bg-zinc-900 px-4 py-2.5 text-base font-medium text-white hover:bg-zinc-800 disabled:bg-zinc-400"
-        >
-          {isLoading ? 'Wysyłanie...' : 'Zarejestruj się'}
+        <button type="submit" disabled={isLoading} className={SUBMIT}>
+          {isLoading ? 'Wysyłanie…' : 'Zarejestruj się'}
         </button>
 
-        <p className="text-center text-sm text-zinc-600">
+        <p className="text-[17px] text-ink-soft">
           Masz już konto?{' '}
-          <a href="/login" className="font-medium text-zinc-900 hover:underline">
+          <Link href="/login" className="font-bold text-ink">
             Zaloguj się
-          </a>
+          </Link>
         </p>
       </form>
     </div>
