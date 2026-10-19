@@ -12,11 +12,12 @@ function sourceFiles(dir: string): string[] {
 }
 
 // #286 and #324 each brought the old lettering image back from stale docs (#320);
-// the logo is the shared LogoIcon + LogoWordmark everywhere (#331).
+// the logo is the shared BrandLogo / LogoIcon + LogoWordmark everywhere (#331, #334).
 describe('brand logo', () => {
-  it('no source file under src/ uses the old /logo-lettering.svg', () => {
+  // A quoted path is a use (an image src); a comment naming the file is not.
+  it('no source file under src/ uses the old /logo-lettering.svg or /logo.svg', () => {
     const offenders = sourceFiles(join(process.cwd(), 'src')).filter((file) =>
-      readFileSync(file, 'utf8').includes('/logo-lettering'),
+      /["'`]\/logo(-lettering)?\.svg["'`]/.test(readFileSync(file, 'utf8')),
     )
     expect(offenders).toEqual([])
   })

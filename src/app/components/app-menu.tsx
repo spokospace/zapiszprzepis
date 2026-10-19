@@ -169,7 +169,7 @@ export function AppMenu({
           <>
             <span
               aria-hidden="true"
-              className="absolute top-1 right-2 h-3 w-3 rounded-pill border-2 border-white bg-amber-500 lg:hidden"
+              className="absolute top-1 right-2 h-3 w-3 rounded-pill border-2 border-white bg-ink lg:hidden"
             />
             <span className="sr-only lg:hidden">, nie udało się sprawdzić powiadomień</span>
           </>
