@@ -14,7 +14,7 @@ export function PopularSearches() {
           <li key={term}>
             <Link
               href={searchPath(term)}
-              className="inline-flex min-h-[48px] items-center rounded-pill border-2 border-border-card-2 bg-white px-4 text-[17px] font-bold wrap-anywhere text-ink hover:bg-surface-3"
+              className="inline-flex min-h-[48px] items-center rounded-pill border-2 border-border-chip bg-white px-4 text-[17px] font-bold wrap-anywhere text-ink no-underline! hover:bg-surface-3"
             >
               {term}
             </Link>

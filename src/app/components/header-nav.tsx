@@ -8,7 +8,7 @@ import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { SEARCH_PATH, categoryPath } from '@/lib/routes'
 
 const NAV_ITEM =
-  'inline-flex min-h-[48px] items-center gap-1 rounded-field px-3 text-[18px] font-semibold text-ink underline-offset-4 hover:bg-surface-3'
+  'inline-flex min-h-[48px] items-center gap-1 rounded-field px-3 text-[18px] font-semibold text-ink no-underline! hover:bg-surface-3'
 
 /**
  * The guest desktop header's "Przepisy" + "Kategorie ▾" (E01-S17, A8).
@@ -79,7 +79,7 @@ export function HeaderNav({ className = '' }: { className?: string }) {
               <Link
                 href={categoryPath(value)}
                 onClick={() => setOpen(false)}
-                className="flex min-h-[48px] items-center rounded-field px-3 text-[18px] font-semibold text-ink hover:bg-surface-3"
+                className="flex min-h-[48px] items-center rounded-field px-3 text-[18px] font-semibold text-ink no-underline! hover:bg-surface-3"
               >
                 {label}
               </Link>

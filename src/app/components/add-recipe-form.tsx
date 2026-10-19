@@ -230,7 +230,7 @@ export function AddRecipeForm({ addError, autoFocus }: { addError?: string | nul
               aria-label={activeTab === 'search' ? 'Szukaj przepisu' : 'URL przepisu'}
               placeholder={activeTab === 'search' ? 'Wpisz nazwę przepisu, np. tiramisu' : 'Wklej link do przepisu'}
               disabled={busy}
-              className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:bg-gray-50"
+              className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50"
             />
           </div>
           {isSpeechSupported && activeTab === 'search' && (

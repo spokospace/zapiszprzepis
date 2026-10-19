@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { BookOpen, Heart, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { buttonClasses } from '@/app/components/ui/button'
-import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { categoryPath } from '@/lib/routes'
 import type { MenuSummary } from '@/lib/menu-summary'
 import { buildMenuModel, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
@@ -165,7 +165,7 @@ export function AppMenu({
               </section>
             )}
 
-            <section aria-labelledby="app-menu-categories" className="border-t border-border-card pt-4">
+            <section aria-labelledby="app-menu-categories" className="border-t-2 border-border-card pt-4">
               <h3 id="app-menu-categories" className={SECTION_HEADING}>
                 Wszystkie przepisy według kategorii
               </h3>
@@ -173,18 +173,22 @@ export function AppMenu({
                 {RECIPE_CATEGORIES.map(({ value, label }) => {
                   const href = categoryPath(value)
                   const active = pathname === href
+                  const Icon = CATEGORY_ICONS[value]
                   return (
                     <li key={value}>
                       <Link
                         href={href}
                         onClick={close}
                         aria-current={active ? 'page' : undefined}
+                        // C5: the home C1 tile (E01-S20) — #fff7ed, a 1.5 px #fed7aa frame,
+                        // the category icon beside an 18 px bold name.
                         className={[
-                          'flex h-full min-h-[56px] items-center rounded-field border-2 px-3 py-2 text-[17px] font-semibold wrap-anywhere hover:bg-surface-2',
-                          active ? 'border-action bg-surface-accent text-action-text' : 'border-field text-ink',
+                          'flex h-full min-h-[56px] items-center gap-2.5 rounded-field border-[1.5px] bg-surface-accent px-3.5 py-2 text-[18px] font-bold wrap-anywhere no-underline! hover:border-action-text',
+                          active ? 'border-action text-action-text' : 'border-border-accent text-ink',
                         ].join(' ')}
                       >
-                        {label}
+                        <Icon aria-hidden="true" strokeWidth={2} className="h-6 w-6 shrink-0 text-action-text" />
+                        <span className="min-w-0">{label}</span>
                       </Link>
                     </li>
                   )
