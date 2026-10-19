@@ -10,6 +10,7 @@
 - **Cleaner recipes.** Steps read as short instructions ("Pokroić mięso w kostkę.") — 609 saved recipes were edited by hand, and new imports follow the same rules. Versions of the same dish are linked on the recipe page.
 - **Sturdier imports.** Better reading of Facebook pages and groups, Blogger, WordPress and Wix; smarter cover and gallery picking; duplicate detection by the author's text and the ingredient set.
 - **Security.** Guest reads go through fail-closed views, recipe photos through an allowlisted image proxy, and private-network URL checks are tightened.
+- **Planned, not in this release.** Free accounts will get manual recipe entry; importing a recipe from its source link will need a micropayment, which covers the OpenAI cost of the import. Details are still to be decided.
 
 ## ✨ Features
 
