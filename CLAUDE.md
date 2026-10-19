@@ -37,7 +37,7 @@ Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelnoś
 - **Dostęp:** gość przegląda i szuka; zalogowany (Facebook/Google) ma ulubione i galerię; dodawanie przepisów tylko z pełnym dostępem (kod lub płatność). Płeć wybierana raz przy pierwszym logowaniu, nieedytowalna.
 - **Wariant projektowy:** styl 1c (wysoka czytelność) + struktura nawigacji 1a. Wariant 1b (dolna nawigacja) niewdrażany.
 - **Nagłówek (decyzje właściciela, nadpisują starsze makiety i specy):**
-  - Logo to ikona `logo-icon.svg` + napis „ZapiszPrzepis” tekstem — u gościa od 360 px (po prawej ma tylko MENU, #328), u zalogowanego od 640 px; poniżej sama ikona. Nigdy `logo-lettering.svg` (#320).
+  - Logo to ikona `logo-icon.svg` + napis „ZapiszPrzepis” tekstem — u gościa od 360 px (po prawej ma tylko MENU, #328), u zalogowanego od 640 px; poniżej sama ikona. To samo logo na `/login` i `/signup` (`BrandLogo`). Zawsze przez `src/app/components/brand-logo.tsx` (`BrandLogo` / `LogoIcon` + `LogoWordmark`); nigdy `logo-lettering.svg` (#320, #331 — pilnuje `brand-logo.test.ts`).
   - Zalogowany poniżej 1024 px widzi w nagłówku tylko „Dodaj” · „MENU”. „Powiadomienia” to wiersz w MENU („Moje”) + licznik na przycisku MENU; dzwonek w nagłówku tylko od `lg` (#323).
   - Gość poniżej 1024 px: logo (lub „← Wróć”) + MENU; „Zaloguj się” / „Załóż konto” są w MENU (#324).
   - Jeden link wstecz na ekran: „← Wróć” zastępuje logo pod stroną startową, ale strona przepisu zostawia logo, bo wraca pasek listy (#324).
