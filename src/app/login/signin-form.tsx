@@ -1,19 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { buttonClasses } from '@/app/components/ui/button'
 import { signInWithEmail, signInWithPassword } from './actions'
+import { INPUT, LABEL, NOTICE, SUBMIT } from './form-styles'
 
 type TabType = 'link' | 'password'
 
-// Design tokens (WCAG 2.2 AA, E01-S12b): 2px field border at 3:1, 56px fields, 48px tabs.
+// 48px tabs; field styles in form-styles.ts.
 const tabClass = (active: boolean) =>
   `min-h-[48px] px-4 text-[17px] font-bold transition-colors ${active ? '-mb-0.5 border-b-4 border-ink text-ink' : 'text-ink-soft hover:text-ink'}`
-const LABEL = 'text-[17px] font-bold text-ink'
-const INPUT =
-  'min-h-[56px] w-full rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink placeholder:text-ink-muted disabled:bg-surface-3 disabled:text-ink-muted'
-const SUBMIT = `${buttonClasses('primary', 'lg')} mt-2 w-full text-[19px]`
-const NOTICE = 'mt-4 rounded-field border-2 px-4 py-3 text-[17px]'
 
 const ERROR_MESSAGES: Record<string, string> = {
   expired: 'Link wygasł lub został już użyty. Wyślij sobie nowy.',
