@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { CategoryGrid } from './category-grid'
 import { GuestCta } from './guest-cta'
 import { HomeSearch } from './home-search'
-import { MemberTiles } from './member-tiles'
+import { MemberTiles, addedByYouCaption } from './member-tiles'
 import { HOME_CATEGORIES } from '@/lib/recipe-categories'
 
 const render = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el)
@@ -55,6 +55,26 @@ describe('MemberTiles (E01-S20)', () => {
     expect(html).not.toContain('Moje przepisy')
     expect(html).toContain('Wymaga kodu lub pełnego dostępu')
     expect((html.match(/lucide-chevron-right/g) ?? []).length).toBe(2)
+  })
+
+  it('puts the MENU counters in the captions (C1), else keeps the plain ones', () => {
+    const html = render(createElement(MemberTiles, { hasFullAccess: true, myRecipesCount: 24, favoritesCount: 12 }))
+    expect(html).toContain('24 dodane przez Ciebie')
+    expect(html).toContain('12 przepisów')
+    expect(render(createElement(MemberTiles, { hasFullAccess: true }))).toContain('Przepisy zapisane na później')
+    const empty = render(createElement(MemberTiles, { hasFullAccess: true, myRecipesCount: 0, favoritesCount: 0 }))
+    expect(empty).toContain('Przepisy dodane przez Ciebie')
+    expect(empty).not.toContain('0 przepisów')
+  })
+})
+
+describe('addedByYouCaption', () => {
+  it('agrees the participle with the number', () => {
+    expect(addedByYouCaption(1)).toBe('1 dodany przez Ciebie')
+    expect(addedByYouCaption(3)).toBe('3 dodane przez Ciebie')
+    expect(addedByYouCaption(12)).toBe('12 dodanych przez Ciebie')
+    expect(addedByYouCaption(22)).toBe('22 dodane przez Ciebie')
+    expect(addedByYouCaption(0)).toBe('0 dodanych przez Ciebie')
   })
 })
 

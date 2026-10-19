@@ -121,7 +121,7 @@ export function HomeSearch({
           field frame (E01-S20), which takes the focus ring while the input is focused. */}
       <div className={`flex flex-wrap gap-x-2 gap-y-3 lg:max-w-[760px] ${centered ? 'lg:mx-auto' : ''}`}>
         <div
-          className={`flex h-[60px] min-w-0 flex-1 basis-full items-center gap-2 rounded-field border-2 ${FRAME[tone]} bg-white pr-1 pl-3 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus lg:h-16 lg:basis-0`}
+          className={`flex h-[60px] min-w-0 flex-1 basis-full items-center gap-1.5 rounded-field border-2 ${FRAME[tone]} bg-white pr-1 pl-3 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus lg:h-16 lg:basis-0`}
         >
           <Search aria-hidden="true" className="h-[22px] w-[22px] shrink-0 text-ink-soft" />
           <input
@@ -151,7 +151,7 @@ export function HomeSearch({
               type="button"
               onClick={toggleMic}
               aria-pressed={micState === 'listening'}
-              className="inline-flex h-12 shrink-0 items-center gap-1 rounded-[10px] px-1.5 text-[16px] font-bold text-ink-soft hover:bg-surface-3 aria-pressed:bg-surface-accent-2 aria-pressed:text-action-text"
+              className="inline-flex h-12 shrink-0 items-center gap-1 rounded-[10px] px-1 text-[16px] font-bold text-ink-soft hover:bg-surface-3 aria-pressed:bg-surface-accent-2 aria-pressed:text-action-text"
             >
               <Mic aria-hidden="true" className="h-[22px] w-[22px]" />
               Mów

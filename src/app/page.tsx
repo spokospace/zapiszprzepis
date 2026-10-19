@@ -50,6 +50,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           <MemberHome
             failedShares={failedShares}
             hasFullAccess={menu?.hasFullAccess ?? false}
+            myRecipesCount={menu?.myRecipesCount ?? null}
+            favoritesCount={menu?.favoritesCount ?? null}
             vocative={vocative(greetingName)}
             favoriteAdded={parseRecipeId(fav_added)}
           />
@@ -89,10 +91,10 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
             Przepisy z Facebooka, YouTube i blogów, spisane po polsku i zapisane na stałe.
           </p>
           <HomeSearch id="home-search-guest" centered tone="action" placeholder="Danie lub składnik, np. dynia" />
+          <PopularSearches />
         </PageContainer>
       </section>
       <PageContainer className="flex flex-col gap-8 pt-6">
-        <PopularSearches />
         <CategoryGrid columns={3} />
         {recentRecipes.length > 0 && (
           <section aria-labelledby="recent-heading">
@@ -139,12 +141,16 @@ function GuestHome({ recentRecipes }: { recentRecipes: RecentRecipe[] }) {
 function MemberHome({
   failedShares,
   hasFullAccess,
+  myRecipesCount,
+  favoritesCount,
   vocative,
   favoriteAdded,
 }: {
   /** The header's result, reused for the E01-S15 banner (no extra query). */
   failedShares: FailedSharesResult
   hasFullAccess: boolean
+  myRecipesCount: number | null
+  favoritesCount: number | null
   /** "Aniu" from the S13 first name (else the display name) via the S12 rule; null → "Dzień dobry!". */
   vocative: string | null
   /** A guest-home card heart's login round-trip ends here (E01-S06); this page has no heart to show its toast. */
@@ -159,7 +165,7 @@ function MemberHome({
         <HomeSearch id="home-search-member" label="Czego szukasz?" strongLabel placeholder="np. zupa z dyni" submitLabel="Szukaj" />
       </div>
       {favoriteAdded !== null && <FavoriteAddedNotice recipeId={favoriteAdded} />}
-      <MemberTiles hasFullAccess={hasFullAccess} />
+      <MemberTiles hasFullAccess={hasFullAccess} myRecipesCount={myRecipesCount} favoritesCount={favoritesCount} />
       <CategoryGrid columns={2} />
     </PageContainer>
   )
