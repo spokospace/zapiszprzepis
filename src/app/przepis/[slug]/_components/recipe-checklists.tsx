@@ -119,10 +119,11 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
         {/* C3, item 8: "Składniki" with "na 4 porcje" on the same baseline, only when
             the source states the servings. */}
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3">
-          <h2 id="ingredients-heading" className="text-[24px] font-bold text-ink">
+          {/* min-w-0: a flex item never shrinks below its longest word otherwise (WCAG 1.4.10). */}
+          <h2 id="ingredients-heading" className="min-w-0 text-[24px] font-bold text-ink">
             Składniki
           </h2>
-          {servings != null && <p className="text-[16px] text-ink-soft">{servingsLabel(servings)}</p>}
+          {servings != null && <p className="min-w-0 text-[16px] text-ink-soft">{servingsLabel(servings)}</p>}
         </div>
         {ingredientGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-5' : ''}>

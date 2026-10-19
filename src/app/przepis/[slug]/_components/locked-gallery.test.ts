@@ -19,7 +19,9 @@ describe('LockedGallery (A5)', () => {
     expect(box).toContain('bg-surface-2')
     expect(box).toContain('border-[1.5px] border-dashed border-border-card-2')
     expect(box).not.toContain('bg-surface-accent')
-    expect(html).toContain('<p class="text-[18px] leading-[1.45] text-ink">Galeria 6 zdjęć jest dostępna po zalogowaniu.</p>')
+    expect(html).toContain('<p class="mt-2.5 mb-3 text-[18px] leading-[1.45] text-ink">Galeria 6 zdjęć jest dostępna po zalogowaniu.</p>')
+    // Block flow: a centred flex column would not wrap a long word at 320 px.
+    expect(box).not.toContain('flex')
     expect(html.match(/<a[^>]*>Zaloguj się<\/a>/)?.[0]).toContain('min-h-[48px]')
   })
 })

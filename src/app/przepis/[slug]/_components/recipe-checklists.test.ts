@@ -18,12 +18,12 @@ function render(servings: number | null) {
 describe('RecipeChecklists headings (C3)', () => {
   it('puts "na N porcji" on the "Składniki" row, 16 px secondary', () => {
     expect(render(4)).toMatch(
-      /<div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3"><h2 id="ingredients-heading" class="text-\[24px\] font-bold text-ink">Składniki<\/h2><p class="text-\[16px\] text-ink-soft">na 4 porcje<\/p><\/div>/,
+      /<div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3"><h2 id="ingredients-heading" class="min-w-0 text-\[24px\] font-bold text-ink">Składniki<\/h2><p class="min-w-0 text-\[16px\] text-ink-soft">na 4 porcje<\/p><\/div>/,
     )
   })
 
   it('leaves the row to the heading when the servings are unknown', () => {
-    expect(render(null)).toContain('<h2 id="ingredients-heading" class="text-[24px] font-bold text-ink">Składniki</h2></div>')
+    expect(render(null)).toContain('<h2 id="ingredients-heading" class="min-w-0 text-[24px] font-bold text-ink">Składniki</h2></div>')
   })
 
   it('sets the section headings at 24 px (README: H2 22–24 px)', () => {

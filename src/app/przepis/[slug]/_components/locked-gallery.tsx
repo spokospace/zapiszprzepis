@@ -16,9 +16,13 @@ export function LockedGallery({ count, loginHref }: { count: number; loginHref: 
       </h2>
       {/* A5: a neutral #f9fafb box with a 1.5 px dashed #d1d5db edge, a plain sentence
           and a 48 px dark "Zaloguj się" — the orange stays for the page's main action. */}
-      <div className="flex flex-col items-center gap-2.5 rounded-field border-[1.5px] border-dashed border-border-card-2 bg-surface-2 p-5 text-center">
-        <Lock aria-hidden="true" size={26} className="text-ink-soft" />
-        <p className="text-[18px] leading-[1.45] text-ink">Galeria {photosLabel(count)} jest dostępna po zalogowaniu.</p>
+      {/* Block flow, not a centred flex column: a flex item will not shrink below its
+          longest word, so a long one would widen the page at 320 px (WCAG 1.4.10). */}
+      <div className="rounded-field border-[1.5px] border-dashed border-border-card-2 bg-surface-2 p-5 text-center">
+        <Lock aria-hidden="true" size={26} className="mx-auto text-ink-soft" />
+        <p className="mt-2.5 mb-3 text-[18px] leading-[1.45] text-ink">
+          Galeria {photosLabel(count)} jest dostępna po zalogowaniu.
+        </p>
         <Link href={loginHref} className={buttonClasses('dark', 'md')}>
           Zaloguj się
         </Link>
