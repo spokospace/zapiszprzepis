@@ -31,14 +31,15 @@ export function RecipeGallery({ images, title }: RecipeGalleryProps) {
 
   return (
     <section className="mb-12">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Zdjęcia</h2>
+      {/* Like the recipe page's other section headings (24 px, README H2). */}
+      <h2 className="mb-4 text-[24px] font-bold text-ink">Zdjęcia</h2>
       <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
         {images.map((src, i) => (
           <li key={src}>
             <button
               type="button"
               onClick={() => setIndex(i)}
-              className="relative block w-full aspect-square rounded-lg overflow-hidden bg-gray-100"
+              className="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-surface-3"
               aria-label={`Powiększ zdjęcie ${i + 1} z ${count}`}
             >
               <Image
