@@ -86,6 +86,18 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
     local guest dev server (public read-only Supabase values from `wrangler.jsonc`), and
     before/after screenshots at 390 px and 1280 px.
 
+## Verification notes (3.1)
+
+- Gate: `pnpm typecheck` ✓, `pnpm lint` 0 errors (2 pre-existing warnings in `public/sw.js` and
+  `src/app/login/signin-form.tsx`), `pnpm test` 1245/1245 ✓.
+- Reflow guard (`e2e/reflow.spec.ts`, guest screens against a local dev server): 20 passed,
+  20 skipped (signed-in screens; no QA login here). Two long-content runs ("recipe, all text"
+  and "cooking mode") failed on master f08b117 as well; the cause was three flex items that
+  never shrank below their longest word ('Ten przepis jest' tag buttons, 'Kolejność:',
+  'Ekran nie wygaśnie'). Fixed in a3fbe7a; the first run also caught this change's own locked
+  gallery and servings row (0a27ef9).
+- Screenshots: `.ai/qa/recipe-page-design-fidelity/` (production before, local after).
+
 ## Risks
 
 - Moving the favourite into the header column must keep the mobile order and the 58 px
@@ -115,4 +127,4 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
 
 ### Phase 3: Verification
 
-- [ ] 3.1 Full gate, reflow guard and screenshots
+- [x] 3.1 Full gate, reflow guard and screenshots — 0a27ef9, a3fbe7a
