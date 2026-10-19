@@ -98,6 +98,14 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
   gallery and servings row (0a27ef9).
 - Screenshots: `.ai/qa/recipe-page-design-fidelity/` (production before, local after).
 
+## Review (om-auto-review-pr)
+
+- Merged master (5 PRs ahead, no conflicts) into the branch; gate on the merged head 2cfdc74:
+  typecheck ✓, lint 0 errors, 1273/1273 tests ✓.
+- Fixed: the "Skopiowano link" confirmation now fades after 5 s (2cfdc74).
+- Follow-up candidate (pre-existing, outside the diff): the gallery lightbox's icon-only buttons and
+  14 px counter.
+
 ## Risks
 
 - Moving the favourite into the header column must keep the mobile order and the 58 px
@@ -109,6 +117,8 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
   unverified.
 
 ## Progress
+
+PR: #327
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
