@@ -84,7 +84,9 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
 
   return (
     // Desktop (E01-S17, A9): a 16:10 photo | the text column (1.2fr 1fr) when there is a photo.
-    <header className={`mb-8 ${recipe.image_url ? 'lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-center lg:gap-10' : ''}`}>
+    // Top-aligned: with the actions in the text column it is usually the taller one,
+    // and a centred photo would float in white space.
+    <header className={`mb-8 ${recipe.image_url ? 'lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-10' : ''}`}>
       {recipe.image_url && (
         <div className="relative mb-5 aspect-[4/3] w-full overflow-hidden rounded-card bg-surface-3 lg:mb-0 lg:aspect-[16/10]">
           <Image

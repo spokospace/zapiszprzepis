@@ -21,7 +21,7 @@ interface RecipeListProps {
 // right. A9 (lg): "← {lista} · N z M" on the left of the page's breadcrumbs row.
 export const LIST_BAR =
   'mb-5 flex min-h-[57px] items-center justify-between gap-3 border-b border-border-card ' +
-  'lg:mb-0 lg:min-h-[48px] lg:justify-start lg:border-b-0'
+  'lg:mb-0 lg:min-h-[48px] lg:justify-start lg:gap-2 lg:border-b-0'
 
 // A button-shaped link: bordered, so no underline (as in the header's "Dodaj").
 const NAV = 'flex min-h-[64px] items-center gap-3 rounded-field border-2 px-4 py-2 leading-tight no-underline!'

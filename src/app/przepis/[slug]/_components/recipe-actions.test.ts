@@ -22,7 +22,11 @@ function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
 
 describe('RecipeActions (C3 phones, A9 desktop)', () => {
   it('stacks below sm so the heart is full width (C3)', () => {
-    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 sm:flex-row/)
+    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 sm:flex-row[^"]*"><div class="flex flex-col lg:col-span-2">/)
+  })
+
+  it('from lg puts the heart across the column and the other two in a row under it', () => {
+    expect(render()).toMatch(/^<div class="[^"]*lg:grid lg:grid-cols-2">/)
   })
 
   it('adds "Udostępnij" and "Oryginał" from lg only', () => {
