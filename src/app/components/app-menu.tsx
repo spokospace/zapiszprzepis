@@ -27,6 +27,9 @@ const FOOTER_ROW = 'flex min-h-16 items-center justify-center gap-2 text-[18px] 
 
 const SECTION_HEADING = 'px-5 pb-2 text-[17px] font-bold text-ink-soft'
 
+// A "Moje" row: 56 px, 19 px semibold (handoff C5).
+const DRAWER_ROW = 'flex min-h-[56px] items-center gap-3 px-5 py-3 text-[19px] font-semibold no-underline! hover:bg-surface-2'
+
 /** Active route: colour plus a left bar, never colour alone. */
 function activeClasses(active: boolean): string {
   return active ? 'text-action-text border-l-4 border-action' : 'text-ink border-l-4 border-transparent'
@@ -42,7 +45,7 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
       // Only the label is underlined: the global (unlayered) `a` underline would
       // otherwise run through the counter pill and the lock caption, and only an
       // !important utility outranks it.
-      className={`flex min-h-[56px] items-center gap-3 px-5 py-3 text-[19px] font-semibold no-underline! hover:bg-surface-2 ${activeClasses(active)}`}
+      className={`${DRAWER_ROW} ${activeClasses(active)}`}
     >
       <Icon aria-hidden="true" className="h-6 w-6 shrink-0" />
       <span className="flex min-w-0 flex-col">
@@ -79,7 +82,7 @@ function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBa
       href={NOTIFICATIONS_PATH}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      className={`flex min-h-[56px] items-center gap-3 px-5 py-3 text-[19px] font-semibold no-underline! hover:bg-surface-2 ${activeClasses(active)}`}
+      className={`${DRAWER_ROW} ${activeClasses(active)}`}
     >
       <Bell aria-hidden="true" className="h-6 w-6 shrink-0" />
       <span className="flex min-w-0 flex-col">
