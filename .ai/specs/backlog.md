@@ -23,6 +23,9 @@ first run (mostly from the design-gap audit `.ai/analysis/2026-10-17-design-gap-
 design authority `.ai/design/przebudowa-handoff/README.md`) were adopted:
 the `Backlog source:` / `Backlog id:` lines were added to their bodies, with an
 adoption comment on each. S15–S17 statuses were refreshed to closed.
+S04–S11, S13, S14 were closed the same day on the owner's confirmation: their
+implementation PRs had merged but referenced the issues with `Refs`, so GitHub
+never closed them. Only S12 (#205) stays open, waiting on #299 / #288.
 
 | Id | Issue | Title | Epic | Depends on | Adopted | Status |
 |---|---|---|---|---|---|---|
@@ -33,16 +36,16 @@ adoption comment on each. S15–S17 statuses were refreshed to closed.
 | E01-S03b | [#220](https://github.com/spokospace/zapiszprzepis/issues/220) | Public /przepis/{slug} route + 301 from /recipes | #201 | E01-S03a, E01-S02 | no | closed · shipped #239 (spec #221) |
 | E01-S12 | [#205](https://github.com/spokospace/zapiszprzepis/issues/205) | OAuth Facebook/Google login + first-login gender + vocative | #201 | E01-S02 | no | open |
 | E01-S18 | [#206](https://github.com/spokospace/zapiszprzepis/issues/206) | Identity: display name + username | #201 | — | no | closed · shipped #192 |
-| E01-S04 | [#207](https://github.com/spokospace/zapiszprzepis/issues/207) | Home page: guest and logged-in | #201 | E01-S01, E01-S02 | no | open |
-| E01-S05 | [#208](https://github.com/spokospace/zapiszprzepis/issues/208) | One search with results and scope (All/Mine/Favorites) | #201 | E01-S01, E01-S02 | no | open |
-| E01-S06 | [#209](https://github.com/spokospace/zapiszprzepis/issues/209) | Favorites: labelled heart + guest→login→save flow | #201 | E01-S02 | no | open |
-| E01-S07 | [#210](https://github.com/spokospace/zapiszprzepis/issues/210) | Recipe page rebuild | #201 | E01-S01, E01-S02, E01-S03 | no | open |
-| E01-S08 | [#211](https://github.com/spokospace/zapiszprzepis/issues/211) | Cooking mode (fullscreen, Wake Lock) | #201 | E01-S01, E01-S07 | no | open |
-| E01-S09 | [#212](https://github.com/spokospace/zapiszprzepis/issues/212) | Menu drawer: Mine + All by category | #201 | E01-S01 | no | open |
-| E01-S10 | [#213](https://github.com/spokospace/zapiszprzepis/issues/213) | Add recipe: dedicated /dodaj page | #201 | E01-S01, E01-S11 | no | open |
-| E01-S11 | [#214](https://github.com/spokospace/zapiszprzepis/issues/214) | Add gate: access code (screen 3c) | #201 | E01-S02 | no | open |
-| E01-S13 | [#215](https://github.com/spokospace/zapiszprzepis/issues/215) | My profile / Settings (/settings) | #201 | E01-S01, E01-S12, E01-S03, E01-S18 | no | open |
-| E01-S14 | [#216](https://github.com/spokospace/zapiszprzepis/issues/216) | Public profile (/u/{username}) | #201 | E01-S02, E01-S03, E01-S18 | no | open |
+| E01-S04 | [#207](https://github.com/spokospace/zapiszprzepis/issues/207) | Home page: guest and logged-in | #201 | E01-S01, E01-S02 | no | closed · shipped #249 |
+| E01-S05 | [#208](https://github.com/spokospace/zapiszprzepis/issues/208) | One search with results and scope (All/Mine/Favorites) | #201 | E01-S01, E01-S02 | no | closed · shipped #262 |
+| E01-S06 | [#209](https://github.com/spokospace/zapiszprzepis/issues/209) | Favorites: labelled heart + guest→login→save flow | #201 | E01-S02 | no | closed · shipped #260 |
+| E01-S07 | [#210](https://github.com/spokospace/zapiszprzepis/issues/210) | Recipe page rebuild | #201 | E01-S01, E01-S02, E01-S03 | no | closed · shipped #246 |
+| E01-S08 | [#211](https://github.com/spokospace/zapiszprzepis/issues/211) | Cooking mode (fullscreen, Wake Lock) | #201 | E01-S01, E01-S07 | no | closed · shipped #274 |
+| E01-S09 | [#212](https://github.com/spokospace/zapiszprzepis/issues/212) | Menu drawer: Mine + All by category | #201 | E01-S01 | no | closed · shipped #250 |
+| E01-S10 | [#213](https://github.com/spokospace/zapiszprzepis/issues/213) | Add recipe: dedicated /dodaj page | #201 | E01-S01, E01-S11 | no | closed · shipped #269 |
+| E01-S11 | [#214](https://github.com/spokospace/zapiszprzepis/issues/214) | Add gate: access code (screen 3c) | #201 | E01-S02 | no | closed · shipped #251 |
+| E01-S13 | [#215](https://github.com/spokospace/zapiszprzepis/issues/215) | My profile / Settings (/settings) | #201 | E01-S01, E01-S12, E01-S03, E01-S18 | no | closed · shipped #263 |
+| E01-S14 | [#216](https://github.com/spokospace/zapiszprzepis/issues/216) | Public profile (/u/{username}) | #201 | E01-S02, E01-S03, E01-S18 | no | closed · shipped #259 |
 | E01-S15 | [#217](https://github.com/spokospace/zapiszprzepis/issues/217) | Notifications: fullscreen + home banner | #201 | E01-S01 | no | closed |
 | E01-S16 | [#218](https://github.com/spokospace/zapiszprzepis/issues/218) | Category with tags + similar recipes | #201 | E01-S01, E01-S03 | no | closed |
 | E01-S17 | [#219](https://github.com/spokospace/zapiszprzepis/issues/219) | Desktop layouts (A8, A9) | #201 | E01-S01, E01-S04, E01-S05, E01-S07 | no | closed |
