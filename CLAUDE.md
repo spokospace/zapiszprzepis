@@ -1,8 +1,8 @@
 # Reguły projektu zapiszprzepis
 
-## Commit messages — English only
+## Commits, issues and PRs — English only
 
-Git commit subjects **and** bodies must be written in English, even when the rest of the work (PR title, PR description, `plan.md`, `change.md`, prompts, conversation) is in Polish.
+Git commit subjects **and** bodies, and every issue and PR title, description and comment (reviews, label rationale, claim/status comments, backlog adoption comments included), must be written in English, even when `plan.md`, `change.md`, prompts or the conversation are in Polish.
 
 **Why:** Keeps the git log consistent with the project's already-English file and identifier names (`createSupabaseServerClient`, `signInWithEmail`, …) and with the broader open-source convention. Polish words in Conventional-Commits subjects (observed during F-01 phase commits, e.g. „bootstrap środowiska Supabase", „klienty SSR + proxy") create mixed-language history that future tooling and contributors have to work around.
 
@@ -10,7 +10,9 @@ Git commit subjects **and** bodies must be written in English, even when the res
 - English in commit subjects and bodies, including the phase-end ritual `<type>(<change-id>): <phase title> (p<N>)` — translate the Polish phase title from `plan.md` to a short English phrase rather than copying verbatim.
 - The epilogue commit's "close out plan" body is also English.
 - When proposing a commit message via `AskUserQuestion`, draft it in English; the user can still override.
-- PR titles/descriptions, `plan.md`, `change.md`, and chat stay in whichever language they were started in. The rule is specific to git commit text.
+- Issues and PRs: title, body and every comment in English. Polish UI copy is quoted verbatim in quotes or backticks (e.g. „Dodaj do ulubionych”, `Dodała/Dodał`); the surrounding sentence is English. Polish design-handoff names (`Wersje przepisu.dc.html`) stay as they are.
+- Existing Polish issue bodies (e.g. epic #201) are not rewritten just for language; translate a section only when the issue is edited for another reason.
+- `plan.md`, `change.md`, specs under `.ai/specs/`, and chat stay in whichever language they were started in.
 
 ## One account (`spokospace`) — review and merge
 
