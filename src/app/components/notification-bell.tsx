@@ -4,22 +4,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import type { FailedSharesResult } from '@/lib/failed-shares'
+import { notificationBadge } from '@/lib/notification-badge'
 import { NOTIFICATIONS_PATH } from '@/lib/routes'
 
 /**
- * Header "Powiadomienia" (S-06, rebuilt in E01-S15 per handoff §Nagłówek):
- * bell icon over a 13 px caption, min 100 px wide, linking to the full-screen
- * /powiadomienia page instead of a 320 px dropdown. The badge counts problems
- * + ready recipes not opened yet; the number is part of the link's name, so
- * the badge itself is decorative.
+ * Header "Powiadomienia" (S-06, rebuilt in E01-S15): bell icon over a 13 px
+ * caption, min 100 px wide, linking to the full-screen /powiadomienia page
+ * instead of a 320 px dropdown. Desktop header only: below lg it lives in the
+ * MENU drawer (#323). The badge counts problems + ready recipes not opened
+ * yet; the number is part of the link's name, so the badge itself is
+ * decorative.
  *
  * When the failed shares could not be loaded, the bell says so instead of
  * claiming there is nothing to show (#137).
  */
 export function NotificationBell({ failedShares: result }: { failedShares: FailedSharesResult }) {
   const pathname = usePathname()
-  const loadFailed = result.status === 'error'
-  const count = result.status === 'ok' ? result.shares.length + result.unreadReady : 0
+  const { count, loadFailed } = notificationBadge(result)
 
   return (
     <Link

@@ -9,7 +9,10 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ back: vi.fn() }),
 }))
-vi.mock('./app-menu', () => ({ AppMenu: () => createElement('div', { 'data-testid': 'menu' }) }))
+vi.mock('./app-menu', () => ({
+  AppMenu: ({ notifications }: { notifications?: unknown }) =>
+    createElement('div', { 'data-testid': 'menu', 'data-notifications': JSON.stringify(notifications ?? null) }),
+}))
 vi.mock('./notification-bell', () => ({ NotificationBell: () => createElement('div', { 'data-testid': 'bell' }) }))
 
 import { AppHeader } from './app-header'
@@ -115,10 +118,35 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     },
   )
 
+  it('keeps the signed-in "← Wróć" in one 18 px row, now that only Dodaj + MENU sit beside it (#323)', () => {
+    pathname = '/szukaj'
+    const back = render(true).match(/<a[^>]*aria-label="Wróć"[^>]*>/)?.[0] ?? ''
+    expect(back).toContain('flex-row')
+    expect(back).toContain('text-[18px]')
+    expect(back).not.toContain('flex-col')
+    pathname = '/'
+  })
+
   it('keeps the logo and no back link on the start page', () => {
     pathname = '/'
     const html = render(true)
     expect(html).not.toContain('aria-label="Wróć')
     expect(html).not.toContain('hidden lg:flex min-h-12')
+  })
+})
+
+// Owner decision (#323): below lg „Powiadomienia” lives in the MENU drawer, not the header.
+describe('AppHeader "Powiadomienia" placement (#323)', () => {
+  it('shows the bell from lg only', () => {
+    pathname = '/'
+    expect(render(true)).toContain('<div class="hidden lg:flex"><div data-testid="bell"></div></div>')
+  })
+
+  it('hands the badge to the MENU drawer for a signed-in user, and nothing for a guest', () => {
+    pathname = '/'
+    expect(render(true)).toContain(`data-notifications="${'{&quot;count&quot;:0,&quot;loadFailed&quot;:false}'}"`)
+    const guest = render(false)
+    expect(guest).toContain('data-notifications="null"')
+    expect(guest).not.toContain('data-testid="bell"')
   })
 })

@@ -12,6 +12,7 @@ import { HeaderNav } from './header-nav'
 import { HeaderSearch } from './header-search'
 import type { FailedSharesResult } from '@/lib/failed-shares'
 import type { MenuSummary } from '@/lib/menu-summary'
+import { notificationBadge } from '@/lib/notification-badge'
 import { ADD_RECIPE_PATH, PRZEPIS_PAGE_RE } from '@/lib/routes'
 
 export function AppHeader({
@@ -40,9 +41,9 @@ export function AppHeader({
       <PageContainer className="flex min-h-16 items-center justify-between gap-2 py-1 pr-3 pl-4 sm:px-6 lg:min-h-0 lg:gap-6 lg:px-8 lg:py-3">
         <div className="flex min-w-0 items-center gap-2 lg:gap-6">
           {recipeSlug !== null ? (
-            <HeaderBackLink slug={recipeSlug} crowded={isAuthenticated} className="lg:hidden" />
+            <HeaderBackLink slug={recipeSlug} className="lg:hidden" />
           ) : (
-            showBack && <PageBackLink crowded={isAuthenticated} className="lg:hidden" />
+            showBack && <PageBackLink className="lg:hidden" />
           )}
           <Link
             href="/"
@@ -82,7 +83,11 @@ export function AppHeader({
                 <Plus aria-hidden="true" className="h-6 w-6 lg:h-5 lg:w-5" />
                 Dodaj<span className="-ml-1.5 hidden lg:inline">&nbsp;przepis</span>
               </Link>
-              <NotificationBell failedShares={failedShares} />
+              {/* Desktop only: below lg „Powiadomienia” is a MENU drawer row, with the
+                  badge on the MENU button (#323). */}
+              <div className="hidden lg:flex">
+                <NotificationBell failedShares={failedShares} />
+              </div>
             </>
           ) : (
             <>
@@ -105,7 +110,11 @@ export function AppHeader({
           {/* The guest drawer holds only the sign-in CTA and the categories, which the
               desktop header already shows. */}
           <div className={isAuthenticated ? 'flex' : 'flex lg:hidden'}>
-            <AppMenu isAuthenticated={isAuthenticated} summary={menu} />
+            <AppMenu
+              isAuthenticated={isAuthenticated}
+              summary={menu}
+              notifications={isAuthenticated ? notificationBadge(failedShares) : null}
+            />
           </div>
         </div>
       </PageContainer>

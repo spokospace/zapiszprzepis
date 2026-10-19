@@ -3,12 +3,13 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BookOpen, Heart, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
+import { Bell, BookOpen, Heart, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { buttonClasses } from '@/app/components/ui/button'
 import { CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
-import { categoryPath } from '@/lib/routes'
+import { categoryPath, NOTIFICATIONS_PATH } from '@/lib/routes'
 import type { MenuSummary } from '@/lib/menu-summary'
+import { notificationsNoun, type NotificationBadge } from '@/lib/notification-badge'
 import { buildMenuModel, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
 
 const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
@@ -68,6 +69,41 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
 }
 
 /**
+ * "Powiadomienia" in "Moje", below lg only (#323): the phone header has no bell,
+ * so this row and the MENU badge carry it; from lg the header bell does. The
+ * counter is red like the bell badge, since it mostly means a problem.
+ */
+function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBadge; active: boolean; onNavigate: () => void }) {
+  return (
+    <Link
+      href={NOTIFICATIONS_PATH}
+      onClick={onNavigate}
+      aria-current={active ? 'page' : undefined}
+      className={`flex min-h-[56px] items-center gap-3 px-5 py-3 text-[19px] font-semibold no-underline! hover:bg-surface-2 ${activeClasses(active)}`}
+    >
+      <Bell aria-hidden="true" className="h-6 w-6 shrink-0" />
+      <span className="flex min-w-0 flex-col">
+        <span className="underline underline-offset-4">Powiadomienia</span>
+        {badge.loadFailed && <span className="text-[16px] font-normal text-ink-soft">Nie udało się sprawdzić</span>}
+      </span>
+      {badge.count > 0 && (
+        <>
+          <span
+            aria-hidden="true"
+            className="ml-auto min-w-[2.25rem] rounded-pill bg-danger px-2.5 py-0.5 text-center text-[17px] font-bold text-white"
+          >
+            {badge.count}
+          </span>
+          <span className="sr-only">
+            , {badge.count} {notificationsNoun(badge.count)}
+          </span>
+        </>
+      )}
+    </Link>
+  )
+}
+
+/**
  * Header "MENU" button + drawer (E01-S09): "Moje" (or the guest's sign-in
  * CTA), every category, and the "Ustawienia | Wyloguj" footer. Full screen on
  * phones, a 330px right-side panel from `sm` up. Built on a native `<dialog>`
@@ -77,10 +113,13 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
 export function AppMenu({
   isAuthenticated,
   summary,
+  notifications,
 }: {
   isAuthenticated: boolean
   /** Counters + full access; undefined where the page did not load it. */
   summary?: MenuSummary | null
+  /** Signed in only: the "Powiadomienia" row and the MENU badge below lg (#323). */
+  notifications?: NotificationBadge | null
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const pathname = usePathname()
@@ -102,12 +141,36 @@ export function AppMenu({
         onClick={() => dialogRef.current?.showModal()}
         aria-haspopup="dialog"
         aria-controls="app-menu"
-        // Mobile 1c (E01-S19): icon over a 13 px bold caption, 60x56 like Dodaj and
-        // Powiadomienia. The desktop header (E01-S17) keeps the 48 px inline row.
-        className="inline-flex h-14 w-[60px] flex-col items-center justify-center gap-0.5 rounded-field text-[13px] leading-none font-bold text-ink hover:bg-surface-3 lg:h-auto lg:min-h-[48px] lg:w-auto lg:flex-row lg:gap-1.5 lg:px-2.5 lg:text-sm lg:leading-5 lg:font-semibold"
+        // Mobile 1c (E01-S19): icon over a 13 px bold caption, 60x56 like Dodaj.
+        // The desktop header (E01-S17) keeps the 48 px inline row.
+        className="relative inline-flex h-14 w-[60px] flex-col items-center justify-center gap-0.5 rounded-field text-[13px] leading-none font-bold text-ink hover:bg-surface-3 lg:h-auto lg:min-h-[48px] lg:w-auto lg:flex-row lg:gap-1.5 lg:px-2.5 lg:text-sm lg:leading-5 lg:font-semibold"
       >
         <Menu aria-hidden="true" className="h-6 w-6 lg:h-5 lg:w-5" />
         MENU
+        {/* Below lg the bell's badge moves here (#323), with the count in the
+            button's name; from lg the header bell shows it. */}
+        {notifications && notifications.count > 0 && (
+          <>
+            <span
+              aria-hidden="true"
+              className="absolute top-0 right-0.5 flex h-[22px] min-w-[22px] items-center justify-center rounded-pill border-2 border-white bg-danger px-1 text-[13px] leading-none font-bold text-white lg:hidden"
+            >
+              {notifications.count}
+            </span>
+            <span className="sr-only lg:hidden">
+              , {notifications.count} {notificationsNoun(notifications.count)}
+            </span>
+          </>
+        )}
+        {notifications?.loadFailed && (
+          <>
+            <span
+              aria-hidden="true"
+              className="absolute top-1 right-2 h-3 w-3 rounded-pill border-2 border-white bg-amber-500 lg:hidden"
+            />
+            <span className="sr-only lg:hidden">, nie udało się sprawdzić powiadomień</span>
+          </>
+        )}
       </button>
 
       <dialog
@@ -149,6 +212,15 @@ export function AppMenu({
                       />
                     </li>
                   ))}
+                  {notifications && (
+                    <li className="lg:hidden">
+                      <NotificationsRow
+                        badge={notifications}
+                        active={pathname === NOTIFICATIONS_PATH}
+                        onNavigate={close}
+                      />
+                    </li>
+                  )}
                 </ul>
               </section>
             ) : (

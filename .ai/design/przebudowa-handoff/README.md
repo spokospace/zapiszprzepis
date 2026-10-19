@@ -46,7 +46,7 @@ Pliki w `designs/` to **referencje projektowe w HTML** — prototypy pokazujące
 ## Decyzje (finalne)
 Wybrane warianty — wdrażać tylko je; pozostałe pliki to kontekst:
 - **Nawigacja mobile:** przycisk MENU w nagłówku (1a), bez dolnego paska zakładek.
-- **Nagłówek zalogowanego:** Dodaj · Powiadomienia · MENU z podpisami (1c).
+- **Nagłówek zalogowanego:** telefon i tablet (< 1024 px): Dodaj · MENU z podpisami (1c), **bez „Powiadomień”** — te są w MENU (wiersz w „Moje” + licznik na przycisku MENU). Decyzja właściciela 2026-10-19 (#323), zastępuje pierwotne „Dodaj · Powiadomienia · MENU”. Komputer: dzwonek w nagłówku (A8–A9, niżej).
 - **Menu:** na cały ekran, sekcje „Moje” i „Wszystkie przepisy według kategorii”, kategorie jako kafle 2 kolumny (1c, C5).
 - **Wyniki i kategorie:** lista kart (miniatura, pełny tytuł, pasek „Dodaj do ulubionych”) (1c, C2).
 - **Poprzedni / następny:** na końcu przepisu, jeden pod drugim z tytułami (1c, C3).
@@ -61,10 +61,10 @@ Wymiary mobilne: 390 px szerokości. Desktop: kontener `max-width: 1152px`, padd
 ### Nagłówek (mobile, 1c)
 - Wysokość ~64 px, `border-bottom: 2px solid #e5e7eb`, padding `4px 12px 4px 16px`.
 - Lewo: logo = ikona `public/logo-icon.svg` 40×40 + napis „Zapisz**Przepis**” tekstem (od 640 px; na telefonie sama ikona), albo „← Wróć/Wyniki” (18 px bold, cel 56 px). Źródło prawdy: `src/app/components/app-header.tsx` (#276, #320). **Nie** wracać do `public/logo-lettering.svg` — to stare logo, a ten wiersz raz już je przywrócił (#286).
-- Prawo, zalogowany (na **każdym** ekranie): trzy przyciski ikona nad podpisem, wysokość 56 px, podpis 13 px bold, ikona 24 px:
+- Prawo, zalogowany (na **każdym** ekranie): dwa przyciski ikona nad podpisem, wysokość 56 px, podpis 13 px bold, ikona 24 px:
   - **„Dodaj”** 64 px szer., tło `#c2410c`, biały, radius 12. Bez pełnego dostępu też widoczny → ekran 3c.
-  - **„Powiadomienia”** min. 100 px (dzwonek). Licznik: koło 22 px `#b91c1c`, biały 13 px bold, obwódka 2 px biała. `aria-label="Powiadomienia (N)"`.
-  - **„MENU”** 60 px.
+  - **„MENU”** 60 px. Gdy są powiadomienia: licznik na przycisku — koło 22 px `#b91c1c`, biały 13 px bold, obwódka 2 px biała; nazwa dostępna „MENU, N powiadomień”. Nieudane sprawdzenie: bursztynowa kropka.
+- **Bez „Powiadomień” w nagłówku telefonu** (#323): rzadko potrzebne, a zajmowały najszerszy przycisk (100 px). Wejście to wiersz „Powiadomienia” w MENU; dzwonek zostaje tylko w nagłówku komputera. Dzięki temu „← Wróć” mieści się w jednym wierszu 18 px także przy 320 px.
 - Gość: „Zaloguj się” (obramowany, 52 px) + MENU.
 
 ### 8 — Wersje tego samego dania (`Wersje przepisu.dc.html`)
@@ -101,7 +101,8 @@ Zastępuje dropdown z `notification-bell.tsx` pełnoekranowym panelem (mobile) �
   - **Problem** (ramka `#b91c1c`, ikona circle-alert): „Nie udało się dodać przepisu”, domena (np. „youtube.com”, 17 px), powód zrozumiałym językiem (mapowanie `error_message` → tekst, np. „Na tej stronie nie znaleźliśmy przepisu.”, „Film jest prywatny albo został usunięty.”, „Strona nie odpowiada. Spróbuj za chwilę.”), czas („dziś o 9:40”). Przyciski: „Spróbuj ponownie” 56 px `#c2410c` (retryShare) i „Usuń” 48 px obramowany (dismissShare).
   - **W trakcie**: „Spisujemy przepis z kwestiasmaku.com”, spinner, „Zwykle trwa to 1–3 minuty.” Bez przycisków.
   - **Gotowe**: (ramka `#15803d`) „Przepis gotowy”, tytuł 19 px bold, „Otwórz przepis” 56 px.
-- Sekcje: „Wymaga uwagi” (problemy), „W trakcie”, „Wcześniej” (gotowe). Licznik w nagłówku = problemy + nieprzeczytane gotowe.
+- Sekcje: „Wymaga uwagi” (problemy), „W trakcie”, „Wcześniej” (gotowe). Licznik = problemy + nieprzeczytane gotowe.
+- Wejście (#323): na telefonie i tablecie wiersz „Powiadomienia” w MENU (sekcja „Moje”, czerwony licznik) + licznik na przycisku MENU; na komputerze dzwonek „Powiadomienia” w nagłówku. `Powiadomienia.dc.html` pokazuje jeszcze dzwonek w nagłówku telefonu — nieaktualne.
 - „Usuń przeczytane” na dole. Pusty stan: „Nie ma nowych powiadomień” + wyjaśnienie, co tu się pojawi.
 - Błąd ładowania: „Nie udało się sprawdzić powiadomień.” + „Spróbuj ponownie”.
 - **Pasek na stronie głównej** (pod powitaniem), gdy jest problem: tło `#fef2f2`, ramka `#b91c1c`, „1 przepis wymaga uwagi” + „Zobacz” — starsze osoby często nie zauważają samego licznika.
@@ -140,7 +141,7 @@ Pełny ekran, tło `#111827`, tekst biały. Góra: nazwa przepisu 17 px `#e5e7eb
 
 ### C5 / A6 / 3d — Menu
 Pełny ekran na mobile (1c), panel 330 px w 1a. Nagłówek „Menu” 22 px + „× Zamknij”.
-- Sekcja **„Moje”** (16 px bold `#374151`): Moje przepisy (licznik, tylko pełny dostęp), Ulubione (licznik), Dodaj przepis. Bez pełnego dostępu (3d): „Dodaj przepis” z podpisem „Wymaga kodu lub pełnego dostępu” i ikoną kłódki → ekran 3c.
+- Sekcja **„Moje”** (16 px bold `#374151`): Moje przepisy (licznik, tylko pełny dostęp), Ulubione (licznik), Dodaj przepis, Powiadomienia (czerwony licznik, „Nie udało się sprawdzić” przy błędzie; tylko < 1024 px, bo na komputerze jest dzwonek — #323). Bez pełnego dostępu (3d): „Dodaj przepis” z podpisem „Wymaga kodu lub pełnego dostępu” i ikoną kłódki → ekran 3c.
 - Separator 2 px.
 - Sekcja **„Wszystkie przepisy według kategorii”**: siatka 2 kolumny kafli 54 px (lista kategorii z `src/lib/recipe-categories.ts`). Kategoria otwiera wyniki w zakresie „Wszystkie”.
 - Stopka: „Mój profil” (w 1c „Ustawienia”) | „Wyloguj”, 64 px.

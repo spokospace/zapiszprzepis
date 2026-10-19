@@ -132,7 +132,7 @@ Strona główna, wyszukiwarka i przepis działają bez logowania; nagłówek ma 
 
 - **Given** niezalogowany gość, **When** wejdzie na stronę główną, wyszukiwarkę lub `/przepis/{slug}`, **Then** widzi treść (nie jest przekierowany na `/login`).
 - **Given** klient `anon` w Supabase, **When** czyta przepisy, **Then** RLS zezwala na odczyt opublikowanych przepisów, a zapisy/dane prywatne (ulubione, profile) pozostają chronione per użytkownik (test izolacji: `anon` nie czyta cudzych ulubionych).
-- **Given** gość na dowolnym ekranie, **When** patrzy na nagłówek, **Then** widzi „Zaloguj się” + MENU; zalogowany widzi Dodaj / Powiadomienia / MENU.
+- **Given** gość na dowolnym ekranie, **When** patrzy na nagłówek, **Then** widzi „Zaloguj się” + MENU; zalogowany widzi Dodaj / MENU, a od 1024 px także dzwonek „Powiadomienia” (na telefonie powiadomienia są w MENU — zmiana 2026-10-19, #323; pierwotnie Dodaj / Powiadomienia / MENU).
 - **Pliki:** przeniesienie `page.tsx` (home), wyszukiwarki i przepisu poza grupę `(authenticated)`; `middleware.ts`; polityki RLS w `supabase/`; `src/app/components/app-header.tsx`.
 - **Uwaga risk-high:** wymaga testu integracyjnego ścieżki odmowy i odczytu w złym zakresie + review drugiej osoby (SDLC).
 
@@ -223,6 +223,7 @@ Wydzielone z S03 (decyzja użytkownika 2026-10-16): skoro autor ma być widoczny
 **Epic:** E01 · **Kategoria:** feature · **Priorytet:** medium · **Ryzyko:** low · **Ref:** C5, A6, 3d · **Zależy:** S01 (stan kłódki ← S11)
 
 - **Given** zalogowany, **When** otwiera MENU, **Then** sekcja „Moje” (Moje przepisy — tylko pełny dostęp z licznikiem, Ulubione z licznikiem, Dodaj przepis) + „Wszystkie przepisy według kategorii” (siatka 2 kol. z `recipe-categories.ts`) + stopka „Ustawienia | Wyloguj”.
+- **Given** zalogowany na telefonie lub tablecie (< 1024 px), **When** otwiera MENU, **Then** w „Moje” jest też „Powiadomienia” z czerwonym licznikiem, a sam przycisk MENU nosi licznik, gdy coś jest (zmiana 2026-10-19, #323: dzwonek zszedł z nagłówka telefonu).
 - **Given** brak pełnego dostępu, **When** patrzy na „Dodaj przepis”, **Then** podpis „Wymaga kodu lub pełnego dostępu” + kłódka → ekran 3c.
 - **Given** gość, **When** otwiera MENU, **Then** zamiast „Moje” — „Zaloguj się / Załóż konto”.
 - **Pliki:** `src/app/components/app-menu.tsx` (nowy/rozbudowa), pełny ekran mobile / panel 330 px.
@@ -260,6 +261,7 @@ Wydzielone z S03 (decyzja użytkownika 2026-10-16): skoro autor ma być widoczny
 
 ### E01-S15 — Powiadomienia: pełny ekran + pasek na stronie głównej
 **Epic:** E01 · **Kategoria:** feature · **Priorytet:** medium · **Ryzyko:** medium · **Ref:** 5 · **Zależy:** S01 (rozszerza `notification-bell.tsx`)
+> Zmiana (2026-10-19, #323): dzwonek „Powiadomienia” jest w nagłówku tylko od 1024 px. Na telefonie i tablecie wejściem jest wiersz w MENU + licznik na przycisku MENU.
 
 - **Given** zalogowany, **When** otwiera powiadomienia, **Then** pełnoekranowy panel (nie dropdown 320 px) z sekcjami „Wymaga uwagi” / „W trakcie” / „Wcześniej” i kartami typu Problem / W trakcie / Gotowe.
 - **Given** nieudany przepis, **When** widzi kartę Problem, **Then** domena + powód zrozumiałym językiem (mapowanie `error_message`) + „Spróbuj ponownie” / „Usuń”.

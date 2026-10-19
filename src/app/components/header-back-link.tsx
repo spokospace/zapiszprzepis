@@ -9,19 +9,14 @@ import { HEADER_BACK_FALLBACK, headerBackLink, type HeaderBackLink as Target } f
 import { listStorageKey, parseListKey } from '@/lib/recipe-list-context'
 
 type Props = {
-  /** Signed-in header: three buttons on the right, so below 360 px the link must stack. */
-  crowded: boolean
   className?: string
 }
 
-const ROW = 'flex-row gap-1.5 text-[18px]'
-// Below 360 px the 18 px row does not fit beside Dodaj + Powiadomienia + MENU, so
-// it stacks like them: arrow over a 13 px caption, still 56 px tall.
-const STACK_BELOW_360 = 'flex-col gap-0.5 text-[13px] min-[360px]:flex-row min-[360px]:gap-1.5 min-[360px]:text-[18px]'
-
+// One 18 px row at every width: beside Dodaj + MENU (signed in) or „Zaloguj się”
+// + MENU (guest) it fits at 320 px. It stacked below 360 px only while the bell
+// was in the phone header too (#323).
 function BackLinkView({
   target,
-  crowded,
   className,
   onClick,
 }: Props & { target: Target; onClick?: (event: MouseEvent<HTMLAnchorElement>) => void }) {
@@ -30,7 +25,7 @@ function BackLinkView({
       href={target.href}
       aria-label={target.ariaLabel}
       onClick={onClick}
-      className={`-ml-2 inline-flex h-14 shrink-0 items-center justify-center rounded-field px-2 leading-none font-bold text-ink no-underline! hover:bg-surface-3 ${crowded ? STACK_BELOW_360 : ROW} ${className ?? ''}`}
+      className={`-ml-2 inline-flex h-14 shrink-0 flex-row items-center justify-center gap-1.5 rounded-field px-2 text-[18px] leading-none font-bold text-ink no-underline! hover:bg-surface-3 ${className ?? ''}`}
     >
       <ArrowLeft aria-hidden="true" className="h-6 w-6" />
       {target.text}
