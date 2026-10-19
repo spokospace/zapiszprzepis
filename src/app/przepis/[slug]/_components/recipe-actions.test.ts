@@ -29,9 +29,18 @@ describe('RecipeActions (C3 phones, A9 desktop)', () => {
     expect(render()).toMatch(/^<div class="[^"]*lg:grid lg:grid-cols-2">/)
   })
 
-  it('adds "Udostępnij" and "Oryginał" from lg only', () => {
+  it('shows "Udostępnij" at every width, under the heart on phones', () => {
+    const html = render()
+    const share = html.match(/<button type="button" class="[^"]*">.*?Udostępnij<\/button>/)?.[0] ?? ''
+    expect(share).toContain('min-h-[48px]')
+    expect(share).toContain('lg:min-h-[58px]')
+    // Outside the desktop-only wrapper, right after the heart's.
+    expect(html).toMatch(/lg:col-span-2">.*?<\/div><span class="flex flex-col gap-2"><button[^>]*>.*?Udostępnij/)
+    expect(html.match(/<div class="hidden lg:contents">.*<\/div>/)?.[0] ?? '').not.toContain('Udostępnij')
+  })
+
+  it('adds "Oryginał" from lg only (phones keep the end-of-recipe button)', () => {
     const desktop = render().match(/<div class="hidden lg:contents">.*<\/div>/)?.[0] ?? ''
-    expect(desktop).toContain('Udostępnij')
     expect(desktop).toMatch(/<a href="https:\/\/aniagotuje\.pl\/przepis\/zupa" target="_blank" rel="noopener noreferrer"[^>]*>/)
     expect(desktop).toContain('Oryginał<span class="sr-only"> przepisu (otwiera nową kartę)</span>')
     expect(desktop).toContain('lg:min-h-[58px]')

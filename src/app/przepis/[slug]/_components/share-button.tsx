@@ -40,8 +40,8 @@ export const SHARE_MESSAGES: Partial<Record<ShareOutcome, string>> = {
 }
 
 /**
- * "Udostępnij" in the desktop header (handoff A9), next to "W ulubionych" and
- * "Oryginał". The outcome is spoken from a status region that is always mounted.
+ * "Udostępnij" in the recipe header: under the heart on phones, beside "Oryginał"
+ * from lg (handoff A9). The outcome is spoken from a status region that is always mounted.
  */
 export function ShareButton({
   title,
