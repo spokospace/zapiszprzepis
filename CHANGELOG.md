@@ -5,7 +5,11 @@
 <!-- First changelog entry: covers PRs merged into master from 2026-10-16 (#153) to 2026-10-19 (#314). Earlier history is in `git log`. -->
 
 ## Highlights
-<!-- TODO: Highlights — auto-update-changelog leaves this blank for the human author to fill in. -->
+- **Public, high-readability rebuild (E01).** Guests can browse and search without an account; every screen follows WCAG 2.2 AA with large text, 48 px touch targets and no horizontal scroll. New home page, recipe page, cooking mode, search with an All / Mine / Favorites scope, category pages, favorites, public profiles and desktop layouts. Google/Facebook sign-in is built and goes live once the providers are configured (#299).
+- **One recipe per link.** Every source link maps to one public recipe at /przepis/{slug}; adding a link that already exists puts it in your favorites, and merged duplicates redirect to the recipe that stayed.
+- **Cleaner recipes.** Steps read as short instructions ("Pokroić mięso w kostkę.") — 609 saved recipes were edited by hand, and new imports follow the same rules. Versions of the same dish are linked on the recipe page.
+- **Sturdier imports.** Better reading of Facebook pages and groups, Blogger, WordPress and Wix; smarter cover and gallery picking; duplicate detection by the author's text and the ingredient set.
+- **Security.** Guest reads go through fail-closed views, recipe photos through an allowlisted image proxy, and private-network URL checks are tightened.
 
 ## ✨ Features
 
