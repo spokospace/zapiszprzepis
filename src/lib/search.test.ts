@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { categoryFacets, parseSearchParams, searchRecipes, webSearchUrl } from './search'
+import { categoryFacets, parseSearchParams, searchRecipes } from './search'
 
 function client(rpc: ReturnType<typeof vi.fn>) {
   return { rpc } as any
@@ -54,12 +54,6 @@ describe('categoryFacets', () => {
       { value: 'obiady', label: 'Obiady', count: 1 },
       { value: 'zupy', label: 'Zupy', count: 1 },
     ])
-  })
-})
-
-describe('webSearchUrl', () => {
-  it('searches the web for the recipe, encoded', () => {
-    expect(webSearchUrl('ciasto & kawa')).toBe('https://www.google.com/search?q=przepis%20ciasto%20%26%20kawa')
   })
 })
 
