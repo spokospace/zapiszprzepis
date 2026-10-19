@@ -166,7 +166,7 @@ function VersionCard({ version: v, current }: { version: DishVersionRow; current
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h3 className="text-[19px] font-bold leading-snug text-ink">
-          <Link href={recipePath(v.slug)} className="after:absolute after:inset-0 focus-visible:outline-none">
+          <Link href={recipePath(v.slug)} className="after:absolute after:inset-0 focus-visible:outline-none!">
             {heading}
             {v.variant_note && <span className="sr-only"> — {v.title}</span>}
           </Link>
@@ -185,7 +185,7 @@ function VersionCard({ version: v, current }: { version: DishVersionRow; current
         )}
 
         {diff.plus.length > 0 && (
-          <p className="mt-1 text-[16px] break-words text-[#15803d]">
+          <p className="mt-1 text-[16px] break-words text-success">
             <span className="sr-only">Składniki, których nie ma w oglądanym przepisie: </span>
             <b>+ jest:</b> {diff.plus.join(', ')}
           </p>

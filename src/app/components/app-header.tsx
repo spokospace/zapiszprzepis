@@ -12,6 +12,7 @@ import { HeaderNav } from './header-nav'
 import { HeaderSearch } from './header-search'
 import type { FailedSharesResult } from '@/lib/failed-shares'
 import type { MenuSummary } from '@/lib/menu-summary'
+import { notificationBadge } from '@/lib/notification-badge'
 import { ADD_RECIPE_PATH, PRZEPIS_PAGE_RE } from '@/lib/routes'
 
 export function AppHeader({
@@ -31,11 +32,6 @@ export function AppHeader({
   // („← Ciasteczka · 7 z 91”) already leads back, so the header keeps the logo
   // linking home (owner decision 2026-10-19 — one back link per screen).
   const showBack = pathname !== '/' && !PRZEPIS_PAGE_RE.test(pathname)
-  // The 120x30 lettering where the right-hand buttons leave room for it (signed in:
-  // 64+100+60 px of buttons), the compact icon below that, so nothing overflows at 320 px.
-  // A guest has only MENU on the right below lg, so the lettering always fits.
-  const lettering = isAuthenticated ? 'hidden min-[390px]:block' : 'block'
-  const compactIcon = isAuthenticated ? 'block min-[390px]:hidden' : 'hidden'
 
   return (
     <header className="sticky top-0 z-20 border-b-2 border-border-card bg-white/95 backdrop-blur lg:border-b">
@@ -44,21 +40,16 @@ export function AppHeader({
           a signed-in user gets the search field. */}
       <PageContainer className="flex min-h-16 items-center justify-between gap-2 py-1 pr-3 pl-4 sm:px-6 lg:min-h-0 lg:gap-6 lg:px-8 lg:py-3">
         <div className="flex min-w-0 items-center gap-2 lg:gap-6">
-          {showBack && <PageBackLink crowded={isAuthenticated} className="lg:hidden" />}
+          {showBack && <PageBackLink className="lg:hidden" />}
           <Link
             href="/"
             aria-label="ZapiszPrzepis — strona główna"
             className={`${showBack ? 'hidden lg:flex' : 'flex'} min-h-12 shrink-0 items-center gap-2 no-underline!`}
           >
-            <Image
-              src="/logo-lettering.svg"
-              alt=""
-              width={120}
-              height={30}
-              unoptimized
-              priority
-              className={`h-[30px] w-[120px] ${lettering} lg:hidden`}
-            />
+            {/* Recipe icon + text wordmark (#276); the old logo-lettering.svg must not come
+                back here (#320). The ~230 px logo fits beside a guest's lone MENU from
+                360 px (#328), beside Dodaj + MENU only from sm; below that the icon alone,
+                so nothing overflows at 320 px. */}
             <Image
               src="/logo-icon.svg"
               alt=""
@@ -66,12 +57,14 @@ export function AppHeader({
               height={40}
               unoptimized
               priority
-              className={`h-10 w-10 ${compactIcon} lg:block`}
+              className="h-10 w-10"
             />
-            {/* The desktop wordmark (E01-S17); below lg the lettering image is the logo. */}
-            <span aria-hidden="true" className="hidden text-[1.625rem] font-bold tracking-wide lg:inline">
+            <span
+              aria-hidden="true"
+              className={`hidden text-[1.625rem] font-bold tracking-wide ${isAuthenticated ? 'sm:inline' : 'min-[360px]:inline'}`}
+            >
               <span className="text-gray-900">Zapisz</span>
-              <span className="text-orange-700">Przepis</span>
+              <span className="text-action">Przepis</span>
             </span>
           </Link>
           {!isAuthenticated && <HeaderNav className="hidden lg:flex" />}
@@ -90,7 +83,11 @@ export function AppHeader({
                 <Plus aria-hidden="true" className="h-6 w-6 lg:h-5 lg:w-5" />
                 Dodaj<span className="-ml-1.5 hidden lg:inline">&nbsp;przepis</span>
               </Link>
-              <NotificationBell failedShares={failedShares} />
+              {/* Desktop only: below lg „Powiadomienia” is a MENU drawer row, with the
+                  badge on the MENU button (#323). */}
+              <div className="hidden lg:flex">
+                <NotificationBell failedShares={failedShares} />
+              </div>
             </>
           ) : (
             <>
@@ -114,7 +111,11 @@ export function AppHeader({
           {/* The guest drawer holds only the sign-in CTA and the categories, which the
               desktop header already shows. */}
           <div className={isAuthenticated ? 'flex' : 'flex lg:hidden'}>
-            <AppMenu isAuthenticated={isAuthenticated} summary={menu} />
+            <AppMenu
+              isAuthenticated={isAuthenticated}
+              summary={menu}
+              notifications={isAuthenticated ? notificationBadge(failedShares) : null}
+            />
           </div>
         </div>
       </PageContainer>

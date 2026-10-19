@@ -77,10 +77,10 @@ export function CategoryFilter({ activeCategory, counts }: CategoryFilterProps) 
             key={value}
             aria-pressed={isActive}
             onClick={() => handleClick(value)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-base font-medium transition-colors ${
+            className={`inline-flex min-h-[48px] items-center gap-1.5 px-3 py-1.5 rounded-full text-base font-medium transition-colors ${
               isActive
-                ? 'bg-orange-500 text-white'
-                : 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+                ? 'bg-action text-white'
+                : 'bg-surface-accent text-action-text hover:bg-surface-accent-2'
             }`}
           >
             <Icon

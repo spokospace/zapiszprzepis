@@ -31,6 +31,7 @@ import { Avatar } from '@/app/components/ui/avatar'
 import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { buttonClasses } from '@/app/components/ui/button'
 import { chipClasses } from '@/app/components/ui/chip'
+import { recipesNoun } from '@/app/components/app-menu-model'
 
 type Params = Promise<{ username: string }>
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
@@ -130,6 +131,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
   const query = await searchParams
   const category = parseProfileCategory(query.kategoria, categories)
   const page = parseProfilePage(query.strona)
+  const listCount = category ? (categories.find((c) => c.value === category)?.count ?? 0) : total
   const shown = page * PROFILE_PAGE_SIZE
   const user = await userPromise
   const isOwner = isProfileOwner(user?.id, profile.id)
@@ -212,7 +214,10 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
         ) : (
           <>
             {categories.length > 1 && (
-              <nav aria-label="Kategorie przepisów" className="mb-6">
+              <nav aria-labelledby="profile-categories-h" className="mb-6">
+                <h2 id="profile-categories-h" className="mb-2 text-[19px] font-bold text-ink">
+                  Przepisy według kategorii
+                </h2>
                 <ul className="flex flex-wrap gap-2">
                   {[{ value: null, label: 'Wszystkie', count: total }, ...categories].map((c) => {
                     const active = c.value === category
@@ -236,7 +241,10 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
               </nav>
             )}
 
-            <h2 className="mb-3 text-[22px] font-bold text-ink">{category ? categoryLabel(category) : 'Przepisy'}</h2>
+            {/* Screen 7: "Ostatnio dodane: N przepisów" over the list; a picked category names itself with its count. */}
+            <h2 className="mb-3 text-[19px] font-bold text-ink">
+              {category ? categoryLabel(category) : 'Ostatnio dodane'}: {listCount} {recipesNoun(listCount)}
+            </h2>
             <ol className={LIST_CARDS_CLASS}>
               {visible.map((r, i) => (
                 // #wiecej: the first card of the newest page, where "Pokaż kolejne" lands.

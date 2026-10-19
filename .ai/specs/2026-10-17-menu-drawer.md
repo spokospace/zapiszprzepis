@@ -2,6 +2,8 @@
 
 > Backlog: `.ai/specs/backlog-przebudowa.md` (E01-S09, refs C5 / A6 / 3d). Issue: #212. Risk: **low** (UI + read-only counts, one new public read-only route, no schema change). Depends on S01 (tokens, live). The lock state is fed by S11 (#214, in flight) through a single seam defined here.
 
+> **Addition (2026-10-19, #323):** below `lg` the signed-in „Moje” section also lists „Powiadomienia” (bell icon, red counter, „Nie udało się sprawdzić” when the check failed), and the MENU button shows the notification badge, because the phone header no longer has the bell. From `lg` both are hidden, since the desktop header keeps the bell.
+
 ## 📝 TLDR
 Today the MENU drawer (`app-menu.tsx`) is a flat list: Ulubione + Ustawienia + Wyloguj for a signed-in user, Zaloguj / Załóż konto for a guest. There is no way to browse recipes by category from the menu, no counters, and no notion of "full access". *Proposed (future behavior):* the drawer gets three blocks — **"Moje"** (Moje przepisy with a counter — full access only, Ulubione with a counter, Dodaj przepis, locked with a padlock and a caption without full access), **"Wszystkie przepisy według kategorii"** (a 2-column grid of every category from `recipe-categories.ts`, for guests too) and a footer **"Ustawienia | Wyloguj"**. A guest sees "Zaloguj się / Załóż konto" instead of "Moje". Category tiles open a minimal **public** listing at `/przepisy/{kategoria}` (the route E01-S16 owns and later extends with tag chips), so no menu link bounces a guest to `/login`.
 

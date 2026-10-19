@@ -9,7 +9,10 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ back: vi.fn() }),
 }))
-vi.mock('./app-menu', () => ({ AppMenu: () => createElement('div', { 'data-testid': 'menu' }) }))
+vi.mock('./app-menu', () => ({
+  AppMenu: ({ notifications }: { notifications?: unknown }) =>
+    createElement('div', { 'data-testid': 'menu', 'data-notifications': JSON.stringify(notifications ?? null) }),
+}))
 vi.mock('./notification-bell', () => ({ NotificationBell: () => createElement('div', { 'data-testid': 'bell' }) }))
 
 import { AppHeader } from './app-header'
@@ -65,20 +68,30 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     expect(login).toContain('border-2 border-field')
   })
 
-  it('gives a guest the lettering logo at every phone width (only MENU on the right)', () => {
+  // #286 followed the design handoff back to the old lettering image and undid #276 (#320);
+  // #324 did the same for guests. The icon + text wordmark is the logo for everyone.
+  it('shows the recipe icon + wordmark logo, never the old lettering image', () => {
     pathname = '/'
-    const html = render(false)
-    const lettering = html.match(/<img[^>]*logo-lettering\.svg[^>]*>/)?.[0] ?? ''
-    expect(lettering).toContain('class="h-[30px] w-[120px] block lg:hidden"')
-    const icon = html.match(/<img[^>]*logo-icon\.svg[^>]*>/)?.[0] ?? ''
-    expect(icon).toContain('class="h-10 w-10 hidden lg:block"')
+    for (const signedIn of [true, false]) {
+      const html = render(signedIn)
+      expect(html).toContain('src="/logo-icon.svg"')
+      expect(html).not.toContain('logo-lettering.svg')
+      const wordmark = html.match(/<span aria-hidden="true" class="[^"]*">.*?Przepis<\/span><\/span>/)?.[0] ?? ''
+      expect(wordmark).toContain('hidden')
+      expect(wordmark).toContain('>Zapisz</span>')
+    }
   })
 
-  it('shows the lettering logo, with the compact icon only where the buttons leave no room', () => {
+  // The icon alone below the breakpoint, then icon + wordmark: from 360 px for a guest,
+  // whose phone header has only MENU on the right (#328); from sm when Dodaj sits there too.
+  it.each([
+    [false, 'min-[360px]:inline', 'sm:inline'],
+    [true, 'sm:inline', 'min-[360px]:inline'],
+  ])('shows the wordmark (signed in: %s) from %s', (signedIn, from, notFrom) => {
     pathname = '/'
-    const html = render(true)
-    expect(html).toContain('src="/logo-lettering.svg"')
-    expect(html).toContain('min-[390px]:block')
+    const wordmark = render(signedIn).match(/<span aria-hidden="true" class="([^"]*)">.*?Przepis<\/span><\/span>/)?.[1] ?? ''
+    expect(wordmark.split(' ')).toContain(from)
+    expect(wordmark.split(' ')).not.toContain(notFrom)
   })
 
   it('keeps the logo linking home on a recipe page — its list bar is the way back', () => {
@@ -114,10 +127,35 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     },
   )
 
+  it('keeps the signed-in "← Wróć" in one 18 px row, now that only Dodaj + MENU sit beside it (#323)', () => {
+    pathname = '/szukaj'
+    const back = render(true).match(/<a[^>]*aria-label="Wróć"[^>]*>/)?.[0] ?? ''
+    expect(back).toContain('flex-row')
+    expect(back).toContain('text-[18px]')
+    expect(back).not.toContain('flex-col')
+    pathname = '/'
+  })
+
   it('keeps the logo and no back link on the start page', () => {
     pathname = '/'
     const html = render(true)
     expect(html).not.toContain('aria-label="Wróć')
     expect(html).not.toContain('hidden lg:flex min-h-12')
+  })
+})
+
+// Owner decision (#323): below lg „Powiadomienia” lives in the MENU drawer, not the header.
+describe('AppHeader "Powiadomienia" placement (#323)', () => {
+  it('shows the bell from lg only', () => {
+    pathname = '/'
+    expect(render(true)).toContain('<div class="hidden lg:flex"><div data-testid="bell"></div></div>')
+  })
+
+  it('hands the badge to the MENU drawer for a signed-in user, and nothing for a guest', () => {
+    pathname = '/'
+    expect(render(true)).toContain(`data-notifications="${'{&quot;count&quot;:0,&quot;loadFailed&quot;:false}'}"`)
+    const guest = render(false)
+    expect(guest).toContain('data-notifications="null"')
+    expect(guest).not.toContain('data-testid="bell"')
   })
 })

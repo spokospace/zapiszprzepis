@@ -33,7 +33,7 @@ export function AddRecipePanel({ error = null, autoFocus }: { error?: AddRecipeE
             <span className="text-[19px] font-bold text-ink">Ze zdjęcia</span>
             <span className="text-[16px] text-ink-soft">Zrzut ekranu lub książka</span>
             {/* The word, not just the grey, says it is unavailable (WCAG 1.4.1). */}
-            <span className="mt-auto self-start rounded-pill border border-field bg-white px-2 py-0.5 text-[14px] font-bold text-ink-soft">
+            <span className="mt-auto self-start rounded-pill border border-field bg-white px-2 py-0.5 text-[16px] font-bold text-ink-soft">
               wkrótce
             </span>
           </li>

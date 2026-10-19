@@ -4,6 +4,8 @@ Issue: #217 · Epic: #201 · Backlog: `.ai/specs/backlog-przebudowa.md` (E01-S15
 
 > Revised 2026-10-17 against the owner's final handoff (merged to master after the first draft). Where this spec differs from the handoff, the difference is listed under "Deviations from the handoff".
 
+> **Superseded in part (2026-10-19, #323, owner's decision):** the labelled bell below stays only in the desktop header (`lg`, 1024 px, and up). On phones and tablets the header has no bell. The entry point is a „Powiadomienia” row in the MENU drawer's „Moje” section, with a red counter, and the MENU button carries the 22 px badge, with „MENU, N powiadomień” as its name. The page, the count and the home banner are unchanged.
+
 ## 📝 TLDR
 
 Today notifications are a 320 px dropdown under the header bell that lists only **failed** shares, with 12–14 px text, the raw `error_message` (sometimes English, e.g. `Firecrawl failed: HTTP 403`) and an orange `#f97316` "Ponów" button that fails contrast. **Proposed (handoff screen 5):**
