@@ -138,7 +138,7 @@ Per-skill deviations — extra review rules, a different PR body template, an ad
 ## Repository specifics
 
 - **There is no hosted CI.** GitHub Actions minutes on this account are permanently exhausted and the repo has no workflows, so `ci.maxWaitMinutes` is `0`: skills never wait for checks, and the local validation gate above is the only automated evidence. A missing or failed GitHub check is not a signal either way.
-- **Merging to `master` is the deploy.** Cloudflare Workers Builds builds and ships `master` to zapiszprzepis.pl; nothing deploys from a branch. Before calling a user-facing change done, confirm the Workers build for the merge commit finished, then check it on production.
+- **Merging to `master` is the deploy.** Cloudflare Workers Builds builds and ships `master` to zapiszprzepis.pl; nothing deploys from a branch. Preview builds for PR branches are disabled to save build minutes, so the `master` build is the first time Cloudflare builds and size-checks the Worker; a failed build leaves the previous version live and needs a follow-up PR. Before calling a user-facing change done, confirm the Workers build for the merge commit finished, then check it on production.
 - **No direct commits to `master`.** A local hook blocks committing or pushing on `master`; all work lands through a branch → PR → `gh pr merge`.
 - **The local app talks to the production Supabase project.** Treat migrations, seed scripts and `scripts/*.ts` runs as production writes.
 - Commit messages and PR titles/descriptions are written in English (see `CLAUDE.md`).
