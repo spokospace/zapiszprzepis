@@ -43,8 +43,7 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
 
 - The site header (logo, "← Wróć", bell, MENU): owned by #320/#321/#323/#324. CLAUDE.md says
   `app-header.tsx` is the source of truth there, not the `.dc.html` files.
-- "Udostępnij" on phones: C3 (the mobile target, 1c) has no share button; it ships on desktop
-  only, as in A9. A follow-up can add it on phones if the owner wants it.
+- ~~"Udostępnij" on phones~~ — superseded 2026-10-19: the owner asked for it on phones too (Phase 4).
 - "Dodała {autor} · 12 października" (A4/A9 date): not in the README's C3 list; skipped.
 - A4's numbered step circles and the A4 times tiles on mobile: 1c (C3) replaced them.
 - "Podobne" as a 2-column grid on phones (A5): #311 deliberately made it a carousel.
@@ -79,6 +78,13 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
 2.2 Locked gallery per A5 (G7) and signed-in gallery on tokens (G8). Update the locked-gallery test.
 2.3 Prev/next: 2 px top rule above the block (C3), accent arrows (A9). "Wielkość tekstu" label in
     `text-ink`, favourite label 19 px (C3).
+
+### Phase 4 — "Udostępnij" on phones (owner request, 2026-10-19)
+
+4.1 Render "Udostępnij" at every width: below lg a full-width outlined button under the heart
+    (where a phone's share sheet is most useful), from lg unchanged beside "Oryginał". "Oryginał"
+    stays desktop-only; phones keep the end-of-recipe original button (C3, item 11). Tests,
+    gate, reflow guard and a fresh phone screenshot.
 
 ### Phase 3 — Verification
 
@@ -138,3 +144,7 @@ PR: #327
 ### Phase 3: Verification
 
 - [x] 3.1 Full gate, reflow guard and screenshots — 0a27ef9, a3fbe7a
+
+### Phase 4: Share on phones
+
+- [ ] 4.1 "Udostępnij" at every width, with tests and a phone screenshot
