@@ -194,7 +194,7 @@ export function CookingMode({ title, steps }: CookingModeProps) {
         // Full viewport on every screen; the focus ring is lightened because the
         // global #1d4ed8 outline is too dark on #111827 (colour override only; `!`
         // because the global rule is unlayered and would beat a layered utility).
-        className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none bg-surface-dark p-0 text-white backdrop:bg-surface-dark [&_:focus-visible]:outline-accent-dark!"
+        className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none bg-surface-dark p-0 text-white backdrop:bg-surface-dark [&_*]:outline-accent-dark [&_:focus-visible]:outline-accent-dark!"
       >
         {/* Layout and colours follow the design handoff, screen C4. */}
         <div className="mx-auto flex h-full max-w-3xl flex-col">

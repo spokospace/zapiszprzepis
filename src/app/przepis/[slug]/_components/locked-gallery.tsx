@@ -16,8 +16,9 @@ export function LockedGallery({ count, loginHref }: { count: number; loginHref: 
       </h2>
       <div className="rounded-card border-2 border-dashed border-border-card-2 bg-surface-accent px-5 py-6 text-center">
         <Lock aria-hidden="true" size={32} className="mx-auto text-ink-soft" />
-        <p className="mb-4 mt-2 text-[19px] font-bold text-ink">Galeria {photosLabel(count)} po zalogowaniu</p>
-        <Link href={loginHref} className={buttonClasses('primary', 'lg')}>
+        {/* A5: a plain sentence and a dark "Zaloguj się" — the orange stays for the page's main action. */}
+        <p className="mb-4 mt-2 text-[19px] text-ink">Galeria {photosLabel(count)} jest dostępna po zalogowaniu.</p>
+        <Link href={loginHref} className={buttonClasses('dark', 'lg')}>
           Zaloguj się
         </Link>
       </div>

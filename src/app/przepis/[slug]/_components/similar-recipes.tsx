@@ -1,11 +1,12 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
+import { Tag } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { rankSimilar, sharedTagsCaption, similarHeading, SIMILAR_LIMIT } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
-import { chipClasses } from '@/app/components/ui/chip'
+import { getFavoriteIds } from '@/lib/favorites'
 import { CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
 import { CardCarousel } from '@/app/components/card-carousel'
 import { dishExclusionFilter } from '@/lib/dish-versions'
@@ -14,6 +15,8 @@ import type { RecipeSource } from '@/lib/recipe-source'
 interface SimilarRecipesProps {
   /** `dish` (E01-S21): when set, same-dish recipes are excluded — they show in "Inne przepisy na …". */
   recipe: { id: number; category: string; tags: string[]; dish?: string | null }
+  /** The signed-in viewer, for the hearts on the "Podobne" cards (A5); null for a guest. */
+  userId: string | null
 }
 
 interface SimilarCard {
@@ -49,7 +52,7 @@ export function SimilarRecipes(props: SimilarRecipesProps) {
   )
 }
 
-async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
+async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
   const supabase = await createSupabaseServerClient()
   // Same category, not this recipe, newest first. When the recipe has a dish,
   // its other versions are excluded here (they show in "Inne przepisy na …"),
@@ -79,6 +82,16 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
     console.error('[recipe] Similar recipes failed:', err)
   }
 
+  let favoriteIds = new Set<number>()
+  if (userId && similar.length > 0) {
+    try {
+      favoriteIds = await getFavoriteIds(supabase, userId, similar.map((r) => r.id))
+    } catch (err) {
+      // Hearts then start empty; toggling still works.
+      console.error('[recipe] Similar favorites failed:', err)
+    }
+  }
+
   const label = categoryLabel(recipe.category)
   const heading = similarHeading(recipe.tags, similar, label)
   // "Wszystkie" only makes sense when the category holds more than this recipe.
@@ -89,13 +102,21 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
     <div className="mb-12 border-t border-border-card pt-8">
       {recipe.tags.length > 0 && (
         <section aria-labelledby="ten-przepis-jest" className="mb-10">
-          <h2 id="ten-przepis-jest" className="mb-4 text-[26px] font-bold text-ink">
+          <h2 id="ten-przepis-jest" className="text-[26px] font-bold text-ink">
             Ten przepis jest
           </h2>
+          <p className="mt-1 mb-4 text-[16px] text-ink-soft">
+            Kliknij, żeby zobaczyć podobne {label.toLocaleLowerCase('pl')}.
+          </p>
+          {/* Screen 6: accent buttons with a tag icon, each opening the category filtered by it. */}
           <ul className="flex flex-wrap gap-2">
             {recipe.tags.map((tag) => (
               <li key={tag}>
-                <Link href={categoryPath(recipe.category, { tags: [tag] })} className={chipClasses()}>
+                <Link
+                  href={categoryPath(recipe.category, { tags: [tag] })}
+                  className="inline-flex min-h-[48px] items-center gap-2 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-4 text-[17px] font-bold text-action-text no-underline! hover:border-action-text"
+                >
+                  <Tag aria-hidden="true" className="h-5 w-5 shrink-0" />
                   {tagLabel(tag)}
                 </Link>
               </li>
@@ -126,6 +147,9 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
                   sourceUrl={r.source_url}
                   sourceAuthor={r.source_author}
                   sizes={CAROUSEL_SIZES}
+                  // Every card here is in the recipe's own category, so no category badge (screen 6).
+                  showCategory={false}
+                  favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: userId !== null }}
                 />
               ),
             }))}
@@ -135,7 +159,8 @@ async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
       {showAll && (
         <Link
           href={categoryPath(recipe.category)}
-          className="mt-4 inline-flex min-h-[56px] items-center text-[19px] font-bold text-action-text underline underline-offset-4 hover:text-action-hover"
+          // A5 / screen 6: a full-width 56 px accent button.
+          className="mt-4 flex min-h-[56px] w-full items-center justify-center rounded-field border-[1.5px] border-border-accent bg-surface-accent px-4 text-center text-[19px] font-bold text-action-text no-underline! hover:border-action-text"
         >
           Wszystkie {label.toLocaleLowerCase('pl')}
           {total != null && ` (${total})`} →

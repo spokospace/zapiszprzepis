@@ -13,8 +13,8 @@ const PLATFORM_LABELS: Partial<Record<RecipeSource, string>> = {
  * Where a recipe came from, as a reader would name it: the platform for
  * Facebook / YouTube, the site's own domain for a blog ("polskiekulinaria.pl")
  * — two same-titled recipes from different blogs are told apart by exactly
- * that. The author is named before the platform ("Kulinarna Wiola ·
- * Facebook"): the one stored at import, or for recipes saved before that, a
+ * that. The platform comes first, then the author ("Facebook · Kulinarna
+ * Wiola", "YouTube · Kuchnia Ani" — handoff C3 and CLAUDE.md): the one stored at import, or for recipes saved before that, a
  * known Facebook author read off the URL. Falls back to "Blog" / "Inny" when
  * the URL is missing or unparseable.
  */
@@ -26,7 +26,7 @@ export function sourceLabel(
   const platform = PLATFORM_LABELS[sourceType]
   if (platform) {
     const author = sourceAuthor || (sourceUrl ? facebookAuthorName(sourceUrl) : null)
-    return author ? `${author} · ${platform}` : platform
+    return author ? `${platform} · ${author}` : platform
   }
   const host = sourceUrl ? siteHost(sourceUrl) : null
   if (host) return host
