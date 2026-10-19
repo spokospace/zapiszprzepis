@@ -114,7 +114,9 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
               <li key={tag}>
                 <Link
                   href={categoryPath(recipe.category, { tags: [tag] })}
-                  className="inline-flex min-h-[48px] items-center gap-2 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-4 text-[17px] font-bold text-action-text no-underline! hover:border-action-text"
+                  // wrap-anywhere, like chipClasses: the label's anonymous flex item would not
+                  // shrink below its longest word otherwise (WCAG 1.4.10).
+                  className="inline-flex min-h-[48px] items-center gap-2 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-4 text-[17px] font-bold wrap-anywhere text-action-text no-underline! hover:border-action-text"
                 >
                   <Tag aria-hidden="true" className="h-5 w-5 shrink-0" />
                   {tagLabel(tag)}

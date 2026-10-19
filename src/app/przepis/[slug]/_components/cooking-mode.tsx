@@ -253,7 +253,9 @@ export function CookingMode({ title, steps }: CookingModeProps) {
               </p>
             </div>
             {wakeLock === true && (
-              <p className="flex items-center gap-2 text-[17px] text-border-card-2">
+              // wrap-anywhere reaches the text's anonymous flex item, which would not
+              // shrink below its longest word otherwise (WCAG 1.4.10).
+              <p className="flex items-center gap-2 text-[17px] wrap-anywhere text-border-card-2">
                 <Sun aria-hidden="true" className="h-5 w-5 shrink-0" />
                 Ekran nie wygaśnie podczas gotowania
               </p>

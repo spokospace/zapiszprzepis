@@ -100,7 +100,8 @@ export function DishVersionsSort({
     <>
       {versions.length >= 2 && (
         <div role="group" aria-labelledby="wersje-kolejnosc" className="mb-5 flex flex-wrap items-center gap-2">
-          <span id="wersje-kolejnosc" className="mr-1 text-[16px] font-bold text-ink-soft">
+          {/* wrap-anywhere: a flex item never shrinks below its longest word otherwise (WCAG 1.4.10). */}
+          <span id="wersje-kolejnosc" className="mr-1 text-[16px] font-bold wrap-anywhere text-ink-soft">
             Kolejność:
           </span>
           {OPTIONS.map(({ key, label }) => {
