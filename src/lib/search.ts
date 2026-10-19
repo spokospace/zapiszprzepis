@@ -48,11 +48,6 @@ export function parseSearchParams(
   return { q, scope, page, category: isRecipeCategory(kategoria) ? kategoria : null }
 }
 
-/** A regular web search for the "Szukaj „q” w internecie" fallback (no full access). */
-export function webSearchUrl(q: string): string {
-  return `https://www.google.com/search?q=${encodeURIComponent(`przepis ${q}`)}`
-}
-
 const RPC_SCOPE: Record<SearchScope, 'all' | 'mine' | 'fav'> = {
   wszystkie: 'all',
   moje: 'mine',

@@ -2,7 +2,7 @@
 
 import { requireUser } from '@/lib/supabase/server'
 import { getExaApiKey } from '@/lib/env'
-import { getFullAccess } from '@/lib/full-access'
+import { exaSearchAllowed } from '@/lib/exa-rate-limit'
 import { TRUSTED_RECIPE_DOMAINS } from '@/lib/recipe-source-domains'
 
 export type ExaResult = {
@@ -33,8 +33,10 @@ export async function searchViaExa(query: string): Promise<ExaSearchResponse> {
 
     if (!query.trim()) return { results: [] }
 
-    // E01-S11: web search only feeds "Zapisz" (adding), and Exa is paid — full access only.
-    if (!(await getFullAccess(supabase))) return { error: 'no_access' }
+    // Any signed-in account may search (the results page fallback, owner decision
+    // 2026-10-19); adding a result still needs full access (addRecipeFromUrl). Exa
+    // is paid, so each account is capped per minute.
+    if (!(await exaSearchAllowed(userId))) return { error: 'rate_limited' }
 
     const res = await fetch('https://api.exa.ai/search', {
       method: 'POST',
