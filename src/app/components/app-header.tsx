@@ -47,8 +47,9 @@ export function AppHeader({
             className={`${showBack ? 'hidden lg:flex' : 'flex'} min-h-12 shrink-0 items-center gap-2 no-underline!`}
           >
             {/* Recipe icon + text wordmark (#276); the old logo-lettering.svg must not come
-                back here (#320). On phones the icon alone is the logo, so nothing overflows
-                at 320 px beside the right-hand buttons; the wordmark shows from sm. */}
+                back here (#320). The ~230 px logo fits beside a guest's lone MENU from
+                360 px (#328), beside Dodaj + MENU only from sm; below that the icon alone,
+                so nothing overflows at 320 px. */}
             <Image
               src="/logo-icon.svg"
               alt=""
@@ -58,7 +59,10 @@ export function AppHeader({
               priority
               className="h-10 w-10"
             />
-            <span aria-hidden="true" className="hidden text-[1.625rem] font-bold tracking-wide sm:inline">
+            <span
+              aria-hidden="true"
+              className={`hidden text-[1.625rem] font-bold tracking-wide ${isAuthenticated ? 'sm:inline' : 'min-[360px]:inline'}`}
+            >
               <span className="text-gray-900">Zapisz</span>
               <span className="text-orange-700">Przepis</span>
             </span>

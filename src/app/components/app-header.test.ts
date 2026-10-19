@@ -76,12 +76,22 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
       const html = render(signedIn)
       expect(html).toContain('src="/logo-icon.svg"')
       expect(html).not.toContain('logo-lettering.svg')
-      // The icon alone on phones; the wordmark from sm (tablet) up, desktop included.
       const wordmark = html.match(/<span aria-hidden="true" class="[^"]*">.*?Przepis<\/span><\/span>/)?.[0] ?? ''
       expect(wordmark).toContain('hidden')
-      expect(wordmark).toContain('sm:inline')
       expect(wordmark).toContain('>Zapisz</span>')
     }
+  })
+
+  // The icon alone below the breakpoint, then icon + wordmark: from 360 px for a guest,
+  // whose phone header has only MENU on the right (#328); from sm when Dodaj sits there too.
+  it.each([
+    [false, 'min-[360px]:inline', 'sm:inline'],
+    [true, 'sm:inline', 'min-[360px]:inline'],
+  ])('shows the wordmark (signed in: %s) from %s', (signedIn, from, notFrom) => {
+    pathname = '/'
+    const wordmark = render(signedIn).match(/<span aria-hidden="true" class="([^"]*)">.*?Przepis<\/span><\/span>/)?.[1] ?? ''
+    expect(wordmark.split(' ')).toContain(from)
+    expect(wordmark.split(' ')).not.toContain(notFrom)
   })
 
   it('keeps the logo linking home on a recipe page — its list bar is the way back', () => {
