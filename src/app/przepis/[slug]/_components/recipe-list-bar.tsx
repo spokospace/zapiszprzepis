@@ -104,15 +104,18 @@ function NavLink({
   const prev = direction === 'prev'
   const word = prev ? 'Poprzedni' : 'Następny'
   const Arrow = prev ? ArrowLeft : ArrowRight
+  // A9: the arrows take the accent colour on desktop; C3 keeps them ink on phones.
+  const arrow = <Arrow aria-hidden="true" size={24} className="shrink-0 lg:text-action" />
   return (
     <Link
       href={recipePath(item.slug, { from })}
       className={`${NAV} ${prev ? '' : 'justify-between'} border-field bg-white text-ink hover:bg-surface-3`}
     >
-      {prev && <Arrow aria-hidden="true" size={24} className="shrink-0" />}
+      {prev && arrow}
       <span className="flex min-w-0 flex-col">
-        {/* "Poprzedni przepis" on mobile; from lg the list is named (A9: "Poprzedni w wynikach „dynia”"). */}
-        <span className="text-[14px] font-bold text-ink-soft">
+        {/* "Poprzedni przepis" on mobile (C3, 14 px bold); from lg the list is named
+            (A9: "Poprzedni w wynikach „dynia”", 16 px). */}
+        <span className="text-[14px] font-bold text-ink-soft lg:text-[16px] lg:font-normal">
           <span className="lg:hidden">{word} przepis</span>
           <span className="hidden lg:inline">
             {word} na liście: {listLabel}
@@ -121,14 +124,14 @@ function NavLink({
         {/* The full title, never truncated (handoff C3, item 12). */}
         <span className="text-[18px] font-bold">{item.title}</span>
       </span>
-      {!prev && <Arrow aria-hidden="true" size={24} className="shrink-0" />}
+      {!prev && arrow}
     </Link>
   )
 }
 
 /**
  * Poprzedni / Następny at the end of the recipe (handoff C3, item 12): stacked 64 px
- * buttons on mobile, side by side from lg.
+ * buttons on mobile under a 2 px rule, side by side from lg.
  */
 export function RecipeListNav(props: RecipeListProps) {
   const state = useListPosition(props)
@@ -138,7 +141,10 @@ export function RecipeListNav(props: RecipeListProps) {
 
   const { position, linkFrom } = state
   return (
-    <nav aria-label="Poprzedni i następny przepis" className="mb-10 grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-4">
+    <nav
+      aria-label="Poprzedni i następny przepis"
+      className="mb-10 grid grid-cols-1 gap-2 border-t-2 border-border-card pt-4 lg:grid-cols-2 lg:gap-4 lg:pt-6"
+    >
       <NavLink item={position.prev} from={linkFrom} direction="prev" listLabel={position.label} />
       <NavLink item={position.next} from={linkFrom} direction="next" listLabel={position.label} />
     </nav>

@@ -30,3 +30,9 @@ describe('RecipeChecklists headings (C3)', () => {
     expect(render(null)).toContain('<h2 id="steps-heading" class="mb-3 text-[24px] font-bold text-ink">Przygotowanie</h2>')
   })
 })
+
+describe('RecipeChecklists "Wielkość tekstu" (C3)', () => {
+  it('labels the control in primary ink', () => {
+    expect(render(null)).toContain('<span id="text-size-label" class="min-w-0 text-[16px] font-bold wrap-anywhere text-ink">Wielkość tekstu</span>')
+  })
+})

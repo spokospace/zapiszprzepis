@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { RecipeListBar } from './recipe-list-bar'
+import { RecipeListBar, RecipeListNav } from './recipe-list-bar'
 import { RecipeBreadcrumbs } from './recipe-header'
 import type { ListPosition } from '@/lib/recipe-list-context'
 
@@ -50,5 +50,23 @@ describe('RecipeBreadcrumbs', () => {
     expect(html).toMatch(/^<nav aria-label="Okruszki" class="text-\[16px\] text-ink-soft hidden lg:block">/)
     expect(html).toMatch(/<a[^>]*href="\/szukaj"[^>]*>Przepisy<\/a>/)
     expect(html).toMatch(/<a[^>]*class="font-bold text-action-text underline[^"]*"[^>]*>Zupy<\/a>/)
+  })
+})
+
+describe('RecipeListNav (C3 phones, A9 desktop)', () => {
+  const html = renderToStaticMarkup(createElement(RecipeListNav, { slug: 'zupa', from: null, fallback: POSITION }))
+
+  it('sits under a 2 px rule (C3)', () => {
+    expect(html).toMatch(/^<nav aria-label="Poprzedni i następny przepis" class="[^"]*border-t-2 border-border-card pt-4/)
+  })
+
+  it('gives both arrows the accent colour from lg (A9)', () => {
+    expect(html.match(/class="lucide lucide-arrow-(left|right) shrink-0 lg:text-action"/g)).toHaveLength(2)
+  })
+
+  it('names the list in 16 px from lg, "Poprzedni przepis" in 14 px bold below', () => {
+    expect(html).toContain(
+      '<span class="text-[14px] font-bold text-ink-soft lg:text-[16px] lg:font-normal"><span class="lg:hidden">Poprzedni przepis</span>',
+    )
   })
 })
