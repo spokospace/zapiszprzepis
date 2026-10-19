@@ -79,18 +79,18 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
 2.3 Prev/next: 2 px top rule above the block (C3), accent arrows (A9). "Wielkość tekstu" label in
     `text-ink`, favourite label 19 px (C3).
 
+### Phase 3 — Verification
+
+3.1 Full gate (`pnpm typecheck`, `pnpm lint`, `pnpm test`), the reflow guard at 320 px against a
+    local guest dev server (public read-only Supabase values from `wrangler.jsonc`), and
+    before/after screenshots at 390 px and 1280 px.
+
 ### Phase 4 — "Udostępnij" on phones (owner request, 2026-10-19)
 
 4.1 Render "Udostępnij" at every width: below lg a full-width outlined button under the heart
     (where a phone's share sheet is most useful), from lg unchanged beside "Oryginał". "Oryginał"
     stays desktop-only; phones keep the end-of-recipe original button (C3, item 11). Tests,
     gate, reflow guard and a fresh phone screenshot.
-
-### Phase 3 — Verification
-
-3.1 Full gate (`pnpm typecheck`, `pnpm lint`, `pnpm test`), the reflow guard at 320 px against a
-    local guest dev server (public read-only Supabase values from `wrangler.jsonc`), and
-    before/after screenshots at 390 px and 1280 px.
 
 ## Verification notes (3.1)
 
@@ -147,4 +147,4 @@ PR: #327
 
 ### Phase 4: Share on phones
 
-- [ ] 4.1 "Udostępnij" at every width, with tests and a phone screenshot
+- [x] 4.1 "Udostępnij" at every width, with tests and a phone screenshot — 6a5e962
