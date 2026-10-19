@@ -60,7 +60,7 @@ export function AppHeader({
             />
             <span aria-hidden="true" className="hidden text-[1.625rem] font-bold tracking-wide sm:inline">
               <span className="text-gray-900">Zapisz</span>
-              <span className="text-orange-700">Przepis</span>
+              <span className="text-action">Przepis</span>
             </span>
           </Link>
           {!isAuthenticated && <HeaderNav className="hidden lg:flex" />}

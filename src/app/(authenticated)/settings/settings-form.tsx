@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import Link from 'next/link'
+import { ImagePlus } from 'lucide-react'
 import { Avatar } from '@/app/components/ui/avatar'
 import { Button } from '@/app/components/ui/button'
 import { AVATAR_COLORS } from '@/lib/avatar'
@@ -114,6 +115,7 @@ export function SettingsForm({
           <Avatar src={shownSrc} name={name} colorIndex={color} size={96} />
           <div className="flex flex-1 flex-col gap-2">
             <Button id="avatar-pick" variant="outline" onClick={() => fileRef.current?.click()}>
+              <ImagePlus aria-hidden="true" className="h-5 w-5 shrink-0" />
               {shownSrc ? 'Wybierz inny' : 'Wybierz obrazek'}
             </Button>
             {shownSrc && (
