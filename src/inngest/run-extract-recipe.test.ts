@@ -244,6 +244,21 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(system).toContain('"Następnie", "Potem"')
   })
 
+  it('asks for preparations before their use, no empty closing step and tips as an optional last step', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
+    expect(system).toContain('moves before that step')
+    expect(system).toContain('"Smacznego!", "Gotowe."')
+    expect(system).toContain('starts with "Opcjonalnie: "')
+    expect(system).toContain('details stated outside the step list')
+  })
+
   it('files sweet cupcakes and muffins under desserts, not cakes', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 7 }, error: null })

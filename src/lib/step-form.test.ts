@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { acceptRewrite, isInstructionStep, needsStepRewrite, rewriteSteps, STEP_REWRITE_PROMPT } from './step-form'
+import { acceptRewrite, isInstructionStep, needsStepRewrite, rewriteSteps, STEP_CONTENT_RULE, STEP_REWRITE_PROMPT } from './step-form'
 
 /** A fetch that returns one OpenAI chat completion whose content is `body`. */
 function mockFetch(body: unknown) {
@@ -89,6 +89,12 @@ describe('rewriteSteps', () => {
     expect(body.messages[0].content).toBe(STEP_REWRITE_PROMPT)
     expect(JSON.parse(body.messages[1].content)).toEqual({ steps: [NARRATED[0]] })
     expect(body.temperature).toBe(0)
+  })
+
+  it('keeps every step in place: the extraction-only content rule stays out of the rewrite prompt', () => {
+    expect(STEP_REWRITE_PROMPT).toContain('do not drop, merge, move or add steps')
+    expect(STEP_REWRITE_PROMPT).not.toContain(STEP_CONTENT_RULE)
+    expect(STEP_REWRITE_PROMPT).not.toContain('Opcjonalnie')
   })
 
   it('returns null when the answer drops a step', async () => {

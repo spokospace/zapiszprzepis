@@ -26,7 +26,7 @@ import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
-import { STEP_FORM_RULE } from '@/lib/step-form'
+import { STEP_CONTENT_RULE, STEP_FORM_RULE } from '@/lib/step-form'
 import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantNoteSibling } from '@/lib/recipe-dish'
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
 import { jsonLdServings, toServings } from '@/lib/servings'
@@ -480,6 +480,7 @@ Rules:
 - Title names the dish the way a menu would: not a question or how-to ("Jak zrobić domowe lody?" → "Domowe lody"), no praise words ("najlepszy", "pyszny", "idealny"), no first person ("moje", "mojej mamy") and no add-ons like "+ przepis na lukier". Proper names keep their capitals ("Prince Polo", "KFC", "Boże Narodzenie").
 - Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
 - ${STEP_FORM_RULE}
+- ${STEP_CONTENT_RULE}
 - Return null for any non-time field the source does not specify. Do not guess.
 - Times stated in the source, or computed from durations it states (a sum of step times, a stated "razem 1,5 godz"), are source data: set "timesEstimated" to false.
 - When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.

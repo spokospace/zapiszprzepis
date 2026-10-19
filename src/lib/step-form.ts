@@ -2,13 +2,18 @@
 // ("Pokroić mięso w kostkę."), never the author's narration ("pokroiłam").
 // STEP_FORM_RULE is shared by the extraction prompt, which writes new recipes'
 // steps, and the rewrite of steps saved before the rule existed
-// (scripts/rewrite-recipe-steps.ts), so the two cannot drift.
+// (scripts/rewrite-recipe-steps.ts), so the two cannot drift. STEP_CONTENT_RULE
+// is the extraction's alone: it reorders, drops and adds steps, which the
+// rewrite must not (acceptRewrite keeps the count and each step's numbers).
 import { postChatJson, type LabelRecipeDeps } from '@/lib/recipe-labeling'
 
-export const STEP_FORM_RULE = `Steps are short, plain instructions in Polish, not prose: start each with a verb in the infinitive saying what to do ("Pokroić mięso w kostkę.", "Zeszklić cebulę.", "Dodać śmietanę i gotować 10 minut."). Rewrite the author's narration ("pokroiłam", "zeszkliłam", "dodałem", "gotujemy") and commands ("pokrój", "dodaj") into this form. Drop first-person asides ("u mnie", "ja użyłam") and words that only mean "next" ("Następnie", "Potem", "Teraz", "Na koniec") — the steps are numbered; keep words that say when ("W międzyczasie", "Gdy woda się zagotuje", "Po 20 minutach"). Keep every amount, time, temperature and detail the source gives, in its order — do not drop, merge or add steps.`
+export const STEP_FORM_RULE = `Steps are short, plain instructions in Polish, not prose: start each with a verb in the infinitive saying what to do ("Pokroić mięso w kostkę.", "Zeszklić cebulę.", "Dodać śmietanę i gotować 10 minut."). Rewrite the author's narration ("pokroiłam", "zeszkliłam", "dodałem", "gotujemy") and commands ("pokrój", "dodaj") into this form. Drop first-person asides ("u mnie", "ja użyłam") and words that only mean "next" ("Następnie", "Potem", "Teraz", "Na koniec") — the steps are numbered; keep words that say when ("W międzyczasie", "Gdy woda się zagotuje", "Po 20 minutach"). Keep every amount, time, temperature and detail the source gives.`
+
+export const STEP_CONTENT_RULE = `Steps cover the whole method the page gives, including details stated outside the step list (tin size, spice amounts, oven mode), in the source's order with two exceptions: a component the source prepares after the step that uses it (lukier, kruszonka, sos, zalewa, masa, panierka) moves before that step; a last step with no instruction ("Smacznego!", "Gotowe.", "Podajemy.", "Kroić i podawać.") is dropped — short steps that still say something stay ("Zabielić śmietaną.", "Kroić po wystudzeniu.", "Podawać z sosem czosnkowym."). The author's tips and variants (storage, making ahead, substitutions, optional toppings) go into one final step that starts with "Opcjonalnie: ". Add nothing the source does not say.`
 
 export const STEP_REWRITE_PROMPT = `You fix the grammar of a saved Polish recipe's steps. Return ONLY JSON: {"steps": [...]} — exactly as many steps as given, in the same order, one rewritten step for each.
 - ${STEP_FORM_RULE}
+- Keep each step's content in its place — do not drop, merge, move or add steps.
 - A step already in this form stays word for word.`
 
 // Narration: a past form after a vowel ("dodała|m", "zrobiłe|m" — but not
