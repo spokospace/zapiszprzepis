@@ -1,6 +1,11 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import { SignUpForm } from './signup-form'
 import { LegalLinks } from '@/app/components/legal-page'
+
+export const metadata: Metadata = { title: 'Załóż konto · ZapiszPrzepis' }
 
 type SearchParams = Promise<{
   error?: string
@@ -8,6 +13,7 @@ type SearchParams = Promise<{
   sent?: string
 }>
 
+/** Email sign-up with an invite code, laid out like screen 3a (header "← Wróć", logo, H1). */
 export default async function SignUpPage({
   searchParams,
 }: {
@@ -16,22 +22,35 @@ export default async function SignUpPage({
   const { error, email, sent } = await searchParams
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
-      <div className="flex flex-col gap-6">
-        <h1>
+    <div className="flex flex-1 flex-col">
+      <header className="border-b-2 border-border-card px-2 py-1">
+        <Link
+          href="/"
+          className="inline-flex min-h-[56px] items-center gap-1.5 px-2 text-[18px] font-bold text-ink no-underline!"
+        >
+          <ArrowLeft aria-hidden="true" className="h-6 w-6" />
+          Wróć
+        </Link>
+      </header>
+      <main className="flex flex-1 flex-col items-center px-5 py-8">
+        <div className="flex w-full max-w-sm flex-1 flex-col gap-5">
           <Image
-            src="/logo.svg"
+            src="/logo-lettering.svg"
             alt="ZapiszPrzepis"
-            width={1970}
-            height={668}
+            width={160}
+            height={40}
             priority
             unoptimized
-            className="block h-auto w-48"
+            className="block h-10 w-40"
           />
-        </h1>
-        <SignUpForm error={error} email={email} sent={sent} />
-        <LegalLinks />
-      </div>
-    </main>
+          <h1 className="text-[30px] leading-tight font-bold text-ink">Załóż konto</h1>
+          <p className="text-[18px] leading-normal text-ink-soft">
+            Wpisz swój email i kod zaproszenia. Wyślemy link, który dokończy rejestrację.
+          </p>
+          <SignUpForm error={error} email={email} sent={sent} />
+          <LegalLinks className="mt-auto pt-4" />
+        </div>
+      </main>
+    </div>
   )
 }

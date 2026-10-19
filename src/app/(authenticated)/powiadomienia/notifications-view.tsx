@@ -9,6 +9,7 @@ import { dismissShare, dismissAllFailedShares } from '@/app/(authenticated)/reci
 import { Button } from '@/app/components/ui/button'
 import { isHttpUrl, notificationTime } from '@/lib/share-error'
 import type { InProgressItem, NotificationsResult, ProblemItem, ReadyItem } from '@/lib/notifications'
+import { IN_PROGRESS_POLL_MAX, IN_PROGRESS_POLL_MS, finishedMessage } from '@/lib/notifications-poll'
 import { clearReadShares, openReadyShare } from './actions'
 
 type Busy = { id: number | 'all' | 'read'; kind: 'retry' | 'dismiss' } | null
@@ -39,6 +40,29 @@ export function NotificationsView({ result }: { result: NotificationsResult }) {
     refocus.current = false
     ;(listRef.current?.querySelector<HTMLElement>('h2') ?? titleRef.current)?.focus()
   }, [pending])
+
+  // "W trakcie" turns into "Przepis gotowy" on its own (handoff 5): while a card is
+  // in progress, re-read the list every 10 s on a visible tab, for about 5 minutes.
+  const inProgressKey = result.status === 'ok' ? result.inProgress.map((i) => i.id).join(',') : ''
+  useEffect(() => {
+    if (!inProgressKey) return
+    let polls = 0
+    const timer = setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      if (++polls > IN_PROGRESS_POLL_MAX) return clearInterval(timer)
+      router.refresh()
+    }, IN_PROGRESS_POLL_MS)
+    return () => clearInterval(timer)
+  }, [inProgressKey, router])
+
+  // Announce the cards that left "W trakcie" since the last render.
+  const prevInProgress = useRef<number[]>([])
+  useEffect(() => {
+    const done = finishedMessage(prevInProgress.current, result)
+    // Syncs the live region with a server refresh, not with local state.
+    if (done) setMessage(done)
+    prevInProgress.current = result.status === 'ok' ? result.inProgress.map((i) => i.id) : []
+  }, [result])
 
   function run(next: Busy, action: () => Promise<void>, done: string) {
     setBusy(next)

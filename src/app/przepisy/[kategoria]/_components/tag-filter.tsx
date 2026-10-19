@@ -3,7 +3,6 @@
 import { useId, useState } from 'react'
 import Link from 'next/link'
 import { chipClasses } from '@/app/components/ui/chip'
-import { buttonClasses } from '@/app/components/ui/button'
 import { recipesNoun } from '@/app/components/app-menu-model'
 
 export interface TagChip {
@@ -66,7 +65,8 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
               aria-expanded={expanded}
               aria-controls={listId}
               onClick={() => setExpanded((v) => !v)}
-              className={buttonClasses('outline', 'md')}
+              // Screen 6: a plain underlined text action under the chips, not another chip-like box.
+              className="inline-flex min-h-[48px] items-center px-1 text-[17px] font-bold text-ink underline underline-offset-4 hover:text-action-hover"
             >
               {expanded ? 'Pokaż mniej' : `Pokaż wszystkie (${chips.length})`}
             </button>
