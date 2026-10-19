@@ -11,7 +11,7 @@ import { photosLabel } from '@/lib/recipe-meta'
 export function LockedGallery({ count, loginHref }: { count: number; loginHref: string }) {
   return (
     <section aria-labelledby="gallery-heading" className="mb-12">
-      <h2 id="gallery-heading" className="mb-4 text-[26px] font-bold text-ink">
+      <h2 id="gallery-heading" className="mb-4 text-[24px] font-bold text-ink">
         Zdjęcia
       </h2>
       <div className="rounded-card border-2 border-dashed border-border-card-2 bg-surface-accent px-5 py-6 text-center">

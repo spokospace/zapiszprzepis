@@ -102,7 +102,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
     <div className="mb-12 border-t border-border-card pt-8">
       {recipe.tags.length > 0 && (
         <section aria-labelledby="ten-przepis-jest" className="mb-10">
-          <h2 id="ten-przepis-jest" className="text-[26px] font-bold text-ink">
+          <h2 id="ten-przepis-jest" className="text-[24px] font-bold text-ink">
             Ten przepis jest
           </h2>
           <p className="mt-1 mb-4 text-[16px] text-ink-soft">
@@ -127,7 +127,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
 
       {similar.length > 0 && (
         <section aria-labelledby="podobne">
-          <h2 id="podobne" className="mb-4 text-[26px] font-bold text-ink">
+          <h2 id="podobne" className="mb-4 text-[24px] font-bold text-ink">
             {heading}
           </h2>
           {/* A swipeable strip with buttons on a phone; two cards a row from sm, four from lg (E01-S17, A9). */}

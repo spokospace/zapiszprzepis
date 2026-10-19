@@ -104,7 +104,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
       <div>
         <RecipeBreadcrumbs category={recipe.category} className="mb-2 lg:hidden" />
 
-        <h1 className="mb-2 text-[32px] font-bold leading-tight text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
+        <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
         {/* Below lg (C3). From lg the category is in the breadcrumbs and the times get
             their own row (A9). */}
         <p className="mb-3 text-[17px] text-ink-soft lg:hidden">

@@ -189,7 +189,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         >
           {typedRecipe.youtube_id && (
             <section className="mb-12">
-              <h2 className="mb-4 text-[26px] font-bold text-ink">Wideo</h2>
+              <h2 className="mb-4 text-[24px] font-bold text-ink">Wideo</h2>
               <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
                 <iframe
                   src={`https://www.youtube-nocookie.com/embed/${typedRecipe.youtube_id}`}

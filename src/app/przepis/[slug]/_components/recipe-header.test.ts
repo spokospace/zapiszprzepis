@@ -71,3 +71,9 @@ describe('RecipeHeader desktop column (A9)', () => {
     expect(html).not.toContain('Otwórz oryginał')
   })
 })
+
+describe('RecipeHeader title (C3)', () => {
+  it('sets the 32 px title at line-height 1.15', () => {
+    expect(render({})).toMatch(/<h1 class="[^"]*text-\[32px\] leading-\[1\.15\] font-bold/)
+  })
+})
