@@ -32,6 +32,13 @@ interface HomeSearchProps {
   strongLabel?: boolean
   /** One submit label at every width; default "Szukaj przepisu", shortened to "Szukaj" from lg. */
   submitLabel?: string
+  /**
+   * The results page (C2): the label is for screen readers only, „× Wyczyść” sits
+   * inside the field (in place of the mic while there is a query), and below lg
+   * there is no submit button — the keyboard's search key submits (enterKeyHint).
+   * Keeps the first result high on a phone.
+   */
+  compact?: boolean
 }
 
 const FRAME = { field: 'border-field', action: 'border-action' } as const
@@ -53,6 +60,7 @@ export function HomeSearch({
   placeholder = 'np. sernik, pierogi',
   strongLabel,
   submitLabel,
+  compact,
 }: HomeSearchProps) {
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -101,7 +109,10 @@ export function HomeSearch({
 
   return (
     <form ref={formRef} role="search" method="get" action={SEARCH_PATH}>
-      <label htmlFor={id} className={`mb-2 block text-[18px] ${strongLabel ? 'font-bold text-ink' : 'text-ink-soft'}`}>
+      <label
+        htmlFor={id}
+        className={compact ? 'sr-only' : `mb-2 block text-[18px] ${strongLabel ? 'font-bold text-ink' : 'text-ink-soft'}`}
+      >
         {label}
       </label>
       {scope !== 'wszystkie' && <input type="hidden" name="zakres" value={scope} />}
@@ -125,9 +136,17 @@ export function HomeSearch({
             autoComplete="off"
             onInput={() => setMicState((prev) => (prev === 'error' ? 'idle' : prev))}
             placeholder={placeholder}
-            className="h-full min-w-0 flex-1 bg-transparent text-[19px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none"
+            className="h-full min-w-0 flex-1 bg-transparent text-[19px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none!"
           />
-          {micSupported && (
+          {compact && defaultValue ? (
+            <Link
+              href={searchPath('', scope)}
+              className="inline-flex h-12 shrink-0 items-center gap-1 rounded-[10px] px-2 text-[17px] font-bold text-ink no-underline! hover:bg-surface-3"
+            >
+              <X aria-hidden="true" className="h-5 w-5" />
+              Wyczyść
+            </Link>
+          ) : micSupported && (
             <button
               type="button"
               onClick={toggleMic}
@@ -141,7 +160,7 @@ export function HomeSearch({
         </div>
         <button
           type="submit"
-          className={`${buttonClasses('primary', 'lg')} min-h-[58px] w-full text-[19px] lg:h-16 lg:w-auto lg:px-8`}
+          className={`${buttonClasses('primary', 'lg')} min-h-[58px] w-full text-[19px] lg:h-16 lg:w-auto lg:px-8 ${compact ? 'max-lg:hidden' : ''}`}
         >
           <Search aria-hidden="true" className="h-5 w-5" />
           {submitLabel ?? (
@@ -155,7 +174,7 @@ export function HomeSearch({
       <p role="status" aria-live="polite" className="mt-2 text-[16px] text-ink-soft empty:sr-only">
         {MIC_STATUS[micState]}
       </p>
-      {defaultValue && (
+      {defaultValue && !compact && (
         <div className="mt-1 flex justify-end">
           <Link
             href={searchPath('', scope)}

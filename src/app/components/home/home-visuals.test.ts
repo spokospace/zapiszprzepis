@@ -81,4 +81,19 @@ describe('HomeSearch looks (E01-S20)', () => {
     expect(html).toMatch(/type="submit"[^>]*>.*Szukaj<\/button>/)
     expect(html).not.toContain('Szukaj przepisu')
   })
+
+  it('keeps the results-page field compact (C2): sr-only label, Wyczyść inside, no phone submit', () => {
+    const html = render(createElement(HomeSearch, { id: 'c', defaultValue: 'dynia', compact: true }))
+    expect(html).toMatch(/<label for="c" class="sr-only">/)
+    // One Wyczyść, inside the field frame (before the submit button), not in a row below.
+    expect(html.match(/Wyczyść/g)).toHaveLength(1)
+    expect(html.indexOf('Wyczyść')).toBeLessThan(html.indexOf('type="submit"'))
+    expect(html).toMatch(/<button type="submit" class="[^"]*max-lg:hidden/)
+  })
+
+  it('shows the Wyczyść row below a non-compact field with a query', () => {
+    const html = render(createElement(HomeSearch, { id: 'q', defaultValue: 'dynia' }))
+    expect(html.indexOf('Wyczyść')).toBeGreaterThan(html.indexOf('type="submit"'))
+    expect(html).not.toContain('max-lg:hidden')
+  })
 })
