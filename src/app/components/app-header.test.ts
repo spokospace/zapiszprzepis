@@ -57,11 +57,21 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     expect(html).toContain('py-1 pr-3 pl-4')
   })
 
-  it('gives a guest an outlined 52 px "Zaloguj się"', () => {
+  it('moves a guest\'s "Zaloguj się" into MENU below lg, keeping the outlined button on desktop', () => {
     pathname = '/'
     const login = render(false).match(/<a[^>]*href="\/login"[^>]*>Zaloguj się<\/a>/)?.[0] ?? ''
-    expect(login).toContain('min-h-[52px]')
+    expect(login).toMatch(/class="hidden /)
+    expect(login).toContain('lg:inline-flex')
     expect(login).toContain('border-2 border-field')
+  })
+
+  it('gives a guest the lettering logo at every phone width (only MENU on the right)', () => {
+    pathname = '/'
+    const html = render(false)
+    const lettering = html.match(/<img[^>]*logo-lettering\.svg[^>]*>/)?.[0] ?? ''
+    expect(lettering).toContain('class="h-[30px] w-[120px] block lg:hidden"')
+    const icon = html.match(/<img[^>]*logo-icon\.svg[^>]*>/)?.[0] ?? ''
+    expect(icon).toContain('class="h-10 w-10 hidden lg:block"')
   })
 
   it('shows the lettering logo, with the compact icon only where the buttons leave no room', () => {
@@ -71,17 +81,14 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     expect(html).toContain('min-[390px]:block')
   })
 
-  it('replaces the logo with "← Wróć" on a recipe page, for guests too, below lg only', () => {
+  it('keeps the logo linking home on a recipe page — its list bar is the way back', () => {
     pathname = '/przepis/sernik'
     for (const signedIn of [true, false]) {
       const html = render(signedIn)
-      const back = html.match(/<a[^>]*aria-label="Wróć[^"]*"[^>]*>.*?<\/a>/)?.[0] ?? ''
-      // Without list context it returns to the start page.
-      expect(back).toContain('href="/"')
-      expect(back).toContain('lg:hidden')
-      expect(back).toContain('h-14')
-      expect(back).toContain('>Wróć</a>')
-      expect(html).toContain('hidden lg:flex')
+      expect(html).not.toContain('aria-label="Wróć')
+      const logo = html.match(/<a[^>]*aria-label="ZapiszPrzepis — strona główna"[^>]*>/)?.[0] ?? ''
+      expect(logo).toContain('href="/"')
+      expect(logo).not.toContain('hidden lg:flex')
       // The old chevron to the owner-only /recipes is gone.
       expect(html).not.toContain('href="/recipes"')
     }

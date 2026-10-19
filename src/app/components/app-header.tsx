@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { AppMenu } from './app-menu'
-import { HeaderBackLink, PageBackLink } from './header-back-link'
+import { PageBackLink } from './header-back-link'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
 import { HeaderNav } from './header-nav'
@@ -20,21 +20,22 @@ export function AppHeader({
   menu,
 }: {
   failedShares: FailedSharesResult
-  /** Guest (E01-S02) vs signed-in: guests get "Zaloguj się" instead of Dodaj + the bell. */
+  /** Guest (E01-S02) vs signed-in: a guest gets no Dodaj or bell; "Zaloguj się" is in MENU below lg. */
   isAuthenticated: boolean
   /** MENU counters + full access (E01-S09); the drawer degrades without it. */
   menu?: MenuSummary | null
 }) {
   const pathname = usePathname()
-  // Below lg "← Wróć" replaces the logo everywhere but the start page (handoff 1c);
-  // the desktop header (E01-S17) keeps the logo. On a recipe page (/przepis/{slug})
-  // it goes to the source list (E01-S19); elsewhere it goes back in history.
-  const recipeSlug = PRZEPIS_PAGE_RE.test(pathname) ? safeDecode(pathname.slice('/przepis/'.length)) : null
-  const showBack = pathname !== '/'
+  // Below lg "← Wróć" replaces the logo on the screens below the start page (handoff 1c);
+  // the desktop header (E01-S17) keeps the logo. Not on a recipe page: its list bar
+  // („← Ciasteczka · 7 z 91”) already leads back, so the header keeps the logo
+  // linking home (owner decision 2026-10-19 — one back link per screen).
+  const showBack = pathname !== '/' && !PRZEPIS_PAGE_RE.test(pathname)
   // The 120x30 lettering where the right-hand buttons leave room for it (signed in:
   // 64+100+60 px of buttons), the compact icon below that, so nothing overflows at 320 px.
-  const lettering = isAuthenticated ? 'min-[390px]:block' : 'min-[360px]:block'
-  const compactIcon = isAuthenticated ? 'min-[390px]:hidden' : 'min-[360px]:hidden'
+  // A guest has only MENU on the right below lg, so the lettering always fits.
+  const lettering = isAuthenticated ? 'hidden min-[390px]:block' : 'block'
+  const compactIcon = isAuthenticated ? 'block min-[390px]:hidden' : 'hidden'
 
   return (
     <header className="sticky top-0 z-20 border-b-2 border-border-card bg-white/95 backdrop-blur lg:border-b">
@@ -43,11 +44,7 @@ export function AppHeader({
           a signed-in user gets the search field. */}
       <PageContainer className="flex min-h-16 items-center justify-between gap-2 py-1 pr-3 pl-4 sm:px-6 lg:min-h-0 lg:gap-6 lg:px-8 lg:py-3">
         <div className="flex min-w-0 items-center gap-2 lg:gap-6">
-          {recipeSlug !== null ? (
-            <HeaderBackLink slug={recipeSlug} crowded={isAuthenticated} className="lg:hidden" />
-          ) : (
-            showBack && <PageBackLink crowded={isAuthenticated} className="lg:hidden" />
-          )}
+          {showBack && <PageBackLink crowded={isAuthenticated} className="lg:hidden" />}
           <Link
             href="/"
             aria-label="ZapiszPrzepis — strona główna"
@@ -60,7 +57,7 @@ export function AppHeader({
               height={30}
               unoptimized
               priority
-              className={`hidden h-[30px] w-[120px] ${lettering} lg:hidden`}
+              className={`h-[30px] w-[120px] ${lettering} lg:hidden`}
             />
             <Image
               src="/logo-icon.svg"
@@ -99,8 +96,9 @@ export function AppHeader({
             <>
               <Link
                 href="/login"
-                // Mobile 1c (E01-S19): outlined, 52 px.
-                className="inline-flex min-h-[52px] items-center whitespace-nowrap rounded-field border-2 border-field px-3 text-[17px] font-bold text-ink no-underline! hover:bg-surface-2 lg:min-h-[48px] lg:px-4 lg:text-[18px] lg:font-semibold"
+                // Desktop only: below lg a guest signs in from MENU, which opens with
+                // „Zaloguj się” / „Załóż konto” (owner decision 2026-10-19).
+                className="hidden min-h-[48px] items-center whitespace-nowrap rounded-field border-2 border-field px-4 text-[18px] font-semibold text-ink no-underline! hover:bg-surface-2 lg:inline-flex"
               >
                 Zaloguj się
               </Link>
@@ -122,13 +120,4 @@ export function AppHeader({
       </PageContainer>
     </header>
   )
-}
-
-/** A malformed escape in the URL must not crash the header; the raw segment then just finds no list. */
-function safeDecode(segment: string): string {
-  try {
-    return decodeURIComponent(segment)
-  } catch {
-    return segment
-  }
 }
