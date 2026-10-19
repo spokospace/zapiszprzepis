@@ -60,7 +60,7 @@ Wymiary mobilne: 390 px szerokości. Desktop: kontener `max-width: 1152px`, padd
 
 ### Nagłówek (mobile, 1c)
 - Wysokość ~64 px, `border-bottom: 2px solid #e5e7eb`, padding `4px 12px 4px 16px`.
-- Lewo: logo `public/logo-lettering.svg` 120×30, albo „← Wróć/Wyniki” (18 px bold, cel 56 px).
+- Lewo: logo = ikona `public/logo-icon.svg` 40×40 + napis „Zapisz**Przepis**” tekstem (od 640 px; na telefonie sama ikona), albo „← Wróć/Wyniki” (18 px bold, cel 56 px). Źródło prawdy: `src/app/components/app-header.tsx` (#276, #320). **Nie** wracać do `public/logo-lettering.svg` — to stare logo, a ten wiersz raz już je przywrócił (#286).
 - Prawo, zalogowany (na **każdym** ekranie): trzy przyciski ikona nad podpisem, wysokość 56 px, podpis 13 px bold, ikona 24 px:
   - **„Dodaj”** 64 px szer., tło `#c2410c`, biały, radius 12. Bez pełnego dostępu też widoczny → ekran 3c.
   - **„Powiadomienia”** min. 100 px (dzwonek). Licznik: koło 22 px `#b91c1c`, biały 13 px bold, obwódka 2 px biała. `aria-label="Powiadomienia (N)"`.

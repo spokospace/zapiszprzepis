@@ -31,10 +31,6 @@ export function AppHeader({
   // it goes to the source list (E01-S19); elsewhere it goes back in history.
   const recipeSlug = PRZEPIS_PAGE_RE.test(pathname) ? safeDecode(pathname.slice('/przepis/'.length)) : null
   const showBack = pathname !== '/'
-  // The 120x30 lettering where the right-hand buttons leave room for it (signed in:
-  // 64+100+60 px of buttons), the compact icon below that, so nothing overflows at 320 px.
-  const lettering = isAuthenticated ? 'min-[390px]:block' : 'min-[360px]:block'
-  const compactIcon = isAuthenticated ? 'min-[390px]:hidden' : 'min-[360px]:hidden'
 
   return (
     <header className="sticky top-0 z-20 border-b-2 border-border-card bg-white/95 backdrop-blur lg:border-b">
@@ -53,15 +49,9 @@ export function AppHeader({
             aria-label="ZapiszPrzepis — strona główna"
             className={`${showBack ? 'hidden lg:flex' : 'flex'} min-h-12 shrink-0 items-center gap-2 no-underline!`}
           >
-            <Image
-              src="/logo-lettering.svg"
-              alt=""
-              width={120}
-              height={30}
-              unoptimized
-              priority
-              className={`hidden h-[30px] w-[120px] ${lettering} lg:hidden`}
-            />
+            {/* Recipe icon + text wordmark (#276); the old logo-lettering.svg must not come
+                back here (#320). On phones the icon alone is the logo, so nothing overflows
+                at 320 px beside the right-hand buttons; the wordmark shows from sm. */}
             <Image
               src="/logo-icon.svg"
               alt=""
@@ -69,10 +59,9 @@ export function AppHeader({
               height={40}
               unoptimized
               priority
-              className={`h-10 w-10 ${compactIcon} lg:block`}
+              className="h-10 w-10"
             />
-            {/* The desktop wordmark (E01-S17); below lg the lettering image is the logo. */}
-            <span aria-hidden="true" className="hidden text-[1.625rem] font-bold tracking-wide lg:inline">
+            <span aria-hidden="true" className="hidden text-[1.625rem] font-bold tracking-wide sm:inline">
               <span className="text-gray-900">Zapisz</span>
               <span className="text-orange-700">Przepis</span>
             </span>

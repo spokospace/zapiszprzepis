@@ -64,11 +64,19 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     expect(login).toContain('border-2 border-field')
   })
 
-  it('shows the lettering logo, with the compact icon only where the buttons leave no room', () => {
+  // #286 followed the design handoff back to the old lettering image and undid #276 (#320).
+  it('shows the recipe icon + wordmark logo, never the old lettering image', () => {
     pathname = '/'
-    const html = render(true)
-    expect(html).toContain('src="/logo-lettering.svg"')
-    expect(html).toContain('min-[390px]:block')
+    for (const signedIn of [true, false]) {
+      const html = render(signedIn)
+      expect(html).toContain('src="/logo-icon.svg"')
+      expect(html).not.toContain('logo-lettering.svg')
+      // The icon alone on phones; the wordmark from sm (tablet) up, desktop included.
+      const wordmark = html.match(/<span aria-hidden="true" class="[^"]*">.*?Przepis<\/span><\/span>/)?.[0] ?? ''
+      expect(wordmark).toContain('hidden')
+      expect(wordmark).toContain('sm:inline')
+      expect(wordmark).toContain('>Zapisz</span>')
+    }
   })
 
   it('replaces the logo with "← Wróć" on a recipe page, for guests too, below lg only', () => {
