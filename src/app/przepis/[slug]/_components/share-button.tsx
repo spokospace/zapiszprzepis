@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Share2 } from 'lucide-react'
 import { buttonClasses } from '@/app/components/ui/button'
 
@@ -31,6 +31,9 @@ export async function shareLink(nav: ShareNavigator, data: { title: string; url:
   }
 }
 
+/** How long "Skopiowano link…" stays (like the favourite toast); a failure stays until the next try. */
+export const COPIED_MESSAGE_MS = 5000
+
 export const SHARE_MESSAGES: Partial<Record<ShareOutcome, string>> = {
   copied: 'Skopiowano link do przepisu.',
   failed: 'Nie udało się udostępnić. Skopiuj adres z paska przeglądarki.',
@@ -51,6 +54,12 @@ export function ShareButton({
 }) {
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null)
   const message = outcome ? SHARE_MESSAGES[outcome] : undefined
+
+  useEffect(() => {
+    if (outcome !== 'copied') return
+    const timer = setTimeout(() => setOutcome(null), COPIED_MESSAGE_MS)
+    return () => clearTimeout(timer)
+  }, [outcome])
 
   return (
     <span className="flex flex-col gap-2">

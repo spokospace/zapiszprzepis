@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { shareLink } from './share-button'
+import { COPIED_MESSAGE_MS, SHARE_MESSAGES, shareLink } from './share-button'
 
 const DATA = { title: 'Zupa krem z dyni', url: 'https://zapiszprzepis.pl/przepis/zupa-krem-z-dyni' }
 
@@ -41,5 +41,16 @@ describe('shareLink (A9 "Udostępnij")', () => {
     await expect(shareLink({}, DATA)).resolves.toBe('failed')
     const writeText = vi.fn().mockRejectedValue(new Error('denied'))
     await expect(shareLink({ clipboard: { writeText } }, DATA)).resolves.toBe('failed')
+  })
+})
+
+describe('ShareButton messages', () => {
+  it('says what happened only for a copy or a failure, never for the share sheet', () => {
+    expect(SHARE_MESSAGES.copied).toBe('Skopiowano link do przepisu.')
+    expect(SHARE_MESSAGES.failed).toContain('Skopiuj adres z paska przeglądarki')
+    expect(SHARE_MESSAGES.shared).toBeUndefined()
+    expect(SHARE_MESSAGES.cancelled).toBeUndefined()
+    // The copy confirmation fades like the favourite toast (~5 s).
+    expect(COPIED_MESSAGE_MS).toBe(5000)
   })
 })
