@@ -9,8 +9,9 @@ Backlog source: `.ai/specs/backlog-przebudowa.md`
 Last filed: 2026-10-16 · re-synced 2026-10-19
 Tracker: GitHub `spokospace/zapiszprzepis`
 
-Epic E01 (public, high-readability rebuild), 18 stories across 4 waves. All ids
-new; no adoptions. S01, S02, S18 were filed and then **closed** because the work
+Epic E01 (public, high-readability rebuild): the first run filed 18 stories
+across 4 waves, all with new ids and no adoptions; the 2026-10-19 re-sync below
+adopted ten more entries. S01, S02, S18 were filed and then **closed** because the work
 had already merged to `master` (PRs linked in each issue) — filed so the E01
 tracker record is complete.
 
@@ -39,15 +40,15 @@ never closed them. Only S12 (#205) stays open, waiting on #299 / #288.
 | E01-S04 | [#207](https://github.com/spokospace/zapiszprzepis/issues/207) | Home page: guest and logged-in | #201 | E01-S01, E01-S02 | no | closed · shipped #249 |
 | E01-S05 | [#208](https://github.com/spokospace/zapiszprzepis/issues/208) | One search with results and scope (All/Mine/Favorites) | #201 | E01-S01, E01-S02 | no | closed · shipped #262 |
 | E01-S06 | [#209](https://github.com/spokospace/zapiszprzepis/issues/209) | Favorites: labelled heart + guest→login→save flow | #201 | E01-S02 | no | closed · shipped #260 |
-| E01-S07 | [#210](https://github.com/spokospace/zapiszprzepis/issues/210) | Recipe page rebuild | #201 | E01-S01, E01-S02, E01-S03 | no | closed · shipped #246 |
+| E01-S07 | [#210](https://github.com/spokospace/zapiszprzepis/issues/210) | Recipe page rebuild | #201 | E01-S01, E01-S02, E01-S03a, E01-S03b | no | closed · shipped #246 |
 | E01-S08 | [#211](https://github.com/spokospace/zapiszprzepis/issues/211) | Cooking mode (fullscreen, Wake Lock) | #201 | E01-S01, E01-S07 | no | closed · shipped #274 |
 | E01-S09 | [#212](https://github.com/spokospace/zapiszprzepis/issues/212) | Menu drawer: Mine + All by category | #201 | E01-S01 | no | closed · shipped #250 |
 | E01-S10 | [#213](https://github.com/spokospace/zapiszprzepis/issues/213) | Add recipe: dedicated /dodaj page | #201 | E01-S01, E01-S11 | no | closed · shipped #269 |
 | E01-S11 | [#214](https://github.com/spokospace/zapiszprzepis/issues/214) | Add gate: access code (screen 3c) | #201 | E01-S02 | no | closed · shipped #251 |
-| E01-S13 | [#215](https://github.com/spokospace/zapiszprzepis/issues/215) | My profile / Settings (/settings) | #201 | E01-S01, E01-S12, E01-S03, E01-S18 | no | closed · shipped #263 |
-| E01-S14 | [#216](https://github.com/spokospace/zapiszprzepis/issues/216) | Public profile (/u/{username}) | #201 | E01-S02, E01-S03, E01-S18 | no | closed · shipped #259 |
+| E01-S13 | [#215](https://github.com/spokospace/zapiszprzepis/issues/215) | My profile / Settings (/settings) | #201 | E01-S01, E01-S12, E01-S03a, E01-S03b, E01-S18 | no | closed · shipped #263 |
+| E01-S14 | [#216](https://github.com/spokospace/zapiszprzepis/issues/216) | Public profile (/u/{username}) | #201 | E01-S02, E01-S03a, E01-S03b, E01-S18 | no | closed · shipped #259 |
 | E01-S15 | [#217](https://github.com/spokospace/zapiszprzepis/issues/217) | Notifications: fullscreen + home banner | #201 | E01-S01 | no | closed |
-| E01-S16 | [#218](https://github.com/spokospace/zapiszprzepis/issues/218) | Category with tags + similar recipes | #201 | E01-S01, E01-S03 | no | closed |
+| E01-S16 | [#218](https://github.com/spokospace/zapiszprzepis/issues/218) | Category with tags + similar recipes | #201 | E01-S01, E01-S03a, E01-S03b | no | closed |
 | E01-S17 | [#219](https://github.com/spokospace/zapiszprzepis/issues/219) | Desktop layouts (A8, A9) | #201 | E01-S01, E01-S04, E01-S05, E01-S07 | no | closed |
 | E01-S07b | [#279](https://github.com/spokospace/zapiszprzepis/issues/279) | Recipe page fixes per design handoff (C3) | #201 | — | yes | closed · shipped #287 |
 | E01-S12b | [#281](https://github.com/spokospace/zapiszprzepis/issues/281) | Login 3a, first-login 3b and code gate 3c per design handoff | #201 | — | yes | closed · shipped #285 |
