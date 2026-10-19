@@ -16,9 +16,12 @@ interface RecipeListProps {
   fallback: ListPosition | null
 }
 
-// Fixed height (one 48 px row + padding), so the placeholder and the filled bar
-// occupy the same space and nothing below jumps on hydration.
-const BAR = 'mb-6 flex min-h-[74px] items-center justify-between gap-3 rounded-card border border-border-card-2 px-3 py-3'
+// Fixed height, so the placeholder and the filled bar occupy the same space and
+// nothing below jumps on hydration. A4: a flat row over a rule, the count on the
+// right. A9 (lg): "← {lista} · N z M" on the left of the page's breadcrumbs row.
+export const LIST_BAR =
+  'mb-5 flex min-h-[57px] items-center justify-between gap-3 border-b border-border-card ' +
+  'lg:mb-0 lg:min-h-[48px] lg:justify-start lg:gap-2 lg:border-b-0'
 
 // A button-shaped link: bordered, so no underline (as in the header's "Dodaj").
 const NAV = 'flex min-h-[64px] items-center gap-3 rounded-field border-2 px-4 py-2 leading-tight no-underline!'
@@ -52,25 +55,27 @@ function useListPosition({ slug, from, fallback }: RecipeListProps): ListState {
   return { kind: 'ready', position, linkFrom: fromList ? from : null }
 }
 
-/** "← {lista}" + "N z M" at the top of the recipe (handoff C3, item 1). */
+/** "← {lista}" + "N z M" at the top of the recipe (handoff C3 item 1, A4, A9). */
 export function RecipeListBar(props: RecipeListProps) {
   const state = useListPosition(props)
   if (state.kind === 'none') return null
-  if (state.kind === 'pending') return <div aria-hidden="true" className={BAR} />
+  if (state.kind === 'pending') return <div aria-hidden="true" className={LIST_BAR} />
 
   const { position } = state
   return (
-    <nav aria-label="Lista przepisów" className={`${BAR} text-[17px] font-bold text-ink`}>
+    <nav aria-label="Lista przepisów" className={`${LIST_BAR} text-ink`}>
       {/* min-w-0 + wrap-anywhere: a long search query in "Wyniki: „…”" wraps at 320 px
           instead of pushing "N z M" off screen (WCAG 1.4.10). */}
       <Link
         href={position.href}
-        className="inline-flex min-h-[48px] min-w-0 items-center font-bold no-underline! wrap-anywhere hover:text-action-hover"
+        className="inline-flex min-h-[48px] min-w-0 items-center gap-1.5 text-[18px] font-bold no-underline! wrap-anywhere hover:text-action-hover"
       >
-        ← {position.label}
+        <ArrowLeft aria-hidden="true" size={20} className="shrink-0" />
+        {position.label}
       </Link>
-      <span className="shrink-0">
+      <span className="shrink-0 text-[16px] text-ink-soft lg:text-[18px] lg:font-bold lg:text-ink">
         <span aria-hidden="true">
+          <span className="hidden lg:inline">· </span>
           {position.index} z {position.total}
         </span>
         <span className="sr-only">
@@ -99,15 +104,18 @@ function NavLink({
   const prev = direction === 'prev'
   const word = prev ? 'Poprzedni' : 'Następny'
   const Arrow = prev ? ArrowLeft : ArrowRight
+  // A9: the arrows take the accent colour on desktop; C3 keeps them ink on phones.
+  const arrow = <Arrow aria-hidden="true" size={24} className="shrink-0 lg:text-action" />
   return (
     <Link
       href={recipePath(item.slug, { from })}
       className={`${NAV} ${prev ? '' : 'justify-between'} border-field bg-white text-ink hover:bg-surface-3`}
     >
-      {prev && <Arrow aria-hidden="true" size={24} className="shrink-0" />}
+      {prev && arrow}
       <span className="flex min-w-0 flex-col">
-        {/* "Poprzedni przepis" on mobile; from lg the list is named (A9: "Poprzedni w wynikach „dynia”"). */}
-        <span className="text-[14px] font-bold text-ink-soft">
+        {/* "Poprzedni przepis" on mobile (C3, 14 px bold); from lg the list is named
+            (A9: "Poprzedni w wynikach „dynia”", 16 px). */}
+        <span className="text-[14px] font-bold text-ink-soft lg:text-[16px] lg:font-normal">
           <span className="lg:hidden">{word} przepis</span>
           <span className="hidden lg:inline">
             {word} na liście: {listLabel}
@@ -116,14 +124,14 @@ function NavLink({
         {/* The full title, never truncated (handoff C3, item 12). */}
         <span className="text-[18px] font-bold">{item.title}</span>
       </span>
-      {!prev && <Arrow aria-hidden="true" size={24} className="shrink-0" />}
+      {!prev && arrow}
     </Link>
   )
 }
 
 /**
  * Poprzedni / Następny at the end of the recipe (handoff C3, item 12): stacked 64 px
- * buttons on mobile, side by side from lg.
+ * buttons on mobile under a 2 px rule, side by side from lg.
  */
 export function RecipeListNav(props: RecipeListProps) {
   const state = useListPosition(props)
@@ -133,7 +141,10 @@ export function RecipeListNav(props: RecipeListProps) {
 
   const { position, linkFrom } = state
   return (
-    <nav aria-label="Poprzedni i następny przepis" className="mb-10 grid grid-cols-1 gap-2 lg:grid-cols-2 lg:gap-4">
+    <nav
+      aria-label="Poprzedni i następny przepis"
+      className="mb-10 grid grid-cols-1 gap-2 border-t-2 border-border-card pt-4 lg:grid-cols-2 lg:gap-4 lg:pt-6"
+    >
       <NavLink item={position.prev} from={linkFrom} direction="prev" listLabel={position.label} />
       <NavLink item={position.next} from={linkFrom} direction="next" listLabel={position.label} />
     </nav>

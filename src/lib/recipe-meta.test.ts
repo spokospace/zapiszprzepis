@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { listCardLines, photosLabel, recipeMetaLine, recipeTotalMinutes } from '@/lib/recipe-meta'
+import { listCardLines, photosLabel, recipeMetaLine, recipeTimeStats, recipeTotalMinutes } from '@/lib/recipe-meta'
 
 const base = { prep_time_minutes: null, cook_time_minutes: null, total_time_minutes: null }
 
@@ -46,6 +46,36 @@ describe('recipeMetaLine', () => {
 
   it('shows only the category without a time', () => {
     expect(recipeMetaLine({ ...base, category: 'ciasta', times_estimated: false })).toBe('Ciasta')
+  })
+})
+
+describe('recipeTimeStats (A9 desktop times row)', () => {
+  it('lists prep, cook and the stated total', () => {
+    expect(recipeTimeStats({ prep_time_minutes: 15, cook_time_minutes: 30, total_time_minutes: 45 })).toEqual([
+      { label: 'Przygotowanie', value: '15 min' },
+      { label: 'Gotowanie', value: '30 min' },
+      { label: 'Łącznie', value: '45 min' },
+    ])
+  })
+
+  it('sums prep + cook into "Łącznie" when no total is stated', () => {
+    expect(recipeTimeStats({ ...base, prep_time_minutes: 20, cook_time_minutes: 70 }).at(-1)).toEqual({
+      label: 'Łącznie',
+      value: '1 godz 30 min',
+    })
+  })
+
+  it('does not repeat a lone part as "Łącznie"', () => {
+    expect(recipeTimeStats({ ...base, cook_time_minutes: 40 })).toEqual([{ label: 'Gotowanie', value: '40 min' }])
+  })
+
+  it('shows a stated total alone', () => {
+    expect(recipeTimeStats({ ...base, total_time_minutes: 60 })).toEqual([{ label: 'Łącznie', value: '1 godz' }])
+  })
+
+  it('skips unknown and zero times', () => {
+    expect(recipeTimeStats(base)).toEqual([])
+    expect(recipeTimeStats({ prep_time_minutes: 0, cook_time_minutes: null, total_time_minutes: 0 })).toEqual([])
   })
 })
 

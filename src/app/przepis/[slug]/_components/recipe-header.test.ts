@@ -41,3 +41,39 @@ describe('RecipeHeader author line (E01-S23)', () => {
     expect(html).not.toMatch(/Dodała|Dodał /)
   })
 })
+
+describe('RecipeHeader desktop column (A9)', () => {
+  it('shows the times row from lg only, and the "Kategoria · czas" line below lg only', () => {
+    const html = render({ prep_time_minutes: 15, cook_time_minutes: 30, total_time_minutes: 45 })
+    expect(html).toMatch(/<dl class="[^"]*hidden[^"]*lg:flex"/)
+    expect(html).toContain('<dt class="text-[16px] text-ink-soft">Przygotowanie</dt><dd class="text-[20px] font-bold text-ink">15 min</dd>')
+    expect(html).toContain('<dt class="text-[16px] text-ink-soft">Łącznie</dt>')
+    expect(html).toMatch(/<p class="[^"]*lg:hidden">Zupy · 45 min<\/p>/)
+  })
+
+  it('marks estimated times with "≈" read as "około"', () => {
+    const html = render({ total_time_minutes: 45, times_estimated: true })
+    expect(html).toContain('<dd class="text-[20px] font-bold text-ink"><span aria-hidden="true">≈ </span><span class="sr-only">około </span>45 min</dd>')
+  })
+
+  it('renders no times row when no time is known', () => {
+    expect(render({ total_time_minutes: null })).not.toContain('<dl')
+  })
+
+  it('puts the actions last in the text column and no inline "Otwórz oryginał" link', () => {
+    const html = renderToStaticMarkup(
+      createElement(RecipeHeader, {
+        recipe: { ...BASE, description: 'Krem z dyni.' },
+        actions: createElement('div', { id: 'actions' }),
+      }),
+    )
+    expect(html).toMatch(/Krem z dyni\.<\/p><div id="actions"><\/div><\/div><\/header>$/)
+    expect(html).not.toContain('Otwórz oryginał')
+  })
+})
+
+describe('RecipeHeader title (C3)', () => {
+  it('sets the 32 px title at line-height 1.15', () => {
+    expect(render({})).toMatch(/<h1 class="[^"]*text-\[32px\] leading-\[1\.15\] font-bold/)
+  })
+})

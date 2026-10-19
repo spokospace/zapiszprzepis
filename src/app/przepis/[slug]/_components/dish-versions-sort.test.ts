@@ -62,3 +62,9 @@ describe('DishVersionsSort on a phone', () => {
     expect(html).toMatch(/<svg[^>]*lucide-utensils-crossed[^>]*aria-hidden="true"/)
   })
 })
+
+describe('DishVersionsSort reflow (WCAG 1.4.10)', () => {
+  it('lets the "Kolejność:" label break a long word instead of widening the page', () => {
+    expect(html).toContain('<span id="wersje-kolejnosc" class="mr-1 text-[16px] font-bold wrap-anywhere text-ink-soft">')
+  })
+})

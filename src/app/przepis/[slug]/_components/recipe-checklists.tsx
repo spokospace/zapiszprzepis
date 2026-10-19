@@ -116,11 +116,15 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
         aria-labelledby="ingredients-heading"
         className="mb-10 lg:rounded-card lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"
       >
-        <h2 id="ingredients-heading" className={`${servings != null ? 'mb-1' : 'mb-3'} text-[26px] font-bold text-ink`}>
-          Składniki
-        </h2>
-        {/* "na N porcji" (handoff C3, item 8): only when the source states it. */}
-        {servings != null && <p className="mb-3 text-[17px] text-ink-soft">{servingsLabel(servings)}</p>}
+        {/* C3, item 8: "Składniki" with "na 4 porcje" on the same baseline, only when
+            the source states the servings. */}
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3">
+          {/* min-w-0: a flex item never shrinks below its longest word otherwise (WCAG 1.4.10). */}
+          <h2 id="ingredients-heading" className="min-w-0 text-[24px] font-bold text-ink">
+            Składniki
+          </h2>
+          {servings != null && <p className="min-w-0 text-[16px] text-ink-soft">{servingsLabel(servings)}</p>}
+        </div>
         {ingredientGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
             {group.section && <h3 className="mb-1 text-[17px] font-bold text-ink-soft">{group.section}</h3>}
@@ -147,7 +151,7 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
 
       <div>
         <section aria-labelledby="steps-heading" className="mb-10">
-          <h2 id="steps-heading" className="mb-3 text-[26px] font-bold text-ink">
+          <h2 id="steps-heading" className="mb-3 text-[24px] font-bold text-ink">
             Przygotowanie
           </h2>
           {steps.length === 0 ? (

@@ -15,7 +15,7 @@ import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
-import { RecipeHeader } from './_components/recipe-header'
+import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
 import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar, RecipeListNav } from './_components/recipe-list-bar'
@@ -127,6 +127,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
   const steps = parseSteps(typedRecipe.steps)
   const listKey = parseListKey(from)
+  const canonicalUrl = `${await getSiteUrl()}${recipePath(typedRecipe.slug)}`
 
   return (
     <main className="min-h-screen bg-white py-6 sm:py-8">
@@ -153,7 +154,12 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {/* Not `narrow`: the desktop layout (E01-S17, A9) uses the full 1152 px; below lg
           both widths are the viewport anyway. */}
       <PageContainer>
-        <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+        {/* A9: from lg one row, "← {lista} · N z M" left and the breadcrumbs right;
+            below lg the breadcrumbs sit in the header column (A4). */}
+        <div className="lg:mb-6 lg:flex lg:items-center lg:gap-6">
+          <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+          <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block" />
+        </div>
         <RecipeHeader
           recipe={typedRecipe}
           versionsBar={
@@ -161,11 +167,16 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               <DishVersionsBar count={versionsTotal} dishAccusative={typedRecipe.dish_accusative ?? null} />
             ) : undefined
           }
-        />
-        <RecipeActions
-          recipeId={typedRecipe.id}
-          isFavorite={isFavorite}
-          isAuthenticated={Boolean(user)}
+          actions={
+            <RecipeActions
+              recipeId={typedRecipe.id}
+              isFavorite={isFavorite}
+              isAuthenticated={Boolean(user)}
+              title={typedRecipe.title}
+              shareUrl={canonicalUrl}
+              sourceUrl={typedRecipe.source_url}
+            />
+          }
         />
         {/* Video and gallery sit in the steps column from lg (E01-S17); below lg they
             follow the steps exactly as before. */}
@@ -178,7 +189,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         >
           {typedRecipe.youtube_id && (
             <section className="mb-12">
-              <h2 className="mb-4 text-[26px] font-bold text-ink">Wideo</h2>
+              <h2 className="mb-4 text-[24px] font-bold text-ink">Wideo</h2>
               <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
                 <iframe
                   src={`https://www.youtube-nocookie.com/embed/${typedRecipe.youtube_id}`}
@@ -205,13 +216,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         </RecipeChecklists>
 
         {/* The end of the recipe (handoff C3, items 11–13): the original, then
-            Poprzedni / Następny, then the tags and similar recipes. */}
+            Poprzedni / Następny, then the tags and similar recipes. From lg the
+            original is "Oryginał" in the header instead (A9). */}
         {typedRecipe.source_url && (
           <a
             href={typedRecipe.source_url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`${buttonClasses('outline', 'md')} mb-6 w-full no-underline! sm:w-auto`}
+            className={`${buttonClasses('outline', 'md')} mb-6 w-full no-underline! sm:w-auto lg:hidden`}
           >
             <ExternalLink aria-hidden="true" size={20} className="shrink-0" />
             {originalLinkLabel(typedRecipe.source_type, typedRecipe.source_url)}

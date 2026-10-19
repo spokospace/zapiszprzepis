@@ -26,7 +26,7 @@ export function DishVersions({ versions, totalCount, dishAccusative, order, curr
       <h2
         id="inne-przepisy"
         tabIndex={-1}
-        className="mb-1 scroll-mt-4 text-[26px] font-bold text-ink focus:outline-none"
+        className="mb-1 scroll-mt-4 text-[24px] font-bold text-ink focus:outline-none"
       >
         {heading}
       </h2>
