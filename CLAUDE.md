@@ -36,6 +36,12 @@ Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelnoś
 - **Źródło zamiast loginu** na kartach i przepisie (np. `aniagotuje.pl`, „YouTube · {kanał}”). „Kto dodał”: drobna linijka „Dodała/Dodał {nazwa}” z linkiem do `/u/{username}`.
 - **Dostęp:** gość przegląda i szuka; zalogowany (Facebook/Google) ma ulubione i galerię; dodawanie przepisów tylko z pełnym dostępem (kod lub płatność). Płeć wybierana raz przy pierwszym logowaniu, nieedytowalna.
 - **Wariant projektowy:** styl 1c (wysoka czytelność) + struktura nawigacji 1a. Wariant 1b (dolna nawigacja) niewdrażany.
+- **Nagłówek (decyzje właściciela, nadpisują starsze makiety i specy):**
+  - Logo to ikona `logo-icon.svg` + napis „ZapiszPrzepis” tekstem od 640 px (na telefonie sama ikona); nigdy `logo-lettering.svg` (#320).
+  - Zalogowany poniżej 1024 px widzi w nagłówku tylko „Dodaj” · „MENU”. „Powiadomienia” to wiersz w MENU („Moje”) + licznik na przycisku MENU; dzwonek w nagłówku tylko od `lg` (#323).
+  - Gość poniżej 1024 px: logo (lub „← Wróć”) + MENU; „Zaloguj się” / „Załóż konto” są w MENU (#324).
+  - Jeden link wstecz na ekran: „← Wróć” zastępuje logo pod stroną startową, ale strona przepisu zostawia logo, bo wraca pasek listy (#324).
+  - Źródłem prawdy jest `src/app/components/app-header.tsx` i jego testy — handoff `.dc.html` w tych punktach jest nieaktualny.
 
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
