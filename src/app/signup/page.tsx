@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { SignUpForm } from './signup-form'
 import { LegalLinks } from '@/app/components/legal-page'
+import { BrandLogo } from '@/app/components/brand-logo'
 
 export const metadata: Metadata = { title: 'Załóż konto · ZapiszPrzepis' }
 
@@ -34,15 +34,7 @@ export default async function SignUpPage({
       </header>
       <main className="flex flex-1 flex-col items-center px-5 py-8">
         <div className="flex w-full max-w-sm flex-1 flex-col gap-5">
-          <Image
-            src="/logo-lettering.svg"
-            alt="ZapiszPrzepis"
-            width={160}
-            height={40}
-            priority
-            unoptimized
-            className="block h-10 w-40"
-          />
+          <BrandLogo />
           <h1 className="text-[30px] leading-tight font-bold text-ink">Załóż konto</h1>
           <p className="text-[18px] leading-normal text-ink-soft">
             Wpisz swój email i kod zaproszenia. Wyślemy link, który dokończy rejestrację.
