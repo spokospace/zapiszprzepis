@@ -15,8 +15,8 @@
 <section id="5" style="padding:48px;display:flex;flex-direction:column;gap:28px">
   <div style="display:flex;flex-direction:column;gap:10px;max-width:640px">
     <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">5</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Powiadomienia · styl 1c</span></div>
-    <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Dzwonek z podpisem i pełny ekran zamiast małego okienka</div>
-    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekran jest klikalny. Naciśnij „Powiadomienia” albo pasek „wymaga uwagi”, potem „Spróbuj ponownie”, „Usuń” lub „Otwórz przepis”.</div>
+    <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Powiadomienia w menu i pełny ekran zamiast małego okienka</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekran jest klikalny. Naciśnij „MENU”, potem „Powiadomienia”, albo pasek „wymaga uwagi”, potem „Spróbuj ponownie”, „Usuń” lub „Otwórz przepis”.</div>
   </div>
 
   <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
@@ -26,11 +26,10 @@
 
         <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
           <div style="border-bottom:2px solid #e5e7eb;padding:4px 10px 4px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-            <img src="public/logo-lettering.svg" width="112" height="28" alt="ZapiszPrzepis">
+            <span role="img" aria-label="Zapisz Przepis — strona główna" style="display:inline-flex;align-items:center;min-height:48px;white-space:nowrap;font-size:22px;font-weight:700;line-height:1"><span style="color:#111827">Zapisz</span><span style="color:#c2410c;margin-left:.28em">Przepis</span></span>
             <div style="display:flex;align-items:stretch;gap:4px">
-              <span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span>
-              <button onClick="{{ open }}" aria-label="{{ bellLabel }}" style="position:relative;min-width:100px;height:56px;border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font:700 13px Arial;cursor:pointer"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia<sc-if value="{{ hasBadge }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;top:0;right:26px;min-width:22px;height:22px;border-radius:999px;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">{{ badge }}</span></sc-if></button>
-              <span style="width:56px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span>
+              
+              <span style="width:64px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="search" width="24" height="24"></i>Szukaj</span><button onClick="{{ openMenu }}" aria-label="{{ menuLabel }}" style="position:relative;width:64px;height:56px;border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font:700 13px Arial;cursor:pointer"><i data-lucide="menu" width="26" height="26"></i>MENU<sc-if value="{{ hasBadge }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="position:absolute;top:0;right:2px;min-width:22px;height:22px;border-radius:999px;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">{{ badge }}</span></sc-if></button>
             </div>
           </div>
           <div style="flex:1;overflow:auto;padding:24px 16px;display:flex;flex-direction:column;gap:18px">
@@ -54,6 +53,23 @@
               <div style="display:flex;align-items:center;gap:14px;border:2px solid #e5e7eb;border-radius:16px;padding:16px;min-height:64px"><span style="display:inline-flex;color:#9a3412"><i data-lucide="book-open" width="28" height="28"></i></span><span style="flex:1;font-size:20px;font-weight:700;color:#111827">Moje przepisy</span><i data-lucide="chevron-right" width="26" height="26"></i></div>
               <div style="display:flex;align-items:center;gap:14px;border:2px solid #e5e7eb;border-radius:16px;padding:16px;min-height:64px"><span style="display:inline-flex;color:#9a3412"><i data-lucide="heart" width="28" height="28"></i></span><span style="flex:1;font-size:20px;font-weight:700;color:#111827">Ulubione</span><i data-lucide="chevron-right" width="26" height="26"></i></div>
             </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+          <div style="border-bottom:2px solid #e5e7eb;padding:4px 8px 4px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+            <span style="font-size:22px;font-weight:700;color:#111827">Menu</span>
+            <button onClick="{{ close }}" style="height:56px;padding:0 12px;border:none;background:none;display:inline-flex;align-items:center;gap:6px;font:700 18px Arial;color:#111827;cursor:pointer"><i data-lucide="x" width="26" height="26"></i>Zamknij</button>
+          </div>
+          <div style="flex:1;overflow:auto;display:flex;flex-direction:column;padding:8px 0">
+            <div style="padding:12px 20px 4px;font-size:16px;font-weight:700;color:#374151">Moje</div>
+            <div style="display:flex;align-items:center;gap:14px;height:58px;padding:0 20px;font-size:20px;font-weight:700;color:#111827"><i data-lucide="book-open" width="26" height="26"></i><span style="flex:1">Moje przepisy</span><span style="font-size:17px;color:#374151;font-weight:400">24</span></div>
+            <div style="display:flex;align-items:center;gap:14px;height:58px;padding:0 20px;font-size:20px;font-weight:700;color:#111827"><i data-lucide="heart" width="26" height="26"></i><span style="flex:1">Ulubione</span><span style="font-size:17px;color:#374151;font-weight:400">12</span></div>
+            <button onClick="{{ open }}" aria-label="{{ bellLabel }}" style="display:flex;align-items:center;gap:14px;height:58px;padding:0 20px;border:none;background:#fff7ed;font:700 20px Arial;color:#111827;cursor:pointer;text-align:left"><i data-lucide="bell" width="26" height="26"></i><span style="flex:1">Powiadomienia</span><sc-if value="{{ hasBadge }}" hint-placeholder-val="{{ true }}"><span style="min-width:28px;height:28px;padding:0 6px;border-radius:999px;background:#b91c1c;color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ badge }}</span></sc-if></button>
+            <div style="display:flex;align-items:center;gap:14px;height:58px;padding:0 20px;font-size:20px;font-weight:700;color:#9a3412"><i data-lucide="plus" width="26" height="26"></i>Dodaj przepis</div>
+            <div style="margin:10px 20px;border-top:2px solid #e5e7eb"></div>
+            <div style="padding:4px 20px 8px;font-size:16px;font-weight:700;color:#374151">Wszystkie przepisy według kategorii</div>
+            <div style="padding:0 20px;font-size:16px;color:#374151">Kafle kategorii jak w 1c (C5).</div>
           </div>
         </sc-if>
 
@@ -108,7 +124,7 @@
     <div style="display:flex;flex-direction:column;gap:14px;max-width:460px;font-size:16px;line-height:1.55;color:#374151">
       <div style="font-size:20px;font-weight:700;color:#111827">Jak to rozwiązać</div>
       <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
-        <span><b style="color:#111827">Dzwonek z napisem „Powiadomienia”</b> w nagłówku obok „Dodaj” i „MENU”, na każdym ekranie zalogowanego. Czerwony licznik 22 px z białą obwódką.</span>
+        <span><b style="color:#111827">„Powiadomienia” w menu, w sekcji „Moje”</b>, z liczbą nowych. Nagłówek na telefonie ma tylko „Dodaj” i „MENU”; czerwony licznik na przycisku MENU mówi, że coś czeka. Powiadomienia dotyczą tylko dodawania, więc gość i konto bez pełnego dostępu ich nie widzą. Na komputerze dzwonek z podpisem zostaje w nagłówku.</span>
         <span><b style="color:#111827">Pasek na stronie głównej</b> „1 przepis wymaga uwagi”: sam licznik łatwo przeoczyć.</span>
         <span><b style="color:#111827">Pełny ekran zamiast okienka.</b> Obecne okienko ma 320 px i tekst 12–14 px, a adres strony jest ucinany.</span>
         <span><b style="color:#111827">Trzy rodzaje wpisów:</b> problem (z powodem po ludzku i „Spróbuj ponownie”), w trakcie (żeby było wiadomo, że coś się dzieje) i gotowe („Otwórz przepis”).</span>
@@ -160,7 +176,8 @@ class Component extends DCLogic {
       ['Wymaga uwagi', problems], ['W trakcie', pending], ['Nowe', unreadReady], ['Wcześniej', ready.filter(i => i.read)],
     ].filter(([, l]) => l.length).map(([title, l]) => ({ title, items: l.map(map) }));
     return {
-      isHome: s.screen === 'home', isPanel: s.screen === 'panel',
+      isHome: s.screen === 'home', isPanel: s.screen === 'panel', isMenu: s.screen === 'menu',
+      openMenu: () => this.setState({ screen: 'menu' }), menuLabel: badge ? `Menu, ${badge} ${pl(badge, 'nowe powiadomienie', 'nowe powiadomienia', 'nowych powiadomień')}` : 'Menu',
       open: () => this.setState({ screen: 'panel' }), close: () => this.setState({ screen: 'home' }),
       badge, hasBadge: badge > 0, bellLabel: badge ? `Powiadomienia (${badge})` : 'Powiadomienia',
       hasProblems: problems.length > 0,

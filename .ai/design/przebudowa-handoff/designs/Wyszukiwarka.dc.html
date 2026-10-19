@@ -10,14 +10,14 @@
 <helmet>
 <meta name="design_doc_mode" content="canvas">
 <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
-<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}input:focus-visible,button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}@keyframes zpspin{to{transform:rotate(360deg)}}</style>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}input:focus-visible,button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}@keyframes zpspin{to{transform:rotate(360deg)}}@keyframes zppulse{0%{box-shadow:0 0 0 0 rgba(194,65,12,.45)}100%{box-shadow:0 0 0 28px rgba(194,65,12,0)}}</style>
 </helmet>
 <section id="4" style="padding:48px;display:flex;flex-direction:column;gap:28px">
   <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start">
     <div style="display:flex;flex-direction:column;gap:10px;max-width:600px">
       <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">4</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Wyszukiwarka · styl 1c</span></div>
-      <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Jedno pole: najpierw przepisy w serwisie, potem blogi</div>
-      <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekran jest klikalny. Wpisz hasło, wybierz podpowiedź albo naciśnij „Szukaj”, potem przełącz na „Na blogach”. Przełącznik obok zmienia, kim jest użytkownik.</div>
+      <div style="font-size:30px;font-weight:700;color:#111827;line-height:1.15">Wyszukiwanie na całym ekranie: pisz albo powiedz</div>
+      <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekran jest klikalny. Przełącz „Pokaż jako”, żeby zobaczyć nagłówek gościa, zalogowanego i z pełnym dostępem. Naciśnij lupę „Szukaj” albo pole, żeby otworzyć wyszukiwanie. „Powiedz” uruchamia szukanie głosem. Wpisz hasło, wybierz podpowiedź albo naciśnij „Szukaj”, potem przełącz na „Na blogach”. Przełącznik obok zmienia, kim jest użytkownik.</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px 20px;max-width:440px">
       <span style="font-size:15px;font-weight:700;color:#111827">Pokaż jako</span>
@@ -32,23 +32,55 @@
     <div style="display:flex;flex-direction:column;gap:12px;width:390px">
       <div style="font-size:15px;color:#374151"><b style="color:#111827">4a</b> · Prototyp</div>
       <div style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08)">
-        <div style="border-bottom:2px solid #e5e7eb;padding:4px 12px 4px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-          <span style="height:56px;padding:0 8px;display:inline-flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827"><i data-lucide="arrow-left" width="24" height="24"></i>Wróć</span>
-          <div style="display:flex;align-items:center;gap:4px"><sc-if value="{{ notGuest }}" hint-placeholder-val="{{ true }}"><span style="width:64px;height:56px;border-radius:12px;background:#c2410c;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:700"><i data-lucide="plus" width="24" height="24"></i>Dodaj</span><span style="position:relative;min-width:100px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="bell" width="24" height="24"></i>Powiadomienia<span style="position:absolute;top:0;right:26px;min-width:22px;height:22px;border-radius:999px;background:#b91c1c;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">1</span></span></sc-if><sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}"><span style="height:52px;padding:0 14px;border-radius:12px;border:2px solid #4b5563;color:#111827;display:inline-flex;align-items:center;font-size:17px;font-weight:700;white-space:nowrap">Zaloguj się</span></sc-if><span style="width:60px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span></div>
-        </div>
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+          <div style="border-bottom:2px solid #e5e7eb;padding:4px 8px 4px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+            <span role="img" aria-label="Zapisz Przepis — strona główna" style="display:flex;align-items:center;min-height:48px;white-space:nowrap"><sc-if value="{{ showWordmark }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="font-size:24px;font-weight:700;letter-spacing:0;line-height:1"><span style="color:#111827">Zapisz</span><span style="color:#c2410c;margin-left:.28em">Przepis</span></span></sc-if></span>
+            <div style="display:flex;align-items:center;gap:2px"><button onClick="{{ openSearch }}" style="width:64px;height:56px;border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font:700 13px Arial;cursor:pointer"><i data-lucide="search" width="24" height="24"></i>Szukaj</button><span style="position:relative;width:64px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#111827;font-size:13px;font-weight:700"><i data-lucide="menu" width="26" height="26"></i>MENU</span></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isOverlay }}" hint-placeholder-val="{{ false }}">
+          <div style="border-bottom:2px solid #e5e7eb;padding:4px 12px 4px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+            <button onClick="{{ closeSearch }}" style="height:56px;padding:0 10px;border:none;background:none;display:inline-flex;align-items:center;gap:6px;font:700 18px Arial;color:#111827;cursor:pointer"><i data-lucide="x" width="26" height="26"></i>Zamknij</button>
+            <span style="font-size:20px;font-weight:700;color:#111827;padding-right:8px">Szukaj przepisu</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;overflow:auto;padding:24px 16px;display:flex;flex-direction:column;gap:18px">
+            <div style="font-size:28px;font-weight:700;color:#111827;line-height:1.2">{{ homeHello }}</div>
+            <div style="display:flex;gap:8px">
+              <button onClick="{{ openSearch }}" style="flex:1;min-width:0;height:60px;display:flex;align-items:center;gap:10px;border:2px solid #4b5563;border-radius:14px;padding:0 14px;background:#fff;cursor:text;text-align:left"><span style="display:inline-flex;color:#374151"><i data-lucide="search" width="24" height="24"></i></span><span style="font:19px Arial;color:#4b5563">Czego szukasz?</span></button>
+              <button onClick="{{ startVoice }}" style="width:72px;height:60px;border-radius:14px;border:2px solid #4b5563;background:#fff;color:#111827;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 13px Arial;cursor:pointer"><i data-lucide="mic" width="24" height="24"></i>Powiedz</button>
+            </div>
+            <span style="font-size:16px;color:#374151;line-height:1.5">Pole i lupa w nagłówku otwierają wyszukiwanie na całym ekranie.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isVoice }}" hint-placeholder-val="{{ false }}">
+          <div role="status" aria-live="polite" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;text-align:center">
+            {{ pulse }}
+            <span style="font-size:28px;font-weight:700;color:#111827">{{ voiceTitle }}</span>
+            <span style="min-height:60px;font-size:24px;color:#111827;line-height:1.35">{{ voiceShown }}</span>
+            <span style="font-size:18px;color:#374151;line-height:1.5;max-width:300px">Powiedz nazwę dania albo składnik, np. „pierogi z kapustą”.</span>
+            <button onClick="{{ stopVoice }}" style="width:100%;height:58px;border-radius:14px;border:2px solid #4b5563;background:#fff;color:#111827;font:700 19px Arial;cursor:pointer">Przestań słuchać i pisz</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isField }}" hint-placeholder-val="{{ false }}">
         <div style="padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;border-bottom:1px solid #f3f4f6">
-          <label for="q" style="font-size:18px;font-weight:700;color:#111827">Czego szukasz?</label>
+          <label for="q" style="font-size:18px;font-weight:700;color:#111827">Danie lub składnik</label>
           <div style="display:flex;align-items:center;gap:8px;border:2px solid {{ inputBorder }};border-radius:14px;padding:0 6px 0 14px;height:60px">
             <span style="display:inline-flex;color:#374151"><i data-lucide="search" width="24" height="24"></i></span>
-            <input id="q" value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ onFocus }}" onKeyDown="{{ onKey }}" placeholder="Danie lub składnik, np. dynia" autocomplete="off" style="flex:1;min-width:0;border:none;outline-offset:6px;font:19px Arial;color:#111827;background:none">
+            <input id="q" ref="{{ inputRef }}" value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ onFocus }}" onKeyDown="{{ onKey }}" placeholder="np. pierogi lub dynia" autocomplete="off" style="flex:1;min-width:0;border:none;outline-offset:6px;font:19px Arial;color:#111827;background:none">
             <sc-if value="{{ hasQ }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clear }}" style="height:48px;padding:0 10px;border:none;background:none;display:inline-flex;align-items:center;gap:4px;font:700 16px Arial;color:#111827;cursor:pointer"><i data-lucide="x" width="20" height="20"></i>Wyczyść</button></sc-if>
-            <sc-if value="{{ noQ }}" hint-placeholder-val="{{ true }}"><span style="height:48px;padding:0 8px;display:inline-flex;align-items:center;gap:4px;font-size:16px;font-weight:700;color:#111827"><i data-lucide="mic" width="22" height="22"></i>Powiedz</span></sc-if>
+            <sc-if value="{{ noQ }}" hint-placeholder-val="{{ true }}"><button onClick="{{ startVoice }}" style="height:48px;padding:0 10px;border:2px solid #4b5563;border-radius:10px;background:#fff;display:inline-flex;align-items:center;gap:4px;font:700 16px Arial;color:#111827;cursor:pointer"><i data-lucide="mic" width="22" height="22"></i>Powiedz</button></sc-if>
           </div>
           <sc-if value="{{ isSuggest }}" hint-placeholder-val="{{ true }}">
             <button onClick="{{ submit }}" style="height:58px;border-radius:14px;border:none;background:#c2410c;color:#fff;font:700 19px Arial;cursor:pointer">Szukaj</button>
           </sc-if>
         </div>
 
+        </sc-if>
         <sc-if value="{{ isSuggest }}" hint-placeholder-val="{{ true }}">
           <div style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:20px">
             <sc-if value="{{ showRecent }}" hint-placeholder-val="{{ true }}">
@@ -73,6 +105,14 @@
           </div>
         </sc-if>
 
+        <sc-if value="{{ isSuggest }}" hint-placeholder-val="{{ true }}">
+          <div role="region" aria-label="Szybkie wyszukiwanie" style="flex-shrink:0;border-top:2px solid #e5e7eb;background:#fff;padding:12px 0 14px;display:flex;flex-direction:column;gap:8px">
+            <span style="padding:0 16px;font-size:16px;font-weight:700;color:#374151">{{ chipsTitle }}</span>
+            <div style="display:flex;gap:8px;overflow-x:auto;padding:0 16px 2px;scrollbar-width:none">
+              <sc-for list="{{ quickChips }}" as="c" hint-placeholder-count="4"><button onClick="{{ c.pick }}" style="flex-shrink:0;height:48px;padding:0 16px;border-radius:999px;border:2px solid {{ c.border }};background:{{ c.bg }};color:#111827;display:inline-flex;align-items:center;gap:6px;font:700 17px Arial;white-space:nowrap;cursor:pointer"><i data-lucide="{{ c.i }}" width="18" height="18"></i>{{ c.t }}</button></sc-for>
+            </div>
+          </div>
+        </sc-if>
         <sc-if value="{{ isResults }}" hint-placeholder-val="{{ false }}">
           <div style="padding:12px 16px 0;flex-shrink:0">
             <div role="tablist" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
@@ -160,24 +200,38 @@
     <div style="display:flex;flex-direction:column;gap:14px;max-width:460px;font-size:16px;line-height:1.55;color:#374151">
       <div style="font-size:20px;font-weight:700;color:#111827">Jak działa</div>
       <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+        <span><b style="color:#111827">Zawsze na całym ekranie:</b> lupa „Szukaj” w nagłówku każdego ekranu i pole na stronie głównej otwierają ten sam widok. Jest miejsce na podpowiedzi, kategorie i duże wyniki, a klawiatura nic nie zasłania. „Zamknij” wraca tam, skąd przyszliśmy.</span>
+        <span><b style="color:#111827">Głosem:</b> przycisk „Powiedz” z podpisem (nie sama ikona mikrofonu). Duży napis „Słucham…” i na żywo to, co rozpoznaliśmy; po chwili ciszy od razu szukamy. Gdy przeglądarka nie pozwala na mikrofon, wyjaśniamy, jak to włączyć.</span>
         <span><b style="color:#111827">Zanim wpiszesz:</b> ostatnio szukane hasła i kategorie. Bez pustego ekranu.</span>
+        <span><b style="color:#111827">Szybkie hasła na dole:</b> pasek chipów 48 px tuż nad klawiaturą, w zasięgu kciuka. Najpierw ostatnie wyszukiwania (ikona zegara, szara ramka), potem często szukane (ikona trendu, pomarańczowe tło). Jedno naciśnięcie od razu szuka. Pasek przewija się w bok; gość widzi tylko często szukane.</span>
         <span><b style="color:#111827">Podczas pisania:</b> do 4 podpowiedzi z serwisu, od 2 liter. Podpowiedź otwiera przepis, a „Pokaż wszystkie wyniki” pokazuje listę.</span>
         <span><b style="color:#111827">Dwie zakładki zamiast jednej długiej listy:</b> „W serwisie” od razu, „Na blogach” dopiero po wybraniu. Szukanie na blogach trwa kilka sekund i jest płatne za zapytanie, więc nie uruchamiamy go przy każdym wyszukaniu.</span>
-        <span><b style="color:#111827">Wynik z bloga, który już mamy:</b> zamiast zapisywać drugi raz, pokazujemy „Ten przepis jest już w ZapiszPrzepis” i przycisk do niego. Własny zapisany: „Masz go w Moich przepisach”.</span>
+        <span><b style="color:#111827">Wynik z bloga, który już mamy:</b> zamiast zapisywać drugi raz, pokazujemy „Ten przepis jest już w aplikacji Zapisz Przepis” i przycisk do niego. Własny zapisany: „Masz go w Moich przepisach”.</span>
         <span><b style="color:#111827">Zapis z bloga:</b> tylko z pełnym dostępem, bo tworzy własny przepis. Zalogowany bez dostępu widzi „Odblokuj zapisywanie” (ekran z kodem 3c).</span>
         <span><b style="color:#111827">Gość:</b> szuka w serwisie, zakładka blogów jest widoczna z kłódką i prowadzi do logowania.</span>
       </div>
-      <div style="font-size:15px;color:#374151">W kodzie: wyniki z blogów to istniejące <span style="font-family:monospace">searchViaExa</span> (5 wyników, fragmenty o składnikach). Dziś działa tylko w formularzu dodawania. Trzeba sprawdzać zgodność adresu z przepisami wszystkich użytkowników, nie tylko własnymi.</div>
+      <div style="font-size:15px;color:#374151">W kodzie: wyniki z blogów to istniejące <span style="font-family:monospace">searchViaExa</span> (5 wyników, fragmenty o składnikach). Dziś działa tylko w formularzu dodawania. Głos: Web Speech API (lang pl-PL, interimResults), fallback z komunikatem. Trzeba sprawdzać zgodność adresu z przepisami wszystkich użytkowników, nie tylko własnymi.</div>
     </div>
   </div>
 </section>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { role: 'user', q: '', screen: 'suggest', tab: 'local', scope: 'all', webState: 'idle', favs: { 0: true }, saved: {}, savedMsg: false };
+  inputRef = React.createRef();
+  state = { role: 'user', q: '', screen: 'home', voiceText: '', voiceDone: false, tab: 'local', scope: 'all', webState: 'idle', favs: { 0: true }, saved: {}, savedMsg: false };
   componentDidMount() { this.icons(); }
-  componentDidUpdate() { this.icons(); }
-  componentWillUnmount() { clearTimeout(this.t); }
+  componentDidUpdate(pp, ps) { this.icons(); if (ps.screen !== 'suggest' && this.state.screen === 'suggest' && this.inputRef.current) this.inputRef.current.focus(); }
+  componentWillUnmount() { clearTimeout(this.t); (this.vt || []).forEach(clearTimeout); }
+  startVoice() {
+    (this.vt || []).forEach(clearTimeout);
+    this.setState({ screen: 'voice', voiceText: '', voiceDone: false });
+    const steps = ['pierogi', 'pierogi z kapustą'];
+    this.vt = [
+      setTimeout(() => this.setState({ voiceText: steps[0] }), 1200),
+      setTimeout(() => this.setState({ voiceText: steps[1], voiceDone: true }), 2200),
+      setTimeout(() => this.setState({ q: 'pierogi', screen: 'results', tab: 'local', webState: 'idle', saved: {}, savedMsg: false }), 3200),
+    ];
+  }
   icons() { setTimeout(() => window.lucide && window.lucide.createIcons(), 0); }
   recipes = [
     { t: 'Zupa krem z dyni', c: 'Zupy', time: '45 minut', a: 'aniagotuje.pl', k: 'dynia zupa krem', mine: true },
@@ -226,16 +280,23 @@ class Component extends DCLogic {
     const webRes = this.web(q || 'dynia').map((w, i) => {
       const saved = s.saved[i];
       let p;
-      if (w.st === 'existing') p = { pLabel: 'Otwórz w ZapiszPrzepis', pIcon: 'arrow-right', pBg: '#c2410c', pFg: '#fff', pBorder: 'none', primary: () => {} };
+      if (w.st === 'existing') p = { pLabel: 'Otwórz w aplikacji Zapisz Przepis', pIcon: 'arrow-right', pBg: '#c2410c', pFg: '#fff', pBorder: 'none', primary: () => {} };
       else if (saved) p = { pLabel: 'Zapisujemy…', pIcon: 'loader', pBg: '#f3f4f6', pFg: '#111827', pBorder: '2px solid #d1d5db', primary: () => {} };
       else if (role === 'full') p = { pLabel: 'Zapisz do moich przepisów', pIcon: 'plus', pBg: '#c2410c', pFg: '#fff', pBorder: 'none', primary: () => this.setState(x => ({ saved: { ...x.saved, [i]: true }, savedMsg: true })) };
       else p = { pLabel: 'Odblokuj zapisywanie', pIcon: 'lock', pBg: '#fff', pFg: '#111827', pBorder: '2px solid #4b5563', primary: () => {} };
-      return { ...w, ...p, isExisting: w.st === 'existing', existingText: 'Ten przepis jest już w ZapiszPrzepis' };
+      return { ...w, ...p, isExisting: w.st === 'existing', existingText: 'Ten przepis jest już w aplikacji Zapisz Przepis' };
     });
     const roleNotes = { guest: 'Gość: szuka w serwisie. Zakładka „Na blogach” prowadzi do logowania. Brak „Szukaj w:”.', user: 'Zalogowany bez pełnego dostępu: szuka w serwisie, w ulubionych i na blogach. Z bloga może otworzyć stronę, zapis wymaga odblokowania.', full: 'Pełny dostęp: dodatkowo „Moich” w zakresie i „Zapisz do moich przepisów” przy wynikach z blogów.' };
     return {
-      roles: [['guest', 'Gość'], ['user', 'Zalogowany'], ['full', 'Pełny dostęp']].map(([v, l]) => ({ l, on: String(role === v), border: role === v ? '#111827' : '#d1d5db', bg: role === v ? '#111827' : '#fff', fg: role === v ? '#fff' : '#111827', pick: () => set({ role: v, scope: 'all', webState: 'idle', saved: {}, savedMsg: false, tab: 'local' }) })),
-      roleNote: roleNotes[role], isGuest: role === 'guest', notGuest: role !== 'guest',
+      roles: [['guest', 'Gość'], ['user', 'Zalogowany'], ['full', 'Pełny dostęp']].map(([v, l]) => ({ l, on: String(role === v), border: role === v ? '#111827' : '#d1d5db', bg: role === v ? '#111827' : '#fff', fg: role === v ? '#fff' : '#111827', pick: () => set({ role: v, scope: 'all', webState: 'idle', saved: {}, savedMsg: false, tab: 'local', screen: 'home', q: '' }) })),
+      roleNote: roleNotes[role] + ' Nagłówek: Szukaj · MENU; Dodaj przepis jest w menu i na stronie głównej.', isGuest: role === 'guest', notGuest: role !== 'guest', isFull: role === 'full', showWordmark: true,
+      isHome: s.screen === 'home', isVoice: s.screen === 'voice', isOverlay: s.screen !== 'home', isField: s.screen === 'suggest' || s.screen === 'results',
+      homeHello: role === 'guest' ? 'Znajdź przepis' : 'Dzień dobry, Aniu',
+      openSearch: () => set({ screen: 'suggest' }), closeSearch: () => { (this.vt || []).forEach(clearTimeout); set({ screen: 'home', q: '' }); },
+      startVoice: () => this.startVoice(), stopVoice: () => { (this.vt || []).forEach(clearTimeout); set({ screen: 'suggest' }); },
+      inputRef: this.inputRef,
+      voiceTitle: s.voiceDone ? 'Szukamy…' : 'Słucham…', voiceShown: s.voiceText ? `„${s.voiceText}”` : '',
+      pulse: React.createElement('span', { 'aria-hidden': true, style: { width: 120, height: 120, borderRadius: 999, background: '#c2410c', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'zppulse 1.2s ease-out infinite', fontSize: 0 } }, React.createElement('i', { 'data-lucide': 'mic', width: 56, height: 56 })),
       q: s.q, hasQ: !!s.q, noQ: !s.q,
       inputBorder: s.screen === 'suggest' ? '#c2410c' : '#4b5563',
       onQ: e => set({ q: e.target.value, screen: 'suggest' }),
@@ -246,6 +307,8 @@ class Component extends DCLogic {
       isSuggest: s.screen === 'suggest', isResults: s.screen === 'results',
       showRecent: q.length < 2, showLive: q.length >= 2,
       recentQ: ['dynia', 'pierogi', 'tiramisu'].map(t => ({ t, pick: () => submitWith(t) })),
+      chipsTitle: role === 'guest' ? 'Często szukane' : 'Ostatnio i często szukane',
+      quickChips: [...(role === 'guest' ? [] : ['dynia', 'pierogi', 'tiramisu'].map(t => ({ t, i: 'history', border: '#4b5563', bg: '#fff' }))), ...['sernik', 'kruche ciasteczka', 'zupa krem', 'bez glutenu'].map(t => ({ t, i: 'trending-up', border: '#fdba74', bg: '#fff7ed' }))].map(c => ({ ...c, pick: () => submitWith(c.t) })),
       cats: [['Obiady','utensils'],['Zupy','soup'],['Desery','cake-slice'],['Śniadania','coffee'],['Sałatki','salad'],['Przekąski','sandwich']].map(([l, i]) => ({ l, i, pick: () => submitWith(l.toLowerCase()) })),
       live: this.recipes.filter(r => q.length >= 2 && (r.t + ' ' + r.k).toLowerCase().includes(q.toLowerCase())).slice(0, 4).map(r => ({ ...r, open: () => submitWith(q) })),
       tabLocal: s.tab === 'local', tabWeb: s.tab === 'web',
