@@ -1,10 +1,10 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { AppMenu } from './app-menu'
+import { LogoIcon, LogoWordmark } from './brand-logo'
 import { PageBackLink } from './header-back-link'
 import { NotificationBell } from './notification-bell'
 import { PageContainer } from './page-container'
@@ -50,22 +50,8 @@ export function AppHeader({
                 back here (#320). The ~230 px logo fits beside a guest's lone MENU from
                 360 px (#328), beside Dodaj + MENU only from sm; below that the icon alone,
                 so nothing overflows at 320 px. */}
-            <Image
-              src="/logo-icon.svg"
-              alt=""
-              width={40}
-              height={40}
-              unoptimized
-              priority
-              className="h-10 w-10"
-            />
-            <span
-              aria-hidden="true"
-              className={`hidden text-[1.625rem] font-bold tracking-wide ${isAuthenticated ? 'sm:inline' : 'min-[360px]:inline'}`}
-            >
-              <span className="text-gray-900">Zapisz</span>
-              <span className="text-action">Przepis</span>
-            </span>
+            <LogoIcon />
+            <LogoWordmark className={`hidden ${isAuthenticated ? 'sm:inline' : 'min-[360px]:inline'}`} />
           </Link>
           {!isAuthenticated && <HeaderNav className="hidden lg:flex" />}
         </div>

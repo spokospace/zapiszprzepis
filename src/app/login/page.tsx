@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { BrandLogo } from '@/app/components/brand-logo'
 import { parseOAuthProviders } from '@/lib/oauth-providers'
 import { withFavoriteIntent } from '@/lib/favorites'
 import { PRIVACY_POLICY_PATH, TERMS_PATH } from '@/lib/routes'
@@ -50,15 +50,7 @@ export default async function LoginPage({
       </header>
       <main className="flex flex-1 flex-col items-center px-5 py-8">
         <div className="flex w-full max-w-sm flex-1 flex-col gap-5">
-          <Image
-            src="/logo-lettering.svg"
-            alt="ZapiszPrzepis"
-            width={160}
-            height={40}
-            priority
-            unoptimized
-            className="block h-10 w-40"
-          />
+          <BrandLogo />
           <h1 className="text-[30px] leading-tight font-bold text-ink">Zaloguj się</h1>
           {hasOAuth && (
             <>
