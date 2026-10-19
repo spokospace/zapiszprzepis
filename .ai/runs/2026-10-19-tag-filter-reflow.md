@@ -37,8 +37,10 @@ to it already wrap, because `chipClasses` carries `wrap-anywhere`.
 
 ## Progress
 
+PR: #338
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Fix
 
-- [ ] 1.1 Wrap the tag filter toggle, with a test and the reflow guard
+- [x] 1.1 Wrap the tag filter toggle, with a test and the reflow guard — e75e4a8
