@@ -55,9 +55,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   return (
     <main className="min-h-screen bg-white">
       <PageContainer className="flex flex-col gap-4 py-6">
-        <h1 className="text-[28px] leading-tight font-bold text-ink">Szukaj przepisu</h1>
+        {/* C2 shows no heading over the field; the page still has one for screen readers. */}
+        <h1 className="sr-only">Szukaj przepisu</h1>
         {/* key: a new query (or "Wyczyść") remounts the field with the new value. */}
-        <HomeSearch key={q} id="search-page-field" defaultValue={q} scope={scope} autoFocus={!q} />
+        <HomeSearch key={q} id="search-page-field" defaultValue={q} scope={scope} autoFocus={!q} compact />
         {user && <SearchScopeSwitch q={q} scope={scope} />}
         {!q ? (
           <p className="text-[19px] text-ink-soft">

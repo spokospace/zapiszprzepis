@@ -165,7 +165,7 @@ function VersionCard({ version: v, current }: { version: DishVersionRow; current
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h3 className="text-[19px] font-bold leading-snug text-ink">
-          <Link href={recipePath(v.slug)} className="after:absolute after:inset-0 focus-visible:outline-none">
+          <Link href={recipePath(v.slug)} className="after:absolute after:inset-0 focus-visible:outline-none!">
             {heading}
             {v.variant_note && <span className="sr-only"> — {v.title}</span>}
           </Link>
