@@ -71,17 +71,14 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     expect(html).toContain('min-[390px]:block')
   })
 
-  it('replaces the logo with "← Wróć" on a recipe page, for guests too, below lg only', () => {
+  it('keeps the logo linking home on a recipe page — its list bar is the way back', () => {
     pathname = '/przepis/sernik'
     for (const signedIn of [true, false]) {
       const html = render(signedIn)
-      const back = html.match(/<a[^>]*aria-label="Wróć[^"]*"[^>]*>.*?<\/a>/)?.[0] ?? ''
-      // Without list context it returns to the start page.
-      expect(back).toContain('href="/"')
-      expect(back).toContain('lg:hidden')
-      expect(back).toContain('h-14')
-      expect(back).toContain('>Wróć</a>')
-      expect(html).toContain('hidden lg:flex')
+      expect(html).not.toContain('aria-label="Wróć')
+      const logo = html.match(/<a[^>]*aria-label="ZapiszPrzepis — strona główna"[^>]*>/)?.[0] ?? ''
+      expect(logo).toContain('href="/"')
+      expect(logo).not.toContain('hidden lg:flex')
       // The old chevron to the owner-only /recipes is gone.
       expect(html).not.toContain('href="/recipes"')
     }
