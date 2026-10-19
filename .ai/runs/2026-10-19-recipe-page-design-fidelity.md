@@ -109,9 +109,9 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
 
 ### Phase 2: Mobile and shared details (C3 / A5)
 
-- [ ] 2.1 Title, H2 and servings typography
-- [ ] 2.2 Locked gallery and signed-in gallery styling
-- [ ] 2.3 Prev/next rule, accent arrows, text-size label and favourite label
+- [x] 2.1 Title, H2 and servings typography — 9b03a0a
+- [x] 2.2 Locked gallery and signed-in gallery styling — b0e42f8
+- [x] 2.3 Prev/next rule, accent arrows, text-size label and favourite label — 665a9bd
 
 ### Phase 3: Verification
 
