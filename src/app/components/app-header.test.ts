@@ -7,6 +7,7 @@ let pathname = '/'
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
   useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ back: vi.fn() }),
 }))
 vi.mock('./app-menu', () => ({ AppMenu: () => createElement('div', { 'data-testid': 'menu' }) }))
 vi.mock('./notification-bell', () => ({ NotificationBell: () => createElement('div', { 'data-testid': 'bell' }) }))
@@ -85,5 +86,31 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
       expect(html).not.toContain('href="/recipes"')
     }
     pathname = '/'
+  })
+
+  it.each(['/szukaj', '/settings', '/dodaj', '/powiadomienia', '/przepisy/zupy', '/u/ania'])(
+    'replaces the logo with a plain "← Wróć" below lg on %s',
+    (path) => {
+      pathname = path
+      for (const signedIn of [true, false]) {
+        const html = render(signedIn)
+        const back = html.match(/<a[^>]*aria-label="Wróć"[^>]*>.*?<\/a>/)?.[0] ?? ''
+        // No-JS / no-history fallback: the start page.
+        expect(back).toContain('href="/"')
+        expect(back).toContain('lg:hidden')
+        expect(back).toContain('h-14')
+        expect(back).toContain('>Wróć</a>')
+        // The logo link stays for the desktop header only.
+        expect(html).toContain('hidden lg:flex')
+      }
+      pathname = '/'
+    },
+  )
+
+  it('keeps the logo and no back link on the start page', () => {
+    pathname = '/'
+    const html = render(true)
+    expect(html).not.toContain('aria-label="Wróć')
+    expect(html).not.toContain('hidden lg:flex min-h-12')
   })
 })

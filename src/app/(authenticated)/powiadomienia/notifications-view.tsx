@@ -69,7 +69,8 @@ export function NotificationsView({ result }: { result: NotificationsResult }) {
       <Link
         href="/"
         onClick={onBack}
-        className="inline-flex min-h-[56px] items-center gap-1.5 text-[18px] font-bold text-ink no-underline!"
+        // Below lg the header carries "← Wróć" (handoff 1c); the desktop header keeps the logo.
+        className="hidden min-h-[56px] items-center gap-1.5 text-[18px] font-bold text-ink no-underline! lg:inline-flex"
       >
         <ArrowLeft aria-hidden="true" className="h-6 w-6" />
         Wróć
