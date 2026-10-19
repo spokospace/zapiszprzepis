@@ -36,6 +36,31 @@ interface RecipeHeaderProps {
   actions?: ReactNode
 }
 
+/**
+ * "Przepisy › {Kategoria}" (A4/A9): in the header column below lg, and from lg on
+ * the right of the list bar's row (the page renders that copy). "Przepisy" goes
+ * where the desktop header's "Przepisy" goes (E01-S17).
+ */
+export function RecipeBreadcrumbs({ category, className = '' }: { category: string; className?: string }) {
+  return (
+    <nav aria-label="Okruszki" className={`text-[16px] text-ink-soft ${className}`}>
+      <ol className="flex flex-wrap items-center gap-x-2">
+        <li>
+          <Link href={SEARCH_PATH} className="underline hover:text-action-hover">
+            Przepisy
+          </Link>
+        </li>
+        <li aria-hidden="true">›</li>
+        <li>
+          <Link href={categoryPath(category)} className="font-bold text-action-text underline hover:text-action-hover">
+            {categoryLabel(category)}
+          </Link>
+        </li>
+      </ol>
+    </nav>
+  )
+}
+
 /** "≈" reads as "almost equal to" in screen readers; they get "około" instead. */
 function Approx() {
   return (
@@ -53,7 +78,6 @@ function Approx() {
  * "Ten przepis jest" (E01-S16).
  */
 export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps) {
-  const category = categoryLabel(recipe.category)
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
   const times = recipeTimeStats(recipe)
@@ -76,22 +100,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
       )}
 
       <div>
-        <nav aria-label="Okruszki" className="mb-2 text-[16px] text-ink-soft">
-          <ol className="flex flex-wrap items-center gap-x-2">
-            <li>
-              {/* "Przepisy" goes where the desktop header's "Przepisy" goes (E01-S17). */}
-              <Link href={SEARCH_PATH} className="underline hover:text-action-hover">
-                Przepisy
-              </Link>
-            </li>
-            <li aria-hidden="true">›</li>
-            <li>
-              <Link href={categoryPath(recipe.category)} className="underline hover:text-action-hover">
-                {category}
-              </Link>
-            </li>
-          </ol>
-        </nav>
+        <RecipeBreadcrumbs category={recipe.category} className="mb-2 lg:hidden" />
 
         <h1 className="mb-2 text-[32px] font-bold leading-tight text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
         {/* Below lg (C3). From lg the category is in the breadcrumbs and the times get

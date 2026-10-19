@@ -15,7 +15,7 @@ import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
-import { RecipeHeader } from './_components/recipe-header'
+import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
 import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar, RecipeListNav } from './_components/recipe-list-bar'
@@ -154,7 +154,12 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {/* Not `narrow`: the desktop layout (E01-S17, A9) uses the full 1152 px; below lg
           both widths are the viewport anyway. */}
       <PageContainer>
-        <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+        {/* A9: from lg one row, "← {lista} · N z M" left and the breadcrumbs right;
+            below lg the breadcrumbs sit in the header column (A4). */}
+        <div className="lg:mb-6 lg:flex lg:items-center lg:gap-6">
+          <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+          <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block" />
+        </div>
         <RecipeHeader
           recipe={typedRecipe}
           versionsBar={
