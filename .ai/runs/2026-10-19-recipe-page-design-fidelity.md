@@ -63,7 +63,9 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
     logic is a pure helper with unit tests.
 1.3 Header text column: an `actions` slot under the author line (mobile order unchanged: author →
     description → versions bar → favourite). From lg the actions are a row of 54 px buttons
-    "W ulubionych / Udostępnij / Oryginał"; below lg only the full-width favourite (C3). From lg the
+    "W ulubionych / Udostępnij / Oryginał"; below lg only the full-width favourite (C3).
+    Deviation: the three labels do not fit one row of the ~480 px column without breaking a
+    word, so the heart spans the column and the other two sit side by side under it. From lg the
     times row (G2) replaces the "Kategoria · czas" line; the inline "· Otwórz oryginał" link goes.
     The bottom "Otwórz oryginał na …" button becomes `lg:hidden` (G5). Header tests.
 1.4 List bar: a flat row with a bottom rule, arrow icon, 18 px label, 16 px secondary count (A4).
@@ -100,10 +102,10 @@ ingredient ticks, "Krok N z M", locked gallery, original button, stacked prev/ne
 
 ### Phase 1: Desktop header (A9)
 
-- [ ] 1.1 Time stats helper with tests
-- [ ] 1.2 Share button with a tested share helper
-- [ ] 1.3 Header column actions, desktop times, original button placement
-- [ ] 1.4 Flat list bar with desktop breadcrumbs
+- [x] 1.1 Time stats helper with tests — 18d8a16
+- [x] 1.2 Share button with a tested share helper — a599a77
+- [x] 1.3 Header column actions, desktop times, original button placement — 32dfe76, 29214ff
+- [x] 1.4 Flat list bar with desktop breadcrumbs — 4132672
 
 ### Phase 2: Mobile and shared details (C3 / A5)
 
