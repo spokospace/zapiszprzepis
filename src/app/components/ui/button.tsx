@@ -20,9 +20,11 @@ const VARIANTS: Record<ButtonVariant, string> = {
 }
 
 // wrap-anywhere: a label echoing user text (a search query) wraps instead of
-// scrolling the page sideways at 320 px (WCAG 1.4.10).
+// scrolling the page sideways at 320 px (WCAG 1.4.10). no-underline!: a <Link>
+// styled as a button is recognisable by its shape, so it drops the global link
+// underline (the `!` beats the unlayered `a` rule in globals.css).
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-field font-bold ' +
+  'inline-flex items-center justify-center gap-2 rounded-field font-bold no-underline! ' +
   'leading-tight wrap-anywhere transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 
 /** Shared class string so <Link> and <button> render identically. */

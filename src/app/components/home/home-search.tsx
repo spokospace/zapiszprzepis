@@ -159,7 +159,7 @@ export function HomeSearch({
         <div className="mt-1 flex justify-end">
           <Link
             href={searchPath('', scope)}
-            className="inline-flex min-h-[48px] items-center gap-1.5 px-1 text-[18px] text-ink underline underline-offset-4"
+            className="inline-flex min-h-[48px] items-center gap-1.5 px-1 text-[18px] font-bold text-ink no-underline!"
           >
             <X aria-hidden="true" className="h-5 w-5" />
             Wyczyść

@@ -21,7 +21,7 @@ export function ActiveTagFilter({ tag }: ActiveTagFilterProps) {
   const href = query ? `/recipes?${query}` : '/recipes'
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-600">
+    <div className="flex items-center gap-2 text-[16px] text-ink-soft">
       <span>Tag:</span>
       <Link
         href={href}
@@ -32,12 +32,11 @@ export function ActiveTagFilter({ tag }: ActiveTagFilterProps) {
           startTransition(() => router.push(href))
         }}
         aria-label={`Usuń filtr tagu ${tagLabel(tag)}`}
-        className="inline-flex -skew-x-12 items-center px-3 py-0.5 bg-orange-500 text-white text-xs font-medium hover:bg-orange-600 transition"
+        // #c2410c with white text (never orange-500), a 48 px target, no link underline.
+        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-pill bg-action px-4 text-[16px] font-bold text-white no-underline! transition-colors hover:bg-action-hover"
       >
-        <span className="inline-flex skew-x-12 items-center gap-1">
-          {tagLabel(tag)}
-          <X size={12} strokeWidth={2.5} />
-        </span>
+        {tagLabel(tag)}
+        <X aria-hidden="true" size={18} strokeWidth={2.5} />
       </Link>
     </div>
   )

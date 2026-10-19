@@ -100,6 +100,18 @@ legend {
   outline-offset: 2px;
 }
 
+/*
+ * The resting outline colour is the focus colour too: `transition-colors` also
+ * animates outline-color, which would otherwise start from currentColor (white on
+ * an orange button) and flash an invisible ring on focus. In a layer, so a dark
+ * surface's `[&_:focus-visible]:outline-accent-dark!` still wins.
+ */
+@layer base {
+  * {
+    outline-color: var(--color-focus);
+  }
+}
+
 /* Links are always underlined (handoff readability rule). */
 a {
   text-decoration: underline;

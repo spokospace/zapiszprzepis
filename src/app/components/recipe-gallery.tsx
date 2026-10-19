@@ -38,7 +38,7 @@ export function RecipeGallery({ images, title }: RecipeGalleryProps) {
             <button
               type="button"
               onClick={() => setIndex(i)}
-              className="relative block w-full aspect-square rounded-lg overflow-hidden bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+              className="relative block w-full aspect-square rounded-lg overflow-hidden bg-gray-100"
               aria-label={`Powiększ zdjęcie ${i + 1} z ${count}`}
             >
               <Image

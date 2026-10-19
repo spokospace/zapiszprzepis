@@ -142,7 +142,7 @@ export function RecipeCard({
             {/* Two lines at most (C2), words wrapped whole. A tiny card gets 18 px and a third line,
                 so a long word still fits instead of being cut; only a word wider than that breaks. */}
             <h3
-              className={`line-clamp-2 leading-[1.25] font-bold break-words text-ink underline underline-offset-4 group-hover:text-action-text @max-[280px]:line-clamp-3 @max-[280px]:text-[18px] ${thumb === 84 ? 'text-[19px]' : 'text-[20px]'}`}
+              className={`line-clamp-2 leading-[1.25] font-bold break-words text-ink group-hover:text-action-text @max-[280px]:line-clamp-3 @max-[280px]:text-[18px] ${thumb === 84 ? 'text-[19px]' : 'text-[20px]'}`}
             >
               {title}
             </h3>
@@ -181,7 +181,7 @@ export function RecipeCard({
       {/* Card content */}
       <div className="flex-1 p-3">
         <h3 className="line-clamp-3 text-[19px] leading-snug font-bold break-words text-ink group-hover:text-action-text">
-          <Link href={recipePath(slug, { from })} className="after:absolute after:inset-0">
+          <Link href={recipePath(slug, { from })} className="no-underline! after:absolute after:inset-0">
             {title}
           </Link>
         </h3>

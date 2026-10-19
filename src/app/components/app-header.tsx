@@ -100,14 +100,14 @@ export function AppHeader({
               <Link
                 href="/login"
                 // Mobile 1c (E01-S19): outlined, 52 px.
-                className="inline-flex min-h-[52px] items-center whitespace-nowrap rounded-field border-2 border-field px-3 text-[17px] font-bold text-ink hover:bg-surface-2 lg:min-h-[48px] lg:px-4 lg:text-[18px] lg:font-semibold"
+                className="inline-flex min-h-[52px] items-center whitespace-nowrap rounded-field border-2 border-field px-3 text-[17px] font-bold text-ink no-underline! hover:bg-surface-2 lg:min-h-[48px] lg:px-4 lg:text-[18px] lg:font-semibold"
               >
                 Zaloguj się
               </Link>
               {/* One OAuth screen both signs in and creates the account. */}
               <Link
                 href="/login"
-                className="hidden min-h-[48px] items-center whitespace-nowrap rounded-field bg-action px-4 text-[18px] font-bold text-white hover:bg-action-hover lg:inline-flex"
+                className="hidden min-h-[48px] items-center whitespace-nowrap rounded-field bg-action px-4 text-[18px] font-bold text-white no-underline! hover:bg-action-hover lg:inline-flex"
               >
                 Załóż konto
               </Link>
