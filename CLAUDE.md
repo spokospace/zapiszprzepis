@@ -22,7 +22,7 @@ The project has exactly one GitHub account, `spokospace`: owner, author of every
 
 **How to apply:**
 - Never skip a PR because its author is `spokospace` (`om-review-prs` and the other `om-*` skills included). Post the review as a `COMMENT`; the pipeline label (`merge-queue` / `changes-requested`) carries the verdict.
-- Merge (squash) when the validation gate — `pnpm typecheck`, `pnpm lint`, `pnpm test` — passes on the PR head merged with the current `master`, and `Workers Builds` is green. Manual QA (`needs-qa`) is advisory for this account; this rule overrides the QA gate in `SDLC.md`. Note on the PR that it merged on green tests without manual QA.
+- Merge (squash) when the validation gate — `pnpm typecheck`, `pnpm lint`, `pnpm test` — passes on the PR head merged with the current `master`. Workers Builds runs only on `master` (preview builds for PR branches are off to save Cloudflare build minutes), so a PR has no Cloudflare check to wait for; after merging, confirm the `master` build passed (`SDLC.md`). Manual QA (`needs-qa`) is advisory for this account; this rule overrides the QA gate in `SDLC.md`. Note on the PR that it merged on green tests without manual QA.
 - Still never merge: a draft, a PR with a merge conflict, a PR labeled `do-not-merge` / `blocked`, or one whose description or runbook requires a manual production step first (e.g. a migration applied through the Management API) until the owner confirms that step is done.
 
 ## Przebudowa (epik E01) — zasady projektowe: WCAG, czytelność, model
@@ -37,7 +37,7 @@ Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelnoś
 - **Dostęp:** gość przegląda i szuka; zalogowany (Facebook/Google) ma ulubione i galerię; dodawanie przepisów tylko z pełnym dostępem (kod lub płatność). Płeć wybierana raz przy pierwszym logowaniu, nieedytowalna.
 - **Wariant projektowy:** styl 1c (wysoka czytelność) + struktura nawigacji 1a. Wariant 1b (dolna nawigacja) niewdrażany.
 - **Nagłówek (decyzje właściciela, nadpisują starsze makiety i specy):**
-  - Logo to ikona `logo-icon.svg` + napis „ZapiszPrzepis” tekstem — u gościa od 360 px (po prawej ma tylko MENU, #328), u zalogowanego od 640 px; poniżej sama ikona. To samo logo na `/login` i `/signup` (`BrandLogo`). Zawsze przez `src/app/components/brand-logo.tsx` (`BrandLogo` / `LogoIcon` + `LogoWordmark`); nigdy `logo-lettering.svg` (#320, #331 — pilnuje `brand-logo.test.ts`).
+  - Logo to ikona `logo-icon.svg` + napis „ZapiszPrzepis” tekstem — u gościa od 360 px (po prawej ma tylko MENU, #328), u zalogowanego od 640 px; poniżej sama ikona. To samo logo (`BrandLogo`) na ekranach konta: `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/confirm`. Zawsze przez `src/app/components/brand-logo.tsx` (`BrandLogo` / `LogoIcon` + `LogoWordmark`); nigdy `logo-lettering.svg` ani stare `logo.svg` (#320, #331, #334 — pilnuje `brand-logo.test.ts`).
   - Zalogowany poniżej 1024 px widzi w nagłówku tylko „Dodaj” · „MENU”. „Powiadomienia” to wiersz w MENU („Moje”) + licznik na przycisku MENU; dzwonek w nagłówku tylko od `lg` (#323).
   - Gość poniżej 1024 px: logo (lub „← Wróć”) + MENU; „Zaloguj się” / „Załóż konto” są w MENU (#324).
   - Jeden link wstecz na ekran: „← Wróć” zastępuje logo pod stroną startową, ale strona przepisu zostawia logo, bo wraca pasek listy (#324).

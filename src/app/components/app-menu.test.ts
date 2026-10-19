@@ -71,7 +71,9 @@ describe('AppMenu "Powiadomienia" below lg (#323)', () => {
   it('says the check failed instead of showing a confident zero', () => {
     const html = renderMenu({ count: 0, loadFailed: true })
     expect(row(html)).toContain('Nie udało się sprawdzić')
-    expect(menuButton(html)).toContain('bg-amber-500')
+    // The bell's dot colour (#326): amber-500 is 2.1:1 on white, below 3:1 for UI (#335).
+    expect(menuButton(html)).toContain('border-white bg-ink')
+    expect(menuButton(html)).not.toContain('amber')
     expect(menuButton(html)).toContain('nie udało się sprawdzić powiadomień')
   })
 
