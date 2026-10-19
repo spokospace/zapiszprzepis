@@ -22,7 +22,7 @@ The project has exactly one GitHub account, `spokospace`: owner, author of every
 
 **How to apply:**
 - Never skip a PR because its author is `spokospace` (`om-review-prs` and the other `om-*` skills included). Post the review as a `COMMENT`; the pipeline label (`merge-queue` / `changes-requested`) carries the verdict.
-- Merge (squash) when the validation gate — `pnpm typecheck`, `pnpm lint`, `pnpm test` — passes on the PR head merged with the current `master`, and `Workers Builds` is green. Manual QA (`needs-qa`) is advisory for this account; this rule overrides the QA gate in `SDLC.md`. Note on the PR that it merged on green tests without manual QA.
+- Merge (squash) when the validation gate — `pnpm typecheck`, `pnpm lint`, `pnpm test` — passes on the PR head merged with the current `master`. Workers Builds runs only on `master` (preview builds for PR branches are off to save Cloudflare build minutes), so a PR has no Cloudflare check to wait for; after merging, confirm the `master` build passed (`SDLC.md`). Manual QA (`needs-qa`) is advisory for this account; this rule overrides the QA gate in `SDLC.md`. Note on the PR that it merged on green tests without manual QA.
 - Still never merge: a draft, a PR with a merge conflict, a PR labeled `do-not-merge` / `blocked`, or one whose description or runbook requires a manual production step first (e.g. a migration applied through the Management API) until the owner confirms that step is done.
 
 ## Przebudowa (epik E01) — zasady projektowe: WCAG, czytelność, model
