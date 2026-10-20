@@ -30,24 +30,26 @@ export default async function FavoritesPage() {
   if (!user) redirect(loginPath('/ulubione'))
 
   const supabase = await createSupabaseServerClient()
-  // Favorites are private (owner-only RLS); the recipes themselves come from the
-  // guest-safe view, which covers everyone's recipes, not just the user's own.
+  // One round trip: favorites are private (owner-only RLS), and the recipe for each
+  // is embedded from the guest-safe view, which covers everyone's recipes, not just
+  // the user's own. The FK favorites.recipe_id → recipes(id) lets PostgREST embed
+  // public_recipes (a plain view over recipes) through it (#231).
   const { data: favorites } = await supabase
     .from('favorites')
-    .select('recipe_id')
+    .select(
+      'recipe:public_recipes(id, slug, title, image_url, category, description, source_type, source_url, source_author)',
+    )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
+    // favorites.recipe_id → recipes(id) is many-to-one, so `recipe` is a single
+    // row (or null), not a list; override the array embed PostgREST-js infers for
+    // a view relationship absent from the generated types.
+    .returns<{ recipe: FavoriteCard | null }[]>()
 
-  const ids = (favorites ?? []).map((f) => f.recipe_id as number)
-  const { data: rows } = ids.length
-    ? await supabase
-        .from('public_recipes')
-        .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
-        .in('id', ids)
-    : { data: [] }
-
-  const byId = new Map(((rows ?? []) as FavoriteCard[]).map((r) => [r.id, r]))
-  const recipes = ids.map((id) => byId.get(id)).filter((r): r is FavoriteCard => Boolean(r))
+  // Newest-first order comes from the query; drop any favorite whose recipe is gone.
+  const recipes = (favorites ?? [])
+    .map((f) => f.recipe)
+    .filter((r): r is FavoriteCard => Boolean(r))
 
   return (
     <main className="min-h-screen bg-white">
