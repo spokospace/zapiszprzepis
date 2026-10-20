@@ -77,3 +77,12 @@ describe('RecipeHeader title (C3)', () => {
     expect(render({})).toMatch(/<h1 class="[^"]*text-\[32px\] leading-\[1\.15\] font-bold/)
   })
 })
+
+// C3: the phone header leads back to the list; no „Przepisy › {Kategoria}” over the title.
+describe('RecipeHeader breadcrumbs', () => {
+  it('has no breadcrumbs (they live in the page’s A9 row from lg)', () => {
+    const html = render({})
+    expect(html).not.toContain('aria-label="Okruszki"')
+    expect(html).not.toContain('>Przepisy</a>')
+  })
+})
