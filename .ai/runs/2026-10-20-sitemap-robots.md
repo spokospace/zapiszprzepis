@@ -55,7 +55,7 @@ Make every public page of `zapiszprzepis.pl` crawler-discoverable: serve a gener
 
 ### Phase 2: robots + sitemap routes
 
-- [ ] 2.1 app/robots.ts + test
-- [ ] 2.2 app/sitemap.ts + test
-- [ ] 2.3 middleware matcher exclusion + test
-- [ ] 2.4 cache headers + full validation gate
+- [x] 2.1 app/robots.ts + test — 9011993
+- [x] 2.2 app/sitemap.ts + test — 9011993
+- [x] 2.3 middleware matcher exclusion + test — 9011993
+- [x] 2.4 cache headers + full validation gate — 9011993 (typecheck 0, lint 0 errors, 1365 tests pass)
