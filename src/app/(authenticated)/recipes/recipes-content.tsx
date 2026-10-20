@@ -1,5 +1,3 @@
-'use client'
-
 import { Suspense } from 'react'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
@@ -10,8 +8,8 @@ import { ListResults, ListTransition } from '@/app/components/list-transition'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
 import type { Database } from '@/lib/supabase.types'
+import type { MyRecipeCard } from '@/lib/my-recipes'
 
-type Recipe = Database['public']['Tables']['recipes']['Row']
 type RecipeCategory = Database['public']['Enums']['recipe_category']
 
 /** "Moje przepisy" with the filters the visitor had on, for the list bar's back link. */
@@ -24,7 +22,7 @@ function myRecipesHref(category?: string | null, tag?: string | null): string {
 }
 
 interface RecipesContentProps {
-  recipes: Recipe[]
+  recipes: MyRecipeCard[]
   showSharedToast: boolean
   showPendingDuplicateToast?: boolean
   activeCategory?: RecipeCategory | null
