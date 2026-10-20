@@ -148,8 +148,10 @@ export function HomeSearch({
               setMicState((prev) => (prev === 'error' || prev === 'denied' ? 'idle' : prev))
             }}
             placeholder={placeholder}
-            className="h-full min-w-0 flex-1 bg-transparent text-[19px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none!"
+            className="h-full min-w-0 flex-1 bg-transparent text-[19px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none! [&::-webkit-search-cancel-button]:appearance-none"
           />
+          {/* The browser's own ✕ of type="search" is hidden: „Wyczyść” is the one,
+              labelled clear button (an unlabelled ✕ beside it read as two controls). */}
           {compact && defaultValue && hasText ? (
             <Link
               href={searchPath('', scope)}
