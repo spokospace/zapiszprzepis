@@ -9,7 +9,7 @@ function render(servings: number | null) {
       recipeId: 1,
       title: 'Zupa krem z dyni',
       ingredientGroups: [{ section: null, items: [{ name: 'dynia', amount: '1', unit: 'kg' }] }],
-      steps: ['Dynię pokroić.'],
+      steps: ['Dynię pokroić.', '2 ząbki czosnku posiekać.'],
       servings,
     }),
   )
@@ -36,3 +36,19 @@ describe('RecipeChecklists "Wielkość tekstu" (C3)', () => {
     expect(render(null)).toContain('<span id="text-size-label" class="min-w-0 text-[16px] font-bold wrap-anywhere text-ink">Wielkość tekstu</span>')
   })
 })
+
+// Owner decision 2026-10-20: „Krok 1” over each step, in an ordered list (screen readers
+// announce the position); the total „z M” only in cooking mode.
+describe('RecipeChecklists steps', () => {
+  it('labels each step „Krok N” without the total, in an ordered list', () => {
+    const list = render(null).match(/<ol class="space-y-5">.*?<\/ol>/)?.[0] ?? ''
+    expect(list).toContain('<p class="mb-1.5 text-[17px] font-bold text-action-text">Krok 1</p>')
+    expect(list).toContain('<p class="mb-1.5 text-[17px] font-bold text-action-text">Krok 2</p>')
+    expect(list).not.toContain(' z 2')
+  })
+
+  it('keeps „Krok N z M” in cooking mode, one step at a time', () => {
+    expect(render(null)).toContain('>Krok 1 z 2</p>')
+  })
+})
+

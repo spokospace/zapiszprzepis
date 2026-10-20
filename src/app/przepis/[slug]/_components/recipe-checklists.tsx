@@ -72,8 +72,9 @@ function IngredientRow({
 
 /**
  * Składniki + Przygotowanie for the recipe page (E01-S07, S07b): ingredient ticks are
- * kept per tab in sessionStorage; steps are plain text under "Krok N z M" (handoff C3,
- * item 9 — ticking is for ingredients); "Wielkość tekstu" scales both lists.
+ * kept per tab in sessionStorage; steps are plain text under "Krok N" (handoff C3,
+ * item 9 — ticking is for ingredients; owner decision 2026-10-20: the total, „z M”,
+ * only in cooking mode, where one step shows at a time); "Wielkość tekstu" scales both lists.
  * "Tryb gotowania" (E01-S08) follows "Wielkość tekstu", as in the design handoff (C3, item 7).
  * From lg (E01-S17, A9) a `1fr 1.6fr` grid: the ingredients in a panel | the steps
  * plus `children`. Below lg it is one column, in the same order.
@@ -161,7 +162,7 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
               {steps.map((step, i) => (
                 <li key={i} className="text-[19px]">
                   <p className="mb-1.5 text-[17px] font-bold text-action-text">
-                    Krok {i + 1} z {steps.length}
+                    Krok {i + 1}
                   </p>
                   <p className="text-scalable leading-[1.6] text-ink">{step}</p>
                 </li>
