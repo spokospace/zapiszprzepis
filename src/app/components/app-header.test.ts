@@ -162,3 +162,12 @@ describe('AppHeader "Szukaj" (handoff v8, E01-S25)', () => {
     pathname = '/'
   })
 })
+
+describe('AppHeader on /szukaj (E01-S26)', () => {
+  it('steps aside below lg for the full-screen search bar, and stays from lg', () => {
+    pathname = '/szukaj'
+    expect(render(true)).toMatch(/<header class="[^"]*max-lg:hidden/)
+    pathname = '/'
+    expect(render(true)).not.toContain('max-lg:hidden')
+  })
+})

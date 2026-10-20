@@ -36,7 +36,10 @@ export function AppHeader({
   const onRecipe = PRZEPIS_PAGE_RE.test(pathname)
 
   return (
-    <header className="sticky top-0 z-20 border-b-2 border-border-card bg-white/95 backdrop-blur lg:border-b">
+    // Below lg /szukaj is a full screen with its own „✕ Zamknij” bar (E01-S26).
+    <header
+      className={`sticky top-0 z-20 border-b-2 border-border-card bg-white/95 backdrop-blur lg:border-b ${pathname === SEARCH_PATH ? 'max-lg:hidden' : ''}`}
+    >
       {/* Mobile 1c (E01-S19): ~64 px, padding 4/12/4/16. Desktop (E01-S17, A8/A9)
           from lg: a guest gets Przepisy + Kategorie and Zaloguj się + Załóż konto;
           a signed-in user gets the search field. */}

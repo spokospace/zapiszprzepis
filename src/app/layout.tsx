@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PWARegister } from "./components/pwa-register";
 
@@ -14,11 +14,6 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-  },
   icons: {
     icon: [
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
@@ -26,6 +21,16 @@ export const metadata: Metadata = {
     ],
     apple: "/icons/icon-192x192.png",
   },
+};
+
+// Next reads the viewport from this export, not from `metadata`. resizes-content: the
+// on-screen keyboard shrinks the layout, so /szukaj's quick-search bar (E01-S26)
+// stays visible above it.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

@@ -11,6 +11,10 @@ import { SearchScopeSwitch } from '@/app/components/search/search-scope'
 import { SearchResults } from '@/app/components/search/search-results'
 import { SearchCategoryFilter, type CategoryOption } from '@/app/components/search/search-category-filter'
 import { WebSearchFallback } from '@/app/components/search/web-search-fallback'
+import { CategoryGrid } from '@/app/components/home/category-grid'
+import { SearchScreenBar } from './_components/search-screen-bar'
+import { RecentSearchList, RecordRecentSearch } from './_components/recent-searches'
+import { QuickSearchBar } from './_components/quick-search-bar'
 
 type SearchParams = Promise<{
   q?: string | string[]
@@ -29,7 +33,9 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
  * The one recipe search (E01-S05), public: a guest searches everyone's recipes,
  * a signed-in user can narrow it to "Moje" or "Ulubione". Matching runs in the
  * search_recipes RPC. The results can be narrowed to one category, and every
- * list ends with a web search (E01-S22, C2/A3).
+ * list ends with a web search (E01-S22, C2/A3). Below lg it is a full screen of its
+ * own (handoff v8 screen 4, E01-S26): „✕ Zamknij” instead of the app header, recent
+ * searches and categories before a query, and quick-search chips above the keyboard.
  */
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const [user, raw] = await Promise.all([getCurrentUser(), searchParams])
@@ -53,17 +59,26 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
       : []
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white pb-36 lg:pb-0">
+      <SearchScreenBar />
+      {user && <RecordRecentSearch q={q} />}
       <PageContainer className="flex flex-col gap-4 py-6">
-        {/* C2 shows no heading over the field; the page still has one for screen readers. */}
-        <h1 className="sr-only">Szukaj przepisu</h1>
         {/* key: a new query (or "Wyczyść") remounts the field with the new value. */}
         <HomeSearch key={q} id="search-page-field" defaultValue={q} scope={scope} autoFocus={!q} compact />
         {user && <SearchScopeSwitch q={q} scope={scope} />}
         {!q ? (
-          <p className="text-[19px] text-ink-soft">
-            Wpisz nazwę dania albo składnik, np. „pierogi” albo „cukinia”.
-          </p>
+          <>
+            <p className="text-[19px] text-ink-soft">
+              Wpisz nazwę dania albo składnik, np. „pierogi” albo „cukinia”.
+            </p>
+            {user && <RecentSearchList />}
+            <section aria-labelledby="search-categories-heading" className="lg:hidden">
+              <h2 id="search-categories-heading" className="mb-3 text-[18px] font-bold text-ink-soft">
+                Albo wybierz kategorię
+              </h2>
+              <CategoryGrid columns={2} />
+            </section>
+          </>
         ) : 'error' in outcome ? (
           <p role="alert" className="text-[19px] text-danger">
             Wyszukiwanie chwilowo nie działa. Spróbuj za chwilę.
@@ -93,6 +108,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           </>
         )}
       </PageContainer>
+      <QuickSearchBar key={q} fieldId="search-page-field" initialValue={q} isAuthenticated={Boolean(user)} />
     </main>
   )
 }
