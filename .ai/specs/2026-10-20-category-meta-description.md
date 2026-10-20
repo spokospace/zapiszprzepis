@@ -1,7 +1,8 @@
 # Meta description for category pages
 
-> Risk: **low** (metadata-only change on one existing public route; no schema, no migration, no data
-> read added to the hot path). Extends S09/S16/S22's `/przepisy/{kategoria}`
+> Risk: **low–medium** (metadata-only behavior on one existing public route, plus one new
+> single-column lookup table seeded via the Management API — no change to existing tables, no change
+> to rendering or guest access). Extends S09/S16/S22's `/przepisy/{kategoria}`
 > (`.ai/specs/2026-10-17-category-tags-similar.md`) and the SEO work in
 > `.ai/specs/2026-10-20-sitemap-and-md-alternates.md` (#363/#364/#366).
 
@@ -10,10 +11,11 @@ Every category listing at `/przepisy/{kategoria}` (12 categories: Obiady, Zupy, 
 currently emits **no `<meta name="description">`** and no Open Graph / Twitter tags. Its
 `generateMetadata` (`src/app/przepisy/[kategoria]/page.tsx:29`) sets only `title` and `alternates`, so
 all 12 pages inherit the one generic root-layout description — "Archiwum przepisów udostępnianych z
-mediów społecznościowych." *(Proposed future behavior:)* give each category a **hand-written, unique
-one-sentence description** and bring the page up to the full recipe-page metadata pattern
-(`description` + `openGraph` + `twitter`), so search snippets and link-preview cards describe the
-actual category instead of repeating one generic line twelve times.
+mediów społecznościowych." *(Proposed future behavior:)* store a **unique per-category description in
+the database** (a new `category_descriptions` table the owner edits in Supabase without a deploy),
+read it in `generateMetadata`, and bring the page up to the full recipe-page metadata pattern
+(`description` + `openGraph` + `twitter`) — so search snippets and link-preview cards describe the
+actual category, and the copy can be tuned without shipping code.
 
 ## 📝 Problem Statement
 - `generateMetadata` for the category route returns `{ title, alternates }` and **no `description`**
@@ -23,86 +25,108 @@ actual category instead of repeating one generic line twelve times.
 - Result: Google and social cards show the same generic sentence from `src/app/layout.tsx:7` for all
   12 category URLs. Every category looks identical in a SERP and none says what it lists — a direct
   loss on 12 of the site's most linkable, highest-intent landing pages.
-- The recent SEO work (sitemap + `.md` alternates, #363/#364/#366) made these pages discoverable and
-  canonical; a real on-page description is the remaining basic SEO signal they lack.
+- SEO copy is marketing content that gets tuned repeatedly; routing every tweak through a PR + build
+  is friction the owner wants to avoid, so the text should live as **data, not code**.
 
 ## 📝 Proposed Solution
-Store **one hand-written Polish sentence per category** in a map keyed by the category value, next to
-`RECIPE_CATEGORIES` in `src/lib/recipe-categories.ts`, and read it from the category route's
-`generateMetadata`. The route gains `description`, `openGraph` (title + description + a site-level
-image) and `twitter` (summary card), mirroring the recipe page so the three stay consistent.
+Add a new table `category_descriptions`, keyed by the `recipe_category` enum, with one
+`meta_description` text column. A small cached loader (`src/lib/category-descriptions.ts`) reads it;
+the category route's `generateMetadata` calls the loader and sets `description`, `openGraph`
+(title + description + a site-level image) and `twitter` (summary card), mirroring the recipe page so
+the three stay consistent.
 
-No new route, no schema change, and **no DB read added** — the description is static content derived
-from the category enum, resolved synchronously. The `canonical` already points at the bare category
-URL for every request (the current code never reads `searchParams`), so filtered/paged variants
-(`?tag=…`, `?strona=…`) inherit the same description with zero extra work — confirmed by the owner:
-filter variants canonicalize to the main category.
+Reading the DB inside `generateMetadata` is already how the recipe page works
+(`loadRecipe` is called from both its `generateMetadata` and its render, wrapped in React `cache()` so
+one request hits the DB once); this spec follows the same pattern. The read is a single primary-key
+lookup on a 12-row table.
+
+A **templated fallback** (`Przepisy z kategorii {Kategoria} w aplikacji Zapisz Przepis.`) covers any
+category with no row and any read error, so a page is **never** description-less and a DB hiccup never
+turns a metadata read into a 500.
+
+The `canonical` already points at the bare category URL for every request (the current code never
+reads `searchParams`), so filtered/paged variants (`?tag=…`, `?strona=…`) inherit the same description
+— confirmed by the owner: filter variants canonicalize to the main category.
 
 **Alternatives considered**
-- *One shared template* (`Przepisy z kategorii {Kategoria}…`) — rejected per Q1: 12 near-identical
-  snippets are exactly what a SERP penalizes; the editorial cost of 12 sentences is trivial and
-  one-off.
-- *Dynamic description with the live recipe count* (`Ciasta: 203 przepisy…`) — rejected: couples
-  metadata to a DB read, and a page is statically-rendered/edge-cached while the count drifts, so the
-  snippet and the visible count disagree. The count already shows in the page body; it does not belong
-  in a cached `<meta>`.
-- *Per-category Open Graph image (generated card)* — deferred to a follow-up: categories have no single
-  dish photo, and generating 12 branded OG images is its own task. This spec uses the existing site
-  icon as a modest brand image so cards are not image-less.
+- *Typed `Record<RecipeCategory,string>` in the repo* — rejected per the owner: copy edits would need a
+  PR + Cloudflare build each time. The repo map's one real advantage (typecheck forces all 12 to
+  exist) is replaced here by a seed migration that inserts all 12 and a guaranteed fallback.
+- *One shared template for all 12* — rejected: 12 near-identical snippets are what a SERP penalizes.
+  The template survives only as the safety fallback, not as the primary content.
+- *Dynamic description with the live recipe count* — rejected: couples the snippet to a volatile number
+  and makes a cached `<meta>` disagree with the visible count.
+- *Admin UI to edit descriptions in-app* — declined by the owner; editing happens directly in the
+  Supabase dashboard, as other owner-only data edits already do.
+- *Per-category Open Graph image* — deferred to a follow-up: categories have no single dish photo;
+  this spec uses the existing site icon so cards are not image-less.
 
 ## 📝 Architecture
-Single-file data + single-function wiring; no new modules.
 
 ```mermaid
 flowchart TD
   subgraph New
-    MAP["CATEGORY_META_DESCRIPTIONS\nmap in recipe-categories.ts"]
-    FN["categoryMetaDescription(value)\nresolver + fallback"]
+    TBL[("category_descriptions\n(recipe_category PK, meta_description)")]
+    LOAD["getCategoryDescription(category)\ncached loader + fallback\nsrc/lib/category-descriptions.ts"]
   end
   subgraph Existing
     GM["generateMetadata\nprzepisy/[kategoria]/page.tsx"]
     CL["categoryLabel / isRecipeCategory"]
     SU["getSiteUrl"]
+    SB["createSupabaseServerClient\n(anon/SSR)"]
   end
-  FN --> MAP
-  GM --> FN
+  GM --> LOAD
+  LOAD --> SB --> TBL
   GM --> CL
   GM --> SU
 ```
 
-Takeaway: the only new surface is a static copy map plus a tiny pure resolver in the file that already
-owns category identity (`recipe-categories.ts`). `generateMetadata` goes from `{ title, alternates }`
-to `{ title, description, alternates, openGraph, twitter }` — the same shape recipe pages already
-return. Nothing else imports or changes.
+Takeaway: one new table and one cached loader. `generateMetadata` goes from `{ title, alternates }` to
+`{ title, description, alternates, openGraph, twitter }` — the same shape recipe pages already return —
+and gains one PK read that degrades to a template on miss or error. No existing table, view, or route
+changes; the render path is untouched (the description lives only in `<head>`).
 
 ## 📝 Data Model
-No tables, columns, relations, or migrations. The "data" is a compile-time constant:
 
-```ts
-// src/lib/recipe-categories.ts
-export const CATEGORY_META_DESCRIPTIONS: Record<RecipeCategory, string> = {
-  obiady: '…',   // one hand-written sentence each, 12 entries
-  zupy: '…',
-  // … all 12, keyed by RecipeCategory so a new enum value fails typecheck until copy is added
-}
+```mermaid
+erDiagram
+  category_descriptions {
+    recipe_category category PK "enum value, one row per category"
+    text meta_description "the SERP/OG/Twitter sentence"
+    timestamptz updated_at "default now()"
+  }
 ```
 
-Because the map is a `Record<RecipeCategory, string>`, adding a 13th category to the
-`recipe_category` enum **fails `pnpm typecheck`** until its sentence is written — the copy can never
-silently go missing. A defensive resolver still guards the runtime path:
+One new table; no relations (the key is the `recipe_category` enum, which has no backing table), no
+change to any existing table or to `public_recipes`.
 
-```ts
-export function categoryMetaDescription(value: RecipeCategory): string
-// returns the mapped sentence; if somehow empty, a templated fallback
-// `Przepisy z kategorii ${categoryLabel(value)} w aplikacji Zapisz Przepis.`
+```sql
+create table if not exists public.category_descriptions (
+  category public.recipe_category primary key,
+  meta_description text not null check (char_length(meta_description) between 1 and 160),
+  updated_at timestamptz not null default now()
+);
+alter table public.category_descriptions enable row level security;
+-- SEO copy is public; generateMetadata runs as the anonymous SSR client for crawlers.
+create policy if not exists category_descriptions_public_read
+  on public.category_descriptions for select to anon, authenticated using (true);
+-- No insert/update/delete policy: only the service role / dashboard writes, as with other owner data.
 ```
 
-**Copy rules** (each sentence): Polish; ≤ ~155 characters (so Google does not truncate); leads with the
-category noun; names what the category lists and the "zapisane z mediów społecznościowych" angle; no
-recipe count (would drift); unique wording per category. Brand name "Zapisz Przepis" per project rules.
-Draft set below (owner edits freely before merge):
+- **RLS**: read-only for `anon` + `authenticated` (crawlers are anonymous; the route uses the guest SSR
+  client). No write policy — edits are owner-only through the Supabase dashboard / Management API,
+  matching how QA accounts and other owner data are handled (`CLAUDE.md`, dev-qa-login memory).
+- **The 160-char `check`** enforces the SERP length rule at the data layer, so a too-long paste is
+  rejected on write rather than silently truncated by Google.
+- **Applied as an idempotent migration through the Supabase Management API** and registered in
+  `schema_migrations`, per the project's migration convention (apply-prod-migrations-via-management-api
+  memory; Management-API-UTF-8-via-stdin memory — the Polish seed text has `ł/ó/ą`, so send the SQL as
+  a UTF-8 file on stdin, never via `jq --arg`).
+- **Seed** (same migration, idempotent `insert … on conflict (category) do nothing` so a later owner
+  edit is never overwritten by a re-run): the 12 draft sentences below. Owner edits them freely in the
+  dashboard afterwards.
 
-| value | label | draft sentence |
+| category | label | seed sentence |
 |---|---|---|
 | obiady | Obiady | Pomysły na obiad zapisane z mediów społecznościowych — sprawdzone przepisy na dania główne krok po kroku. |
 | zupy | Zupy | Przepisy na zupy zapisane z sieci — od rosołu po kremy, prosto i krok po kroku. |
@@ -118,79 +142,99 @@ Draft set below (owner edits freely before merge):
 | inne | Inne | Pozostałe przepisy zapisane z mediów społecznościowych, które nie trafiły do innych kategorii. |
 
 ## 📝 API Contracts
-No HTTP contract changes. The page's emitted `<head>` gains tags; the `Metadata` object returned by
-`generateMetadata` changes shape:
+No HTTP contract changes. The page's emitted `<head>` gains tags; two new internal surfaces:
 
 ```ts
-// before
-{ title, alternates }
-// after
+// src/lib/category-descriptions.ts
+export const getCategoryDescription = cache(
+  async (category: RecipeCategory): Promise<string> => { /* PK read → row.meta_description, else fallback */ }
+)
+export function fallbackCategoryDescription(category: RecipeCategory): string
+//   `Przepisy z kategorii ${categoryLabel(category)} w aplikacji Zapisz Przepis.`
+```
+
+```ts
+// generateMetadata return, before → after
+// before: { title, alternates }
+// after:
 {
   title,                       // unchanged: `${categoryLabel(category)} · Zapisz Przepis`
-  description,                 // categoryMetaDescription(category)
+  description,                 // await getCategoryDescription(category)
   alternates,                  // unchanged (canonical + text/markdown .md)
-  openGraph: { title, description, type: 'website', images: [SITE_OG_IMAGE] },
-  twitter:   { card: 'summary', title, description },
+  openGraph: { title: categoryLabel(category), description, type: 'website', images: [SITE_OG_IMAGE] },
+  twitter:   { card: 'summary', title: categoryLabel(category), description },
 }
 ```
 
-- `SITE_OG_IMAGE` = absolute `${getSiteUrl()}/icons/icon-512x512.png` (the existing PWA icon; the only
-  site-level image available). `twitter.card: 'summary'` because it is a logo, not a wide hero.
-- `openGraph.title` omits the `· Zapisz Przepis` suffix or keeps it? → keeps `categoryLabel(category)`
-  alone as the OG title (cleaner card headline), with the site name carried by `openGraph.siteName`
-  if we add one; `title` (the `<title>`) keeps the suffix. (Minor; implementer may align to recipe
-  page, which uses the bare `recipe.title` as OG title.)
+- `SITE_OG_IMAGE` = absolute `${getSiteUrl()}/icons/icon-512x512.png` (the existing PWA icon, the only
+  site-level image). `twitter.card: 'summary'` because it is a logo, not a wide hero.
 - Unknown category: `generateMetadata` already early-returns `{}` for a non-category
-  (`!isRecipeCategory`) → stays `{}`, no description. Unchanged.
+  (`!isRecipeCategory`) → stays `{}`; the loader is never called for one. Unchanged.
 
 ## 📝 UI/UX
-No visible UI. The change is entirely in `<head>`. Verification is by reading the rendered metadata
-(View Source / `read_page`) and a unit test, not a screenshot.
+No visible UI (the owner edits rows in the Supabase dashboard; no in-app admin screen — declined).
+The change is entirely in `<head>`. Verification is by reading the rendered metadata (View Source /
+`read_page`) and unit tests, not a screenshot.
 
 ## 📝 Edge Cases & Failure Scenarios
+- **No row for a category** (table seeded partially, or a new enum value added before its row exists):
+  loader returns `fallbackCategoryDescription(category)` → the templated sentence. Never empty.
+- **DB read fails / table absent** (e.g. route deployed before the migration): loader catches, logs,
+  returns the fallback. Metadata degrades to the template; the page still renders. No 500.
 - **Non-category slug** (`/przepisy/xyz`): `generateMetadata` returns `{}` (guarded by
-  `isRecipeCategory`), the page `notFound()`s — unchanged, no description leaked.
-- **New enum value added later**: `Record<RecipeCategory, string>` makes `pnpm typecheck` fail until
-  copy exists → cannot ship a category with a missing description. Runtime fallback covers the
-  impossible-but-defensive empty-string case.
-- **Filtered / paged variant** (`?tag=kruche`, `?strona=3`): same description as the bare category,
-  because `generateMetadata` ignores `searchParams` and `canonical` already collapses the variant onto
-  the main category URL. Intended.
-- **Sentence too long**: a sentence over ~160 chars is silently truncated by Google; mitigated by the
-  copy rule and a test asserting every sentence is ≤ 160 characters.
+  `isRecipeCategory`); the loader is not called; the page `notFound()`s. Unchanged.
+- **Filtered / paged variant** (`?tag=kruche`, `?strona=3`): same description as the bare category —
+  `generateMetadata` ignores `searchParams` and `canonical` collapses the variant onto the main URL.
+- **Over-long edit**: the `check (char_length … between 1 and 160)` rejects the write; the owner sees
+  the constraint error in the dashboard instead of a truncated SERP snippet.
+- **Polish diacritics in the seed** (`ł`, `ó`, `ą`): the Management-API call must send UTF-8 via stdin
+  (project memory) or the characters mangle to `U+FFFD`/HTML entities.
 
 ## 📝 Risks & Impact Review
-- **Reversibility**: fully reversible — revert one commit; no data or schema touched.
-- **Blast radius**: one route's `generateMetadata` + one constant. No runtime data path, no auth, no
-  new query. Cannot affect page rendering or guest access.
-- **SEO impact is positive but not instant**: snippets update only after Google re-crawls; the sitemap
-  (#364) already nudges that. No risk of deindexing (canonical and robots unchanged).
-- **Editorial accuracy**: the draft sentences are the owner's to approve/rewrite before merge; wrong
-  copy is a text edit, not a code change.
-- **Image choice**: using the PWA icon as the OG image is a deliberate stopgap; a per-category branded
-  card is a named follow-up, not a blocker.
+- **Reversibility**: code reverts in one commit; the table is dropped with `drop table if exists
+  public.category_descriptions` (idempotent down-migration). No existing data touched.
+- **Blast radius**: one route's `generateMetadata` + one new isolated table. The render path and guest
+  access are unchanged; the worst failure mode is "falls back to the template", not a broken page.
+- **New DB read in `generateMetadata`**: one PK lookup on a 12-row table, React-`cache()`d per request
+  and edge-cacheable with the page. Negligible, and the same pattern the recipe page already uses.
+- **RLS correctness is the one thing to get right**: the read must succeed for the anonymous SSR
+  client (crawlers), so the public-read policy is load-bearing. A test / manual check confirms a guest
+  request gets the real description, not the fallback.
+- **Migration ordering**: because the loader falls back on a missing table, app and migration can land
+  in either order without breaking; still, apply + seed the migration so the real copy appears. Verify
+  on production per the verify-on-production memory (the live Cloudflare build, not just local dev).
+- **SEO impact is positive but not instant**: snippets update after Google re-crawls; the sitemap
+  (#364) nudges it. Canonical and robots unchanged, so no deindex risk.
 
 ## 📋 Phasing
-Single phase — the change is atomic (map + wiring + test land together; a half-done version would ship
-some categories without copy, which the typed `Record` forbids anyway).
+Single phase — but with a clear **migration-then-wire** order inside it. The table + seed is applied
+first (owner-run Management-API step), then the loader + `generateMetadata` ship as code. The code is
+safe to deploy even if the migration is delayed, thanks to the fallback.
 
 ## 📋 Implementation Plan
 
-**Phase 1 — Category meta descriptions**
+**Phase 1 — Category descriptions in the DB**
 
-1. **Add the copy map + resolver.** In `src/lib/recipe-categories.ts`, add
-   `CATEGORY_META_DESCRIPTIONS: Record<RecipeCategory, string>` (all 12 draft sentences) **and** the
-   `categoryMetaDescription(value)` resolver that reads it. Both are new exports in a file that is
-   already imported — no cross-file import/usage split, so the edit-discipline rule is satisfied
-   in-file. Leaves the app working (nothing consumes the new exports yet).
-2. **Wire `generateMetadata`.** In `src/app/przepisy/[kategoria]/page.tsx`, import
-   `categoryMetaDescription` and add `description`, `openGraph`, `twitter` to the returned `Metadata`
-   in one edit (import + usage together, per the edit-discipline rule). Reuse `getSiteUrl` (already
-   imported) for the absolute OG image URL. App works; pages now emit the tags.
-3. **Unit test the copy + resolver.** In `src/lib/recipe-categories.test.ts`: every `RecipeCategory`
-   has a non-empty mapped sentence; each sentence ≤ 160 chars; sentences are unique; the fallback
-   returns the template for an empty mapping. (Testable without HTTP — the resolver is pure.)
-4. **Verify rendered metadata.** Run the dev server, open two category pages (e.g. `/przepisy/ciasta`,
-   `/przepisy/zupy`), read the `<head>` and confirm distinct `<meta name="description">`,
-   `og:description`, `twitter:description`, and that the canonical is still the bare category URL.
-5. **Gate.** `pnpm typecheck && pnpm lint && pnpm test`; land via branch → PR per project rules.
+1. **Migration + seed (data step, Management API).** Author an idempotent migration: `create table if
+   not exists category_descriptions`, enable RLS, add the public-read policy, `insert … on conflict do
+   nothing` the 12 seed rows. Apply it through the Supabase Management API (UTF-8 via stdin for the
+   Polish text) and register the version in `schema_migrations`. Provide the exact SQL + down-migration
+   in the PR body so the owner can review/run it. Regenerate Supabase types if the repo commits them.
+2. **Loader (`src/lib/category-descriptions.ts`).** Add `getCategoryDescription` (React `cache()`, PK
+   read via `createSupabaseServerClient`, returns `meta_description` or `fallbackCategoryDescription`)
+   **and** `fallbackCategoryDescription`, with the import and first usage in the same edit per the
+   edit-discipline rule. Leaves the app working (nothing consumes it yet).
+3. **Wire `generateMetadata`.** In `src/app/przepisy/[kategoria]/page.tsx`, import
+   `getCategoryDescription` and add `description` (awaited), `openGraph`, `twitter` to the returned
+   `Metadata` in one edit (import + usage together). Reuse the already-imported `getSiteUrl` for the
+   absolute OG image URL. App works; pages now emit the tags.
+4. **Tests.** Unit-test the loader with a mocked Supabase client: returns the row's text on a hit;
+   returns the template on a miss and on a thrown error; `fallbackCategoryDescription` is non-empty and
+   ≤ 160 chars for every `RecipeCategory` (iterate `RECIPE_CATEGORIES`). Pure where possible; mock only
+   the client boundary.
+5. **Verify.** Local dev against the (seeded) prod DB: open `/przepisy/ciasta` and `/przepisy/zupy`,
+   read the `<head>`, confirm distinct `<meta name="description">`, `og:description`,
+   `twitter:description`, and that canonical is still the bare category URL. Then confirm a guest
+   (anon) request gets the real row text, not the fallback (RLS check).
+6. **Gate.** `pnpm typecheck && pnpm lint && pnpm test`; land via branch → PR per project rules; note in
+   the PR that the migration must be applied to prod (owner-gated) and verify on the live build.
