@@ -50,6 +50,8 @@ all in a root `/llms.txt` — so an AI agent can fetch quotable, citable Markdow
 
 ## Progress
 
+PR: #366
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Pure Markdown builders
