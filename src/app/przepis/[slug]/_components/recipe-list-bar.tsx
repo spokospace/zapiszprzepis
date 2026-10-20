@@ -66,11 +66,24 @@ export function headerBackLabel(label: string): string {
   return label.startsWith('Wyniki:') ? 'Wyniki' : label
 }
 
+/**
+ * The list behind the header's back link: like the bar's, but without the bar's
+ * two-recipe minimum — a search with one result still leads back „← Wyniki”.
+ */
+function useBackList({ slug, from, fallback }: RecipeListProps): ListPosition | null {
+  const hydrated = useHydrated()
+  const [raw] = useSessionStorage(from ? listStorageKey(from) : '')
+  const fromList = useMemo(() => (from ? locate(parseSnapshot(raw), slug) : null), [from, raw, slug])
+  if (!from || !hydrated) return null
+  return fromList ?? fallback
+}
+
 /** "← {lista} · N z M" above the recipe from lg (A9); below lg it feeds the header's back link (C3). */
 export function RecipeListBar(props: RecipeListProps) {
   const state = useListPosition(props)
-  const label = state.kind === 'ready' && props.from ? headerBackLabel(state.position.label) : null
-  const href = state.kind === 'ready' && props.from ? state.position.href : null
+  const backList = useBackList(props)
+  const label = backList ? headerBackLabel(backList.label) : null
+  const href = backList?.href ?? null
   useEffect(() => {
     setHeaderBackTarget(label && href ? { label, href } : null)
     return () => setHeaderBackTarget(null)
