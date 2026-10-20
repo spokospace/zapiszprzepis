@@ -9,6 +9,7 @@ import {
   type MyRecipeCard,
 } from '@/lib/my-recipes'
 import { parsePageParam } from '@/lib/category-tags'
+import { getFavoriteIds } from '@/lib/favorites'
 import { Constants, type Database } from '@/lib/supabase.types'
 import { isRecipeTag } from '@/lib/recipe-tags'
 import { searchPath } from '@/lib/routes'
@@ -92,6 +93,11 @@ export default async function RecipesPage({
   const total = count ?? filteredRecipes.length
   const remaining = total - filteredRecipes.length
 
+  // The heart on each tile reflects the owner's own favorites (E01-S06 gaps, Q4:
+  // „/recipes opts in via the `favorite` prop"). Ids are known only after the list
+  // query above, so this is one more scoped lookup, empty-set on error.
+  const favoriteIds = await getFavoriteIds(supabase, user.id, filteredRecipes.map((r) => r.id))
+
   const counts = (allRecipes || []).reduce<Partial<Record<RecipeCategory, number>>>(
     (acc, r) => {
       const cat = r.category as RecipeCategory
@@ -104,6 +110,7 @@ export default async function RecipesPage({
   return (
     <RecipesContent
       recipes={filteredRecipes}
+      favoriteIds={favoriteIds}
       showSharedToast={shared === '1'}
       showPendingDuplicateToast={duplicate === 'pending'}
       activeCategory={activeCategory}
