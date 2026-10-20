@@ -128,3 +128,33 @@ export async function searchRecipes(
 export function categoryFacets(rows: readonly { category: string }[]): SearchCategoryFacet[] {
   return categoryCounts(rows).sort((a, b) => b.count - a.count) // stable: ties keep category order
 }
+
+/** Type-ahead on /szukaj (E01-S29): from 2 letters, at most 4 recipes. */
+export const SUGGEST_MIN_LENGTH = 2
+export const SUGGEST_LIMIT = 4
+
+export interface RecipeSuggestion {
+  slug: string
+  title: string
+  image_url: string | null
+  category: string
+}
+
+/**
+ * Up to SUGGEST_LIMIT recipes for a half-typed query, from the same public search
+ * as the results (every recipe, title hits first). Empty below SUGGEST_MIN_LENGTH
+ * letters or on any error: suggestions are a convenience, never a failure.
+ */
+export async function suggestRecipes(supabase: SupabaseClient, raw: string): Promise<RecipeSuggestion[]> {
+  const q = raw.trim().slice(0, MAX_QUERY_LENGTH).trim()
+  if (q.length < SUGGEST_MIN_LENGTH) return []
+  const { data, error } = await supabase.rpc('search_recipes', { p_query: q, p_scope: 'all', p_limit: SUGGEST_LIMIT })
+  if (error) {
+    console.error('[search] suggestions failed:', error.message)
+    return []
+  }
+  return ((data ?? []) as SearchRow[])
+    .slice(0, SUGGEST_LIMIT)
+    .map(({ slug, title, image_url, category }) => ({ slug, title, image_url, category }))
+}
+

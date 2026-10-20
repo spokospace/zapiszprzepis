@@ -15,6 +15,7 @@ import { CategoryGrid } from '@/app/components/home/category-grid'
 import { SearchScreenBar } from './_components/search-screen-bar'
 import { RecentSearchList, RecordRecentSearch } from './_components/recent-searches'
 import { QuickSearchBar } from './_components/quick-search-bar'
+import { SearchSuggestions } from './_components/search-suggestions'
 
 type SearchParams = Promise<{
   q?: string | string[]
@@ -65,6 +66,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
       <PageContainer className="flex flex-col gap-4 py-6">
         {/* key: a new query (or "Wyczyść") remounts the field with the new value. */}
         <HomeSearch key={q} id="search-page-field" defaultValue={q} scope={scope} autoFocus={!q} compact />
+        <SearchSuggestions key={`s-${q}`} fieldId="search-page-field" initialValue={q} />
         {user && <SearchScopeSwitch q={q} scope={scope} />}
         {!q ? (
           <>
