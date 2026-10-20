@@ -17,6 +17,8 @@ type RecipeCategory = Database['public']['Enums']['recipe_category']
 
 interface RecipesContentProps {
   recipes: MyRecipeCard[]
+  /** Which of `recipes` the signed-in owner has favorited, for the tile heart (E01-S06). */
+  favoriteIds: Set<number>
   showSharedToast: boolean
   showPendingDuplicateToast?: boolean
   activeCategory?: RecipeCategory | null
@@ -32,6 +34,7 @@ interface RecipesContentProps {
 
 export function RecipesContent({
   recipes,
+  favoriteIds,
   showSharedToast,
   showPendingDuplicateToast,
   activeCategory,
@@ -138,6 +141,7 @@ export function RecipesContent({
                       sourceType={recipe.source_type}
                       sourceUrl={recipe.source_url}
                       sourceAuthor={recipe.source_author}
+                      favorite={{ recipeId: recipe.id, favorited: favoriteIds.has(recipe.id), isAuthenticated: true }}
                     />
                   </div>
                 ))}
