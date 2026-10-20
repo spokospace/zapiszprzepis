@@ -33,6 +33,11 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Cloudflare Images: OpenNext resizes /_next/image through this binding and
+  // returns the original photo when it is missing (#357).
+  "images": {
+    "binding": "IMAGES"
+  },
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://wvrlgddgdddwmgzbvtij.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2",

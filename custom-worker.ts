@@ -15,12 +15,17 @@
  * awake by itself. keep-alive stays as the fallback for when the backup is broken —
  * a missing secret should cost us a backup, not the whole app.
  *
+ * It also puts an edge cache and a fallback in front of `/_next/image` (#357):
+ * OpenNext's handler resizes through the IMAGES binding but caches nothing. The
+ * logic lives in src/lib/image-cache.ts.
+ *
  * The jobs themselves live in src/lib/worker-cron.ts so they can be typechecked and
  * tested. This file is excluded from tsconfig: `./.open-next/worker.js` only exists
  * after a build, so nothing here can be, and it is kept as thin as possible.
  */
 import handler from './.open-next/worker.js'
 import { backupToR2, keepDatabaseAwake, type CronEnv } from './src/lib/worker-cron'
+import { serveImage } from './src/lib/image-cache'
 
 const KEEP_ALIVE_CRON = '0 4 * * *'
 const BACKUP_CRON = '30 3 * * *'
@@ -33,8 +38,25 @@ type ExecutionCtx = {
   waitUntil(promise: Promise<unknown>): void
 }
 
+type FetchEnv = { NEXT_PUBLIC_SUPABASE_URL?: string }
+
+// Cloudflare's default Cache API store (not in the DOM lib types).
+declare const caches: { default: Parameters<typeof serveImage>[2] }
+
 const worker = {
-  fetch: handler.fetch,
+  async fetch(request: Request, env: FetchEnv, ctx: ExecutionCtx): Promise<Response> {
+    const { pathname } = new URL(request.url)
+    if (request.method === 'GET' && pathname === '/_next/image') {
+      return serveImage(
+        request,
+        (req) => handler.fetch(req, env, ctx),
+        caches.default,
+        ctx,
+        env.NEXT_PUBLIC_SUPABASE_URL,
+      )
+    }
+    return handler.fetch(request, env, ctx)
+  },
 
   async scheduled(
     controller: ScheduledController,
