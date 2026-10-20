@@ -157,8 +157,8 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
           </dl>
         )}
 
-        {recipe.description && <p className="mt-4 text-[19px] text-ink-soft">{recipe.description}</p>}
-        {recipe.meta_description && <p className="mt-3 text-[19px] leading-relaxed text-ink">{recipe.meta_description}</p>}
+        {recipe.description && <p className="text-scalable-body mt-4 text-ink-soft">{recipe.description}</p>}
+        {recipe.meta_description && <p className="text-scalable-body mt-3 leading-relaxed text-ink">{recipe.meta_description}</p>}
         {versionsBar}
         {actions}
       </div>

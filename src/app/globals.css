@@ -4,7 +4,7 @@
   color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
-  /* Content text-size control (A / A+ / A++). Set per-container by useTextScale; 1 = default. */
+  /* Content text-size control (A / A+ / A++). Set on <html> by useTextScale; 1 = default. */
   --text-scale: 1;
 }
 
@@ -118,12 +118,16 @@ a {
 }
 
 /*
- * Content text-size scaling (A / A+ / A++). Wrap scalable recipe content in an
- * element whose style sets --text-scale (via useTextScale); descendants opting in
+ * Content text-size scaling (A / A+ / A++). useTextScale sets --text-scale on <html>; elements opting in
  * with .text-scalable grow 1 / 1.15 / 1.3. Used by the recipe screen (E01-S07).
  */
 .text-scalable {
   font-size: calc(1em * var(--text-scale, 1));
+}
+
+/* Same scale on a fixed 19 px body size, for a lone paragraph with no sized parent. */
+.text-scalable-body {
+  font-size: calc(19px * var(--text-scale, 1));
 }
 
 /* Keep the page behind an open modal (the header menu drawer) from scrolling. */

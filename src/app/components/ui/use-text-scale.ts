@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useSyncExternalStore } from 'react'
 
 /** Content text-size levels (handoff: A / A+ / A++ → 1 / 1.15 / 1.3). */
 export type TextScaleLevel = 'A' | 'A+' | 'A++'
@@ -38,8 +38,9 @@ function subscribe(onChange: () => void): () => void {
  * Per-device content text-size, persisted in localStorage (E01-S07 recipe screen).
  * Backed by useSyncExternalStore: the server snapshot is always 'A' (so SSR and the
  * first client render match), then the stored value takes over. Returns the level, its
- * numeric scale, a setter, and a style object to spread on the scalable container so
- * `--text-scale` reaches `.text-scalable` descendants.
+ * numeric scale and a setter. The scale is published as `--text-scale` on <html>, so
+ * every `.text-scalable` / `.text-scalable-body` element on the page follows it, server
+ * components included (the recipe header's description sits outside the checklists).
  */
 export function useTextScale() {
   const level = useSyncExternalStore(
@@ -58,7 +59,14 @@ export function useTextScale() {
   }, [])
 
   const scale = TEXT_SCALE_VALUES[level]
-  const scaleStyle = { '--text-scale': String(scale) } as React.CSSProperties
 
-  return { level, scale, setLevel, scaleStyle }
+  useEffect(() => {
+    const root = document.documentElement
+    root.style.setProperty('--text-scale', String(scale))
+    return () => {
+      root.style.removeProperty('--text-scale')
+    }
+  }, [scale])
+
+  return { level, scale, setLevel }
 }
