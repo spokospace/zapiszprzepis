@@ -80,7 +80,7 @@ function IngredientRow({
  * plus `children`. Below lg it is one column, in the same order.
  */
 export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, servings, children }: RecipeChecklistsProps) {
-  const { level, setLevel, scaleStyle } = useTextScale()
+  const { level, setLevel } = useTextScale()
   const [raw, setRaw] = useSessionStorage(checklistStorageKey(recipeId))
   const state = useMemo(() => parseChecklist(raw), [raw])
 
@@ -93,7 +93,7 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
   )
 
   return (
-    <div style={scaleStyle} className="lg:grid lg:grid-cols-[1fr_1.6fr] lg:items-start lg:gap-x-12">
+    <div className="lg:grid lg:grid-cols-[1fr_1.6fr] lg:items-start lg:gap-x-12">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 lg:col-span-2">
         <TextSizeControls level={level} onChange={setLevel} />
         {state.ingredients.length > 0 && (
