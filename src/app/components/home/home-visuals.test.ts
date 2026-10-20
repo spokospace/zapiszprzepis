@@ -4,7 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { CategoryGrid } from './category-grid'
 import { GuestCta } from './guest-cta'
 import { HomeSearch } from './home-search'
-import { MemberTiles } from './member-tiles'
+import { AttentionBanner } from './attention-banner'
+import type { FailedSharesResult } from '@/lib/failed-shares'
 import { HOME_CATEGORIES } from '@/lib/recipe-categories'
 
 const render = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el)
@@ -47,19 +48,22 @@ describe('GuestCta (E01-S20)', () => {
   })
 })
 
-describe('MemberTiles (E01-S20)', () => {
-  it('shows three rows with a chevron each for full access', () => {
-    const html = render(createElement(MemberTiles, { hasFullAccess: true }))
-    expect(html).toContain('Moje przepisy')
-    expect((html.match(/lucide-chevron-right/g) ?? []).length).toBe(3)
-    expect(html).toContain('text-[20px]')
+describe('AttentionBanner (E01-S31 §5)', () => {
+  const failed = { status: 'ok', shares: [{}] } as unknown as FailedSharesResult
+
+  it('is a white strip with a 2 px #9a3412 frame and a "Popraw" link, not the red tint', () => {
+    const html = render(createElement(AttentionBanner, { failedShares: failed }))
+    expect(html).toContain('border-action-text')
+    expect(html).toContain('bg-white')
+    expect(html).not.toContain('bg-danger-bg')
+    expect(html).toContain('1 przepis wymaga uwagi')
+    expect(html).toMatch(/>Popraw</)
+    expect(html).not.toContain('Zobacz')
   })
 
-  it('drops "Moje przepisy" and locks adding without full access', () => {
-    const html = render(createElement(MemberTiles, { hasFullAccess: false }))
-    expect(html).not.toContain('Moje przepisy')
-    expect(html).toContain('Wymaga kodu lub pełnego dostępu')
-    expect((html.match(/lucide-chevron-right/g) ?? []).length).toBe(2)
+  it('renders nothing when nothing needs attention', () => {
+    const none = { status: 'ok', shares: [] } as unknown as FailedSharesResult
+    expect(render(createElement(AttentionBanner, { failedShares: none }))).toBe('')
   })
 })
 

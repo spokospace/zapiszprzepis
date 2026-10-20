@@ -172,7 +172,14 @@ function headerSearchInput(html: string): string {
 // E01-S17 follow-up (#navbar-search): the desktop header carries one combobox search
 // field — the single search surface — rendered on every signed-in page incl /szukaj.
 describe('AppHeader desktop search field (E01-S17 follow-up)', () => {
-  it.each(['/', '/szukaj', '/przepis/sernik', '/settings'])('is one combobox GET field on %s', (path) => {
+  it('is left out on the start page, whose hero already has the one field (E01-S31 §5)', () => {
+    pathname = '/'
+    const html = render(true)
+    expect(headerSearchInput(html)).toBe('')
+    expect(html).not.toContain('aria-label="Szukaj w serwisie"')
+  })
+
+  it.each(['/szukaj', '/przepis/sernik', '/settings'])('is one combobox GET field on %s', (path) => {
     pathname = path
     const html = render(true)
     const input = headerSearchInput(html)
@@ -227,5 +234,28 @@ describe('AppHeader while the notifications check and counters load (#226)', () 
   it('keeps a working MENU without a badge until the counts arrive', () => {
     pathname = '/'
     expect(renderPending()).toContain('data-testid="menu" data-notifications="null"')
+  })
+})
+
+// E01-S31 §5: the signed-in desktop nav leads with „Moje przepisy” / „Ulubione” and „Kategorie ▾”.
+describe('AppHeader signed-in desktop nav (E01-S31 §5)', () => {
+  const nav = (html: string) => html.match(/<nav aria-label="Przepisy"[^>]*>.*?<\/nav>/)?.[0] ?? ''
+
+  it('shows „Moje przepisy”, „Ulubione” and „Kategorie” from xl, in place of „Przepisy”', () => {
+    const html = nav(render(true))
+    expect(html).toMatch(/max-xl:hidden[^>]*href="\/recipes">Moje przepisy</)
+    expect(html).toMatch(/max-xl:hidden[^>]*href="\/ulubione">Ulubione</)
+    expect(html).toContain('Kategorie')
+    expect(html).not.toMatch(/href="\/szukaj">Przepisy</)
+  })
+
+  it('drops „Moje przepisy” without full access', () => {
+    expect(nav(render(true, false))).not.toContain('Moje przepisy')
+  })
+
+  it('keeps „Przepisy” and „Kategorie” for a guest', () => {
+    const html = nav(render(false))
+    expect(html).toMatch(/href="\/szukaj">Przepisy</)
+    expect(html).not.toContain('Ulubione')
   })
 })

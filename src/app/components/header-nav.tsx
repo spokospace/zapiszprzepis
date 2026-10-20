@@ -7,6 +7,9 @@ import { ChevronDown } from 'lucide-react'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { SEARCH_PATH, categoryPath } from '@/lib/routes'
 
+const MY_RECIPES_PATH = '/recipes'
+const FAVORITES_PATH = '/ulubione'
+
 const NAV_ITEM =
   'inline-flex min-h-[48px] items-center gap-1 rounded-field px-3 text-[18px] font-semibold text-ink no-underline! hover:bg-surface-3'
 
@@ -17,7 +20,18 @@ const NAV_ITEM =
  * returns focus to the button), and so does navigating. Without JS the same categories stay
  * reachable from the home grid.
  */
-export function HeaderNav({ className = '' }: { className?: string }) {
+export function HeaderNav({
+  className = '',
+  member,
+}: {
+  className?: string
+  /**
+   * A signed-in user (E01-S31 §5): "Moje przepisy" (full access only) and "Ulubione"
+   * lead the row from xl, where the header has the room beside the search field,
+   * and "Przepisy" is left out; a guest keeps "Przepisy". Below xl these are in MENU.
+   */
+  member?: { hasFullAccess: boolean }
+}) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -47,9 +61,22 @@ export function HeaderNav({ className = '' }: { className?: string }) {
 
   return (
     <nav aria-label="Przepisy" className={`items-center gap-1 ${className}`}>
-      <Link href={SEARCH_PATH} className={NAV_ITEM}>
-        Przepisy
-      </Link>
+      {member ? (
+        <>
+          {member.hasFullAccess && (
+            <Link href={MY_RECIPES_PATH} className={`${NAV_ITEM} max-xl:hidden`}>
+              Moje przepisy
+            </Link>
+          )}
+          <Link href={FAVORITES_PATH} className={`${NAV_ITEM} max-xl:hidden`}>
+            Ulubione
+          </Link>
+        </>
+      ) : (
+        <Link href={SEARCH_PATH} className={NAV_ITEM}>
+          Przepisy
+        </Link>
+      )}
       <div
         ref={rootRef}
         className="relative"

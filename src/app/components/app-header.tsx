@@ -28,6 +28,12 @@ function useAwaited<T>(value: Awaitable<T>): T {
   return isThenable(value) ? use(value as Promise<T>) : value
 }
 
+/** The signed-in desktop nav: "Moje przepisy" needs the full-access flag, which arrives with the menu summary. */
+function HeaderMemberNav({ menu }: { menu: Awaitable<MenuSummary | null | undefined> }) {
+  const summary = useAwaited(menu)
+  return <HeaderNav className="hidden lg:flex" member={{ hasFullAccess: summary?.hasFullAccess ?? false }} />
+}
+
 function HeaderMenu({
   isAuthenticated,
   failedShares,
@@ -95,9 +101,17 @@ export function AppHeader({
             <LogoIcon className="hidden h-10 w-10 lg:block" />
             <LogoWordmark className="text-[20px] min-[360px]:text-[24px] lg:text-[1.625rem]" />
           </Link>
-          {!isAuthenticated && <HeaderNav className="hidden lg:flex" />}
+          {isAuthenticated ? (
+            <Suspense fallback={<HeaderNav className="hidden lg:flex" member={{ hasFullAccess: false }} />}>
+              <HeaderMemberNav menu={menu} />
+            </Suspense>
+          ) : (
+            <HeaderNav className="hidden lg:flex" />
+          )}
         </div>
-        {isAuthenticated && <HeaderSearch className="hidden lg:flex" />}
+        {/* The start page's hero already has the one search field (E01-S31 §5), so the
+            header has none there; every other page keeps it. */}
+        {isAuthenticated && pathname !== '/' && <HeaderSearch className="hidden lg:flex" />}
         <div className="flex shrink-0 items-center gap-1 lg:ml-auto lg:gap-2">
           {/* Below lg, for everyone: „Szukaj” opens the full-screen search (handoff v8,
               E01-S25); icon over label like MENU. Not on /szukaj itself, which has the
