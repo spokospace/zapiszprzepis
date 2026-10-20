@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { categoryFacets, parseSearchParams, searchRecipes } from './search'
+import { categoryFacets, parseSearchParams, searchRecipes, suggestRecipes } from './search'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 function client(rpc: ReturnType<typeof vi.fn>) {
   return { rpc } as any
@@ -115,5 +116,41 @@ describe('searchRecipes', () => {
     expect(await searchRecipes(client(rpc), { q: 'zupa', scope: 'wszystkie', page: 1, category: null })).toEqual({
       error: 'function does not exist',
     })
+  })
+})
+
+describe('suggestRecipes (E01-S29)', () => {
+  function fakeSupabase(result: { data: unknown; error: unknown }) {
+    const rpc = vi.fn(async () => result)
+    return { client: { rpc } as unknown as SupabaseClient, rpc }
+  }
+  const row = (slug: string) => ({
+    slug,
+    title: slug,
+    image_url: null,
+    category: 'zupy',
+    id: 1,
+    description: 'x',
+    total_count: 9,
+  })
+
+  it('asks for nothing below two letters', async () => {
+    const { client, rpc } = fakeSupabase({ data: [], error: null })
+    expect(await suggestRecipes(client, ' d ')).toEqual([])
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('asks the public search for at most four recipes and keeps only what the list shows', async () => {
+    const { client, rpc } = fakeSupabase({ data: [row('a'), row('b'), row('c'), row('d'), row('e')], error: null })
+    const items = await suggestRecipes(client, '  dy ')
+    expect(rpc).toHaveBeenCalledWith('search_recipes', { p_query: 'dy', p_scope: 'all', p_limit: 4 })
+    expect(items).toHaveLength(4)
+    expect(items[0]).toEqual({ slug: 'a', title: 'a', image_url: null, category: 'zupy' })
+  })
+
+  it('is empty on an error, never throwing', async () => {
+    const { client } = fakeSupabase({ data: null, error: { message: 'boom' } })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(await suggestRecipes(client, 'dynia')).toEqual([])
   })
 })

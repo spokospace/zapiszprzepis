@@ -1,12 +1,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
+import { categoryLabel } from '@/lib/recipe-categories'
 import { listCardLines } from '@/lib/recipe-meta'
 import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { recipePath } from '@/lib/routes'
 import type { ListKey } from '@/lib/recipe-list-context'
 import { FavoriteButton } from './favorite-button'
+import { NoPhoto } from './no-photo'
 
 interface RecipeCardProps {
   slug: string
@@ -47,19 +48,6 @@ interface RecipeCardProps {
 /** The list cards' container: one column, two from lg so they don't stretch to 1088 px (E01-S17). */
 export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
 
-/**
- * The photo slot of a recipe without a photo: its category icon on the accent
- * tint, so a full-width slot on a phone does not read as an image that failed
- * to load. Decorative: the title and the category line name the recipe.
- */
-function NoPhoto({ category, iconClassName }: { category: string; iconClassName: string }) {
-  const Icon = isRecipeCategory(category) ? CATEGORY_ICONS[category] : CATEGORY_ICONS.inne
-  return (
-    <div aria-hidden="true" className="flex h-full w-full items-center justify-center bg-surface-accent-2">
-      <Icon strokeWidth={1.5} className={`text-action-text ${iconClassName}`} />
-    </div>
-  )
-}
 
 // A tile's `sizes` per grid, so a phone fetches an archived image at the width the card
 // really has, not the whole screen (#253). The grids sit in PageContainer: 68rem

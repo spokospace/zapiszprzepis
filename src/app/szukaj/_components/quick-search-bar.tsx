@@ -6,23 +6,10 @@ import { History, TrendingUp } from 'lucide-react'
 import { POPULAR_SEARCHES } from '@/lib/home'
 import { searchPath } from '@/lib/routes'
 import { useRecentSearches } from './use-recent-searches'
+import { useFieldValue } from './use-field-value'
 
 const CHIP =
   'inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-pill border-2 px-4 text-[17px] font-bold whitespace-nowrap text-ink no-underline!'
-
-/** The field's live value, so the bar can hide once a real query is being typed. */
-function useFieldValue(fieldId: string, initial: string): string {
-  const [value, setValue] = useState(initial)
-  useEffect(() => {
-    function onInput(event: Event) {
-      const target = event.target as HTMLInputElement | null
-      if (target?.id === fieldId) setValue(target.value)
-    }
-    document.addEventListener('input', onInput)
-    return () => document.removeEventListener('input', onInput)
-  }, [fieldId])
-  return value
-}
 
 /**
  * How far the on-screen keyboard pushes the visual viewport up. Chrome on Android
