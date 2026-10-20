@@ -46,6 +46,8 @@ Make every public page of `zapiszprzepis.pl` crawler-discoverable: serve a gener
 
 ## Progress
 
+PR: #364
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Shared data + view migration
