@@ -7,12 +7,24 @@ vi.mock('@/lib/supabase/proxy', () => ({
   updateSession: vi.fn(async () => ({ response: NextResponse.next(), user: null })),
 }))
 
-import { middleware } from './middleware'
+import { middleware, config } from './middleware'
 import { updateSession } from '@/lib/supabase/proxy'
 
 function get(path: string) {
   return new NextRequest(`http://localhost${path}`)
 }
+
+describe('middleware config.matcher — crawler endpoints bypass the gate', () => {
+  const re = new RegExp(`^${config.matcher[0]}$`)
+  it('does NOT match /robots.txt or /sitemap.xml (served without the auth gate)', () => {
+    expect(re.test('/robots.txt')).toBe(false)
+    expect(re.test('/sitemap.xml')).toBe(false)
+  })
+  it('still matches app pages that must pass through the gate', () => {
+    expect(re.test('/przepisy/obiady')).toBe(true)
+    expect(re.test('/ulubione')).toBe(true)
+  })
+})
 
 describe('middleware — E01-S03b legacy /recipes/{slug} → /przepis/{slug} 301', () => {
   beforeEach(() => {
