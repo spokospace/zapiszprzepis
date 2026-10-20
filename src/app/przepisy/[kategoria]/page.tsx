@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getFavoriteIds } from '@/lib/favorites'
 import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
+import { getCategoryDescription } from '@/lib/category-descriptions'
 import { categoryNoun, parsePageParam, parseTagParam, tagFacets, tagSummary } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
 import { recipeTotalMinutes } from '@/lib/recipe-meta'
@@ -29,12 +30,20 @@ const LINK = 'font-semibold text-action-text underline underline-offset-4 hover:
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { kategoria: category } = await params
   if (!isRecipeCategory(category)) return {}
-  const canonical = `${await getSiteUrl()}${categoryPath(category)}`
+  const siteUrl = await getSiteUrl()
+  const canonical = `${siteUrl}${categoryPath(category)}`
+  const label = categoryLabel(category)
+  const description = await getCategoryDescription(category)
+  // The PWA icon is the only site-level image; a per-category card is a follow-up.
+  const ogImage = `${siteUrl}/icons/icon-512x512.png`
   return {
-    title: `${categoryLabel(category)} · Zapisz Przepis`,
+    title: `${label} · Zapisz Przepis`,
+    description,
     // Tag/page variants must not compete with the bare category URL.
     // The .md alternate (#363) advertises the AI-citable Markdown listing.
     alternates: { canonical, types: { 'text/markdown': `${canonical}.md` } },
+    openGraph: { title: label, description, type: 'website', images: [ogImage] },
+    twitter: { card: 'summary', title: label, description },
   }
 }
 
