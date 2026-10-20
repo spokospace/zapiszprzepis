@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense, use } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Plus, Search } from 'lucide-react'
@@ -7,7 +8,7 @@ import { AppMenu } from './app-menu'
 import { LogoIcon, LogoWordmark } from './brand-logo'
 import { PageBackLink } from './header-back-link'
 import { useHeaderBackTarget } from './header-back-target'
-import { NotificationBell } from './notification-bell'
+import { NotificationBell, NotificationBellPlaceholder } from './notification-bell'
 import { PageContainer } from './page-container'
 import { HeaderNav } from './header-nav'
 import { HeaderSearch } from './header-search'
@@ -16,16 +17,57 @@ import type { MenuSummary } from '@/lib/menu-summary'
 import { notificationBadge } from '@/lib/notification-badge'
 import { ADD_RECIPE_PATH, PRZEPIS_PAGE_RE, SEARCH_PATH } from '@/lib/routes'
 
+/** A value, or the promise of one a server component passed down without awaiting it (#226). */
+type Awaitable<T> = T | PromiseLike<T>
+
+function isThenable<T>(value: Awaitable<T>): value is PromiseLike<T> {
+  return typeof (value as PromiseLike<T> | null)?.then === 'function'
+}
+
+/** Suspends on a pending promise (inside the caller's Suspense boundary); a plain value passes through. */
+function useAwaited<T>(value: Awaitable<T>): T {
+  return isThenable(value) ? use(value as Promise<T>) : value
+}
+
+function HeaderBell({ failedShares }: { failedShares: Awaitable<FailedSharesResult> }) {
+  return <NotificationBell failedShares={useAwaited(failedShares)} />
+}
+
+function HeaderMenu({
+  isAuthenticated,
+  failedShares,
+  menu,
+}: {
+  isAuthenticated: boolean
+  failedShares: Awaitable<FailedSharesResult>
+  menu: Awaitable<MenuSummary | null | undefined>
+}) {
+  const summary = useAwaited(menu)
+  const shares = useAwaited(failedShares)
+  return (
+    <AppMenu
+      isAuthenticated={isAuthenticated}
+      summary={summary}
+      notifications={isAuthenticated ? notificationBadge(shares) : null}
+    />
+  )
+}
+
 export function AppHeader({
   failedShares,
   isAuthenticated,
   menu,
 }: {
-  failedShares: FailedSharesResult
+  /**
+   * The notifications check. A layout passes the promise unawaited, so the header
+   * and the page (its loading skeleton included) are sent at once and the bell and
+   * MENU badge fill in when it returns (#226).
+   */
+  failedShares: Awaitable<FailedSharesResult>
   /** Guest (E01-S02) vs signed-in: a guest gets no Dodaj or bell; "Zaloguj się" is in MENU below lg. */
   isAuthenticated: boolean
-  /** MENU counters + full access (E01-S09); the drawer degrades without it. */
-  menu?: MenuSummary | null
+  /** MENU counters + full access (E01-S09); the drawer degrades without it, and while it loads. */
+  menu?: Awaitable<MenuSummary | null | undefined>
 }) {
   const pathname = usePathname()
   // Below lg "← Wróć" replaces the logo on the screens below the start page (handoff 1c);
@@ -89,7 +131,9 @@ export function AppHeader({
               {/* Desktop only: below lg „Powiadomienia” is a MENU drawer row, with the
                   badge on the MENU button (#323). */}
               <div className="hidden lg:flex">
-                <NotificationBell failedShares={failedShares} />
+                <Suspense fallback={<NotificationBellPlaceholder />}>
+                  <HeaderBell failedShares={failedShares} />
+                </Suspense>
               </div>
             </>
           ) : (
@@ -114,11 +158,10 @@ export function AppHeader({
           {/* The guest drawer holds only the sign-in CTA and the categories, which the
               desktop header already shows. */}
           <div className={isAuthenticated ? 'flex' : 'flex lg:hidden'}>
-            <AppMenu
-              isAuthenticated={isAuthenticated}
-              summary={menu}
-              notifications={isAuthenticated ? notificationBadge(failedShares) : null}
-            />
+            {/* While the counts load, a working MENU without counters or badge. */}
+            <Suspense fallback={<AppMenu isAuthenticated={isAuthenticated} />}>
+              <HeaderMenu isAuthenticated={isAuthenticated} failedShares={failedShares} menu={menu} />
+            </Suspense>
           </div>
         </div>
       </PageContainer>

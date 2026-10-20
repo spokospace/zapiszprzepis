@@ -51,3 +51,23 @@ export function NotificationBell({ failedShares: result }: { failedShares: Faile
     </Link>
   )
 }
+
+/**
+ * The bell while the check is still running (#226): a working link without a
+ * count, marked busy. Never the empty state — it must not claim there is
+ * nothing to show while it does not know (#137).
+ */
+export function NotificationBellPlaceholder() {
+  return (
+    <Link
+      href={NOTIFICATIONS_PATH}
+      aria-label="Powiadomienia"
+      aria-busy="true"
+      className="relative inline-flex h-14 min-w-[100px] flex-col items-center justify-center gap-0.5 rounded-field px-1 text-[13px] font-bold text-ink no-underline! hover:bg-surface-3"
+    >
+      <Bell aria-hidden="true" className="h-6 w-6" />
+      Powiadomienia
+    </Link>
+  )
+}
+
