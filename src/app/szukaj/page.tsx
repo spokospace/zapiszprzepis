@@ -72,12 +72,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
               Wpisz nazwę dania albo składnik, np. „pierogi” albo „cukinia”.
             </p>
             {user && <RecentSearchList />}
-            <section aria-labelledby="search-categories-heading" className="lg:hidden">
-              <h2 id="search-categories-heading" className="mb-3 text-[18px] font-bold text-ink-soft">
-                Albo wybierz kategorię
-              </h2>
-              <CategoryGrid columns={2} />
-            </section>
+            <div className="lg:hidden">
+              <CategoryGrid columns={2} title="Albo wybierz kategorię" />
+            </div>
           </>
         ) : 'error' in outcome ? (
           <p role="alert" className="text-[19px] text-danger">

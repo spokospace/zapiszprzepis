@@ -34,14 +34,17 @@ const TILE = {
  */
 const GUEST_EXTRA = RECIPE_CATEGORIES[HOME_CATEGORIES.length]
 
-/** "Kategorie" tiles (E01-S04): 3 columns for a guest (from 360px), 2 for a signed-in user. */
-export function CategoryGrid({ columns }: { columns: keyof typeof COLUMNS }) {
+/**
+ * "Kategorie" tiles (E01-S04): 3 columns for a guest (from 360px), 2 for a signed-in
+ * user. The empty search screen titles them „Albo wybierz kategorię” (4a, E01-S26).
+ */
+export function CategoryGrid({ columns, title = 'Kategorie' }: { columns: keyof typeof COLUMNS; title?: string }) {
   const categories = columns === 3 ? [...HOME_CATEGORIES, GUEST_EXTRA] : HOME_CATEGORIES
   const tile = TILE[columns]
   return (
     <section aria-labelledby="categories-heading">
       <h2 id="categories-heading" className="mb-3 text-[22px] font-bold text-ink">
-        Kategorie
+        {title}
       </h2>
       <ul className={`grid ${COLUMNS[columns]} gap-2`}>
         {categories.map(({ value, label }) => {
