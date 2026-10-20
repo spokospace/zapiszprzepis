@@ -8,7 +8,7 @@ import { PRIVACY_POLICY_PATH, TERMS_PATH } from '@/lib/routes'
 import { OAuthButtons } from './oauth-buttons'
 import { SignInForm } from './signin-form'
 
-export const metadata: Metadata = { title: 'Zaloguj się · ZapiszPrzepis' }
+export const metadata: Metadata = { title: 'Zaloguj się · Zapisz Przepis' }
 
 type SearchParams = Promise<{
   error?: string

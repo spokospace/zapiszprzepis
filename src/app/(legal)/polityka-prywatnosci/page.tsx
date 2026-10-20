@@ -4,15 +4,15 @@ import { DATA_DELETION_PATH, TERMS_PATH } from '@/lib/routes'
 import { LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
 
 export const metadata: Metadata = {
-  title: 'Polityka prywatności — ZapiszPrzepis',
-  description: 'Jakie dane zbiera ZapiszPrzepis, po co, komu je przekazuje i jakie masz prawa.',
+  title: 'Polityka prywatności · Zapisz Przepis',
+  description: 'Jakie dane zbiera Zapisz Przepis, po co, komu je przekazuje i jakie masz prawa.',
 }
 
 export default function PrivacyPolicyPage() {
   return (
     <LegalPage title="Polityka prywatności">
       <p>
-        Tu opisujemy, jakie dane zbiera serwis ZapiszPrzepis (zapiszprzepis.pl), po co, gdzie są przechowywane i co
+        Tu opisujemy, jakie dane zbiera serwis Zapisz Przepis (zapiszprzepis.pl), po co, gdzie są przechowywane i co
         możesz z nimi zrobić. Staramy się zbierać tylko to, czego serwis naprawdę potrzebuje do działania.
       </p>
 

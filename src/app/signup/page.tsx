@@ -5,7 +5,7 @@ import { SignUpForm } from './signup-form'
 import { LegalLinks } from '@/app/components/legal-page'
 import { BrandLogo } from '@/app/components/brand-logo'
 
-export const metadata: Metadata = { title: 'Załóż konto · ZapiszPrzepis' }
+export const metadata: Metadata = { title: 'Załóż konto · Zapisz Przepis' }
 
 type SearchParams = Promise<{
   error?: string

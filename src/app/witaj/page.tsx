@@ -10,7 +10,7 @@ import { Avatar } from '@/app/components/ui/avatar'
 import { GenderForm } from './gender-form'
 
 export const metadata: Metadata = {
-  title: 'Witaj — ZapiszPrzepis',
+  title: 'Witaj · Zapisz Przepis',
   robots: { index: false },
 }
 

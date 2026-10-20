@@ -136,7 +136,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       )}
       {in_favorites === '1' && (
         <Toast
-          message="Ten przepis już jest w ZapiszPrzepis. Dodaliśmy go do Twoich ulubionych."
+          message="Ten przepis już jest w aplikacji Zapisz Przepis. Dodaliśmy go do Twoich ulubionych."
           type="info"
           duration={5000}
           clearParam="in_favorites"

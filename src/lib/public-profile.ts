@@ -69,7 +69,7 @@ const MONTHS_GENITIVE = [
 const MONTH_YEAR_WARSAW = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Warsaw', month: 'numeric', year: 'numeric' })
 
 /**
- * "października 2026" for "W ZapiszPrzepis od …". Uses the earlier of the
+ * "października 2026" for "W aplikacji Zapisz Przepis od …". Uses the earlier of the
  * profile's creation and the person's oldest recipe: profiles.created_at is the
  * S18 backfill time for accounts that existed before S18, while their recipes
  * go back further. Approximate for a pre-S18 account without recipes.

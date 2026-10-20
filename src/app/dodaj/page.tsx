@@ -8,7 +8,7 @@ import { PageContainer } from '@/app/components/page-container'
 import { AccessCodeGate } from '@/app/components/access-code-gate'
 import { AddRecipePanel } from './add-recipe-panel'
 
-export const metadata: Metadata = { title: 'Dodaj przepis · ZapiszPrzepis', robots: { index: false } }
+export const metadata: Metadata = { title: 'Dodaj przepis · Zapisz Przepis', robots: { index: false } }
 
 type SearchParams = Promise<{ add_error?: string | string[] }>
 

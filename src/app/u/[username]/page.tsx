@@ -105,8 +105,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!data) return {}
   const name = data.profile.display_name
   return {
-    title: `${name} · ZapiszPrzepis`,
-    description: `Przepisy dodane przez ${name} w ZapiszPrzepis.`,
+    title: `${name} · Zapisz Przepis`,
+    description: `Przepisy dodane przez ${name} w aplikacji Zapisz Przepis.`,
     // Absolute (no metadataBase in the root layout); filters and paging are not separate documents.
     alternates: { canonical: `${await getSiteUrl()}${profilePath(data.profile.username)}` },
     robots: profileRobots(data.total),
@@ -115,7 +115,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 /**
  * Public profile /u/{username} (E01-S14, screen 7): avatar, name, recipe count,
- * "W ZapiszPrzepis od …", category chips and the recipes this person added,
+ * "W aplikacji Zapisz Przepis od …", category chips and the recipes this person added,
  * 12 more per "Pokaż kolejne". Same for guests and signed-in visitors, except
  * the owner also gets a link to /settings. Nothing private is shown.
  */
@@ -200,7 +200,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
           <div className="min-w-0">
             <h1 className="break-words text-[28px] font-bold leading-tight text-ink">{profile.display_name}</h1>
             {total > 0 && <p className="text-[17px] text-ink">{profileCountLine(genderForm, total)}</p>}
-            <p className="text-[17px] text-ink-soft">W ZapiszPrzepis od {memberSinceLabel(profile.created_at, oldest)}</p>
+            <p className="text-[17px] text-ink-soft">W aplikacji Zapisz Przepis od {memberSinceLabel(profile.created_at, oldest)}</p>
           </div>
         </header>
 

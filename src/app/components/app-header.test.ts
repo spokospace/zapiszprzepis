@@ -99,7 +99,7 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     for (const signedIn of [true, false]) {
       const html = render(signedIn)
       expect(html).not.toContain('aria-label="Wróć')
-      const logo = html.match(/<a[^>]*aria-label="ZapiszPrzepis — strona główna"[^>]*>/)?.[0] ?? ''
+      const logo = html.match(/<a[^>]*aria-label="Zapisz Przepis — strona główna"[^>]*>/)?.[0] ?? ''
       expect(logo).toContain('href="/"')
       expect(logo).not.toContain('hidden lg:flex')
       // The old chevron to the owner-only /recipes is gone.

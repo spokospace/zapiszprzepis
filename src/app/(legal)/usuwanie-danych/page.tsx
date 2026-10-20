@@ -4,15 +4,15 @@ import { PRIVACY_POLICY_PATH } from '@/lib/routes'
 import { LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
 
 export const metadata: Metadata = {
-  title: 'Usuwanie danych — ZapiszPrzepis',
-  description: 'Jak usunąć konto w ZapiszPrzepis i wszystkie swoje dane, także po logowaniu przez Facebooka lub Google.',
+  title: 'Usuwanie danych · Zapisz Przepis',
+  description: 'Jak usunąć konto w aplikacji Zapisz Przepis i wszystkie swoje dane, także po logowaniu przez Facebooka lub Google.',
 }
 
 export default function DataDeletionPage() {
   return (
     <LegalPage title="Jak usunąć konto i swoje dane">
       <p>
-        Ta strona opisuje, jak usunąć swoje dane z serwisu ZapiszPrzepis, także jeśli logujesz się przez Facebooka lub
+        Ta strona opisuje, jak usunąć swoje dane z serwisu Zapisz Przepis, także jeśli logujesz się przez Facebooka lub
         Google.
       </p>
 
@@ -62,7 +62,7 @@ export default function DataDeletionPage() {
 
       <LegalSection id="facebook" title="4. Logowanie przez Facebooka lub Google">
         <p>
-          Możesz też odłączyć ZapiszPrzepis w ustawieniach konta Facebook (Ustawienia i prywatność → Ustawienia →
+          Możesz też odłączyć Zapisz Przepis w ustawieniach konta Facebook (Ustawienia i prywatność → Ustawienia →
           Aplikacje i witryny) lub konta Google (Bezpieczeństwo → Połączenia z aplikacjami i usługami innych firm).
           Odłączenie zatrzymuje przekazywanie danych z Facebooka lub Google, ale nie usuwa danych zapisanych już w
           naszym serwisie — o to poproś tak, jak opisaliśmy wyżej.

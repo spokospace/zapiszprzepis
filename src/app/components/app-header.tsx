@@ -43,7 +43,7 @@ export function AppHeader({
           {showBack && <PageBackLink className="lg:hidden" />}
           <Link
             href="/"
-            aria-label="ZapiszPrzepis — strona główna"
+            aria-label="Zapisz Przepis — strona główna"
             className={`${showBack ? 'hidden lg:flex' : 'flex'} min-h-12 shrink-0 items-center gap-2 no-underline!`}
           >
             {/* Recipe icon + text wordmark (#276); the old logo-lettering.svg must not come
