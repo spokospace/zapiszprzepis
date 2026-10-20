@@ -15,8 +15,8 @@
 -- The char_length 1..160 check enforces the SERP length rule at the data layer:
 -- a too-long paste is rejected on write instead of silently truncated by Google.
 --
--- Idempotent: safe to re-run. The seed uses `on conflict do nothing`, so a later
--- owner edit in the dashboard is never overwritten by a re-run.
+-- Idempotent: safe to re-run. The rows themselves are content, not schema: they
+-- are written straight to the database (the repo is public), never committed here.
 --
 -- Rollback (drops the editable copy; the app degrades to the template):
 --   drop table if exists public.category_descriptions;
@@ -40,19 +40,3 @@ create policy category_descriptions_public_read
   for select
   to anon, authenticated
   using (true);
-
--- Seed the 12 draft sentences. `on conflict do nothing` keeps any owner edit.
-insert into public.category_descriptions (category, meta_description) values
-  ('obiady', 'Pomysły na obiad zapisane z mediów społecznościowych — sprawdzone przepisy na dania główne krok po kroku.'),
-  ('zupy', 'Przepisy na zupy zapisane z sieci — od rosołu po kremy, prosto i krok po kroku.'),
-  ('desery', 'Przepisy na desery zebrane z mediów społecznościowych — słodkości na każdą okazję, krok po kroku.'),
-  ('ciasta', 'Przepisy na ciasta zapisane z sieci — od drożdżówek po torty, sprawdzone i opisane krok po kroku.'),
-  ('ciasteczka', 'Przepisy na ciasteczka i kruche wypieki zapisane z mediów społecznościowych, krok po kroku.'),
-  ('sniadania', 'Pomysły na śniadanie zapisane z sieci — od owsianek po jajka, szybko i krok po kroku.'),
-  ('pieczywo', 'Przepisy na chleb i domowe pieczywo zapisane z mediów społecznościowych, krok po kroku.'),
-  ('przekaski', 'Przepisy na przekąski i dania na imprezę zapisane z sieci, krok po kroku.'),
-  ('salatki', 'Przepisy na sałatki zapisane z mediów społecznościowych — lekkie i sycące, krok po kroku.'),
-  ('napoje', 'Przepisy na napoje i koktajle zapisane z sieci, krok po kroku.'),
-  ('syropy', 'Przepisy na syropy i napary zapisane z mediów społecznościowych — domowe sposoby krok po kroku.'),
-  ('inne', 'Pozostałe przepisy zapisane z mediów społecznościowych, które nie trafiły do innych kategorii.')
-on conflict (category) do nothing;
