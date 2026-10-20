@@ -1,5 +1,5 @@
 /**
- * ZapiszPrzepis Service Worker
+ * Zapisz Przepis Service Worker
  *
  * Phase 1: Minimal service worker for PWA criteria
  * Phase 2: Web Share Target request handling

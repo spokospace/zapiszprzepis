@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { kategoria: category } = await params
   if (!isRecipeCategory(category)) return {}
   return {
-    title: `${categoryLabel(category)} · ZapiszPrzepis`,
+    title: `${categoryLabel(category)} · Zapisz Przepis`,
     // Tag/page variants must not compete with the bare category URL.
     alternates: { canonical: `${await getSiteUrl()}${categoryPath(category)}` },
   }

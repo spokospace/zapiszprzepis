@@ -1,6 +1,6 @@
 {
-  "name": "ZapiszPrzepis",
-  "short_name": "Przepisy",
+  "name": "Zapisz Przepis",
+  "short_name": "Zapisz Przepis",
   "description": "Archiwum przepisów udostępnianych z mediów społecznościowych",
   "start_url": "/",
   "scope": "/",

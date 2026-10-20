@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // Web Share Target API: allow POST /share without auth
-  // Browser invokes this when user selects "Share with ZapiszPrzepis" from system menu
+  // Browser invokes this when user selects "Share with Zapisz Przepis" from system menu
   // User may not be logged in yet; S-01 will handle auth requirements
   if (pathname === '/share' && request.method === 'POST') {
     return response

@@ -36,6 +36,12 @@ two-word name „Zapisz Przepis”, the mobile header with „Szukaj” instead 
 full-screen `/szukaj` and voice search. No adoptions: no open or closed issue
 covered them.
 
+Extension 2026-10-20 (v8 gap review against production): S28 (recipe page header
+per C3 — „← {lista}” in the header, the list bar and „N z M” dropped below lg;
+owner decision, supersedes #324 for the recipe page), S29 (type-ahead
+suggestions) and S30 („W serwisie” / „Na blogach” tabs) — the last two parked
+by the owner until S24–S28 ship.
+
 | Id | Issue | Title | Epic | Depends on | Adopted | Status |
 |---|---|---|---|---|---|---|
 | E01 | [#201](https://github.com/spokospace/zapiszprzepis/issues/201) | Rebuild ZapiszPrzepis as a public, high-readability app | — | — | no | open |
@@ -72,10 +78,13 @@ covered them.
 | E01-S25 | [#340](https://github.com/spokospace/zapiszprzepis/issues/340) | Below lg the header shows „Zapisz Przepis” · „Szukaj” · „MENU” for everyone | #201 | E01-S24 | no | open |
 | E01-S26 | [#341](https://github.com/spokospace/zapiszprzepis/issues/341) | Below lg, /szukaj opens as a full-screen search with recent and popular searches | #201 | E01-S25 | no | open |
 | E01-S27 | [#342](https://github.com/spokospace/zapiszprzepis/issues/342) | A user can search by voice with „Powiedz” and sees what was heard | #201 | E01-S26 | no | open |
+| E01-S28 | [#344](https://github.com/spokospace/zapiszprzepis/issues/344) | Below lg the recipe page header leads back to the list („← Wyniki”) instead of a separate list bar | #201 | E01-S25 | no | open |
+| E01-S29 | [#345](https://github.com/spokospace/zapiszprzepis/issues/345) | While typing a search, a user sees up to 4 recipe suggestions and „Pokaż wszystkie wyniki” | #201 | E01-S26 | no | open |
+| E01-S30 | [#346](https://github.com/spokospace/zapiszprzepis/issues/346) | Search results split into „W serwisie” and „Na blogach” tabs | #201 | E01-S26 | no | open |
 
-Reserved ids: E01-S01 … E01-S27, plus E01-S03a / E01-S03b (S03 split; the bare
+Reserved ids: E01-S01 … E01-S30, plus E01-S03a / E01-S03b (S03 split; the bare
 `E01-S03` id is retired, not reused), E01-S07b, E01-S12b, E01-S13b, and tasks
-E01-S12-T01, E01-S21-T01. Next new story would be E01-S28.
+E01-S12-T01, E01-S21-T01. Next new story would be E01-S31.
 
 Outside the tree (not E01 outcomes, deliberately not adopted): #225–#233
 (listing/performance refactors), #116, #132, #188, #307.

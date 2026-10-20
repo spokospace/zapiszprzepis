@@ -4,8 +4,8 @@ import { DATA_DELETION_PATH, PRIVACY_POLICY_PATH } from '@/lib/routes'
 import { LegalList, LegalPage, LegalSection, LEGAL_LINK } from '@/app/components/legal-page'
 
 export const metadata: Metadata = {
-  title: 'Regulamin — ZapiszPrzepis',
-  description: 'Zasady korzystania z serwisu ZapiszPrzepis.',
+  title: 'Regulamin · Zapisz Przepis',
+  description: 'Zasady korzystania z serwisu Zapisz Przepis.',
 }
 
 export default function TermsPage() {
@@ -13,14 +13,14 @@ export default function TermsPage() {
     <LegalPage title="Regulamin">
       <LegalSection id="uslugodawca" title="1. Kto prowadzi serwis">
         <p>
-          Serwis ZapiszPrzepis (zapiszprzepis.pl) prowadzi SPOKO SPACE Szymon Berski,{' '}
+          Serwis Zapisz Przepis (zapiszprzepis.pl) prowadzi SPOKO SPACE Szymon Berski,{' '}
           Bielsko-Biała, NIP 5472125993. Kontakt: <a href="mailto:kontakt@spoko.space" className={LEGAL_LINK}>kontakt@spoko.space</a>.
         </p>
       </LegalSection>
 
       <LegalSection id="czym-jest" title="2. Czym jest serwis">
         <p>
-          ZapiszPrzepis pomaga zapisywać przepisy znalezione w internecie: na blogach, w postach na Facebooku i w
+          Zapisz Przepis pomaga zapisywać przepisy znalezione w internecie: na blogach, w postach na Facebooku i w
           filmach na YouTube. Dodajesz link, a serwis odczytuje z tej strony przepis (składniki, kroki, czas
           przygotowania) i zapisuje go w uporządkowanej formie. Przepisy trafiają do wspólnego, publicznego katalogu.
         </p>

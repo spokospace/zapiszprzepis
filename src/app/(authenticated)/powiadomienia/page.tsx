@@ -4,7 +4,7 @@ import { getNotifications } from '@/lib/notifications'
 import { PageContainer } from '@/app/components/page-container'
 import { NotificationsView } from './notifications-view'
 
-export const metadata: Metadata = { title: 'Powiadomienia · ZapiszPrzepis', robots: { index: false } }
+export const metadata: Metadata = { title: 'Powiadomienia · Zapisz Przepis', robots: { index: false } }
 
 // Screen 5 (E01-S15): full-screen notifications, opened from the header bell
 // and the home banner. A page, not an overlay: it has a URL, survives a refresh

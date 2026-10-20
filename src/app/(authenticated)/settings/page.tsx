@@ -11,7 +11,7 @@ import { PageContainer } from '@/app/components/page-container'
 import { Button } from '@/app/components/ui/button'
 import { SettingsForm } from './settings-form'
 
-export const metadata: Metadata = { title: 'Mój profil · ZapiszPrzepis' }
+export const metadata: Metadata = { title: 'Mój profil · Zapisz Przepis' }
 
 type ProfileRow = {
   display_name: string

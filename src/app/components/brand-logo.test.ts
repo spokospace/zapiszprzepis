@@ -21,4 +21,13 @@ describe('brand logo', () => {
     )
     expect(offenders).toEqual([])
   })
+
+  // Handoff v8 (#339): the name is two words everywhere the user can see it; the
+  // address stays lowercase „zapiszprzepis.pl”, which this pattern does not match.
+  it('no source file under src/ spells the name as one word „ZapiszPrzepis”', () => {
+    const offenders = sourceFiles(join(process.cwd(), 'src')).filter((file) =>
+      readFileSync(file, 'utf8').includes('Zapisz' + 'Przepis'),
+    )
+    expect(offenders).toEqual([])
+  })
 })

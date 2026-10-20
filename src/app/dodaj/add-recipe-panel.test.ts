@@ -26,7 +26,7 @@ describe('AddRecipePanel — A7 (E01-S10)', () => {
     expect(html.match(/<li>/g)).toHaveLength(3)
     expect(html.indexOf('Wklejasz link')).toBeLessThan(html.indexOf('1–3 minuty'))
     expect(html).toContain('dzwonek da znać o problemie')
-    expect(html).toContain('Udostępnij → ZapiszPrzepis')
+    expect(html).toContain('Udostępnij → Zapisz Przepis')
   })
 
   it('passes the error and focus through to the link form', () => {

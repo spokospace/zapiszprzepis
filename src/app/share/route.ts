@@ -7,7 +7,7 @@ import { extractFirstUrl } from '@/lib/extract-url'
 /**
  * Web Share Target API endpoint
  *
- * Browser calls this when user selects "Share with ZapiszPrzepis" from system menu.
+ * Browser calls this when user selects "Share with Zapisz Przepis" from system menu.
  * Form data includes:
  *   - url: string (optional) — shared URL
  *   - title: string (optional) — page title

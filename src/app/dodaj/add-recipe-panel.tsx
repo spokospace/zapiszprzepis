@@ -52,7 +52,7 @@ export function AddRecipePanel({ error = null, autoFocus }: { error?: AddRecipeE
           ))}
         </ol>
         <p className="mt-3 text-[16px] text-ink-soft">
-          Na telefonie możesz też użyć „Udostępnij → ZapiszPrzepis” prosto z Facebooka lub YouTube.
+          Na telefonie możesz też użyć „Udostępnij → Zapisz Przepis” prosto z Facebooka lub YouTube.
         </p>
       </section>
     </div>

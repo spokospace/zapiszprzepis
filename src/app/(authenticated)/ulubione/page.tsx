@@ -7,7 +7,7 @@ import { RecipeCard, TILE_SIZES_1_TO_3 } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import type { RecipeSource } from '@/lib/recipe-source'
 
-export const metadata: Metadata = { title: 'Ulubione · ZapiszPrzepis' }
+export const metadata: Metadata = { title: 'Ulubione · Zapisz Przepis' }
 
 type FavoriteCard = {
   id: number

@@ -3,13 +3,13 @@ import "./globals.css";
 import { PWARegister } from "./components/pwa-register";
 
 export const metadata: Metadata = {
-  title: "ZapiszPrzepis",
+  title: "Zapisz Przepis",
   description: "Archiwum przepisów udostępnianych z mediów społecznościowych.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "ZapiszPrzepis",
+    title: "Zapisz Przepis",
   },
   formatDetection: {
     telephone: false,

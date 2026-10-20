@@ -22,7 +22,7 @@ type SearchParams = Promise<{
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const { q } = parseSearchParams(await searchParams, false)
   // Result pages are endless permutations of the same recipes: keep them out of indexes.
-  return { title: q ? `„${q}” — Szukaj · ZapiszPrzepis` : 'Szukaj · ZapiszPrzepis', robots: { index: false } }
+  return { title: q ? `„${q}” — Szukaj · Zapisz Przepis` : 'Szukaj · Zapisz Przepis', robots: { index: false } }
 }
 
 /**
