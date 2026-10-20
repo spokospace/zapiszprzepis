@@ -54,8 +54,8 @@ all in a root `/llms.txt` — so an AI agent can fetch quotable, citable Markdow
 
 ### Phase 1: Pure Markdown builders
 
-- [ ] 1.1 recipe-markdown.ts + tests
-- [ ] 1.2 category-markdown.ts + tests
+- [x] 1.1 recipe-markdown.ts + tests — 9fd7c95
+- [x] 1.2 category-markdown.ts + tests — 9fd7c95
 
 ### Phase 2: Routes, routing and head wiring
 
