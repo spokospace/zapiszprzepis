@@ -105,6 +105,9 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
         {/* No breadcrumbs below lg (C3): the header leads back to the list and the
             category is in the line under the title. From lg they sit in the A9 row. */}
         <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
+        {/* The recipe's own short description sits right under the title, not after the
+            times row (owner request) — a subtitle qualifying the dish ("ze smalcem"). */}
+        {recipe.description && <p className="mb-3 text-scalable-body text-ink-soft">{recipe.description}</p>}
         {/* Below lg (C3). From lg the category is in the breadcrumbs and the times get
             their own row (A9). */}
         <p className="mb-3 text-[17px] text-ink-soft lg:hidden">
@@ -157,8 +160,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
           </dl>
         )}
 
-        {recipe.description && <p className="text-scalable-body mt-4 text-ink-soft">{recipe.description}</p>}
-        {recipe.meta_description && <p className="text-scalable-body mt-3 leading-relaxed text-ink">{recipe.meta_description}</p>}
+        {recipe.meta_description && <p className="mt-4 text-scalable-body leading-relaxed text-ink">{recipe.meta_description}</p>}
         {versionsBar}
         {actions}
       </div>
