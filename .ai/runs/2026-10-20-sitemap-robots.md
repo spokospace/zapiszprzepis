@@ -50,8 +50,8 @@ Make every public page of `zapiszprzepis.pl` crawler-discoverable: serve a gener
 
 ### Phase 1: Shared data + view migration
 
-- [ ] 1.1 Migration: last_modified on public_recipes + PublicRecipe type
-- [ ] 1.2 src/lib/public-recipe.ts listCanonicalRecipes + tests
+- [x] 1.1 Migration: last_modified on public_recipes + PublicRecipe type — 4dfd1ad
+- [x] 1.2 src/lib/public-recipe.ts listCanonicalRecipes + tests — 4dfd1ad
 
 ### Phase 2: robots + sitemap routes
 
