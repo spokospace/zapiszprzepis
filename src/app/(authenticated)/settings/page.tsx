@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { LogOut } from 'lucide-react'
+import { Bell, ChevronRight, LogOut } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { SUPABASE_URL } from '@/lib/env'
 import { avatarColorIndex, avatarUrl } from '@/lib/avatar'
-import { profilePath } from '@/lib/routes'
+import { NOTIFICATIONS_PATH, profilePath } from '@/lib/routes'
 import { genderFormOf, youAddedLine } from '@/lib/gender-form'
 import { signOut } from '@/app/(actions)/sign-out'
 import { PageContainer } from '@/app/components/page-container'
@@ -58,6 +59,18 @@ export default async function SettingsPage() {
           <dt className="text-[16px] text-ink-soft">Adres email</dt>
           <dd className="mt-1 text-[19px] font-semibold break-all text-ink">{user.email ?? '—'}</dd>
         </dl>
+        {/* Notifications live in the account area now (E01-S15b): a stable entry
+            point here, plus the live „something new” dot on the MENU button on
+            every screen. This row stays off the page's critical path — no badge
+            query (the MENU dot is the live signal), so it never holds up TTFB (#359). */}
+        <Link
+          href={NOTIFICATIONS_PATH}
+          className="mt-8 flex min-h-14 items-center gap-3 rounded-field border-2 border-field px-4 text-[19px] font-semibold text-ink no-underline! hover:bg-surface-2"
+        >
+          <Bell aria-hidden="true" className="h-6 w-6 shrink-0" />
+          <span className="flex-1 underline underline-offset-4">Powiadomienia</span>
+          <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-ink-soft" />
+        </Link>
         <form action={signOut} className="mt-8 border-t-2 border-border-card pt-5">
           <Button type="submit" variant="outline" size="lg" className="w-full">
             <LogOut aria-hidden="true" className="h-5 w-5 shrink-0" />

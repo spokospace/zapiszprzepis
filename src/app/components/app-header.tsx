@@ -8,7 +8,6 @@ import { AppMenu } from './app-menu'
 import { LogoIcon, LogoWordmark } from './brand-logo'
 import { PageBackLink } from './header-back-link'
 import { useHeaderBackTarget } from './header-back-target'
-import { NotificationBell, NotificationBellPlaceholder } from './notification-bell'
 import { PageContainer } from './page-container'
 import { HeaderNav } from './header-nav'
 import { HeaderSearch } from './header-search'
@@ -27,10 +26,6 @@ function isThenable<T>(value: Awaitable<T>): value is PromiseLike<T> {
 /** Suspends on a pending promise (inside the caller's Suspense boundary); a plain value passes through. */
 function useAwaited<T>(value: Awaitable<T>): T {
   return isThenable(value) ? use(value as Promise<T>) : value
-}
-
-function HeaderBell({ failedShares }: { failedShares: Awaitable<FailedSharesResult> }) {
-  return <NotificationBell failedShares={useAwaited(failedShares)} />
 }
 
 function HeaderMenu({
@@ -128,13 +123,9 @@ export function AppHeader({
                 <Plus aria-hidden="true" className="h-5 w-5" />
                 Dodaj przepis
               </Link>
-              {/* Desktop only: below lg „Powiadomienia” is a MENU drawer row, with the
-                  badge on the MENU button (#323). */}
-              <div className="hidden lg:flex">
-                <Suspense fallback={<NotificationBellPlaceholder />}>
-                  <HeaderBell failedShares={failedShares} />
-                </Suspense>
-              </div>
+              {/* „Powiadomienia” has no standalone header affordance (E01-S15b): at
+                  every width the MENU button carries a small dot, the drawer a
+                  „Powiadomienia” row, and Settings hosts the entry. */}
             </>
           ) : (
             <>

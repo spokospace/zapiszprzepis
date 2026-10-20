@@ -9,7 +9,8 @@ import { buttonClasses } from '@/app/components/ui/button'
 import { CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { categoryPath, NOTIFICATIONS_PATH } from '@/lib/routes'
 import type { MenuSummary } from '@/lib/menu-summary'
-import { notificationsNoun, type NotificationBadge } from '@/lib/notification-badge'
+import type { NotificationBadge } from '@/lib/notification-badge'
+import { NotificationDot } from './notification-dot'
 import { buildMenuModel, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
 
 const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
@@ -72,9 +73,9 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
 }
 
 /**
- * "Powiadomienia" in "Moje", below lg only (#323): the phone header has no bell,
- * so this row and the MENU badge carry it; from lg the header bell does. The
- * counter is red like the bell badge, since it mostly means a problem.
+ * "Powiadomienia" in "Moje" (E01-S15b): the single entry point in the header
+ * drawer at every width — the standalone bell is gone. A dot (not a number)
+ * marks "something new"; its text equivalent is in the row's accessible name.
  */
 function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBadge; active: boolean; onNavigate: () => void }) {
   return (
@@ -91,15 +92,8 @@ function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBa
       </span>
       {badge.count > 0 && (
         <>
-          <span
-            aria-hidden="true"
-            className="ml-auto min-w-[2.25rem] rounded-pill bg-danger px-2.5 py-0.5 text-center text-[17px] font-bold text-white"
-          >
-            {badge.count}
-          </span>
-          <span className="sr-only">
-            , {badge.count} {notificationsNoun(badge.count)}
-          </span>
+          <NotificationDot className="ml-auto" />
+          <span className="sr-only">, masz nowe powiadomienia</span>
         </>
       )}
     </Link>
@@ -148,32 +142,20 @@ export function AppMenu({
         // The desktop header (E01-S17) keeps the 48 px inline row.
         className="relative inline-flex h-14 w-[60px] flex-col items-center justify-center gap-0.5 rounded-field text-[13px] leading-none font-bold text-ink hover:bg-surface-3 lg:h-auto lg:min-h-[48px] lg:w-auto lg:flex-row lg:gap-1.5 lg:px-2.5 lg:text-sm lg:leading-5 lg:font-semibold"
       >
-        <Menu aria-hidden="true" className="h-6 w-6 lg:h-5 lg:w-5" />
+        {/* The only header signal for notifications at every width (E01-S15b): a
+            fixed-size dot on the MENU icon, never a number — smallest footprint
+            for a cramped, large-font navbar. The text equivalent is in the
+            button's accessible name. */}
+        <span className="relative">
+          <Menu aria-hidden="true" className="h-6 w-6 lg:h-5 lg:w-5" />
+          {/* count > 0 and loadFailed are mutually exclusive (see notificationBadge). */}
+          {notifications && (notifications.count > 0 || notifications.loadFailed) && (
+            <NotificationDot className="absolute -top-1.5 -right-1.5" tone={notifications.loadFailed ? 'ink' : 'action'} />
+          )}
+        </span>
         MENU
-        {/* Below lg the bell's badge moves here (#323), with the count in the
-            button's name; from lg the header bell shows it. */}
-        {notifications && notifications.count > 0 && (
-          <>
-            <span
-              aria-hidden="true"
-              className="absolute top-0 right-0.5 flex h-[22px] min-w-[22px] items-center justify-center rounded-pill border-2 border-white bg-danger px-1 text-[13px] leading-none font-bold text-white lg:hidden"
-            >
-              {notifications.count}
-            </span>
-            <span className="sr-only lg:hidden">
-              , {notifications.count} {notificationsNoun(notifications.count)}
-            </span>
-          </>
-        )}
-        {notifications?.loadFailed && (
-          <>
-            <span
-              aria-hidden="true"
-              className="absolute top-1 right-2 h-3 w-3 rounded-pill border-2 border-white bg-ink lg:hidden"
-            />
-            <span className="sr-only lg:hidden">, nie udało się sprawdzić powiadomień</span>
-          </>
-        )}
+        {notifications && notifications.count > 0 && <span className="sr-only">, nowe powiadomienia</span>}
+        {notifications?.loadFailed && <span className="sr-only">, nie udało się sprawdzić powiadomień</span>}
       </button>
 
       <dialog
@@ -216,7 +198,7 @@ export function AppMenu({
                     </li>
                   ))}
                   {notifications && (
-                    <li className="lg:hidden">
+                    <li>
                       <NotificationsRow
                         badge={notifications}
                         active={pathname === NOTIFICATIONS_PATH}
