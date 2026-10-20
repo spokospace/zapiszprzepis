@@ -3,9 +3,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn() }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { dedupeCanonical, listCanonicalRecipes } from './public-recipe'
+import { dedupeCanonical, listCanonicalRecipes, listPublicProfileUsernames } from './public-recipe'
 
-type Row = { slug: string; created_at: string; id: number; last_modified?: string | null }
+type Row = { slug: string; created_at: string; id: number; last_modified?: string | null; author_username?: string | null }
 
 /**
  * Chainable public_recipes stub: records the selected columns and the .range()
@@ -35,6 +35,7 @@ function makeSupabase(dataset: Row[], opts: { undefinedColumn?: boolean } = {}) 
         const slice = dataset.slice(range[0], range[1] + 1).map((r) => {
           const row: Row = { slug: r.slug, created_at: r.created_at, id: r.id }
           if (columns.includes('last_modified')) row.last_modified = r.last_modified ?? null
+          if (columns.includes('author_username')) row.author_username = r.author_username ?? null
           return row
         })
         return resolve({ data: slice, error: null })
@@ -95,6 +96,19 @@ describe('listCanonicalRecipes', () => {
     )
     const out = await listCanonicalRecipes()
     expect(out).toEqual([{ slug: 'sernik', lastModified: '2026-01-01T00:00:00Z' }])
+  })
+
+  it('lists distinct author usernames and skips nulls', async () => {
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(
+      makeSupabase([
+        { slug: 'a', created_at: '2026-01-01T00:00:00Z', id: 1, author_username: 'ania' },
+        { slug: 'b', created_at: '2026-01-02T00:00:00Z', id: 2, author_username: 'ania' },
+        { slug: 'c', created_at: '2026-01-03T00:00:00Z', id: 3, author_username: 'marek' },
+        { slug: 'd', created_at: '2026-01-04T00:00:00Z', id: 4, author_username: null },
+      ]) as never,
+    )
+    const out = await listPublicProfileUsernames()
+    expect(out).toEqual(['ania', 'marek'])
   })
 
   it('pages past the row cap to list the whole catalog', async () => {
