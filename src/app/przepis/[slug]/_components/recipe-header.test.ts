@@ -67,8 +67,14 @@ describe('RecipeHeader desktop column (A9)', () => {
         actions: createElement('div', { id: 'actions' }),
       }),
     )
-    expect(html).toMatch(/Krem z dyni\.<\/p><div id="actions"><\/div><\/div><\/header>$/)
+    expect(html).toMatch(/<div id="actions"><\/div><\/div><\/header>$/)
     expect(html).not.toContain('Otwórz oryginał')
+  })
+
+  it('renders the description right under the title, before the source and times', () => {
+    const html = render({ description: 'ze smalcem' })
+    expect(html).toMatch(/<\/h1><p class="mb-3 text-\[19px\] text-ink-soft">ze smalcem<\/p>/)
+    expect(html.indexOf('ze smalcem')).toBeLessThan(html.indexOf('Źródło:'))
   })
 })
 
