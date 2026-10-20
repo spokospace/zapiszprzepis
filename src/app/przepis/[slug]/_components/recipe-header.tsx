@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Globe } from 'lucide-react'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
+import { formatSource, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine, recipeTimeStats } from '@/lib/recipe-meta'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
+import { SourceBadge } from '@/app/components/source-badge'
 
 export interface RecipeHeaderData {
   title: string
@@ -81,6 +81,10 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
   const times = recipeTimeStats(recipe)
+  const source = formatSource(recipe.source_type, recipe.source_url, recipe.source_author)
+  // The source leads to the original (E01-S31 §3): a link-badge on the photo, or,
+  // for a page-less recipe (no URL), a plain border-less badge.
+  const sourceBadge = <SourceBadge kind={source.kind} text={source.text} href={recipe.source_url} variant="recipe" />
 
   return (
     // Desktop (E01-S17, A9): a 16:10 photo | the text column (1.2fr 1fr) when there is a photo.
@@ -98,6 +102,8 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
             priority
             unoptimized={!isArchivedImageUrl(recipe.image_url)}
           />
+          {/* Source on the photo, bottom-left (E01-S31 §3). */}
+          <div className="absolute bottom-3 left-3 z-10 max-w-[calc(100%-1.5rem)]">{sourceBadge}</div>
         </div>
       )}
 
@@ -120,13 +126,8 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
           )}
         </p>
 
-        {/* C3: „Źródło: **YouTube · Kuchnia Ani**” — 18 px, the source in bold. */}
-        <p className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] text-ink">
-          <Globe aria-hidden="true" size={20} className="shrink-0 text-ink-soft" />
-          <span className="min-w-0">
-            Źródło: <strong className="font-bold">{sourceLabel(recipe.source_type, recipe.source_url, recipe.source_author)}</strong>
-          </span>
-        </p>
+        {/* With no photo there is no corner for the badge, so it sits here instead (E01-S31 §3). */}
+        {!recipe.image_url && <div className="mb-3">{sourceBadge}</div>}
 
         {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the
             raw gender, which stays owner-only (E01-S12); neutral "Dodane przez" when

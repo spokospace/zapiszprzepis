@@ -60,7 +60,7 @@ describe('RecipeHeader desktop column (A9)', () => {
     expect(render({ total_time_minutes: null })).not.toContain('<dl')
   })
 
-  it('puts the actions last in the text column and no inline "Otwórz oryginał" link', () => {
+  it('puts the actions last in the text column', () => {
     const html = renderToStaticMarkup(
       createElement(RecipeHeader, {
         recipe: { ...BASE, description: 'Krem z dyni.' },
@@ -68,13 +68,33 @@ describe('RecipeHeader desktop column (A9)', () => {
       }),
     )
     expect(html).toMatch(/<div id="actions"><\/div><\/div><\/header>$/)
-    expect(html).not.toContain('Otwórz oryginał')
   })
 
   it('renders the description right under the title, before the source and times', () => {
     const html = render({ description: 'ze smalcem' })
     expect(html).toMatch(/<\/h1><p class="mb-3 text-scalable-body text-ink-soft">ze smalcem<\/p>/)
-    expect(html.indexOf('ze smalcem')).toBeLessThan(html.indexOf('Źródło:'))
+    expect(html.indexOf('ze smalcem')).toBeLessThan(html.indexOf('aniagotuje.pl'))
+  })
+})
+
+describe('RecipeHeader source badge (E01-S31 §3)', () => {
+  it('links to the original in a new tab, with no "Źródło:" line', () => {
+    const html = render({})
+    expect(html).toMatch(/<a href="https:\/\/aniagotuje\.pl\/przepis\/zupa" target="_blank" rel="noopener"/)
+    expect(html).toContain('aria-label="Otwórz oryginał: aniagotuje.pl (nowa karta)"')
+    expect(html).not.toContain('Źródło:')
+  })
+
+  it('sits on the photo when there is one, inline when there is not', () => {
+    const withPhoto = render({ image_url: 'https://x.supabase.co/storage/v1/object/public/recipe-images/1/c.webp' })
+    expect(withPhoto).toContain('absolute bottom-3 left-3')
+    expect(render({})).not.toContain('absolute bottom-3 left-3')
+  })
+
+  it('a page-less recipe (no URL) gets a plain, link-less badge', () => {
+    const html = render({ source_type: 'other', source_url: null })
+    expect(html).not.toContain('target="_blank"')
+    expect(html).toContain('Inny')
   })
 })
 
