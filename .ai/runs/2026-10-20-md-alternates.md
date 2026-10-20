@@ -59,10 +59,10 @@ all in a root `/llms.txt` — so an AI agent can fetch quotable, citable Markdow
 
 ### Phase 2: Routes, routing and head wiring
 
-- [ ] 2.1 canonicalRecipeBySlug + test
-- [ ] 2.2 recipe .md route handler + test
-- [ ] 2.3 category .md route handler + test
-- [ ] 2.4 middleware .md rewrite + isPublicRoute + test
-- [ ] 2.5 head advertisement (recipe + category metadata) + tests
-- [ ] 2.6 llms.txt route + matcher exclusion + test
-- [ ] 2.7 full validation gate + bundle-size check
+- [x] 2.1 canonicalRecipeBySlug + test — 9407161
+- [x] 2.2 recipe .md route handler + test — 9407161
+- [x] 2.3 category .md route handler + test — 9407161 (via shared listCanonicalRecipesByCategory, oldest-wins)
+- [x] 2.4 middleware .md rewrite + isPublicRoute + test — 9407161
+- [x] 2.5 head advertisement (recipe + category metadata) — 9407161 (1-line metadata field; covered by typecheck + routing round-trip tests, no fragile RSC-import test)
+- [x] 2.6 llms.txt route + matcher exclusion + test — 9407161
+- [x] 2.7 full validation gate + bundle-size check — typecheck 0, lint 0 errors, 1391 tests pass; `next build` compiles clean; opennext bundle step can't finish locally (Windows symlink EPERM in the adapter) — the 3 MiB gate runs on Workers Builds from master
