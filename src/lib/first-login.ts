@@ -6,6 +6,7 @@
 // signing in.
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { applyFavoriteIntent } from './favorites'
+import { LEGAL_PATHS } from './routes'
 
 export const WELCOME_PATH = '/witaj'
 export const GENDERS = ['female', 'male'] as const
@@ -65,4 +66,31 @@ export function genderSaveRedirect(result: unknown, next: string): string {
   if (result === 'ok' || result === 'already_set') return next
   if (result === 'invalid') return welcomePath(next, 'invalid')
   return welcomePath(next, 'unknown')
+}
+
+/**
+ * Accounts from before screen 3b (E01-S12) never chose a gender and never log in
+ * again, so the post-login detour never reaches them and their recipes say the
+ * neutral „Dodane przez”. The middleware sends such a signed-in user once to
+ * /witaj on their next page view; this cookie (holding their user id) records
+ * that the choice is known, so the check costs one read per account and browser.
+ */
+export const GENDER_KNOWN_COOKIE = 'zp-gender'
+
+// Where the 3b detour never applies: the screen itself, sign-in and password
+// flows, API routes, the share target and the legal pages.
+const GENDER_CHECK_EXEMPT = /^\/(witaj|auth|api|login|signup|forgot-password|reset-password)(\/|$)/
+
+/** Pure: should the middleware look up this signed-in user's gender on this request? */
+export function shouldCheckGender(req: {
+  method: string
+  pathname: string
+  prefetch: boolean
+  userId: string
+  knownCookie: string | undefined
+}): boolean {
+  if (req.method !== 'GET' || req.prefetch) return false
+  if (req.knownCookie === req.userId) return false
+  if (req.pathname === '/share' || LEGAL_PATHS.includes(req.pathname)) return false
+  return !GENDER_CHECK_EXEMPT.test(req.pathname)
 }

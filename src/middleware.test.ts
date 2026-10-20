@@ -8,6 +8,7 @@ vi.mock('@/lib/supabase/proxy', () => ({
 }))
 
 import { middleware } from './middleware'
+import { updateSession } from '@/lib/supabase/proxy'
 
 function get(path: string) {
   return new NextRequest(`http://localhost${path}`)
@@ -65,5 +66,56 @@ describe('middleware — dev-only QA sign-in /api/dev/login', () => {
   it('lets a guest reach the route (it opens the session itself; the route gates itself)', async () => {
     const res = await middleware(get('/api/dev/login?as=free'))
     expect(res.headers.get('location')).toBeNull()
+  })
+})
+
+describe('middleware — one-time gender choice for accounts from before screen 3b', () => {
+  /** A signed-in session whose profiles_private read returns `result`. */
+  function signedIn(result: { data: { gender: string | null } | null; error: unknown }) {
+    const maybeSingle = vi.fn(async () => result)
+    const supabase = { from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle }) }) })) }
+    vi.mocked(updateSession).mockResolvedValueOnce({
+      response: NextResponse.next(),
+      user: { id: 'u1' },
+      supabase,
+    } as never)
+    return supabase
+  }
+
+  it('sends a signed-in user without a gender to /witaj, coming back to the page', async () => {
+    signedIn({ data: null, error: null })
+    const res = await middleware(get('/przepis/sernik?from=szukaj'))
+    expect(res.status).toBe(307)
+    expect(res.headers.get('location')).toBe('http://localhost/witaj?next=%2Fprzepis%2Fsernik%3Ffrom%3Dszukaj')
+  })
+
+  it('remembers a known gender in a cookie and lets the page through', async () => {
+    signedIn({ data: { gender: 'female' }, error: null })
+    const res = await middleware(get('/'))
+    expect(res.headers.get('location')).toBeNull()
+    expect(res.cookies.get('zp-gender')?.value).toBe('u1')
+  })
+
+  it('skips the read once the cookie names this user', async () => {
+    const supabase = signedIn({ data: null, error: null })
+    const req = get('/')
+    req.cookies.set('zp-gender', 'u1')
+    const res = await middleware(req)
+    expect(res.headers.get('location')).toBeNull()
+    expect(supabase.from).not.toHaveBeenCalled()
+  })
+
+  it('fails open when the read errors — no redirect, no cookie', async () => {
+    signedIn({ data: null, error: { code: '42P01' } })
+    const res = await middleware(get('/'))
+    expect(res.headers.get('location')).toBeNull()
+    expect(res.cookies.get('zp-gender')).toBeUndefined()
+  })
+
+  it('never detours from /witaj itself', async () => {
+    const supabase = signedIn({ data: null, error: null })
+    const res = await middleware(get('/witaj?next=%2F'))
+    expect(res.headers.get('location')).toBeNull()
+    expect(supabase.from).not.toHaveBeenCalled()
   })
 })

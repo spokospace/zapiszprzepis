@@ -1,11 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import type { User } from '@supabase/supabase-js'
+import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
 
 export async function updateSession(
   request: NextRequest,
-): Promise<{ response: NextResponse; user: User | null }> {
+): Promise<{ response: NextResponse; user: User | null; supabase: SupabaseClient }> {
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -39,5 +39,5 @@ export async function updateSession(
     data: { user },
   } = await supabase.auth.getUser()
 
-  return { response, user }
+  return { response, user, supabase }
 }

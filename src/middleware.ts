@@ -11,9 +11,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 import { isPublicRoute, RECIPE_PAGE_RE, legacyRecipePathToCanonical } from '@/lib/routes'
 import { loginPath, resolveLoginNext } from '@/lib/login-redirect'
+import { GENDER_KNOWN_COOKIE, shouldCheckGender, welcomePath } from '@/lib/first-login'
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
-  const { response, user } = await updateSession(request)
+  const { response, user, supabase } = await updateSession(request)
   const { pathname, search, searchParams, origin } = request.nextUrl
 
   // /auth/callback and /auth/confirm always pass through — they open the
@@ -64,6 +65,41 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // match RECIPE_PAGE_RE (single segment), so they are untouched.
   if (RECIPE_PAGE_RE.test(pathname)) {
     return NextResponse.redirect(new URL(legacyRecipePathToCanonical(pathname) + search, request.url), { status: 301 })
+  }
+
+  // A signed-in account that never chose a gender (from before screen 3b) is sent
+  // once to /witaj, so its recipes can say „Dodała/Dodał” (C3). Fails open: a read
+  // error never blocks the page; a known gender is remembered in a cookie.
+  if (
+    user &&
+    shouldCheckGender({
+      method: request.method,
+      pathname,
+      prefetch: request.headers.has('next-router-prefetch') || request.headers.get('purpose') === 'prefetch',
+      userId: user.id,
+      knownCookie: request.cookies.get(GENDER_KNOWN_COOKIE)?.value,
+    })
+  ) {
+    const { data, error } = await supabase
+      .from('profiles_private')
+      .select('gender')
+      .eq('id', user.id)
+      .maybeSingle<{ gender: string | null }>()
+    if (!error && !data?.gender) {
+      const redirect = NextResponse.redirect(new URL(welcomePath(pathname + search), request.url))
+      // Keep a refreshed session: updateSession may have rotated the auth cookies.
+      response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie))
+      return redirect
+    }
+    if (!error) {
+      response.cookies.set(GENDER_KNOWN_COOKIE, user.id, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: request.nextUrl.protocol === 'https:',
+        maxAge: 60 * 60 * 24 * 365,
+      })
+    }
   }
 
   // E01-S02 public routes: a guest may read the home and a single recipe. Data
