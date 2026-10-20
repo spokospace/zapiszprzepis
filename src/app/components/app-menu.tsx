@@ -23,8 +23,10 @@ const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
 const LABELED_ICON_BUTTON =
   'inline-flex min-h-14 items-center gap-1.5 rounded-field px-3 text-[18px] font-bold text-ink hover:bg-surface-3'
 
-// "Ustawienia | Wyloguj": 64 px rows, 18 px bold (handoff C5).
-const FOOTER_ROW = 'flex min-h-16 items-center justify-center gap-2 text-[18px] font-bold hover:bg-surface-2'
+// "Ustawienia | Wyloguj": 64 px rows, 18 px bold (handoff C5). no-underline!:
+// "Ustawienia" is a <Link>, so the global `a` underline would show through
+// (menu items carry no underline — #390); the ! beats the unlayered `a` rule.
+const FOOTER_ROW = 'flex min-h-16 items-center justify-center gap-2 text-[18px] font-bold no-underline! hover:bg-surface-2'
 
 const SECTION_HEADING = 'px-5 pb-2 text-[17px] font-bold text-ink-soft'
 

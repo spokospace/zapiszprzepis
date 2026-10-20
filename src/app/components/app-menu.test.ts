@@ -138,7 +138,9 @@ describe('AppMenu items carry no underline (#390)', () => {
     expect(settings).toContain('text-action-text')
     // A non-colour affordance (never colour alone — WCAG 1.4.1) that is not an underline.
     expect(settings).toContain('bg-surface-3')
-    expect(settings).not.toContain('underline')
+    // Opts out of the global `a` underline (it is a <Link>), and no offset utility.
+    expect(settings).toContain('no-underline!')
+    expect(settings).not.toContain('underline-offset')
     pathname = '/przepisy/zupy'
   })
 })
