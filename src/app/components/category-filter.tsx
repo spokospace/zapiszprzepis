@@ -55,6 +55,8 @@ export function CategoryFilter({ activeCategory, counts }: CategoryFilterProps) 
   function handleClick(value: RecipeCategory) {
     const next = optimistic.active === value ? null : value
     const params = new URLSearchParams(searchParams.toString())
+    // Another category starts from the first page of „Pokaż kolejne” (#230).
+    params.delete('strona')
     if (next) {
       params.set('category', next)
     } else {
