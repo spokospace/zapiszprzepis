@@ -16,13 +16,41 @@ function get(path: string) {
 
 describe('middleware config.matcher — crawler endpoints bypass the gate', () => {
   const re = new RegExp(`^${config.matcher[0]}$`)
-  it('does NOT match /robots.txt or /sitemap.xml (served without the auth gate)', () => {
+  it('does NOT match /robots.txt, /sitemap.xml or /llms.txt (served without the auth gate)', () => {
     expect(re.test('/robots.txt')).toBe(false)
     expect(re.test('/sitemap.xml')).toBe(false)
+    expect(re.test('/llms.txt')).toBe(false)
   })
   it('still matches app pages that must pass through the gate', () => {
     expect(re.test('/przepisy/obiady')).toBe(true)
     expect(re.test('/ulubione')).toBe(true)
+  })
+})
+
+describe('middleware — #363 Phase 2 .md alternates rewrite', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('rewrites /przepis/{slug}.md to its route handler (not a redirect, not /login)', async () => {
+    const res = await middleware(get('/przepis/sernik.md'))
+    expect(res.status).not.toBe(307) // not a redirect to /login
+    expect(res.headers.get('location')).toBeNull()
+    expect(res.headers.get('x-middleware-rewrite')).toContain('/przepis/sernik/md')
+  })
+
+  it('rewrites /przepisy/{kategoria}.md to its route handler', async () => {
+    const res = await middleware(get('/przepisy/ciasta.md'))
+    expect(res.headers.get('x-middleware-rewrite')).toContain('/przepisy/ciasta/md')
+  })
+
+  it('does not rewrite a normal recipe page', async () => {
+    const res = await middleware(get('/przepis/sernik'))
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull()
+  })
+
+  it('301s a legacy /recipes/{slug}.md to the canonical .md first', async () => {
+    const res = await middleware(get('/recipes/sernik.md'))
+    expect(res.status).toBe(301)
+    expect(res.headers.get('location')).toBe('http://localhost/przepis/sernik.md')
   })
 })
 

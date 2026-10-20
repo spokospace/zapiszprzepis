@@ -3,9 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn() }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { dedupeCanonical, listCanonicalRecipes, listPublicProfileUsernames } from './public-recipe'
+import {
+  dedupeCanonical,
+  listCanonicalRecipes,
+  listPublicProfileUsernames,
+  listCanonicalRecipesByCategory,
+  canonicalRecipeBySlug,
+} from './public-recipe'
 
-type Row = { slug: string; created_at: string; id: number; last_modified?: string | null; author_username?: string | null }
+type Row = { slug: string; created_at: string; id: number; last_modified?: string | null; author_username?: string | null; title?: string | null }
 
 /**
  * Chainable public_recipes stub: records the selected columns and the .range()
@@ -22,6 +28,7 @@ function makeSupabase(dataset: Row[], opts: { undefinedColumn?: boolean } = {}) 
         columns = c
         return builder
       },
+      eq: () => builder,
       order: () => builder,
       range: (a: number, b: number) => {
         range = [a, b]
@@ -36,6 +43,7 @@ function makeSupabase(dataset: Row[], opts: { undefinedColumn?: boolean } = {}) 
           const row: Row = { slug: r.slug, created_at: r.created_at, id: r.id }
           if (columns.includes('last_modified')) row.last_modified = r.last_modified ?? null
           if (columns.includes('author_username')) row.author_username = r.author_username ?? null
+          if (columns.includes('title')) row.title = r.title ?? null
           return row
         })
         return resolve({ data: slice, error: null })
@@ -109,6 +117,47 @@ describe('listCanonicalRecipes', () => {
     )
     const out = await listPublicProfileUsernames()
     expect(out).toEqual(['ania', 'marek'])
+  })
+
+  it('lists a category deduped oldest-wins, oldest-first', async () => {
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(
+      makeSupabase([
+        { slug: 'sernik', created_at: '2026-01-01T00:00:00Z', id: 1, title: 'Sernik (oldest)' },
+        { slug: 'sernik', created_at: '2026-02-01T00:00:00Z', id: 2, title: 'Sernik (dup)' },
+        { slug: 'szarlotka', created_at: '2026-03-01T00:00:00Z', id: 3, title: 'Szarlotka' },
+      ]) as never,
+    )
+    const out = await listCanonicalRecipesByCategory('ciasta')
+    expect(out).toEqual([
+      { slug: 'sernik', lastModified: '2026-01-01T00:00:00Z', title: 'Sernik (oldest)' },
+      { slug: 'szarlotka', lastModified: '2026-03-01T00:00:00Z', title: 'Szarlotka' },
+    ])
+  })
+
+  it('resolves a slug to the oldest matching row, or null on a miss', async () => {
+    const rows = [
+      { slug: 'sernik', created_at: '2026-01-01T00:00:00Z', id: 1, title: 'Sernik (oldest)' },
+      { slug: 'sernik', created_at: '2026-02-01T00:00:00Z', id: 2, title: 'Sernik (newer)' },
+    ]
+    const client = {
+      from: () => {
+        let wanted = ''
+        let cap = Infinity
+        const b: Record<string, unknown> = {
+          select: () => b,
+          eq: (_c: string, v: string) => ((wanted = v), b),
+          order: () => b,
+          limit: (n: number) => ((cap = n), b),
+          returns: () => b,
+          then: (resolve: (r: { data: unknown[]; error: null }) => void) =>
+            resolve({ data: rows.filter((r) => r.slug === wanted).slice(0, cap), error: null }),
+        }
+        return b
+      },
+    }
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(client as never)
+    expect((await canonicalRecipeBySlug('sernik'))?.title).toBe('Sernik (oldest)')
+    expect(await canonicalRecipeBySlug('nieistnieje')).toBeNull()
   })
 
   it('pages past the row cap to list the whole catalog', async () => {

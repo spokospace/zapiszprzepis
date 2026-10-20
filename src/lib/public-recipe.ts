@@ -1,10 +1,13 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import type { RecipeForMarkdown } from '@/lib/recipe-markdown'
 
-/** One canonical recipe for discoverability surfaces: its slug and a sitemap <lastmod>. */
+/** One canonical recipe for discoverability surfaces: its slug, title and a sitemap <lastmod>. */
 export interface CanonicalRecipe {
   slug: string
   /** ISO timestamp: last_modified when the view exposes it, else created_at. */
   lastModified: string
+  /** The recipe title, for link text (llms.txt); the sitemap ignores it. */
+  title?: string
 }
 
 /** The columns listCanonicalRecipes reads. last_modified is absent until the Phase-1 view migration. */
@@ -12,6 +15,7 @@ interface PublicRecipeRow {
   slug: string
   created_at: string
   last_modified?: string | null
+  title?: string | null
 }
 
 const PAGE_SIZE = 1000
@@ -30,7 +34,7 @@ export function dedupeCanonical(rows: readonly PublicRecipeRow[]): CanonicalReci
   for (const r of rows) {
     if (seen.has(r.slug)) continue
     seen.add(r.slug)
-    out.push({ slug: r.slug, lastModified: r.last_modified ?? r.created_at })
+    out.push({ slug: r.slug, lastModified: r.last_modified ?? r.created_at, title: r.title ?? undefined })
   }
   return out
 }
@@ -61,11 +65,11 @@ export async function listCanonicalRecipes(): Promise<CanonicalRecipe[]> {
   const rows: PublicRecipeRow[] = []
   // `columns` is the only migration-state we carry: once a page reports
   // last_modified missing, drop it for good (the retry can't fail the same way).
-  let columns = 'slug, created_at, last_modified'
+  let columns = 'slug, title, created_at, last_modified'
   for (let from = 0; ; from += PAGE_SIZE) {
     let { data, error } = await fetchPage(columns, from)
     if (error && isUndefinedColumn(error)) {
-      columns = 'slug, created_at'
+      columns = 'slug, title, created_at'
       ;({ data, error } = await fetchPage(columns, from))
     }
     if (error || !data) throw error ?? new Error('public_recipes read failed')
@@ -75,6 +79,50 @@ export async function listCanonicalRecipes(): Promise<CanonicalRecipe[]> {
   }
 
   return dedupeCanonical(rows)
+}
+
+/**
+ * Every canonical recipe in one category, deduped oldest-wins (same rule as the
+ * recipe `.md` each entry links, so a duplicated slug never shows one title and
+ * links another). Oldest-first; the category `.md` reverses it for display.
+ */
+export async function listCanonicalRecipesByCategory(category: string): Promise<CanonicalRecipe[]> {
+  const supabase = await createSupabaseServerClient()
+  const rows: PublicRecipeRow[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('public_recipes')
+      .select('slug, title, created_at')
+      .eq('category', category)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+      .returns<PublicRecipeRow[]>()
+    if (error || !data) throw error ?? new Error('public_recipes read failed')
+    rows.push(...data)
+    if (data.length < PAGE_SIZE) break
+  }
+  return dedupeCanonical(rows)
+}
+
+/**
+ * The canonical guest-safe recipe for a slug, or null if none — the oldest row
+ * (created_at, then id), the same winner listCanonicalRecipes and loadRecipe
+ * pick, so the `.md` page and the sitemap never disagree. Reads public_recipes
+ * (recipes itself is owner-only RLS), so it is safe to serve anonymously.
+ */
+export async function canonicalRecipeBySlug(slug: string): Promise<RecipeForMarkdown | null> {
+  const supabase = await createSupabaseServerClient()
+  const { data, error } = await supabase
+    .from('public_recipes')
+    .select('*')
+    .eq('slug', slug)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
+    .limit(1)
+    .returns<RecipeForMarkdown[]>()
+  if (error) throw error
+  return data?.[0] ?? null
 }
 
 /**

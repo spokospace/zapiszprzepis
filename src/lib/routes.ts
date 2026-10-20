@@ -15,6 +15,22 @@ const PRZEPISY_CATEGORY_RE = /^\/przepisy\/[^/]+$/
 export const PROFILE_PAGE_RE = /^\/u\/[^/]+$/
 
 /**
+ * A Markdown alternate request: /przepis/{slug}.md or /przepisy/{kategoria}.md
+ * (one segment, `.md` suffix) — the AI-citability surface (#363, Phase 2).
+ */
+export const MD_PAGE_RE = /^\/(przepis|przepisy)\/[^/]+\.md$/
+
+/**
+ * The internal route a `.md` request rewrites to (`…/{seg}.md` → `…/{seg}/md`),
+ * or null when `pathname` is not a `.md` alternate. The segment is kept verbatim
+ * (already URL-encoded in the request path), matching legacyRecipePathToCanonical.
+ * middleware.ts rewrites to this before the auth gate so crawlers aren't bounced.
+ */
+export function mdRewriteTarget(pathname: string): string | null {
+  return MD_PAGE_RE.test(pathname) ? pathname.replace(/\.md$/, '/md') : null
+}
+
+/**
  * The public listing of one category (E01-S09), shared by the MENU drawer and
  * the home category tiles (E01-S04) so both link the same URL — the route
  * E01-S16 extends with tag chips (`?tag=a,b`, AND) and paging (`?strona=N`).
@@ -68,6 +84,7 @@ export function isPublicRoute(pathname: string): boolean {
     pathname === '/' ||
     PRZEPIS_PAGE_RE.test(pathname) ||
     RECIPE_PAGE_RE.test(pathname) ||
+    MD_PAGE_RE.test(pathname) ||
     PRZEPISY_CATEGORY_RE.test(pathname) ||
     PROFILE_PAGE_RE.test(pathname) ||
     pathname === SEARCH_PATH ||

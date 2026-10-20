@@ -29,10 +29,12 @@ const LINK = 'font-semibold text-action-text underline underline-offset-4 hover:
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { kategoria: category } = await params
   if (!isRecipeCategory(category)) return {}
+  const canonical = `${await getSiteUrl()}${categoryPath(category)}`
   return {
     title: `${categoryLabel(category)} · Zapisz Przepis`,
     // Tag/page variants must not compete with the bare category URL.
-    alternates: { canonical: `${await getSiteUrl()}${categoryPath(category)}` },
+    // The .md alternate (#363) advertises the AI-citable Markdown listing.
+    alternates: { canonical, types: { 'text/markdown': `${canonical}.md` } },
   }
 }
 
