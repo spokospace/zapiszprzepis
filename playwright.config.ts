@@ -7,6 +7,7 @@ config({ path: '.env.local' })
 const port = process.env.E2E_PORT ?? '3001'
 const baseURL = `http://localhost:${port}`
 const REFLOW = /reflow\.spec\.ts/
+const IMAGE_ALLOWLIST = /image-optimizer-allowlist\.spec\.ts/
 
 export default defineConfig({
   testDir: './e2e',
@@ -26,12 +27,17 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: REFLOW,
+      testIgnore: [REFLOW, IMAGE_ALLOWLIST],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json',
       },
       dependencies: ['setup'],
+    },
+    // Request-level allowlist checks: no browser UI, no sign-in (#307).
+    {
+      name: 'image-allowlist',
+      testMatch: IMAGE_ALLOWLIST,
     },
     // Layout checks: no password sign-in, so no dependency on the setup project.
     {
