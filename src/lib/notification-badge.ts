@@ -13,12 +13,3 @@ export function notificationBadge(result: FailedSharesResult): NotificationBadge
     ? { count: result.shares.length + result.unreadReady, loadFailed: false }
     : { count: 0, loadFailed: true }
 }
-
-/** "1 powiadomienie", "3 powiadomienia", "5 powiadomień", "22 powiadomienia", "12 powiadomień". */
-export function notificationsNoun(count: number): string {
-  if (count === 1) return 'powiadomienie'
-  const lastDigit = count % 10
-  const lastTwo = count % 100
-  if (lastDigit >= 2 && lastDigit <= 4 && (lastTwo < 12 || lastTwo > 14)) return 'powiadomienia'
-  return 'powiadomień'
-}

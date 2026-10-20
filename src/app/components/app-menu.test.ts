@@ -34,9 +34,10 @@ describe('AppMenu category tiles (C5)', () => {
   })
 })
 
-// Owner decision (#323): below lg the phone header has no bell; the drawer row and
-// the MENU badge carry it, hidden from lg where the header bell is back.
-describe('AppMenu "Powiadomienia" below lg (#323)', () => {
+// E01-S15b: the standalone bell is gone. At every width the MENU button carries
+// a dot (not a number) and the drawer has a "Powiadomienia" row; the text
+// equivalent lives in the control's accessible name.
+describe('AppMenu "Powiadomienia" (E01-S15b)', () => {
   const summary = { hasFullAccess: true, myRecipesCount: 3, favoritesCount: 1 }
   function renderMenu(notifications: NotificationBadge | null, isAuthenticated = true) {
     return renderToStaticMarkup(createElement(AppMenu, { isAuthenticated, summary, notifications }))
@@ -45,33 +46,37 @@ describe('AppMenu "Powiadomienia" below lg (#323)', () => {
     return html.match(/<button[^>]*aria-controls="app-menu"[^>]*>.*?<\/button>/)?.[0] ?? ''
   }
   function row(html: string): string {
-    return html.match(/<li class="lg:hidden"><a[^>]*href="\/powiadomienia"[^>]*>.*?<\/a><\/li>/)?.[0] ?? ''
+    return html.match(/<li><a[^>]*href="\/powiadomienia"[^>]*>.*?<\/a><\/li>/)?.[0] ?? ''
   }
 
-  it('lists a "Powiadomienia" row in "Moje", below lg only, with a red counter named for screen readers', () => {
+  it('lists a "Powiadomienia" row in "Moje" at every width, with a dot named for screen readers', () => {
     const r = row(renderMenu({ count: 2, loadFailed: false }))
     expect(r).toContain('Powiadomienia')
-    expect(r).toContain('bg-danger')
-    expect(r).toContain('>2</span>')
-    expect(r).toContain(', 2 powiadomienia')
+    expect(r).toContain('bg-action')
+    // A dot, never a number — not even the raw count leaks into the markup.
+    expect(r).not.toContain('>2</span>')
+    expect(r).toContain(', masz nowe powiadomienia')
   })
 
-  it('puts the badge on the MENU button, in its accessible name, below lg only', () => {
+  it('puts a dot on the MENU button, with the text equivalent in its accessible name', () => {
     const button = menuButton(renderMenu({ count: 5, loadFailed: false }))
-    expect(button).toMatch(/<span aria-hidden="true" class="[^"]*bg-danger[^"]*lg:hidden">5<\/span>/)
-    expect(button).toContain('<span class="sr-only lg:hidden">, 5 powiadomień</span>')
+    expect(button).toMatch(/<span aria-hidden="true" class="[^"]*bg-action[^"]*"><\/span>/)
+    expect(button).toContain('<span class="sr-only">, nowe powiadomienia</span>')
+    // No number, and shown at every width (no lg:hidden gate on the dot).
+    expect(button).not.toContain('>5</span>')
+    expect(button).not.toMatch(/bg-action[^"]*lg:hidden/)
   })
 
-  it('shows no counter and no badge when there is nothing new', () => {
+  it('shows no dot anywhere when there is nothing new', () => {
     const html = renderMenu({ count: 0, loadFailed: false })
-    expect(row(html)).not.toContain('bg-danger')
-    expect(menuButton(html)).not.toContain('bg-danger')
+    expect(row(html)).not.toContain('bg-action')
+    expect(menuButton(html)).not.toContain('bg-action')
   })
 
   it('says the check failed instead of showing a confident zero', () => {
     const html = renderMenu({ count: 0, loadFailed: true })
     expect(row(html)).toContain('Nie udało się sprawdzić')
-    // The bell's dot colour (#326): amber-500 is 2.1:1 on white, below 3:1 for UI (#335).
+    // The load-fail dot colour (#326): amber-500 is 2.1:1 on white, below 3:1 for UI (#335).
     expect(menuButton(html)).toContain('border-white bg-ink')
     expect(menuButton(html)).not.toContain('amber')
     expect(menuButton(html)).toContain('nie udało się sprawdzić powiadomień')
@@ -83,9 +88,9 @@ describe('AppMenu "Powiadomienia" below lg (#323)', () => {
     pathname = '/przepisy/zupy'
   })
 
-  it('gives a guest neither the row nor a badge', () => {
+  it('gives a guest neither the row nor a dot', () => {
     const html = renderMenu(null, false)
     expect(html).not.toContain('href="/powiadomienia"')
-    expect(menuButton(html)).not.toContain('bg-danger')
+    expect(menuButton(html)).not.toContain('bg-action')
   })
 })

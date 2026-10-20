@@ -13,10 +13,6 @@ vi.mock('./app-menu', () => ({
   AppMenu: ({ notifications }: { notifications?: unknown }) =>
     createElement('div', { 'data-testid': 'menu', 'data-notifications': JSON.stringify(notifications ?? null) }),
 }))
-vi.mock('./notification-bell', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./notification-bell')>()),
-  NotificationBell: () => createElement('div', { 'data-testid': 'bell' }),
-}))
 
 import { AppHeader } from './app-header'
 import { NO_FAILED_SHARES } from '@/lib/failed-shares'
@@ -123,19 +119,18 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
   })
 })
 
-// Owner decision (#323): below lg „Powiadomienia” lives in the MENU drawer, not the header.
-describe('AppHeader "Powiadomienia" placement (#323)', () => {
-  it('shows the bell from lg only', () => {
+// E01-S15b: the standalone desktop bell is gone; „Powiadomienia” is signalled by
+// a dot on the MENU button and reached from the MENU drawer and Settings.
+describe('AppHeader "Powiadomienia" placement (E01-S15b)', () => {
+  it('renders no standalone notification bell at any width', () => {
     pathname = '/'
-    expect(render(true)).toContain('<div class="hidden lg:flex"><div data-testid="bell"></div></div>')
+    expect(render(true)).not.toContain('data-testid="bell"')
   })
 
   it('hands the badge to the MENU drawer for a signed-in user, and nothing for a guest', () => {
     pathname = '/'
     expect(render(true)).toContain(`data-notifications="${'{&quot;count&quot;:0,&quot;loadFailed&quot;:false}'}"`)
-    const guest = render(false)
-    expect(guest).toContain('data-notifications="null"')
-    expect(guest).not.toContain('data-testid="bell"')
+    expect(render(false)).toContain('data-notifications="null"')
   })
 })
 
@@ -183,15 +178,6 @@ describe('AppHeader while the notifications check and counters load (#226)', () 
       createElement(AppHeader, { failedShares: never, isAuthenticated: true, menu: never }),
     )
   }
-
-  it('renders at once with a busy bell that never claims zero', () => {
-    pathname = '/'
-    const html = renderPending()
-    const bell = html.match(/<a[^>]*aria-busy="true"[^>]*>.*?<\/a>/)?.[0] ?? ''
-    expect(bell).toContain('href="/powiadomienia"')
-    expect(bell).toContain('Powiadomienia</a>')
-    expect(bell).not.toContain('bg-danger')
-  })
 
   it('keeps a working MENU without a badge until the counts arrive', () => {
     pathname = '/'
