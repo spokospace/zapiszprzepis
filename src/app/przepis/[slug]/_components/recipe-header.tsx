@@ -1,3 +1,4 @@
+import { ScalableText } from '@/app/components/ui/scalable-text'
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -157,8 +158,8 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
           </dl>
         )}
 
-        {recipe.description && <p className="mt-4 text-[19px] text-ink-soft">{recipe.description}</p>}
-        {recipe.meta_description && <p className="mt-3 text-[19px] leading-relaxed text-ink">{recipe.meta_description}</p>}
+        {recipe.description && <ScalableText className="mt-4 text-ink-soft">{recipe.description}</ScalableText>}
+        {recipe.meta_description && <ScalableText className="mt-3 leading-relaxed text-ink">{recipe.meta_description}</ScalableText>}
         {versionsBar}
         {actions}
       </div>
