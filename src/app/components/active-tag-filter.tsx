@@ -17,6 +17,7 @@ export function ActiveTagFilter({ tag }: ActiveTagFilterProps) {
   const { startTransition } = useListTransition()
   const params = new URLSearchParams(searchParams.toString())
   params.delete('tag')
+  params.delete('strona')
   const query = params.toString()
   const href = query ? `/recipes?${query}` : '/recipes'
 

@@ -17,3 +17,12 @@ describe('RecipesContent', () => {
     )
   })
 })
+
+describe('myRecipesHref (#230)', () => {
+  it('keeps the filters and adds the page only past the first', async () => {
+    const { myRecipesHref } = await import('@/lib/my-recipes')
+    expect(myRecipesHref()).toBe('/recipes')
+    expect(myRecipesHref('zupy', null, 1)).toBe('/recipes?category=zupy')
+    expect(myRecipesHref('zupy', 'kruche', 3)).toBe('/recipes?category=zupy&tag=kruche&strona=3')
+  })
+})

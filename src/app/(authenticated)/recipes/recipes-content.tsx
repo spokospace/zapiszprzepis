@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { CategoryFilter } from '@/app/components/category-filter'
@@ -7,19 +8,12 @@ import { ActiveTagFilter } from '@/app/components/active-tag-filter'
 import { ListResults, ListTransition } from '@/app/components/list-transition'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
+import { buttonClasses } from '@/app/components/ui/button'
+import { recipesNoun } from '@/app/components/app-menu-model'
 import type { Database } from '@/lib/supabase.types'
 import type { MyRecipeCard } from '@/lib/my-recipes'
 
 type RecipeCategory = Database['public']['Enums']['recipe_category']
-
-/** "Moje przepisy" with the filters the visitor had on, for the list bar's back link. */
-function myRecipesHref(category?: string | null, tag?: string | null): string {
-  const params = new URLSearchParams()
-  if (category) params.set('category', category)
-  if (tag) params.set('tag', tag)
-  const query = params.toString()
-  return query ? `/recipes?${query}` : '/recipes'
-}
 
 interface RecipesContentProps {
   recipes: MyRecipeCard[]
@@ -28,6 +22,12 @@ interface RecipesContentProps {
   activeCategory?: RecipeCategory | null
   activeTag?: string | null
   categoryCounts?: Partial<Record<RecipeCategory, number>>
+  /** Every recipe matching the filters; `recipes` holds the pages shown so far (#230). */
+  total: number
+  /** This list with its filters and page, for the recipe page's way back. */
+  listHref: string
+  /** „Pokaż kolejne N”, or null when everything is shown. */
+  more: { href: string; count: number } | null
 }
 
 export function RecipesContent({
@@ -37,6 +37,9 @@ export function RecipesContent({
   activeCategory,
   activeTag,
   categoryCounts,
+  total,
+  listHref,
+  more,
 }: RecipesContentProps) {
   return (
     <div className="min-h-screen bg-white py-8">
@@ -62,11 +65,11 @@ export function RecipesContent({
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Moje przepisy</h1>
             <p className="mt-2 text-gray-600">
-              {recipes.length === 0
+              {total === 0
                 ? activeCategory || activeTag
                   ? 'Brak przepisów pasujących do filtrów.'
                   : 'Brak przepisów. Dodaj pierwszy przepis!'
-                : `${recipes.length} przepis${recipes.length === 1 ? '' : 'ów'}`}
+                : `${total} ${recipesNoun(total)}`}
             </p>
           </div>
 
@@ -119,24 +122,31 @@ export function RecipesContent({
                 <RecipeListSnapshot
                   listKey="moje"
                   label="Moje przepisy"
-                  href={myRecipesHref(activeCategory, activeTag)}
+                  href={listHref}
                   items={recipes.map((r) => ({ slug: r.slug, title: r.title }))}
                 />
-                {recipes.map((recipe) => (
-                  <RecipeCard
-                    key={recipe.id}
-                    from="moje"
-                    slug={recipe.slug}
-                    title={recipe.title}
-                    imageUrl={recipe.image_url}
-                    category={recipe.category}
-                    description={recipe.description}
-                    sourceType={recipe.source_type}
-                    sourceUrl={recipe.source_url}
-                    sourceAuthor={recipe.source_author}
-                  />
+                {recipes.map((recipe, i) => (
+                  // scroll-mt clears the sticky header when „Pokaż kolejne” jumps here.
+                  <div key={recipe.id} id={`wynik-${i + 1}`} className="scroll-mt-28">
+                    <RecipeCard
+                      from="moje"
+                      slug={recipe.slug}
+                      title={recipe.title}
+                      imageUrl={recipe.image_url}
+                      category={recipe.category}
+                      description={recipe.description}
+                      sourceType={recipe.source_type}
+                      sourceUrl={recipe.source_url}
+                      sourceAuthor={recipe.source_author}
+                    />
+                  </div>
                 ))}
               </div>
+            )}
+            {more && (
+              <Link href={more.href} className={`${buttonClasses('outline', 'lg')} mt-8 w-full`}>
+                Pokaż kolejne {more.count}
+              </Link>
             )}
           </ListResults>
         </ListTransition>
