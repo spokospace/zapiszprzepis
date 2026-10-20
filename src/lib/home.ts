@@ -4,6 +4,12 @@
  */
 export const POPULAR_SEARCHES = ['sernik', 'pierogi', 'rosół', 'szarlotka', 'naleśniki', 'zupa pomidorowa'] as const
 
+/** „Często szukane” with the recent queries already shown removed (case-insensitive, pl). */
+export function popularMinusRecent(recent: readonly string[]): string[] {
+  const seen = new Set(recent.map((term) => term.toLocaleLowerCase('pl')))
+  return POPULAR_SEARCHES.filter((term) => !seen.has(term.toLocaleLowerCase('pl')))
+}
+
 /**
  * The signed-in home's H1. `vocative` is the user's name in the vocative case
  * ("Aniu") once E01-S12 provides it; unknown or blank falls back to a plain

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-vi.mock('../actions', () => ({ getSuggestions: vi.fn(async () => []) }))
+vi.mock('@/app/szukaj/actions', () => ({ getSuggestions: vi.fn(async () => []) }))
 
 import { SearchSuggestions } from './search-suggestions'
 
