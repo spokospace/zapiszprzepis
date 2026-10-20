@@ -37,13 +37,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const description = recipe.meta_description ?? buildFallbackMetaDescription(recipe)
   const images = recipe.image_url ? [recipe.image_url] : undefined
+  const canonical = `${await getSiteUrl()}${recipePath(recipe.slug)}`
   return {
     title: recipe.title,
     description,
     // ?from= list-context variants (E01-S07) must not compete with the canonical URL.
     // Absolute: the root layout sets no metadataBase, so a relative canonical would
     // resolve against Next's localhost fallback in production.
-    alternates: { canonical: `${await getSiteUrl()}${recipePath(recipe.slug)}` },
+    // The .md alternate (#363) advertises the AI-citable Markdown rendering.
+    alternates: { canonical, types: { 'text/markdown': `${canonical}.md` } },
     openGraph: {
       title: recipe.title,
       description,

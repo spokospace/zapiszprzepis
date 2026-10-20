@@ -9,7 +9,7 @@
 //   https://github.com/opennextjs/opennextjs-cloudflare/issues/1213
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
-import { isPublicRoute, RECIPE_PAGE_RE, legacyRecipePathToCanonical } from '@/lib/routes'
+import { isPublicRoute, RECIPE_PAGE_RE, legacyRecipePathToCanonical, mdRewriteTarget } from '@/lib/routes'
 import { loginPath, resolveLoginNext } from '@/lib/login-redirect'
 import { GENDER_KNOWN_COOKIE, shouldCheckGender, welcomePath } from '@/lib/first-login'
 
@@ -65,6 +65,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // match RECIPE_PAGE_RE (single segment), so they are untouched.
   if (RECIPE_PAGE_RE.test(pathname)) {
     return NextResponse.redirect(new URL(legacyRecipePathToCanonical(pathname) + search, request.url), { status: 301 })
+  }
+
+  // AI-citability (#363): /przepis/{slug}.md and /przepisy/{kategoria}.md rewrite
+  // internally to their route handlers. Returned here, before the auth gate, so an
+  // anonymous crawler reaches the Markdown instead of being bounced to /login; a
+  // legacy /recipes/{slug}.md has already 301'd to /przepis/… just above.
+  const mdTarget = mdRewriteTarget(pathname)
+  if (mdTarget) {
+    const rewrite = NextResponse.rewrite(new URL(mdTarget + search, request.url))
+    response.cookies.getAll().forEach((cookie) => rewrite.cookies.set(cookie))
+    return rewrite
   }
 
   // A signed-in account that never chose a gender (from before screen 3b) is sent
@@ -124,8 +135,9 @@ export const config = {
   // the original `public` token never matched and /logo.svg, /og-image.png
   // etc. got redirected to /login on every request.
   matcher: [
-    // robots.txt / sitemap.xml are crawler endpoints served by app/robots.ts and
-    // app/sitemap.ts; exclude them so an anonymous crawler isn't bounced to /login.
-    '/((?!_next/static|_next/image|robots\\.txt|sitemap\\.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
+    // robots.txt / sitemap.xml / llms.txt are crawler endpoints served by their
+    // own routes; exclude them so an anonymous crawler isn't bounced to /login.
+    // (The `.md` alternates are NOT excluded — they rely on middleware's rewrite.)
+    '/((?!_next/static|_next/image|robots\\.txt|sitemap\\.xml|llms\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
   ],
 }
