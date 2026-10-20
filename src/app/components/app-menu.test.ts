@@ -27,6 +27,22 @@ describe('AppMenu category tiles (C5)', () => {
     }
   })
 
+  it('keeps names on one line without a mid-word break, binding Polish orphans', () => {
+    const html = renderToStaticMarkup(createElement(AppMenu, { isAuthenticated: false, summary: null }))
+    // One column on the narrowest phones, two from 360px up (the 330px panel stays legible).
+    expect(html).toContain('grid-cols-1')
+    expect(html).toContain('min-[360px]:grid-cols-2')
+    const links = categoryLinks()
+    for (const link of links) {
+      // break-words breaks only as a last resort; wrap-anywhere split words mid-character.
+      expect(link).toContain('break-words')
+      expect(link).not.toContain('wrap-anywhere')
+    }
+    // "Syropy i napary": the one-letter "i" is bound to "napary" with a non-breaking space.
+    const syropy = links.find((l) => l.includes('href="/przepisy/syropy"')) ?? ''
+    expect(syropy).toContain('i napary')
+  })
+
   it('frames the current category in the action colour', () => {
     const current = categoryLinks().find((l) => l.includes('href="/przepisy/zupy"')) ?? ''
     expect(current).toContain('aria-current="page"')

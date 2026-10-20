@@ -7,6 +7,7 @@ import { Bell, BookOpen, Heart, Lock, LogOut, Menu, Plus, Settings, X, type Luci
 import { signOut } from '@/app/(actions)/sign-out'
 import { buttonClasses } from '@/app/components/ui/button'
 import { CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { bindOrphans } from '@/lib/polish-typography'
 import { categoryPath, NOTIFICATIONS_PATH } from '@/lib/routes'
 import type { MenuSummary } from '@/lib/menu-summary'
 import type { NotificationBadge } from '@/lib/notification-badge'
@@ -226,7 +227,11 @@ export function AppMenu({
               <h3 id="app-menu-categories" className={SECTION_HEADING}>
                 Wszystkie przepisy według kategorii
               </h3>
-              <ul className="grid grid-cols-2 gap-2 px-5">
+              {/* No mid-word break: one column below 360 px (like the home CategoryGrid),
+                  two from there up; 16 px + tight spacing keep the longest name ("Ciasteczka")
+                  on one line even in the 330 px panel. break-words is the last-resort net
+                  (WCAG 1.4.10); bindOrphans (see its doc) handles Polish one-letter words. */}
+              <ul className="grid grid-cols-1 gap-2 px-5 min-[360px]:grid-cols-2">
                 {RECIPE_CATEGORIES.map(({ value, label }) => {
                   const href = categoryPath(value)
                   const active = pathname === href
@@ -238,14 +243,14 @@ export function AppMenu({
                         onClick={close}
                         aria-current={active ? 'page' : undefined}
                         // C5: the home C1 tile (E01-S20) — #fff7ed, a 1.5 px #fed7aa frame,
-                        // the category icon beside an 18 px bold name.
+                        // the category icon beside a 16 px bold name.
                         className={[
-                          'flex h-full min-h-[56px] items-center gap-2.5 rounded-field border-[1.5px] bg-surface-accent px-3.5 py-2 text-[18px] font-bold wrap-anywhere no-underline! hover:border-action-text',
+                          'flex h-full min-h-[56px] items-center gap-1.5 rounded-field border-[1.5px] bg-surface-accent px-2 py-2 text-[16px] font-bold break-words no-underline! hover:border-action-text',
                           active ? 'border-action text-action-text' : 'border-border-accent text-ink',
                         ].join(' ')}
                       >
-                        <Icon aria-hidden="true" strokeWidth={2} className="h-6 w-6 shrink-0 text-action-text" />
-                        <span className="min-w-0">{label}</span>
+                        <Icon aria-hidden="true" strokeWidth={2} className="h-5 w-5 shrink-0 text-action-text" />
+                        <span className="min-w-0">{bindOrphans(label)}</span>
                       </Link>
                     </li>
                   )
