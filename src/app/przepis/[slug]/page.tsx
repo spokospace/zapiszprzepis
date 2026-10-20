@@ -155,7 +155,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           both widths are the viewport anyway. */}
       <PageContainer>
         {/* A9: from lg one row, "← {lista} · N z M" left and the breadcrumbs right;
-            below lg the breadcrumbs sit in the header column (A4). */}
+            below lg neither (C3): the header's „← {lista}” and the category line. */}
         <div className="lg:mb-6 lg:flex lg:items-center lg:gap-6">
           <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
           <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block" />

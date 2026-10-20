@@ -72,9 +72,9 @@ function Approx() {
 }
 
 /**
- * The recipe page header (E01-S07, S07b): 4:3 photo, "Przepisy › {Kategoria}"
- * breadcrumbs, 32 px title, "Kategoria · czas" (from lg the A9 times row), source,
- * who added it, and the actions. The tags render at the bottom of the page, in
+ * The recipe page header (E01-S07, S07b): 4:3 photo, 32 px title, "Kategoria ·
+ * czas" (from lg the A9 times row), source, who added it, and the actions. No
+ * breadcrumbs below lg (C3); from lg they are in the page's A9 row. The tags render at the bottom of the page, in
  * "Ten przepis jest" (E01-S16).
  */
 export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps) {
@@ -102,8 +102,8 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
       )}
 
       <div>
-        <RecipeBreadcrumbs category={recipe.category} className="mb-2 lg:hidden" />
-
+        {/* No breadcrumbs below lg (C3): the header leads back to the list and the
+            category is in the line under the title. From lg they sit in the A9 row. */}
         <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
         {/* Below lg (C3). From lg the category is in the breadcrumbs and the times get
             their own row (A9). */}
