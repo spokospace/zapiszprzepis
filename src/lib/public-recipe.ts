@@ -76,3 +76,28 @@ export async function listCanonicalRecipes(): Promise<CanonicalRecipe[]> {
 
   return dedupeCanonical(rows)
 }
+
+/**
+ * Distinct usernames of authors with at least one public recipe, for the sitemap's
+ * /u/{username} entries. public_recipes carries author_username per row, so this
+ * dedupes across the paged scan; a null username (deleted account) is skipped.
+ */
+export async function listPublicProfileUsernames(): Promise<string[]> {
+  const supabase = await createSupabaseServerClient()
+  const seen = new Set<string>()
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('public_recipes')
+      .select('author_username')
+      // A stable order is required for .range() paging: without it Postgres may
+      // skip or repeat rows across pages past the first 1000.
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+      .returns<{ author_username: string | null }[]>()
+    if (error || !data) throw error ?? new Error('public_recipes read failed')
+    for (const row of data) if (row.author_username) seen.add(row.author_username)
+    if (data.length < PAGE_SIZE) break
+  }
+  return [...seen]
+}
