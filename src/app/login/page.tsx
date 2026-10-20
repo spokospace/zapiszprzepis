@@ -56,9 +56,6 @@ export default async function LoginPage({
             <>
               <p className="text-[18px] leading-normal text-ink-soft">Bez nowego hasła. Użyj konta, które już masz.</p>
               <OAuthButtons providers={providers} next={next} />
-              <p className="text-[16px] leading-normal text-ink-soft">
-                Pierwsze logowanie od razu zakłada konto. Nic nie publikujemy na Twoim Facebooku.
-              </p>
               <p className="flex items-center gap-3 text-[16px] text-ink-soft before:h-0.5 before:flex-1 before:bg-border-card after:h-0.5 after:flex-1 after:bg-border-card">
                 albo emailem
               </p>
