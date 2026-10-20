@@ -1,28 +1,30 @@
 import Link from 'next/link'
-import { CATEGORY_ICONS, HOME_CATEGORIES, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { categoryDisplayLabel, CATEGORY_ICONS, HOME_CATEGORIES, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { categoryPath } from '@/lib/routes'
 
-// On the narrowest phones (320px) three columns leave ~70px per tile, which
-// splits "Ciasteczka" mid-word at 17px bold, so below 360px the guest grid is two columns.
-// Desktop (E01-S17, A8): the guest row is 9 columns, the signed-in grid 4.
+// Names never break mid-word: `break-words` breaks only as a last resort and
+// `categoryDisplayLabel` binds Polish one-letter words. Tiles are sized to fit the
+// longest name ("Ciasteczka") at 16px — the guest grid drops to 2 columns below 360px
+// and the signed-in grid to 1. Desktop (E01-S17, A8): the guest row is 9 columns, the
+// signed-in grid 4.
 const COLUMNS = {
-  2: 'grid-cols-2 lg:grid-cols-4',
+  2: 'grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4',
   3: 'grid-cols-2 min-[360px]:grid-cols-3 lg:grid-cols-9',
 } as const
 
 /**
  * Tile looks from the handoff (E01-S20): the guest's A1 tile stacks a 26 px
- * icon over a 17 px name; the signed-in C1 tile is a 56 px row with a
- * `border-accent` frame, the icon beside an 18 px name.
+ * icon over a 16 px name; the signed-in C1 tile is a 56 px row with a
+ * `border-accent` frame, the icon beside a 16 px name.
  */
 const TILE = {
   2: {
-    link: 'h-14 gap-2.5 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-3.5 text-[18px] text-ink hover:border-action-text',
-    icon: 'h-6 w-6',
+    link: 'h-14 gap-1.5 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-2 text-[16px] text-ink hover:border-action-text',
+    icon: 'h-5 w-5',
     stroke: 2,
   },
   3: {
-    link: 'min-h-[64px] flex-col justify-center gap-1.5 rounded-[12px] bg-surface-accent px-1 py-3.5 text-center text-[17px] text-action-text hover:bg-surface-accent-2',
+    link: 'min-h-[64px] flex-col justify-center gap-1.5 rounded-[12px] bg-surface-accent px-1 py-3.5 text-center text-[16px] text-action-text hover:bg-surface-accent-2',
     icon: 'h-[26px] w-[26px]',
     stroke: 1.75,
   },
@@ -53,10 +55,10 @@ export function CategoryGrid({ columns, title = 'Kategorie' }: { columns: keyof 
             <li key={value} className={value === GUEST_EXTRA.value ? 'hidden min-w-0 min-[360px]:block' : 'min-w-0'}>
               <Link
                 href={categoryPath(value)}
-                className={`flex items-center font-bold wrap-anywhere no-underline! ${tile.link}`}
+                className={`flex items-center font-bold break-words no-underline! ${tile.link}`}
               >
                 <Icon aria-hidden="true" strokeWidth={tile.stroke} className={`shrink-0 text-action-text ${tile.icon}`} />
-                <span className="min-w-0">{label}</span>
+                <span className="min-w-0">{categoryDisplayLabel(label)}</span>
               </Link>
             </li>
           )

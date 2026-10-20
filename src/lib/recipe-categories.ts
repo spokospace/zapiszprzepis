@@ -13,9 +13,21 @@ import {
   UtensilsCrossed,
   type LucideIcon,
 } from 'lucide-react'
+import { bindOrphans } from './polish-typography'
 import type { Database } from '@/lib/supabase.types'
 
 export type RecipeCategory = Database['public']['Enums']['recipe_category']
+
+/**
+ * A category label ready for display: binds Polish one-letter words so they never
+ * end a line (see bindOrphans — "Syropy i napary" → "Syropy" / "i napary"). Use it
+ * for every rendered category name (the drawer, the home grid) so the rule lives in
+ * one place; keep the raw `label` / `categoryLabel` for enum matching, SEO and
+ * markdown, where a non-breaking space must not leak in.
+ */
+export function categoryDisplayLabel(label: string): string {
+  return bindOrphans(label)
+}
 
 /**
  * Display label for a category value. The enum values are ASCII slugs

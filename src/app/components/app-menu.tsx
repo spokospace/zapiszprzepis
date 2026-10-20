@@ -6,8 +6,7 @@ import { usePathname } from 'next/navigation'
 import { Bell, BookOpen, Heart, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { buttonClasses } from '@/app/components/ui/button'
-import { CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
-import { bindOrphans } from '@/lib/polish-typography'
+import { categoryDisplayLabel, CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { categoryPath, NOTIFICATIONS_PATH } from '@/lib/routes'
 import type { MenuSummary } from '@/lib/menu-summary'
 import type { NotificationBadge } from '@/lib/notification-badge'
@@ -250,7 +249,7 @@ export function AppMenu({
                         ].join(' ')}
                       >
                         <Icon aria-hidden="true" strokeWidth={2} className="h-5 w-5 shrink-0 text-action-text" />
-                        <span className="min-w-0">{bindOrphans(label)}</span>
+                        <span className="min-w-0">{categoryDisplayLabel(label)}</span>
                       </Link>
                     </li>
                   )

@@ -19,7 +19,10 @@ describe('CategoryGrid (E01-S20)', () => {
     expect(svgCount(html)).toBe(HOME_CATEGORIES.length + 1)
     expect(html).not.toMatch(/<svg(?![^>]*aria-hidden="true")/)
     expect(html).toContain('bg-surface-accent')
-    expect(html).toContain('text-[17px]')
+    expect(html).toContain('text-[16px]')
+    // No mid-word break: break-words (a last resort) replaces wrap-anywhere.
+    expect(html).toContain('break-words')
+    expect(html).not.toContain('wrap-anywhere')
   })
 
   it('renders the signed-in tile as a 56 px accent-framed row', () => {
@@ -27,7 +30,9 @@ describe('CategoryGrid (E01-S20)', () => {
     expect(svgCount(html)).toBe(HOME_CATEGORIES.length)
     expect(html).toContain('h-14')
     expect(html).toContain('border-border-accent')
-    expect(html).toContain('text-[18px]')
+    expect(html).toContain('text-[16px]')
+    expect(html).toContain('break-words')
+    expect(html).not.toContain('wrap-anywhere')
     for (const { label } of HOME_CATEGORIES) expect(html).toContain(label)
   })
 })

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CATEGORY_ICONS, categoryLabel, HOME_CATEGORIES, isRecipeCategory, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
+import { categoryDisplayLabel, CATEGORY_ICONS, categoryLabel, HOME_CATEGORIES, isRecipeCategory, RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 
 describe('CATEGORY_ICONS (E01-S20)', () => {
   it('has an icon for every category', () => {
@@ -52,6 +52,16 @@ describe('categoryLabel', () => {
   it('never returns a label that still looks like a raw slug', () => {
     // Guards the inverse mistake: a label pasted in without diacritics.
     expect(RECIPE_CATEGORIES.every(({ value, label }) => label !== value)).toBe(true)
+  })
+})
+
+describe('categoryDisplayLabel', () => {
+  it('binds Polish one-letter words so they never end a line', () => {
+    expect(categoryDisplayLabel('Syropy i napary')).toBe('Syropy i napary')
+  })
+
+  it('leaves a single-word label unchanged', () => {
+    expect(categoryDisplayLabel('Ciasteczka')).toBe('Ciasteczka')
   })
 })
 
