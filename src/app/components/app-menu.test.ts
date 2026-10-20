@@ -110,3 +110,35 @@ describe('AppMenu "Powiadomienia" (E01-S15b)', () => {
     expect(menuButton(html)).not.toContain('bg-action')
   })
 })
+
+// #390: menu/drawer items are navigation chrome, shown without the global `a`
+// underline. Rows keep the row-level `no-underline!` opt-out; the label itself
+// carries no underline, and the active footer link is marked without one too.
+describe('AppMenu items carry no underline (#390)', () => {
+  const summary = { hasFullAccess: true, myRecipesCount: 3, favoritesCount: 1 }
+
+  it('renders the "Moje" rows and "Powiadomienia" without a label underline', () => {
+    const html = renderToStaticMarkup(
+      createElement(AppMenu, { isAuthenticated: true, summary, notifications: { count: 0, loadFailed: false } }),
+    )
+    // The rows still opt out of the global `a` underline at the row level...
+    expect(html).toContain('no-underline!')
+    // ...and underline-offset-4 — used only on the old drawer/footer label
+    // underlines — is gone everywhere.
+    expect(html).not.toContain('underline-offset-4')
+  })
+
+  it('marks the active footer item with a background, not colour or an underline', () => {
+    pathname = '/settings'
+    const html = renderToStaticMarkup(
+      createElement(AppMenu, { isAuthenticated: true, summary, notifications: null }),
+    )
+    const settings = html.match(/<a[^>]*href="\/settings"[^>]*>.*?<\/a>/)?.[0] ?? ''
+    expect(settings).toContain('aria-current="page"')
+    expect(settings).toContain('text-action-text')
+    // A non-colour affordance (never colour alone — WCAG 1.4.1) that is not an underline.
+    expect(settings).toContain('bg-surface-3')
+    expect(settings).not.toContain('underline')
+    pathname = '/przepisy/zupy'
+  })
+})

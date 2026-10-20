@@ -43,14 +43,14 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
       href={entry.href}
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
-      // Only the label is underlined: the global (unlayered) `a` underline would
-      // otherwise run through the counter pill and the lock caption, and only an
-      // !important utility outranks it.
+      // Menu rows are navigation chrome, shown without the global `a` underline
+      // (#390): DRAWER_ROW opts out with no-underline!. The label keeps its own
+      // span only for the flex-col layout with the counter and the lock caption.
       className={`${DRAWER_ROW} ${activeClasses(active)}`}
     >
       <Icon aria-hidden="true" className="h-6 w-6 shrink-0" />
       <span className="flex min-w-0 flex-col">
-        <span className="underline underline-offset-4">{entry.label}</span>
+        <span>{entry.label}</span>
         {entry.locked && (
           <span className="text-[16px] font-normal text-ink-soft">Wymaga kodu lub pełnego dostępu</span>
         )}
@@ -87,7 +87,7 @@ function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBa
     >
       <Bell aria-hidden="true" className="h-6 w-6 shrink-0" />
       <span className="flex min-w-0 flex-col">
-        <span className="underline underline-offset-4">Powiadomienia</span>
+        <span>Powiadomienia</span>
         {badge.loadFailed && <span className="text-[16px] font-normal text-ink-soft">Nie udało się sprawdzić</span>}
       </span>
       {badge.count > 0 && (
@@ -264,7 +264,9 @@ export function AppMenu({
                 href="/settings"
                 onClick={close}
                 aria-current={pathname === '/settings' ? 'page' : undefined}
-                className={`${FOOTER_ROW} ${pathname === '/settings' ? 'text-action-text underline decoration-2 underline-offset-4' : 'text-ink'}`}
+                // Active route: colour plus a background fill, never colour alone
+                // (menu items carry no underline — #390).
+                className={`${FOOTER_ROW} ${pathname === '/settings' ? 'text-action-text bg-surface-3' : 'text-ink'}`}
               >
                 <Settings aria-hidden="true" className="h-6 w-6 shrink-0" />
                 Ustawienia
