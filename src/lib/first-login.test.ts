@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { firstLoginTarget, genderSaveRedirect, parseGender, postLoginPath, welcomePath } from './first-login'
+import { firstLoginTarget, genderSaveRedirect, parseGender, postLoginPath, shouldCheckGender, welcomePath } from './first-login'
 
 describe('firstLoginTarget', () => {
   it('sends a user without gender to /witaj, keeping next', () => {
@@ -95,5 +95,33 @@ describe('postLoginPath', () => {
     const { client, from } = fakeSupabase(null, { data: null, error: null })
     await expect(postLoginPath(client, '/recipes')).resolves.toBe('/recipes')
     expect(from).not.toHaveBeenCalled()
+  })
+})
+
+describe('shouldCheckGender (accounts from before screen 3b)', () => {
+  const base = { method: 'GET', pathname: '/', prefetch: false, userId: 'u1', knownCookie: undefined }
+
+  it('checks a signed-in page view once per account and browser', () => {
+    expect(shouldCheckGender(base)).toBe(true)
+    expect(shouldCheckGender({ ...base, pathname: '/przepis/sernik' })).toBe(true)
+    expect(shouldCheckGender({ ...base, knownCookie: 'u1' })).toBe(false)
+    // Another account signed in on the same browser is checked again.
+    expect(shouldCheckGender({ ...base, knownCookie: 'u2' })).toBe(true)
+  })
+
+  it('skips non-GET requests and prefetches', () => {
+    expect(shouldCheckGender({ ...base, method: 'POST' })).toBe(false)
+    expect(shouldCheckGender({ ...base, prefetch: true })).toBe(false)
+  })
+
+  it.each(['/witaj', '/auth/callback', '/api/dev/login', '/login', '/signup', '/forgot-password', '/reset-password', '/share', '/regulamin', '/polityka-prywatnosci', '/usuwanie-danych'])(
+    'never detours from %s',
+    (pathname) => {
+      expect(shouldCheckGender({ ...base, pathname })).toBe(false)
+    },
+  )
+
+  it('does not mistake a path that merely starts with an exempt word', () => {
+    expect(shouldCheckGender({ ...base, pathname: '/witajcie' })).toBe(true)
   })
 })
