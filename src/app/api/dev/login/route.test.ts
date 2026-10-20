@@ -31,7 +31,7 @@ function enable(nodeEnv = 'development') {
 function linkFor(confirmed = true) {
   generateLink.mockResolvedValue({
     data: {
-      user: { email_confirmed_at: confirmed ? '2026-10-01T00:00:00Z' : null },
+      user: { id: 'qa-user-id', email_confirmed_at: confirmed ? '2026-10-01T00:00:00Z' : null },
       properties: { hashed_token: 'hash-123' },
     },
     error: null,
@@ -76,6 +76,15 @@ describe('GET /api/dev/login', () => {
     expect(verifyOtp).toHaveBeenCalledWith({ type: 'magiclink', token_hash: 'hash-123' })
     expect(res.status).toBe(307)
     expect(res.headers.get('location')).toBe('http://localhost:3000/ulubione')
+  })
+
+  // The QA accounts have no gender on purpose; the one-time 3b detour must not
+  // stop every QA session at /witaj.
+  it('marks the QA account’s gender as known, so the 3b detour is skipped', async () => {
+    enable()
+    linkFor()
+    const res = await get('?as=free&next=/ulubione')
+    expect(res.headers.get('set-cookie')).toContain('zp-gender=qa-user-id')
   })
 
   it('drops an off-site next', async () => {

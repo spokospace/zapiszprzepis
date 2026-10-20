@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
-import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
+import { getFailedShares, NO_FAILED_SHARES, type FailedSharesResult } from '@/lib/failed-shares'
 import { getMenuSummary } from '@/lib/menu-summary'
 import { AppHeader } from '@/app/components/app-header'
+
+const FAILED_SHARES_ERROR: FailedSharesResult = { status: 'error' }
 
 /**
  * The app chrome — the header with the S-06 notification bell — shared by the
@@ -15,10 +17,14 @@ import { AppHeader } from '@/app/components/app-header'
 export async function AppShell({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServerClient()
   const user = await getCurrentUser()
-  const [failedShares, menu] = await Promise.all([
-    user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
-    getMenuSummary(supabase, user),
-  ])
+  // Not awaited (#226): the header and the page — its loading skeleton included —
+  // are sent at once; the bell, MENU badge and counters fill in when these return.
+  // A failure degrades to the bell's „nie udało się sprawdzić” and a MENU without
+  // counters, never to an error page.
+  const failedShares = user
+    ? getFailedShares(supabase, user.id).catch(() => FAILED_SHARES_ERROR)
+    : NO_FAILED_SHARES
+  const menu = getMenuSummary(supabase, user).catch(() => undefined)
 
   return (
     <>

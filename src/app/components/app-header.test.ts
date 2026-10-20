@@ -13,7 +13,10 @@ vi.mock('./app-menu', () => ({
   AppMenu: ({ notifications }: { notifications?: unknown }) =>
     createElement('div', { 'data-testid': 'menu', 'data-notifications': JSON.stringify(notifications ?? null) }),
 }))
-vi.mock('./notification-bell', () => ({ NotificationBell: () => createElement('div', { 'data-testid': 'bell' }) }))
+vi.mock('./notification-bell', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./notification-bell')>()),
+  NotificationBell: () => createElement('div', { 'data-testid': 'bell' }),
+}))
 
 import { AppHeader } from './app-header'
 import { NO_FAILED_SHARES } from '@/lib/failed-shares'
@@ -169,5 +172,29 @@ describe('AppHeader on /szukaj (E01-S26)', () => {
     expect(render(true)).toMatch(/<header class="[^"]*max-lg:hidden/)
     pathname = '/'
     expect(render(true)).not.toContain('max-lg:hidden')
+  })
+})
+
+// #226: a layout hands the header its data unawaited, so the page is not held back.
+describe('AppHeader while the notifications check and counters load (#226)', () => {
+  function renderPending() {
+    const never = new Promise<never>(() => {})
+    return renderToStaticMarkup(
+      createElement(AppHeader, { failedShares: never, isAuthenticated: true, menu: never }),
+    )
+  }
+
+  it('renders at once with a busy bell that never claims zero', () => {
+    pathname = '/'
+    const html = renderPending()
+    const bell = html.match(/<a[^>]*aria-busy="true"[^>]*>.*?<\/a>/)?.[0] ?? ''
+    expect(bell).toContain('href="/powiadomienia"')
+    expect(bell).toContain('Powiadomienia</a>')
+    expect(bell).not.toContain('bg-danger')
+  })
+
+  it('keeps a working MENU without a badge until the counts arrive', () => {
+    pathname = '/'
+    expect(renderPending()).toContain('data-testid="menu" data-notifications="null"')
   })
 })
