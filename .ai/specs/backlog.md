@@ -88,3 +88,40 @@ E01-S12-T01, E01-S21-T01. Next new story would be E01-S31.
 
 Outside the tree (not E01 outcomes, deliberately not adopted): #225–#233
 (listing/performance refactors), #116, #132, #188, #307.
+
+## context/foundation/code-audit-2026-10-20.md
+
+Backlog source: `context/foundation/code-audit-2026-10-20.md`
+Last filed: 2026-10-20
+Tracker: GitHub `spokospace/zapiszprzepis`
+
+Epic E02 covers the 2026-10-20 code audit §4 High items 1–9 plus the
+security-hardening Medium items 10–11. E03 parks the remaining Medium items
+(14–18, 20–22) and the Low items (23–28) as checklist bullets, not issues.
+No existing issue was adopted. #116 got a comment because it partly overlaps
+S05 and S06. #231 and #232 belong to #225, and #132 is listed in E03 as a
+related issue. #363 waits on S09. Stories are GitHub sub-issues of #368, and
+the S11 tasks are sub-issues of #379.
+
+S08 (#376) and S09 (#377) carry blocking owner decisions: the public gender
+wording versus the privacy policy, and copyright exposure.
+
+| Id | Issue | Title | Epic | Depends on | Adopted | Status |
+|---|---|---|---|---|---|---|
+| E02 | [#368](https://github.com/spokospace/zapiszprzepis/issues/368) | Close the 2026-10-20 code audit findings | — | — | no | open |
+| E02-S01 | [#369](https://github.com/spokospace/zapiszprzepis/issues/369) | No account can rewrite a shared recipe or its source link outside the extraction pipeline | #368 | — | no | open |
+| E02-S02 | [#370](https://github.com/spokospace/zapiszprzepis/issues/370) | The app runs on patched framework and runtime dependencies | #368 | — | no | open |
+| E02-S03 | [#371](https://github.com/spokospace/zapiszprzepis/issues/371) | A user can save a recipe whose title already exists, however many times it exists | #368 | — | no | open |
+| E02-S04 | [#373](https://github.com/spokospace/zapiszprzepis/issues/373) | The installed app works offline as promised and keeps nothing private after sign-out | #368 | E02-S02 | no | open |
+| E02-S05 | [#372](https://github.com/spokospace/zapiszprzepis/issues/372) | The owner can restore the whole app from a backup and is alerted when a backup fails | #368 | — | no | open |
+| E02-S06 | [#374](https://github.com/spokospace/zapiszprzepis/issues/374) | The owner learns about production errors and failed jobs without watching live logs | #368 | — | no | open |
+| E02-S07 | [#375](https://github.com/spokospace/zapiszprzepis/issues/375) | Every pull request is checked automatically before merge | #368 | — | no | open |
+| E02-S08 | [#376](https://github.com/spokospace/zapiszprzepis/issues/376) | Public pages reveal nothing about a user that the privacy policy says stays private | #368 | — | no | open · owner decision |
+| E02-S09 | [#377](https://github.com/spokospace/zapiszprzepis/issues/377) | Recipe pages publish only what the owner's copyright decision allows | #368 | — | no | open · owner decision |
+| E02-S10 | [#378](https://github.com/spokospace/zapiszprzepis/issues/378) | No other site can frame the app, and browsers enforce a content security policy | #368 | E02-S02 | no | open |
+| E02-S11 | [#379](https://github.com/spokospace/zapiszprzepis/issues/379) | A shared link ends as a saved recipe or a clear failure, without repeated paid attempts | #368 | E02-S03 | no | open |
+| E02-S11-T01 | [#380](https://github.com/spokospace/zapiszprzepis/issues/380) | Split the recipe extraction into checkpointed Inngest steps with non-retriable content errors | #368 (story #379) | — | no | open |
+| E02-S11-T02 | [#381](https://github.com/spokospace/zapiszprzepis/issues/381) | Validate the model's recipe JSON with a schema and coerce ingredients and times | #368 (story #379) | — | no | open |
+| E02-S11-T03 | [#382](https://github.com/spokospace/zapiszprzepis/issues/382) | Expire shares stuck in pending and stop ignoring share-update errors | #368 (story #379) | — | no | open |
+| E02-S11-T04 | [#383](https://github.com/spokospace/zapiszprzepis/issues/383) | Rate-limit paid recipe extraction per user in all four entry points | #368 (story #379) | — | no | open |
+| E03 | [#384](https://github.com/spokospace/zapiszprzepis/issues/384) | Later: remaining 2026-10-20 audit findings (parked) | — | — | no | open · parked |
