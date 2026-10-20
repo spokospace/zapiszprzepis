@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { RecipesContent } from './recipes-content'
+import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
 import { Constants, type Database } from '@/lib/supabase.types'
 import { isRecipeTag } from '@/lib/recipe-tags'
 import { searchPath } from '@/lib/routes'
 
-type Recipe = Database['public']['Tables']['recipes']['Row']
 type RecipeCategory = Database['public']['Enums']['recipe_category']
 
 const VALID_CATEGORIES = Constants.public.Enums.recipe_category
@@ -35,10 +35,8 @@ export default async function RecipesPage({
   const searchQuery = (q ?? '').trim()
   if (searchQuery) redirect(searchPath(searchQuery, 'moje'))
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  // The cached session lookup the layout already made (#229): no second Auth call.
+  const user = await getCurrentUser()
   if (!user) {
     redirect('/login')
   }
@@ -52,7 +50,7 @@ export default async function RecipesPage({
 
   let filteredQuery = supabase
     .from('recipes')
-    .select('id, slug, title, image_url, category, description, source_type, source_url, source_author')
+    .select(MY_RECIPE_CARD_COLUMNS)
     .order('created_at', { ascending: false })
 
   // "Moje przepisy" scopes to the owner explicitly — defense in depth on top of
@@ -79,7 +77,7 @@ export default async function RecipesPage({
   // Failed extractions surface in the header notification bell (see the
   // authenticated layout + getFailedShares), not inline on this page.
 
-  const filteredRecipes = (recipes || []) as Recipe[]
+  const filteredRecipes: MyRecipeCard[] = recipes ?? []
 
   const counts = (allRecipes || []).reduce<Partial<Record<RecipeCategory, number>>>(
     (acc, r) => {
