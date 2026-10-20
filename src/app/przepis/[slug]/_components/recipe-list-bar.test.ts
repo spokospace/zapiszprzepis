@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { RecipeListBar, RecipeListNav } from './recipe-list-bar'
+import { headerBackLabel, RecipeListBar, RecipeListNav } from './recipe-list-bar'
 import { RecipeBreadcrumbs } from './recipe-header'
 import type { ListPosition } from '@/lib/recipe-list-context'
 
@@ -68,5 +68,20 @@ describe('RecipeListNav (C3 phones, A9 desktop)', () => {
     expect(html).toContain(
       '<span class="text-[14px] font-bold text-ink-soft lg:text-[16px] lg:font-normal"><span class="lg:hidden">Poprzedni przepis</span>',
     )
+  })
+})
+
+// C3 (E01-S28): below lg the header carries „← {lista}”, so the bar is desktop-only.
+describe('RecipeListBar below lg', () => {
+  it('is hidden below lg and shown from lg (A9)', () => {
+    const nav = bar().match(/<nav[^>]*>/)?.[0] ?? ''
+    expect(nav).toMatch(/class="hidden /)
+    expect(nav).toContain('lg:flex')
+  })
+
+  it('shortens the search list to „Wyniki” for the narrow header', () => {
+    expect(headerBackLabel('Wyniki: „dynia”')).toBe('Wyniki')
+    expect(headerBackLabel('Ciasteczka')).toBe('Ciasteczka')
+    expect(headerBackLabel('Ostatnio dodane')).toBe('Ostatnio dodane')
   })
 })

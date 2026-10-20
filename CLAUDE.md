@@ -37,10 +37,11 @@ Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelnoś
 - **Dostęp:** gość przegląda i szuka; zalogowany (Facebook/Google) ma ulubione i galerię; dodawanie przepisów tylko z pełnym dostępem (kod lub płatność). Płeć wybierana raz przy pierwszym logowaniu, nieedytowalna.
 - **Wariant projektowy:** styl 1c (wysoka czytelność) + struktura nawigacji 1a. Wariant 1b (dolna nawigacja) niewdrażany.
 - **Nagłówek (decyzje właściciela, nadpisują starsze makiety i specy):**
-  - Logo to ikona `logo-icon.svg` + napis „Zapisz Przepis” tekstem — u gościa od 360 px (po prawej ma tylko MENU, #328), u zalogowanego od 640 px; poniżej sama ikona. To samo logo (`BrandLogo`) na ekranach konta: `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/confirm`. Zawsze przez `src/app/components/brand-logo.tsx` (`BrandLogo` / `LogoIcon` + `LogoWordmark`); nigdy `logo-lettering.svg` ani stare `logo.svg` (#320, #331, #334 — pilnuje `brand-logo.test.ts`).
-  - Zalogowany poniżej 1024 px widzi w nagłówku tylko „Dodaj” · „MENU”. „Powiadomienia” to wiersz w MENU („Moje”) + licznik na przycisku MENU; dzwonek w nagłówku tylko od `lg` (#323).
-  - Gość poniżej 1024 px: logo (lub „← Wróć”) + MENU; „Zaloguj się” / „Załóż konto” są w MENU (#324).
-  - Jeden link wstecz na ekran: „← Wróć” zastępuje logo pod stroną startową, ale strona przepisu zostawia logo, bo wraca pasek listy (#324).
+  - Nazwa to zawsze „Zapisz Przepis” (dwa słowa); w zdaniach z odmianą „w aplikacji Zapisz Przepis”; adres „zapiszprzepis.pl” (#339, pilnuje `brand-logo.test.ts`).
+  - Nagłówek poniżej 1024 px, dla wszystkich (gość, zalogowany, pełny dostęp): napis „Zapisz Przepis” (sam tekst, bez ikony) · „Szukaj” · „MENU” (handoff v8, #340). Od `lg` logo = ikona `logo-icon.svg` + napis. To samo logo z ikoną (`BrandLogo`) na ekranach konta: `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/confirm`. Zawsze przez `src/app/components/brand-logo.tsx` (`BrandLogo` / `LogoIcon` + `LogoWordmark`); nigdy `logo-lettering.svg` ani stare `logo.svg` (#320, #331, #334 — pilnuje `brand-logo.test.ts`).
+  - „Dodaj przepis” w nagłówku tylko od `lg`; poniżej jest w MENU („Moje”, bez pełnego dostępu z kłódką) i jako kafel na stronie głównej (#340). „Szukaj” ukryty na `/szukaj`.
+  - „Powiadomienia” poniżej `lg` to wiersz w MENU („Moje”) + licznik na przycisku MENU; dzwonek w nagłówku tylko od `lg` (#323). Gość: „Zaloguj się” / „Załóż konto” są w MENU (#324), od `lg` w nagłówku.
+  - Jeden link wstecz na ekran: „← Wróć” zastępuje logo pod stroną startową. Na stronie przepisu otwartej z listy nagłówek nazywa listę („← Wyniki”, „← Ciasteczka”) — poniżej `lg` nie ma osobnego paska listy ani „N z M”; od `lg` zostaje rząd A9 (#344, zastępuje #324 dla strony przepisu).
   - Źródłem prawdy jest `src/app/components/app-header.tsx` i jego testy — handoff `.dc.html` w tych punktach jest nieaktualny.
 
 <!-- BEGIN @przeprogramowani/10x-cli -->

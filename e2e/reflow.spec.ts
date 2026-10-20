@@ -110,19 +110,20 @@ test('search with no results reflows at 320 px, A++', async ({ page }) => {
 
 test('recipe page reflows at 320 px, A++', async ({ page }) => {
   const slug = await firstRecipeSlug(page)
-  // The list bar and prev/next read this tab's snapshot of the list the visitor came from.
+  // The header's „← {lista}” (C3, E01-S28) and prev/next read this tab's snapshot of
+  // the list the visitor came from; an unbroken list name must not widen the header.
   const snapshot = {
-    label: `Wyniki: „${LONG_WORD}”`,
-    href: '/szukaj?q=x',
+    label: LONG_WORD,
+    href: '/przepisy/x',
     items: [
       { slug: 'reflow-prev', title: LONG_TITLE },
       { slug, title: 'x' },
       { slug: 'reflow-next', title: LONG_TITLE },
     ],
   }
-  await page.addInitScript((value) => window.sessionStorage.setItem('zp-list:szukaj', value), JSON.stringify(snapshot))
-  await open(page, `/przepis/${slug}?from=szukaj`)
-  await expect(page.getByRole('navigation', { name: 'Lista przepisów' })).toContainText(LONG_WORD)
+  await page.addInitScript((value) => window.sessionStorage.setItem('zp-list:kategoria', value), JSON.stringify(snapshot))
+  await open(page, `/przepis/${slug}?from=kategoria`)
+  await expect(page.getByRole('link', { name: `Wróć: ${LONG_WORD}` })).toBeVisible()
 
   await expect(page.getByRole('navigation', { name: 'Poprzedni i następny przepis' })).toContainText(LONG_WORD)
 

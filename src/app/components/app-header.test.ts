@@ -28,15 +28,13 @@ function render(isAuthenticated: boolean, hasFullAccess = true) {
   )
 }
 
-describe('AppHeader "Dodaj" (1c header, E01-S10)', () => {
-  it('is a 64x56 icon-over-label button in the action colour, linking to /dodaj', () => {
+describe('AppHeader "Dodaj przepis" (desktop A9; handoff v8, E01-S25)', () => {
+  it('is a desktop-only button in the action colour, linking to /dodaj — in MENU below lg', () => {
     const html = render(true)
     const dodaj = html.match(/<a[^>]*href="\/dodaj"[^>]*>.*?<\/a>/)?.[0] ?? ''
-    expect(dodaj).toContain('aria-label="Dodaj przepis"')
-    // "Dodaj" below lg; the desktop header (E01-S17, A9) appends " przepis" from lg only.
-    expect(dodaj).toContain('>Dodaj<span class="-ml-1.5 hidden lg:inline">')
-    expect(dodaj).toContain('h-14 w-16')
-    expect(dodaj).toContain('flex-col')
+    expect(dodaj).toMatch(/class="hidden /)
+    expect(dodaj).toContain('lg:inline-flex')
+    expect(dodaj).toContain('Dodaj przepis</a>')
     expect(dodaj).toContain('bg-action')
     expect(dodaj).not.toContain('bg-orange-500')
   })
@@ -68,47 +66,25 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     expect(login).toContain('border-2 border-field')
   })
 
-  // #286 followed the design handoff back to the old lettering image and undid #276 (#320);
-  // #324 did the same for guests. The icon + text wordmark is the logo for everyone.
-  it('shows the recipe icon + wordmark logo, never the old lettering image', () => {
+  // #286 followed the design handoff back to the old lettering image and undid #276 (#320).
+  // Handoff v8 (E01-S25): below lg the text „Zapisz Przepis” alone; the icon from lg.
+  it('shows the text logo below lg and the icon only from lg, never the old lettering image', () => {
     pathname = '/'
     for (const signedIn of [true, false]) {
       const html = render(signedIn)
-      expect(html).toContain('src="/logo-icon.svg"')
       expect(html).not.toContain('logo-lettering.svg')
-      const wordmark = html.match(/<span aria-hidden="true" class="[^"]*">.*?Przepis<\/span><\/span>/)?.[0] ?? ''
-      expect(wordmark).toContain('hidden')
-      expect(wordmark).toContain('>Zapisz</span>')
+      const icon = html.match(/<img[^>]*src="\/logo-icon.svg"[^>]*>/)?.[0] ?? ''
+      expect(icon).toMatch(/class="hidden [^"]*lg:block/)
+      const wordmark = html.match(/<span aria-hidden="true" class="([^"]*)">.*?Przepis<\/span><\/span>/)
+      expect(wordmark?.[0]).toContain('>Zapisz</span>')
+      const classes = (wordmark?.[1] ?? '').split(' ')
+      expect(classes).not.toContain('hidden')
+      // 24 px from 360 px; 20 px below, so the text + Szukaj + MENU fit at 320 px.
+      expect(classes).toEqual(expect.arrayContaining(['text-[20px]', 'min-[360px]:text-[24px]', 'lg:text-[1.625rem]']))
     }
   })
 
-  // The icon alone below the breakpoint, then icon + wordmark: from 360 px for a guest,
-  // whose phone header has only MENU on the right (#328); from sm when Dodaj sits there too.
-  it.each([
-    [false, 'min-[360px]:inline', 'sm:inline'],
-    [true, 'sm:inline', 'min-[360px]:inline'],
-  ])('shows the wordmark (signed in: %s) from %s', (signedIn, from, notFrom) => {
-    pathname = '/'
-    const wordmark = render(signedIn).match(/<span aria-hidden="true" class="([^"]*)">.*?Przepis<\/span><\/span>/)?.[1] ?? ''
-    expect(wordmark.split(' ')).toContain(from)
-    expect(wordmark.split(' ')).not.toContain(notFrom)
-  })
-
-  it('keeps the logo linking home on a recipe page — its list bar is the way back', () => {
-    pathname = '/przepis/sernik'
-    for (const signedIn of [true, false]) {
-      const html = render(signedIn)
-      expect(html).not.toContain('aria-label="Wróć')
-      const logo = html.match(/<a[^>]*aria-label="Zapisz Przepis — strona główna"[^>]*>/)?.[0] ?? ''
-      expect(logo).toContain('href="/"')
-      expect(logo).not.toContain('hidden lg:flex')
-      // The old chevron to the owner-only /recipes is gone.
-      expect(html).not.toContain('href="/recipes"')
-    }
-    pathname = '/'
-  })
-
-  it.each(['/szukaj', '/settings', '/dodaj', '/powiadomienia', '/przepisy/zupy', '/u/ania'])(
+  it.each(['/szukaj', '/settings', '/dodaj', '/powiadomienia', '/przepisy/zupy', '/u/ania', '/przepis/sernik'])(
     'replaces the logo with a plain "← Wróć" below lg on %s',
     (path) => {
       pathname = path
@@ -127,7 +103,7 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     },
   )
 
-  it('keeps the signed-in "← Wróć" in one 18 px row, now that only Dodaj + MENU sit beside it (#323)', () => {
+  it('keeps the signed-in "← Wróć" in one 18 px row beside Szukaj + MENU', () => {
     pathname = '/szukaj'
     const back = render(true).match(/<a[^>]*aria-label="Wróć"[^>]*>/)?.[0] ?? ''
     expect(back).toContain('flex-row')
@@ -157,5 +133,32 @@ describe('AppHeader "Powiadomienia" placement (#323)', () => {
     const guest = render(false)
     expect(guest).toContain('data-notifications="null"')
     expect(guest).not.toContain('data-testid="bell"')
+  })
+})
+
+/** The phone header's „Szukaj” button (the desktop header has its own search links). */
+function searchButton(html: string): string {
+  return html.match(/<a[^>]*>(?:(?!<\/a>).)*<\/svg>Szukaj<\/a>/)?.[0] ?? ''
+}
+
+// Handoff v8 (E01-S25): one-tap search from every screen below lg, for everyone.
+describe('AppHeader "Szukaj" (handoff v8, E01-S25)', () => {
+  it.each(['/', '/przepis/sernik', '/settings', '/przepisy/zupy'])('is a 64x56 icon-over-label link to /szukaj below lg on %s', (path) => {
+    pathname = path
+    for (const signedIn of [true, false]) {
+      const link = searchButton(render(signedIn))
+      expect(link).toContain('href="/szukaj"')
+      expect(link).toContain('h-14 w-16')
+      expect(link).toContain('flex-col')
+      expect(link).toContain('lg:hidden')
+      expect(link).toMatch(/<svg[^>]*aria-hidden="true"[^>]*>.*<\/svg>Szukaj<\/a>$/)
+    }
+    pathname = '/'
+  })
+
+  it('is not shown on /szukaj, which has the field', () => {
+    pathname = '/szukaj'
+    for (const signedIn of [true, false]) expect(searchButton(render(signedIn))).toBe('')
+    pathname = '/'
   })
 })
