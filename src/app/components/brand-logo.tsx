@@ -27,9 +27,9 @@ export function BrandLogo() {
  * Two words, „Zapisz Przepis” (handoff v8, #339); the gap is a margin, not a JSX
  * space, so formatting can never drop it.
  */
-export function LogoWordmark({ className = '' }: { className?: string }) {
+export function LogoWordmark({ className = 'text-[1.625rem]' }: { className?: string }) {
   return (
-    <span aria-hidden="true" className={`text-[1.625rem] font-bold tracking-wide ${className}`}>
+    <span aria-hidden="true" className={`font-bold tracking-wide ${className}`}>
       <span className="text-gray-900">Zapisz</span>
       <span className="ml-[.28em] text-action">Przepis</span>
     </span>

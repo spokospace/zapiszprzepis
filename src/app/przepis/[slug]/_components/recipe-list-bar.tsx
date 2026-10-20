@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useHydrated } from '@/app/components/ui/use-hydrated'
 import { useSessionStorage } from '@/app/components/ui/use-session-storage'
+import { setHeaderBackTarget } from '@/app/components/header-back-target'
 import { listStorageKey, locate, parseSnapshot, type ListItem, type ListKey, type ListPosition } from '@/lib/recipe-list-context'
 import { recipePath } from '@/lib/routes'
 
@@ -16,12 +17,13 @@ interface RecipeListProps {
   fallback: ListPosition | null
 }
 
-// Fixed height, so the placeholder and the filled bar occupy the same space and
-// nothing below jumps on hydration. A4: a flat row over a rule, the count on the
-// right. A9 (lg): "← {lista} · N z M" on the left of the page's breadcrumbs row.
+// Desktop only (A9, lg): "← {lista} · N z M" on the left of the page's breadcrumbs
+// row. Below lg the header carries „← {lista}” instead (C3, E01-S28), so the page
+// starts with the photo. Fixed height, so the placeholder and the filled bar occupy
+// the same space and nothing below jumps on hydration.
 export const LIST_BAR =
-  'mb-5 flex min-h-[57px] items-center justify-between gap-3 border-b border-border-card ' +
-  'lg:mb-0 lg:min-h-[48px] lg:justify-start lg:gap-2 lg:border-b-0'
+  'hidden min-h-[48px] items-center justify-start gap-2 border-b border-border-card ' +
+  'lg:flex lg:border-b-0'
 
 // A button-shaped link: bordered, so no underline (as in the header's "Dodaj").
 const NAV = 'flex min-h-[64px] items-center gap-3 rounded-field border-2 px-4 py-2 leading-tight no-underline!'
@@ -55,17 +57,33 @@ function useListPosition({ slug, from, fallback }: RecipeListProps): ListState {
   return { kind: 'ready', position, linkFrom: fromList ? from : null }
 }
 
-/** "← {lista}" + "N z M" at the top of the recipe (handoff C3 item 1, A4, A9). */
+/**
+ * The header's back link names the list only when the visitor came from one
+ * (`?from`); a shared link or a new tab gets the plain „← Wróć” (E01-S28).
+ * „Wyniki: „dynia”” is shortened to „Wyniki”, as in C3: the header row is narrow.
+ */
+export function headerBackLabel(label: string): string {
+  return label.startsWith('Wyniki:') ? 'Wyniki' : label
+}
+
+/** "← {lista} · N z M" above the recipe from lg (A9); below lg it feeds the header's back link (C3). */
 export function RecipeListBar(props: RecipeListProps) {
   const state = useListPosition(props)
+  const label = state.kind === 'ready' && props.from ? headerBackLabel(state.position.label) : null
+  const href = state.kind === 'ready' && props.from ? state.position.href : null
+  useEffect(() => {
+    setHeaderBackTarget(label && href ? { label, href } : null)
+    return () => setHeaderBackTarget(null)
+  }, [label, href])
+
   if (state.kind === 'none') return null
   if (state.kind === 'pending') return <div aria-hidden="true" className={LIST_BAR} />
 
   const { position } = state
   return (
     <nav aria-label="Lista przepisów" className={`${LIST_BAR} text-ink`}>
-      {/* min-w-0 + wrap-anywhere: a long search query in "Wyniki: „…”" wraps at 320 px
-          instead of pushing "N z M" off screen (WCAG 1.4.10). */}
+      {/* min-w-0 + wrap-anywhere: a long search query in "Wyniki: „…”" wraps instead
+          of pushing "N z M" off screen (WCAG 1.4.10, 200% zoom). */}
       <Link
         href={position.href}
         className="inline-flex min-h-[48px] min-w-0 items-center gap-1.5 text-[18px] font-bold no-underline! wrap-anywhere hover:text-action-hover"
