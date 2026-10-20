@@ -7,7 +7,6 @@ import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-ca
 import { getCategoryDescription } from '@/lib/category-descriptions'
 import { categoryNoun, parsePageParam, parseTagParam, tagFacets, tagSummary } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
-import { recipeTotalMinutes } from '@/lib/recipe-meta'
 import { categoryPath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
 import { PageContainer } from '@/app/components/page-container'
@@ -179,14 +178,10 @@ export default async function CategoryPage({ params, searchParams }: { params: P
                 // scroll-mt clears the sticky header when "Pokaż kolejne" jumps here.
                 <li key={r.id} id={`wynik-${i + 1}`} className="scroll-mt-28">
                   <RecipeCard
-                    variant="list"
-                    thumb={84}
-                    inCategory={{ tagLabels: (r.tags ?? []).map(tagLabel) }}
                     slug={r.slug}
                     title={r.title}
                     imageUrl={r.image_url}
                     category={r.category}
-                    minutes={recipeTotalMinutes(r)}
                     sourceType={r.source_type}
                     sourceUrl={r.source_url}
                     sourceAuthor={r.source_author}

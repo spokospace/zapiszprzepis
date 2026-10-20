@@ -29,7 +29,7 @@ export function BrandLogo() {
  */
 export function LogoWordmark({ className = 'text-[1.625rem]' }: { className?: string }) {
   return (
-    <span aria-hidden="true" className={`font-bold tracking-wide ${className}`}>
+    <span aria-hidden="true" className={`font-bold ${className}`}>
       <span className="text-gray-900">Zapisz</span>
       <span className="ml-[.28em] text-action">Przepis</span>
     </span>

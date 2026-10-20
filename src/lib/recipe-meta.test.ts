@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { listCardLines, photosLabel, recipeMetaLine, recipeTimeStats, recipeTotalMinutes } from '@/lib/recipe-meta'
+import { photosLabel, recipeMetaLine, recipeTimeStats, recipeTotalMinutes } from '@/lib/recipe-meta'
 
 const base = { prep_time_minutes: null, cook_time_minutes: null, total_time_minutes: null }
 
@@ -79,26 +79,3 @@ describe('recipeTimeStats (A9 desktop times row)', () => {
   })
 })
 
-describe('listCardLines', () => {
-  const base = { category: 'zupy', source: 'aniagotuje.pl' }
-
-  it('search/profile: "Kategoria · czas" then the source', () => {
-    expect(listCardLines({ ...base, minutes: 45 })).toEqual(['Zupy · 45 min', 'aniagotuje.pl'])
-  })
-
-  it('leaves out an unknown or zero time', () => {
-    expect(listCardLines({ ...base, minutes: null })).toEqual(['Zupy', 'aniagotuje.pl'])
-    expect(listCardLines({ ...base, minutes: 0 })).toEqual(['Zupy', 'aniagotuje.pl'])
-  })
-
-  it('in a category: "czas · źródło" then the tags', () => {
-    expect(listCardLines({ ...base, minutes: 90, tagLabels: ['kruche', 'maślane'], inCategory: true })).toEqual([
-      '1 godz 30 min · aniagotuje.pl',
-      'kruche · maślane',
-    ])
-  })
-
-  it('in a category without time or tags: just the source', () => {
-    expect(listCardLines({ ...base, minutes: null, tagLabels: [], inCategory: true })).toEqual(['aniagotuje.pl'])
-  })
-})

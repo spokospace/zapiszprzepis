@@ -13,40 +13,26 @@ const PROPS: Parameters<typeof RecipeActions>[0] = {
   isAuthenticated: true,
   title: 'Zupa krem z dyni',
   shareUrl: 'https://zapiszprzepis.pl/przepis/zupa-krem-z-dyni',
-  sourceUrl: 'https://aniagotuje.pl/przepis/zupa',
 }
 
 function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
   return renderToStaticMarkup(createElement(RecipeActions, { ...PROPS, ...extra }))
 }
 
-describe('RecipeActions (C3 phones, A9 desktop)', () => {
-  it('stacks below sm so the heart is full width (C3)', () => {
-    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 sm:flex-row[^"]*"><div class="flex flex-col lg:col-span-2">/)
+describe('RecipeActions (E01-S31 §3)', () => {
+  it('stacks below sm so the heart is full width, then a row from sm', () => {
+    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 sm:flex-row[^"]*"><div class="flex flex-col sm:flex-1">/)
   })
 
-  it('from lg puts the heart across the column and the other two in a row under it', () => {
-    expect(render()).toMatch(/^<div class="[^"]*lg:grid lg:grid-cols-2">/)
-  })
-
-  it('shows "Udostępnij" at every width, under the heart on phones', () => {
+  it('shows "Udostępnij" beside the heart, each half the row from sm', () => {
     const html = render()
     const share = html.match(/<button type="button" class="[^"]*">.*?Udostępnij<\/button>/)?.[0] ?? ''
     expect(share).toContain('min-h-[48px]')
     expect(share).toContain('lg:min-h-[58px]')
-    // Outside the desktop-only wrapper, right after the heart's.
-    expect(html).toMatch(/lg:col-span-2">.*?<\/div><span class="flex flex-col gap-2"><button[^>]*>.*?Udostępnij/)
-    expect(html.match(/<div class="hidden lg:contents">.*<\/div>/)?.[0] ?? '').not.toContain('Udostępnij')
+    expect(share).toContain('sm:flex-1')
   })
 
-  it('adds "Oryginał" from lg only (phones keep the end-of-recipe button)', () => {
-    const desktop = render().match(/<div class="hidden lg:contents">.*<\/div>/)?.[0] ?? ''
-    expect(desktop).toMatch(/<a href="https:\/\/aniagotuje\.pl\/przepis\/zupa" target="_blank" rel="noopener noreferrer"[^>]*>/)
-    expect(desktop).toContain('Oryginał<span class="sr-only"> przepisu (otwiera nową kartę)</span>')
-    expect(desktop).toContain('lg:min-h-[58px]')
-  })
-
-  it('has no "Oryginał" without a source link', () => {
-    expect(render({ sourceUrl: null })).not.toContain('Oryginał')
+  it('has no "Oryginał" button — the original is on the photo badge now', () => {
+    expect(render()).not.toContain('Oryginał')
   })
 })

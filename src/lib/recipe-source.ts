@@ -33,6 +33,30 @@ export function sourceLabel(
   return sourceType === 'web_blog' ? 'Blog' : 'Inny'
 }
 
+/** Which icon the source badge shows (2026-10-20 handoff §1). The current enum
+ *  only yields website / youtube / facebook; `book` and `person` are kept for
+ *  the future page-less recipes (a cookbook or a person) the handoff names. */
+export type SourceKind = 'website' | 'youtube' | 'facebook' | 'book' | 'person'
+
+export function sourceKind(sourceType: RecipeSource): SourceKind {
+  if (sourceType === 'youtube') return 'youtube'
+  if (sourceType === 'facebook_text' || sourceType === 'facebook_reel') return 'facebook'
+  return 'website'
+}
+
+/**
+ * The source badge's icon kind and the text a reader sees, from one place: the
+ * card shows it on the photo (not a link — the whole card links to the recipe),
+ * the recipe page shows the same as a link to the original (E01-S31).
+ */
+export function formatSource(
+  sourceType: RecipeSource,
+  sourceUrl: string | null,
+  sourceAuthor: string | null = null,
+): { kind: SourceKind; text: string } {
+  return { kind: sourceKind(sourceType), text: sourceLabel(sourceType, sourceUrl, sourceAuthor) }
+}
+
 /** The platform in the locative, for "Otwórz oryginał na {…}" (design handoff C3, item 11). */
 const PLATFORM_LOCATIVE: Partial<Record<RecipeSource, string>> = {
   facebook_text: 'Facebooku',

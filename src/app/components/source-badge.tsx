@@ -1,0 +1,78 @@
+import { BookOpen, ExternalLink, Globe, MonitorPlay, User, Users, type LucideIcon } from 'lucide-react'
+import type { SourceKind } from '@/lib/recipe-source'
+
+// lucide-react dropped its brand glyphs, so these are neutral stand-ins; the
+// visible text always names the platform ("YouTube · …", "Facebook"), so the
+// icon only has to read as "video" / "community" and need not be a logo.
+const ICON: Record<SourceKind, LucideIcon> = {
+  website: Globe,
+  youtube: MonitorPlay,
+  facebook: Users,
+  book: BookOpen,
+  person: User,
+}
+
+interface SourceBadgeProps {
+  kind: SourceKind
+  /** The reader-facing source text ("aniagotuje.pl", "YouTube · Kuchnia Ani"). */
+  text: string
+  /**
+   * The original's URL. On the recipe page a URL makes the badge a link to the
+   * original (with an ExternalLink glyph); a page-less recipe (book / person)
+   * passes none and gets a plain, border-less badge. On a card `href` is always
+   * omitted — the whole card links to the recipe, so the badge never does.
+   */
+  href?: string | null
+  /**
+   * `card`: the small white badge in a photo corner on a recipe card.
+   * `recipe`: the larger pill on the recipe page's main photo (a link when `href`).
+   */
+  variant: 'card' | 'recipe'
+}
+
+/**
+ * The source of a recipe shown on its photo (2026-10-20 handoff §1, §3): an icon
+ * for the platform kind + the source name on one line, clipped with an ellipsis
+ * when it is long. The caller positions it in the photo's bottom-left corner.
+ */
+export function SourceBadge({ kind, text, href, variant }: SourceBadgeProps) {
+  const Icon = ICON[kind]
+
+  if (variant === 'card') {
+    return (
+      <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-white px-2.5 py-[5px] text-[16px] font-bold text-ink shadow-sm">
+        <Icon aria-hidden="true" className="h-[18px] w-[18px] shrink-0" />
+        <span className="truncate">{text}</span>
+      </span>
+    )
+  }
+
+  const inner = (
+    <>
+      <Icon aria-hidden="true" className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" />
+      <span className={`truncate ${href ? 'underline' : ''}`}>{text}</span>
+      {href && <ExternalLink aria-hidden="true" className="h-4 w-4 shrink-0 md:h-[18px] md:w-[18px]" />}
+    </>
+  )
+
+  // A page-less recipe (book / person): no link, no border, no ExternalLink.
+  if (!href) {
+    return (
+      <span className="inline-flex max-w-full min-h-12 items-center gap-2 rounded-pill bg-white px-3.5 text-[16px] font-bold text-ink md:px-4 md:text-[17px]">
+        {inner}
+      </span>
+    )
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      aria-label={`Otwórz oryginał: ${text} (nowa karta)`}
+      className="inline-flex max-w-full min-h-12 items-center gap-2 rounded-pill border-2 border-[#6b7280] bg-white px-3.5 text-[16px] font-bold text-ink no-underline! md:px-4 md:text-[17px]"
+    >
+      {inner}
+    </a>
+  )
+}

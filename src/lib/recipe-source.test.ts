@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { originalLinkLabel, sourceLabel } from '@/lib/recipe-source'
+import { formatSource, originalLinkLabel, sourceKind, sourceLabel } from '@/lib/recipe-source'
 import { publicFacebookAuthor } from '@/lib/facebook-authors'
 
 describe('publicFacebookAuthor', () => {
@@ -87,5 +87,32 @@ describe('originalLinkLabel', () => {
 
   it('falls back to a plain label for an unparseable URL', () => {
     expect(originalLinkLabel('web_blog', 'not a url')).toBe('Otwórz oryginał')
+  })
+})
+
+describe('sourceKind', () => {
+  it('maps the enum to a badge icon kind', () => {
+    expect(sourceKind('youtube')).toBe('youtube')
+    expect(sourceKind('facebook_text')).toBe('facebook')
+    expect(sourceKind('facebook_reel')).toBe('facebook')
+    expect(sourceKind('web_blog')).toBe('website')
+    expect(sourceKind('other')).toBe('website')
+  })
+})
+
+describe('formatSource', () => {
+  it('pairs the icon kind with the reader-facing text', () => {
+    expect(formatSource('web_blog', 'https://www.aniagotuje.pl/zupa')).toEqual({
+      kind: 'website',
+      text: 'aniagotuje.pl',
+    })
+    expect(formatSource('youtube', 'https://youtu.be/abc', 'Kuchnia Ani')).toEqual({
+      kind: 'youtube',
+      text: 'YouTube · Kuchnia Ani',
+    })
+    expect(formatSource('facebook_text', 'https://www.facebook.com/groups/1/posts/2/')).toEqual({
+      kind: 'facebook',
+      text: 'Facebook',
+    })
   })
 })
