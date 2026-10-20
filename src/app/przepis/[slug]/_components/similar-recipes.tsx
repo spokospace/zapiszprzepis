@@ -148,9 +148,8 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
                   sourceType={r.source_type}
                   sourceUrl={r.source_url}
                   sourceAuthor={r.source_author}
+                  photo="carousel"
                   sizes={CAROUSEL_SIZES}
-                  // Every card here is in the recipe's own category, so no category badge (screen 6).
-                  showCategory={false}
                   favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: userId !== null }}
                 />
               ),

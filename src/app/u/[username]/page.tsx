@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { cache } from 'react'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { recipeTotalMinutes } from '@/lib/recipe-meta'
 import { getFavoriteIds } from '@/lib/favorites'
 import type { RecipeSource } from '@/lib/recipe-source'
 import { getSiteUrl } from '@/lib/site-url'
@@ -250,13 +249,10 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
                 // #wiecej: the first card of the newest page, where "Pokaż kolejne" lands.
                 <li key={r.id} id={i === firstNewIndex ? 'wiecej' : undefined} className="scroll-mt-24">
                   <RecipeCard
-                    variant="list"
-                    thumb={84}
                     slug={r.slug}
                     title={r.title}
                     imageUrl={r.image_url}
                     category={r.category}
-                    minutes={recipeTotalMinutes(r)}
                     sourceType={r.source_type}
                     sourceUrl={r.source_url}
                     sourceAuthor={r.source_author}
