@@ -262,6 +262,7 @@ Wydzielone z S03 (decyzja użytkownika 2026-10-16): skoro autor ma być widoczny
 ### E01-S15 — Powiadomienia: pełny ekran + pasek na stronie głównej
 **Epic:** E01 · **Kategoria:** feature · **Priorytet:** medium · **Ryzyko:** medium · **Ref:** 5 · **Zależy:** S01 (rozszerza `notification-bell.tsx`)
 > Zmiana (2026-10-19, #323): dzwonek „Powiadomienia” jest w nagłówku tylko od 1024 px. Na telefonie i tablecie wejściem jest wiersz w MENU + licznik na przycisku MENU.
+> Zmiana (2026-10-20, E01-S15b — `.ai/specs/2026-10-20-e01-s15b-notifications-rework.md`): samodzielny dzwonek znika z nagłówka także na desktopie. Na każdej szerokości jedynym sygnałem w nagłówku jest mała kropka na przycisku MENU (bez liczby), a wejściem — wiersz „Powiadomienia” w MENU (teraz na każdej szerokości) i wiersz w Ustawieniach. Pełny ekran, reguła licznika (problemy + nieotwarte gotowe) i pasek na stronie głównej bez zmian.
 
 - **Given** zalogowany, **When** otwiera powiadomienia, **Then** pełnoekranowy panel (nie dropdown 320 px) z sekcjami „Wymaga uwagi” / „W trakcie” / „Wcześniej” i kartami typu Problem / W trakcie / Gotowe.
 - **Given** nieudany przepis, **When** widzi kartę Problem, **Then** domena + powód zrozumiałym językiem (mapowanie `error_message`) + „Spróbuj ponownie” / „Usuń”.
