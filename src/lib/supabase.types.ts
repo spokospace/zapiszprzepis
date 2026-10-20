@@ -39,6 +39,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      category_descriptions: {
+        Row: {
+          category: Database["public"]["Enums"]["recipe_category"]
+          meta_description: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["recipe_category"]
+          meta_description: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["recipe_category"]
+          meta_description?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recipe_shares: {
         Row: {
           attempts: number
