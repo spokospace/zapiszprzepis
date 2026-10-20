@@ -1,9 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { inngest } from '@/inngest/client'
 import { requireUser } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
+import { getFullAccess } from '@/lib/full-access'
+import { addRecipeErrorPath } from '@/lib/routes'
 
 /**
  * "Ponów" — re-trigger extraction for a share whose automatic retries (Inngest
@@ -14,12 +17,19 @@ import { detectSourceType } from '@/lib/detect-source-type'
  * current route (revalidate, no redirect) — the bell lives on every
  * authenticated screen, so a redirect would yank the user off the detail page.
  * The whole layout is revalidated because the bell badge, the home banner and
- * /powiadomienia (E01-S15) all read the same shares.
+ * /powiadomienia (E01-S15) all read the same shares. The one exception to "no
+ * redirect": a user without full access is sent to the access-code gate
+ * (/dodaj?add_error=no_access), because a retry spends the same extraction
+ * budget as adding (E02-S01 / audit C6).
  */
 export async function retryShare(shareId: number): Promise<void> {
   if (!Number.isInteger(shareId) || shareId <= 0) return
 
   const { supabase, user } = await requireUser()
+
+  // E02-S01 (#369): „Ponów" re-runs extraction, which needs full access just
+  // like adding (add-recipe-action, refresh-action). Gate it before any write.
+  if (!(await getFullAccess(supabase))) redirect(addRecipeErrorPath('no_access'))
 
   // RLS scopes recipe_shares to the current user.
   const { data: share } = await supabase
