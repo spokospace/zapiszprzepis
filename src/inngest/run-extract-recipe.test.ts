@@ -495,6 +495,43 @@ describe('runExtractRecipe — global slug collision (E01-S03b)', () => {
     expect(mock.insertArgsAll('recipes').map((a) => a.slug)).toEqual(['nalesniki', 'nalesniki-2'])
     expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
   })
+
+  it('saves an 11th recipe with the same title under a random suffix (#371)', async () => {
+    const mock = makeSupabaseMock()
+    // nalesniki … nalesniki-10 are all taken.
+    for (let i = 0; i < 10; i++) {
+      mock.queue('recipes', {
+        data: null,
+        error: { message: 'duplicate key value violates unique constraint "recipes_slug_uniq"' },
+      })
+    }
+    mock.queue('recipes', { data: { id: 11 }, error: null })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(result.status).toBe('completed')
+    const slugs = mock.insertArgsAll('recipes').map((a) => a.slug)
+    expect(slugs).toHaveLength(11)
+    expect(slugs.slice(0, 10)).toEqual([
+      'nalesniki', 'nalesniki-2', 'nalesniki-3', 'nalesniki-4', 'nalesniki-5',
+      'nalesniki-6', 'nalesniki-7', 'nalesniki-8', 'nalesniki-9', 'nalesniki-10',
+    ])
+    expect(slugs[10]).toMatch(/^nalesniki-[a-z0-9]{8}$/)
+    expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
+  })
+
+  it('saves a recipe whose title has no Latin letters under a fallback slug (#371)', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 12 }, error: null })
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), title: '🍰🍓' }) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(result.status).toBe('completed')
+    expect(mock.insertArgs('recipes')).toMatchObject({ slug: 'przepis' })
+  })
 })
 
 describe('runExtractRecipe — estimated times', () => {
