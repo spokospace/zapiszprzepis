@@ -1,6 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+
+// The version cards are the shared RecipeCard, whose heart pulls in server-only
+// actions; stub it so the card renders in a test (no heart is passed anyway).
+vi.mock('@/app/components/favorite-button', () => ({ FavoriteButton: () => null }))
+
 import { DishVersionsBar } from './dish-versions-bar'
 import { DishVersions } from './dish-versions'
 import type { DishVersionRow } from '@/lib/dish-versions'
@@ -74,7 +79,7 @@ describe('DishVersions', () => {
     const html = section({ versions: [row()], totalCount: 1, dishAccusative: 'sernik' })
     expect(html).toContain('id="inne-przepisy"')
     expect(html).toContain('Inne przepisy na sernik (1)')
-    expect(html).toContain('Różnice w porównaniu z przepisem')
+    expect(html).toContain('Czym różnią się od przepisu')
   })
 
   it('uses the case-free heading without an accusative', () => {
@@ -99,17 +104,22 @@ describe('DishVersions', () => {
     expect(html.indexOf('/przepis/nowy')).toBeLessThan(html.indexOf('/przepis/stary'))
   })
 
-  it('titles the card with the variant note and keeps a unique accessible name', () => {
+  it('shows the recipe title and the variant note as its subtitle', () => {
     const html = section({
       versions: [row({ variant_note: 'Na zimno', title: 'Sernik truskawkowy' })],
       totalCount: 1,
     })
+    expect(html).toContain('Sernik truskawkowy')
     expect(html).toContain('Na zimno')
-    expect(html).toContain('— Sernik truskawkowy') // visually-hidden suffix
   })
 
-  it('falls back to the recipe title when the note is null', () => {
-    const html = section({ versions: [row({ variant_note: null, title: 'Sernik babci' })], totalCount: 1 })
-    expect(html).toContain('Sernik babci')
+  it('shows the ingredient difference with labelled "Ma dodatkowo:" / "Nie ma:"', () => {
+    const html = section({
+      versions: [row({ ingredients: [{ name: 'rodzynki' }] as unknown })],
+      totalCount: 1,
+    })
+    // current has no ingredients, so the version only adds.
+    expect(html).toContain('Ma dodatkowo:')
+    expect(html).toContain('rodzynki')
   })
 })
