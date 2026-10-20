@@ -3,11 +3,15 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 vi.mock('server-only', () => ({}))
+// The header search field pulls in the /szukaj suggestions action; keep it out of this
+// SSR render (it reaches for the Supabase server client).
+vi.mock('@/app/szukaj/actions', () => ({ getSuggestions: vi.fn(async () => []) }))
 let pathname = '/'
+let searchString = ''
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
-  useSearchParams: () => new URLSearchParams(),
-  useRouter: () => ({ back: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(searchString),
+  useRouter: () => ({ back: vi.fn(), push: vi.fn() }),
 }))
 vi.mock('./app-menu', () => ({
   AppMenu: ({ notifications }: { notifications?: unknown }) =>
@@ -163,6 +167,47 @@ describe('AppHeader "Szukaj" (handoff v8, E01-S25)', () => {
     pathname = '/szukaj'
     for (const signedIn of [true, false]) expect(searchButton(render(signedIn))).toBe('')
     pathname = '/'
+  })
+})
+
+function headerSearchInput(html: string): string {
+  return html.match(/<input[^>]*id="header-search"[^>]*>/)?.[0] ?? ''
+}
+
+// E01-S17 follow-up (#navbar-search): the desktop header carries one combobox search
+// field — the single search surface — rendered on every signed-in page incl /szukaj.
+describe('AppHeader desktop search field (E01-S17 follow-up)', () => {
+  it.each(['/', '/szukaj', '/przepis/sernik', '/settings'])('is one combobox GET field on %s', (path) => {
+    pathname = path
+    const html = render(true)
+    const input = headerSearchInput(html)
+    expect(input).toContain('role="combobox"')
+    expect(input).toContain('name="q"')
+    expect(input).toContain('aria-controls="header-search-panel"')
+    expect(html).toContain('aria-label="Szukaj w serwisie"')
+    // Desktop-only; the field never shows below lg (the „Szukaj” link does).
+    expect(html).toMatch(/role="search"[^>]*class="[^"]*hidden lg:flex/)
+    pathname = '/'
+  })
+
+  it('is not rendered for a guest', () => {
+    pathname = '/'
+    expect(headerSearchInput(render(false))).toBe('')
+  })
+
+  it('prefills the active query on /szukaj so the page drops its own desktop field', () => {
+    pathname = '/szukaj'
+    searchString = 'q=sernik'
+    expect(headerSearchInput(render(true))).toContain('value="sernik"')
+    searchString = ''
+    pathname = '/'
+  })
+
+  it('does not prefill off the search page', () => {
+    pathname = '/'
+    searchString = 'q=sernik'
+    expect(headerSearchInput(render(true))).not.toContain('value="sernik"')
+    searchString = ''
   })
 })
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { History, TrendingUp } from 'lucide-react'
-import { POPULAR_SEARCHES } from '@/lib/home'
+import { popularMinusRecent } from '@/lib/home'
 import { searchPath } from '@/lib/routes'
 import { useRecentSearches } from './use-recent-searches'
 import { useFieldValue } from './use-field-value'
@@ -57,8 +57,7 @@ export function QuickSearchBar({
   if (value.trim().length > 2) return null
 
   const mine = isAuthenticated ? recent : []
-  const seen = new Set(mine.map((t) => t.toLocaleLowerCase('pl')))
-  const popular = POPULAR_SEARCHES.filter((t) => !seen.has(t))
+  const popular = popularMinusRecent(mine)
 
   return (
     <nav

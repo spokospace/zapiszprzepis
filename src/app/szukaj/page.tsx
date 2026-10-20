@@ -64,9 +64,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
       <SearchScreenBar />
       {user && <RecordRecentSearch q={q} />}
       <PageContainer className="flex flex-col gap-4 py-6">
-        {/* key: a new query (or "Wyczyść") remounts the field with the new value. */}
-        <HomeSearch key={q} id="search-page-field" defaultValue={q} scope={scope} autoFocus={!q} compact />
-        <SearchSuggestions key={`s-${q}`} fieldId="search-page-field" initialValue={q} />
+        {/* From lg the app header carries the one search field (E01-S17 follow-up), so the
+            page drops its own; below lg this is the full-screen search's field. key: a new
+            query (or "Wyczyść") remounts the field with the new value. */}
+        <div className="flex flex-col gap-4 lg:hidden">
+          <HomeSearch key={q} id="search-page-field" defaultValue={q} scope={scope} autoFocus={!q} compact />
+          <SearchSuggestions key={`s-${q}`} fieldId="search-page-field" initialValue={q} />
+        </div>
         {user && <SearchScopeSwitch q={q} scope={scope} />}
         {!q ? (
           <>

@@ -1,23 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { Mic, Search, X } from 'lucide-react'
 import { buttonClasses } from '@/app/components/ui/button'
 import { SEARCH_PATH, searchPath, type SearchScope } from '@/lib/routes'
-import { isSpeechRecognitionSupported, speechRecognitionCtor, startVoiceSearch, type VoiceState } from '@/lib/speech'
+import { MIC_STATUS, useVoiceField } from '../search/use-voice-field'
 import { ListeningScreen } from './listening-screen'
-
-type MicState = VoiceState
-
-// While listening the „Słucham…” screen carries its own live region (E01-S27).
-const MIC_STATUS: Record<MicState, string> = {
-  idle: '',
-  listening: '',
-  error: 'Nie udało się rozpoznać mowy. Wpisz nazwę przepisu.',
-  denied:
-    'Przeglądarka nie pozwala użyć mikrofonu. Włącz go w ustawieniach strony (ikona kłódki obok adresu) i naciśnij „Powiedz” jeszcze raz.',
-}
 
 interface HomeSearchProps {
   id: string
@@ -69,52 +58,12 @@ export function HomeSearch({
 }: HomeSearchProps) {
   const formRef = useRef<HTMLFormElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const voiceRef = useRef<ReturnType<typeof startVoiceSearch> | null>(null)
-  const [micSupported, setMicSupported] = useState(false)
-  const [micState, setMicState] = useState<MicState>('idle')
-  const [heard, setHeard] = useState('')
+  const { micSupported, micState, heard, startListening, stopListening, setFieldValue, clearError } = useVoiceField(
+    inputRef,
+    formRef,
+  )
   // „Powiedz” while the field is empty, „Wyczyść” once something is typed (handoff v8).
   const [hasText, setHasText] = useState(Boolean(defaultValue))
-
-  useEffect(() => {
-    // Mount-only capability probe: `window` cannot be read during render
-    // without desyncing hydration.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMicSupported(isSpeechRecognitionSupported(window))
-    return () => {
-      voiceRef.current?.stop()
-    }
-  }, [])
-
-  function startListening() {
-    const SR = speechRecognitionCtor(window)
-    if (!SR) return
-    voiceRef.current = startVoiceSearch(SR, {
-      onHeard: setHeard,
-      onState: setMicState,
-      onSearch: (phrase) => {
-        setFieldValue(phrase)
-        formRef.current?.requestSubmit()
-      },
-    })
-  }
-
-  // A programmatic value change announces itself like typing, so „Powiedz”/„Wyczyść”
-  // and the quick-search bar on /szukaj (E01-S26) follow it.
-  function setFieldValue(value: string) {
-    const input = inputRef.current
-    if (!input) return
-    input.value = value
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-  }
-
-  // „Przestań słuchać i pisz”: abort, not stop — stop() would still end with a
-  // search. What was heard stays in the field for typing on.
-  const stopListening = useCallback(() => {
-    const phrase = voiceRef.current?.stop()
-    if (phrase) setFieldValue(phrase)
-    inputRef.current?.focus()
-  }, [])
 
   return (
     <form ref={formRef} role="search" method="get" action={SEARCH_PATH}>
@@ -145,7 +94,7 @@ export function HomeSearch({
             autoComplete="off"
             onInput={(event) => {
               setHasText(event.currentTarget.value.length > 0)
-              setMicState((prev) => (prev === 'error' || prev === 'denied' ? 'idle' : prev))
+              clearError()
             }}
             placeholder={placeholder}
             className="h-full min-w-0 flex-1 bg-transparent text-[19px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none! [&::-webkit-search-cancel-button]:appearance-none"
