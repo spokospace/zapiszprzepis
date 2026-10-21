@@ -80,6 +80,18 @@ describe('readerScrape', () => {
     })
   })
 
+  it('sends JINA_API_KEY as a bearer token when it is set', async () => {
+    vi.stubEnv('JINA_API_KEY', 'jina_test')
+    const fetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(url.startsWith('https://r.jina.ai/') ? jinaResponse({ content: 'Składniki' }) : htmlResponse('')),
+    )
+
+    await readerScrape(PAGE, { fetch })
+    vi.unstubAllEnvs()
+
+    expect(fetch.mock.calls[0][1].headers).toEqual({ Accept: 'application/json', Authorization: 'Bearer jina_test' })
+  })
+
   it('does not repeat a title the markdown already holds', async () => {
     const fetch = vi.fn().mockImplementation((url: string) =>
       Promise.resolve(

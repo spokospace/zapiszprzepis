@@ -1,5 +1,5 @@
-// Jina Reader (r.jina.ai) renders a page and returns it as markdown — free,
-// no key needed (about 20 requests a minute without one). It stands in for
+// Jina Reader (r.jina.ai) renders a page and returns it as markdown — free;
+// JINA_API_KEY is optional but production needs it (see readMarkdown). It stands in for
 // Firecrawl when that fails or runs out of credits (HTTP 402): the markdown
 // feeds the LLM, and the page's own HTML, fetched directly, keeps the photos,
 // JSON-LD and embedded players the rest of the pipeline reads.
@@ -23,8 +23,11 @@ interface Deps {
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
 async function readMarkdown(url: string, { fetch }: Deps): Promise<Omit<ReaderPage, 'html'>> {
+  // Keyless, Jina limits by IP, and Cloudflare Workers share their egress
+  // IPs: production gets HTTP 429. With a key the limit is the key's own.
+  const key = process.env.JINA_API_KEY
   const response = await fetch(`${JINA_READER}${url}`, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}) },
     signal: AbortSignal.timeout(45_000),
   })
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
