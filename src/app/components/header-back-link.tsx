@@ -16,7 +16,7 @@ type Props = {
 }
 
 const BACK =
-  '-ml-2 inline-flex h-14 min-w-0 flex-row items-center justify-center gap-1.5 rounded-field px-2 text-[18px] leading-none font-bold text-ink no-underline! hover:bg-surface-3'
+  '-ml-2 inline-flex h-14 min-w-0 flex-row items-center justify-center gap-1.5 rounded-pill px-2 text-[18px] leading-none font-bold text-ink no-underline! hover:bg-surface-3'
 
 /**
  * "← Wróć" in place of the logo on the screens below the start page (handoff 1c:

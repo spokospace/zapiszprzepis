@@ -65,6 +65,15 @@ export function buildMenuModel({
   return { mine, showAccountFooter: true }
 }
 
+/** "1 nowe powiadomienie", "3 nowe powiadomienia", "5 nowych powiadomień". */
+export function newNotificationsNoun(count: number): string {
+  if (count === 1) return 'nowe powiadomienie'
+  const lastDigit = count % 10
+  const lastTwo = count % 100
+  if (lastDigit >= 2 && lastDigit <= 4 && (lastTwo < 12 || lastTwo > 14)) return 'nowe powiadomienia'
+  return 'nowych powiadomień'
+}
+
 /** "1 przepis", "3 przepisy", "5 przepisów", "22 przepisy", "12 przepisów". */
 export function recipesNoun(count: number): string {
   if (count === 1) return 'przepis'
