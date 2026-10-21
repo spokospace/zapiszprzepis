@@ -34,7 +34,7 @@ export default function PrivacyPolicyPage() {
           <li>
             <strong>Dane logowania.</strong> Twój adres e-mail. Logujesz się przez Facebooka, Google albo e-mailem
             (linkiem wysłanym na skrzynkę lub hasłem). Kiedy wybierasz Facebooka lub Google, dostajemy od nich Twój
-            adres e-mail i podstawowe dane profilu: imię i nazwisko, numer konta u nich oraz adres zdjęcia profilowego.
+            adres e-mail i podstawowe dane profilu: imię i nazwisko, identyfikator użytkownika u nich oraz adres zdjęcia profilowego.
             Zapisujemy je razem z datą ostatniego logowania, ale używamy tylko imienia i nazwiska — jako nazwy, która
             się wyświetla. Zdjęcia z Facebooka ani Google nie pokazujemy. Twojego hasła do Facebooka ani Google nie
             znamy. Jeśli ustawisz hasło u nas, trzymamy je tylko w zaszyfrowanej postaci — nikt, łącznie z nami, nie
@@ -110,11 +110,11 @@ export default function PrivacyPolicyPage() {
           </li>
           <li>
             <strong>Cloudflare</strong> — utrzymuje serwis w internecie i raz dziennie robi kopie zapasowe przepisów
-            oraz historii dodawanych linków (wraz z numerem konta i tekstem, który dołączasz do linku).
+            oraz historii dodawanych linków (wraz z identyfikatorem użytkownika i tekstem, który dołączasz do linku).
           </li>
           <li>
             <strong>Inngest</strong> — usługa, która w tle zajmuje się dodanym linkiem (dostaje numer zgłoszenia,
-            numer konta, sam link oraz tytuł i tekst, jeśli udostępniasz je razem z nim).
+            identyfikator użytkownika, sam link oraz tytuł i tekst, jeśli udostępniasz je razem z nim).
           </li>
           <li>
             <strong>Firecrawl</strong> — pobiera treść strony spod linku, który dodajesz.
@@ -198,7 +198,7 @@ export default function PrivacyPolicyPage() {
             ),
           </li>
           <li>ograniczyć to, co z nimi robimy,</li>
-          <li>zabrać swoje dane do innego serwisu,</li>
+          <li>dostać swoje dane w pliku, żeby przenieść je do innego serwisu,</li>
           <li>nie zgodzić się na przetwarzanie oparte na naszym uzasadnionym interesie,</li>
           <li>
             złożyć skargę do Prezesa Urzędu Ochrony Danych Osobowych (ul. Stawki 2, 00-193 Warszawa, uodo.gov.pl).
