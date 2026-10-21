@@ -40,6 +40,9 @@ interface HomeSearchProps {
 
 const FRAME = { field: 'border-field', action: 'border-ink' } as const
 
+/** The „albo” + „Powiedz, czego szukasz” row: left on a phone, centered under the field from md (handoff 14). */
+export const VOICE_ROW_CLASS = 'mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-2 md:justify-center'
+
 /**
  * The one search field (E01-S04 home, E01-S05 /szukaj and "Moje przepisy"): a
  * plain GET form to SEARCH_PATH, so it works before hydration and without JS.
@@ -130,7 +133,7 @@ export function HomeSearch({
           </div>
           {/* „Powiedz” lives outside the field, in its own row; no row at all without the Web Speech API. */}
           {micSupported && (
-            <div className="mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-2">
+            <div className={VOICE_ROW_CLASS}>
               <span className="text-[18px] text-ink-soft">albo</span>
               {voiceButton(
                 'inline-flex h-[52px] max-w-full items-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold text-ink hover:bg-surface-3',
