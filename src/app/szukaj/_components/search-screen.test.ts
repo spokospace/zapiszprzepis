@@ -35,7 +35,7 @@ describe('QuickSearchBar (E01-S26)', () => {
   })
 
   it('is titled for recent and popular searches when signed in', () => {
-    expect(bar('', true)).toContain('>Ostatnio i często szukane</p>')
+    expect(bar('', true)).toContain('>Ostatnio i\u00a0często szukane</p>')
   })
 
   it('stays while one or two letters are typed and hides for a real query', () => {

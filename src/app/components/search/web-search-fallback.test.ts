@@ -27,4 +27,9 @@ describe('WebSearchFallback', () => {
     expect(html).not.toContain('href="/login')
     expect(html).not.toContain('nowej karcie')
   })
+
+  it('binds one-letter words in its captions so none ends a line (#392)', () => {
+    expect(render(false)).toContain('Wyszukiwanie w\u00a0internecie jest dostępne po zalogowaniu.')
+    expect(render(true)).toContain('na sprawdzonych stronach z\u00a0przepisami.')
+  })
 })

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { History, TrendingUp } from 'lucide-react'
-import { popularMinusRecent } from '@/lib/home'
+import { popularMinusRecent, searchChipsHeading } from '@/lib/home'
 import { searchPath } from '@/lib/routes'
 import { useRecentSearches } from './use-recent-searches'
 import { useFieldValue } from './use-field-value'
@@ -66,7 +66,7 @@ export function QuickSearchBar({
       className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-border-card bg-white pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden"
     >
       <p id="quick-search-heading" className="mb-2 px-4 text-[16px] font-bold text-ink">
-        {isAuthenticated ? 'Ostatnio i często szukane' : 'Często szukane'}
+        {searchChipsHeading(isAuthenticated)}
       </p>
       <ul className="flex gap-2 overflow-x-auto px-4 pb-1">
         {mine.map((term) => (

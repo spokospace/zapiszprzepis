@@ -22,15 +22,25 @@ describe('joinWithAnd', () => {
 
 describe('tagSummary (E01-S22)', () => {
   it('reads "N przepisy: tag i tag" with the Polish plural', () => {
-    expect(tagSummary(3, ['kruche', 'maslane'])).toBe('3 przepisy: kruche i maślane')
+    expect(tagSummary(3, ['kruche', 'maslane'])).toBe('3 przepisy: kruche i\u00a0maślane')
     expect(tagSummary(1, ['kruche'])).toBe('1 przepis: kruche')
     expect(tagSummary(5, ['kruche'])).toBe('5 przepisów: kruche')
+  })
+
+  it('binds the one-letter "i" to the next tag so it never ends a line (#392)', () => {
+    const summary = tagSummary(3, ['kruche', 'maslane', 'owocowe'])
+    expect(summary).toBe('3 przepisy: kruche, maślane i\u00a0owocowe')
+    expect(summary).not.toContain(' i ')
   })
 })
 
 describe('sharedTagsCaption', () => {
   it('lists the shared tags in the recipe’s order', () => {
-    expect(sharedTagsCaption(['kruche', 'maslane'], ['maslane', 'kruche', 'owocowe'])).toBe('też kruche i maślane')
+    expect(sharedTagsCaption(['kruche', 'maslane'], ['maslane', 'kruche', 'owocowe'])).toBe('też kruche i\u00a0maślane')
+  })
+
+  it('binds the one-letter "i" to the next tag so it never ends a line (#392)', () => {
+    expect(sharedTagsCaption(['kruche', 'maslane'], ['kruche', 'maslane'])).not.toContain(' i ')
   })
 
   it('is null when nothing is shared', () => {
