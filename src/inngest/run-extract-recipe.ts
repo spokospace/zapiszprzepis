@@ -6,7 +6,6 @@ import {
   archiveStepImages,
   buildGallery,
   coverImage,
-  isPrivateUrl,
   jsonLdHowToStepImages,
   pickGalleryImages,
 } from '@/lib/recipe-image-archive'
@@ -34,9 +33,8 @@ import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantN
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
 import { jsonLdServings, toServings } from '@/lib/servings'
 import { toIngredients, toMinutes } from '@/lib/extracted-recipe'
-
-const BROWSER_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+import { readerScrape, type ReaderPage } from '@/lib/jina-reader'
+import { fetchPublicHtml } from '@/lib/public-fetch'
 import type { Database } from '@/lib/supabase.types'
 
 /**
@@ -166,36 +164,47 @@ export async function runExtractRecipe(
     return data.data ?? {}
   }
 
+  // When Firecrawl fails — down, or out of credits (HTTP 402) — Jina Reader
+  // stands in, and Firecrawl is not asked again in this run. One read per URL:
+  // the main scrape and the embed scan share it. With no content there
+  // either, Firecrawl's own error stands, so the failure keeps its reason.
+  let firecrawlError: unknown = null
+  const readerPages = new Map<string, Promise<ReaderPage | null>>()
+  async function scrape(options: ReturnType<typeof buildFirecrawlOptions>) {
+    if (firecrawlError == null) {
+      try {
+        return await firecrawlScrape(options)
+      } catch (err) {
+        firecrawlError = err
+        console.warn('[extract-recipe] Firecrawl failed, falling back to Jina Reader:', err)
+      }
+    }
+    let read = readerPages.get(options.url)
+    if (!read) {
+      read = readerScrape(options.url, { fetch })
+      readerPages.set(options.url, read)
+    }
+    const page = await read
+    if (!page) throw firecrawlError
+    return page
+  }
+
   // Recipe text comes from the main-content scrape, retrying with
   // fullContent when a blog template trips Firecrawl's main-content
-  // heuristic and leaves just a "Skip to main content" link.
+  // heuristic and leaves just a "Skip to main content" link. Jina's read has
+  // no such mode, so a reader page is never retried.
   async function scrapeWithRetry(url = sharedUrl, type = sourceType) {
-    let s = await firecrawlScrape(buildFirecrawlOptions(url, type, { fullContent: false }))
-    if (!s.markdown || s.markdown.length < 200) {
+    let s = await scrape(buildFirecrawlOptions(url, type, { fullContent: false }))
+    if (firecrawlError == null && (!s.markdown || s.markdown.length < 200)) {
       console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
-      s = await firecrawlScrape(buildFirecrawlOptions(url, type, { fullContent: true }))
+      s = await scrape(buildFirecrawlOptions(url, type, { fullContent: true }))
     }
     return type === 'web_blog' ? withFollowingPages(s, url) : s
   }
 
-  /** A page's raw HTML, or null on any failure. The URL comes from the user's
-   *  share, so the same SSRF guard as image archiving applies. */
-  async function fetchRawHtml(url: string): Promise<string | null> {
-    if (isPrivateUrl(url)) return null
-    try {
-      // No redirects: a public URL must not bounce the request to a private
-      // one. The article URL is Firecrawl's final URL already, and a page
-      // that redirects (one past the last) simply ends the walk.
-      const response = await fetch(url, {
-        headers: { 'User-Agent': BROWSER_UA, 'Accept-Language': 'pl-PL,pl;q=0.9' },
-        redirect: 'manual',
-        signal: AbortSignal.timeout(15_000),
-      })
-      return response.ok ? await response.text() : null
-    } catch {
-      return null
-    }
-  }
+  // No redirects: the article URL is Firecrawl's final URL already, and a
+  // page that redirects (one past the last) simply ends the walk.
+  const fetchRawHtml = (url: string) => fetchPublicHtml(url, { fetch, maxRedirects: 0 })
 
   // An article split over pages ("Dalej »", <article>/2/, /3/ …) holds the
   // recipe across all of them. Firecrawl's main-content output drops that
@@ -212,7 +221,7 @@ export async function runExtractRecipe(
       const raw = await fetchRawHtml(pageUrl)
       const next = raw ? findNextPageUrl(raw, articleUrl, page) : null
       if (!next) break
-      const scraped = await firecrawlScrape(buildFirecrawlOptions(next, 'web_blog', { fullContent: false })).catch(
+      const scraped = await scrape(buildFirecrawlOptions(next, 'web_blog', { fullContent: false })).catch(
         (err) => {
           console.warn('[extract-recipe] next page scrape failed:', err)
           return null
@@ -353,7 +362,7 @@ export async function runExtractRecipe(
       const [scraped, scrapedEmbedHtml] = await Promise.all([
         scrapeWithRetry(),
         sourceType === 'web_blog'
-          ? firecrawlScrape(buildEmbedScanOptions(sharedUrl))
+          ? scrape(buildEmbedScanOptions(sharedUrl))
               .then((d) => (d.html ?? '') as string)
               .catch((err) => {
                 console.warn('[extract-recipe] embed scan failed:', err)
