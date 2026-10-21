@@ -87,7 +87,9 @@ export function HeaderSearchPanel({
     <div
       onMouseDown={keepFocus}
       onMouseLeave={() => onHover(null)}
-      className="absolute top-[calc(100%+6px)] left-0 z-30 max-h-[70vh] w-full min-w-[20rem] overflow-y-auto rounded-card border-2 border-border-card bg-white py-2 shadow-lg"
+      // ZMIANY_prototyp §5b: a 2 px #6b7280 frame (3:1 on white), radius 16, a deep
+      // soft shadow, 6 px below the field.
+      className="absolute top-[calc(100%+6px)] left-0 z-30 max-h-[70vh] w-full min-w-[20rem] overflow-y-auto rounded-card border-2 border-border-dark bg-white py-2 shadow-[0_12px_28px_rgba(17,24,39,0.18)]"
     >
       {browsing && micSupported && (
         <button
@@ -136,7 +138,7 @@ export function HeaderSearchPanel({
                 activeId={activeId}
                 onSelect={onSelect}
                 onHover={onHover}
-                className="flex min-h-16 cursor-pointer items-center gap-3 px-3 py-2 text-ink"
+                className="flex min-h-16 cursor-pointer items-center gap-3 border-t border-border-card px-3 py-2 text-ink first:border-t-0"
               >
                 <SuggestionRowContent title={option.label} category={option.category} imageUrl={option.imageUrl} />
               </Option>
@@ -147,7 +149,7 @@ export function HeaderSearchPanel({
                 activeId={activeId}
                 onSelect={onSelect}
                 onHover={onHover}
-                className="flex min-h-12 cursor-pointer items-center gap-2 px-3 py-2 text-[18px] font-bold wrap-anywhere text-action-text"
+                className="flex min-h-12 cursor-pointer items-center gap-2 border-t border-border-card px-3 py-2 text-[18px] font-bold wrap-anywhere text-action-text first:border-t-0"
               >
                 <Search aria-hidden="true" className="h-5 w-5 shrink-0" />
                 Pokaż wszystkie wyniki dla „{query}”

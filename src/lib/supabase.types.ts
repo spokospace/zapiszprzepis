@@ -130,6 +130,7 @@ export type Database = {
           source_fingerprint: string | null
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url: string | null
+          step_images: string[]
           steps: Json
           tags: string[]
           times_estimated: boolean
@@ -158,6 +159,7 @@ export type Database = {
           source_fingerprint?: string | null
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
+          step_images?: string[]
           steps?: Json
           tags?: string[]
           times_estimated?: boolean
@@ -186,6 +188,7 @@ export type Database = {
           source_fingerprint?: string | null
           source_type?: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
+          step_images?: string[]
           steps?: Json
           tags?: string[]
           times_estimated?: boolean

@@ -18,8 +18,10 @@ import { PopularSearches } from '@/app/components/home/popular-searches'
 import { CategoryGrid } from '@/app/components/home/category-grid'
 import { GuestCta } from '@/app/components/home/guest-cta'
 import { AttentionBanner } from '@/app/components/home/attention-banner'
+import { RecipeOfTheDay } from '@/app/components/home/recipe-of-the-day'
 import { FavoriteAddedNotice } from '@/app/components/favorite-button'
 import { parseRecipeId } from '@/lib/favorites'
+import { dailyRecipeIndex } from '@/lib/recipe-of-the-day'
 import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
 import { ADD_RECIPE_PATH } from '@/lib/routes'
 import type { ListKey } from '@/lib/recipe-list-context'
@@ -45,13 +47,26 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   // Public since E01-S02: a guest sees the home too. The menu summary (E01-S09) also
   // carries the E01-S11 full-access flag and the counters for the "Wszystkie … (n)" links.
   const menuPromise = getMenuSummary(supabase, user)
-  const [failedShares, menu, recentRecipes, greetingName, memberRows] = await Promise.all([
+  const [failedShares, menu, recentRecipes, greetingName, memberRows, recipeOfDay] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
     menuPromise,
     user ? [] : getRecentPublicRecipes(supabase),
     user ? getGreetingName(supabase, user.id) : null,
     user ? menuPromise.then((m) => getMemberRows(supabase, user.id, m?.hasFullAccess ?? false)) : null,
+    getRecipeOfTheDay(supabase),
   ])
+
+  const recipeOfDayCard = recipeOfDay ? (
+    <RecipeOfTheDay
+      slug={recipeOfDay.slug}
+      title={recipeOfDay.title}
+      imageUrl={recipeOfDay.image_url}
+      description={recipeOfDay.description}
+      sourceType={recipeOfDay.source_type}
+      sourceUrl={recipeOfDay.source_url}
+      sourceAuthor={recipeOfDay.source_author}
+    />
+  ) : null
 
   return (
     <>
@@ -65,9 +80,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             rows={memberRows}
             myRecipesCount={menu?.myRecipesCount ?? null}
             favoritesCount={menu?.favoritesCount ?? null}
+            recipeOfDay={recipeOfDayCard}
           />
         ) : (
-          <GuestHome recentRecipes={recentRecipes} />
+          <GuestHome recentRecipes={recentRecipes} recipeOfDay={recipeOfDayCard} />
         )}
       </main>
     </>
@@ -85,6 +101,32 @@ async function getRecentPublicRecipes(supabase: ServerClient): Promise<MyRecipeC
     .order('created_at', { ascending: false })
     .limit(RECENT_LIMIT)
   return data ?? []
+}
+
+/** The pool „Przepis dnia” draws from: a bounded, stable set of photographed non-YouTube recipes. */
+const RECIPE_OF_DAY_POOL = 90
+
+/**
+ * „Przepis dnia” (E01-S31 §5c): one recipe a day, the same for everyone. A bounded
+ * pool of recent recipes that have a photo and are not YouTube, picked by the day of
+ * the year (dailyRecipeIndex) — no „wylosuj inny”, no cron. Read through the guest-safe
+ * public_recipes view so a guest sees it too.
+ */
+async function getRecipeOfTheDay(supabase: ServerClient): Promise<MyRecipeCard | null> {
+  // Pick from a bounded pool of recent photographed non-YouTube recipes: read just
+  // the ids (cheap), choose by the day, then fetch only that one card's columns —
+  // not all 90 rows' descriptions on every home render.
+  const { data: pool } = await supabase
+    .from('public_recipes')
+    .select('id')
+    .not('image_url', 'is', null)
+    .neq('source_type', 'youtube')
+    .order('id', { ascending: false })
+    .limit(RECIPE_OF_DAY_POOL)
+  if (!pool || pool.length === 0) return null
+  const pick = pool[dailyRecipeIndex(new Date(), pool.length)]
+  const { data } = await supabase.from('public_recipes').select(MY_RECIPE_CARD_COLUMNS).eq('id', pick.id).maybeSingle()
+  return data ?? null
 }
 
 /**
@@ -128,18 +170,37 @@ async function getMemberRows(supabase: ServerClient, userId: string, hasFullAcce
 type MemberRows = Awaited<ReturnType<typeof getMemberRows>>
 
 /**
- * The centred hero both homes share (E01-S31 §5; A1/C1): `bg-surface-accent`, a 28 px
- * H1 (46 px from lg), a subtitle and the one search field.
+ * The hero both homes share (E01-S31 §5a): `bg-surface-accent`, two columns from
+ * ~832 px — the greeting (38 px H1), subtitle and the one search field on the left,
+ * „Przepis dnia” on the right — collapsing to one column (search, then the photo full
+ * width) on a phone. `auto-fit`/`minmax` does the collapse without a breakpoint.
  */
-function Hero({ id, title, subtitle, children }: { id: string; title: string; subtitle: string; children: ReactNode }) {
+function Hero({
+  id,
+  title,
+  subtitle,
+  children,
+  recipeOfDay,
+}: {
+  id: string
+  title: string
+  subtitle: string
+  children: ReactNode
+  recipeOfDay?: ReactNode
+}) {
   return (
     <section aria-labelledby={id} className="bg-surface-accent">
-      <PageContainer className="py-6 lg:py-14 lg:text-center">
-        <h1 id={id} className="text-[28px] leading-[1.15] font-bold text-ink lg:text-[46px] lg:leading-[1.1]">
-          {title}
-        </h1>
-        <p className="mt-3 mb-4 text-[18px] leading-normal text-ink-soft lg:mb-6 lg:text-[19px]">{subtitle}</p>
-        {children}
+      <PageContainer className="py-6 lg:py-10">
+        <div className="grid items-center gap-8 [grid-template-columns:repeat(auto-fit,minmax(min(100%,25rem),1fr))]">
+          <div>
+            <h1 id={id} className="text-[28px] leading-[1.15] font-bold text-ink lg:text-[38px] lg:leading-[1.1]">
+              {title}
+            </h1>
+            <p className="mt-3 mb-4 text-[17px] leading-normal text-ink-soft lg:mb-5">{subtitle}</p>
+            {children}
+          </div>
+          {recipeOfDay}
+        </div>
       </PageContainer>
     </section>
   )
@@ -216,16 +277,16 @@ function RecipeRow({
   )
 }
 
-function GuestHome({ recentRecipes }: { recentRecipes: MyRecipeCard[] }) {
+function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard[]; recipeOfDay?: ReactNode }) {
   return (
     <>
-      {/* Desktop (E01-S17, A8): a centred hero with a 46 px H1 and the 760 px field. */}
       <Hero
         id="hero-heading"
         title="Czego dziś szukasz?"
         subtitle="Przepisy z Facebooka, YouTube i blogów, spisane po polsku i zapisane na stałe."
+        recipeOfDay={recipeOfDay}
       >
-        <HomeSearch id="home-search-guest" centered tone="action" placeholder="Danie lub składnik, np. dynia" />
+        <HomeSearch id="home-search-guest" attached tone="action" placeholder="Danie lub składnik" />
       </Hero>
       <PageContainer className="flex flex-col gap-8 pt-6">
         <PopularSearches />
@@ -239,7 +300,8 @@ function GuestHome({ recentRecipes }: { recentRecipes: MyRecipeCard[] }) {
             favoriteIds={null}
           />
         )}
-        <CategoryGrid columns={3} />
+        {/* Categories are in the desktop header's bar (§2); the tiles are for phones only (§5e). */}
+        <CategoryGrid columns={3} className="lg:hidden" />
         <GuestCta />
       </PageContainer>
     </>
@@ -253,6 +315,7 @@ function MemberHome({
   rows,
   myRecipesCount,
   favoritesCount,
+  recipeOfDay,
 }: {
   /** The header's result, reused for the E01-S15 banner (no extra query). */
   failedShares: FailedSharesResult
@@ -263,6 +326,8 @@ function MemberHome({
   rows: MemberRows
   myRecipesCount: number | null
   favoritesCount: number | null
+  /** „Przepis dnia” in the hero's right column (§5a, §5c). */
+  recipeOfDay?: ReactNode
 }) {
   const { mine, favorites, favoriteIds } = rows
   const withCount = (label: string, count: number | null) => (count == null ? `${label} →` : `${label} (${count}) →`)
@@ -273,10 +338,11 @@ function MemberHome({
         id="hero-heading"
         title={homeGreeting(vocative)}
         subtitle="Szukaj w swoich przepisach i ulubionych albo we wszystkich."
+        recipeOfDay={recipeOfDay}
       >
         <HomeSearch
           id="home-search-member"
-          centered
+          attached
           tone="action"
           label="Czego szukasz?"
           strongLabel
@@ -284,7 +350,7 @@ function MemberHome({
           submitLabel="Szukaj"
         />
         {/* E01-S15: "N przepisów wymaga uwagi" under the field; older users miss the badge alone. */}
-        <AttentionBanner failedShares={failedShares} className="mt-4 text-left lg:mx-auto lg:max-w-[760px]" />
+        <AttentionBanner failedShares={failedShares} className="mt-4" />
       </Hero>
       <PageContainer className="flex flex-col gap-8 pt-6">
         {favoriteAdded !== null && !shown.has(favoriteAdded) && <FavoriteAddedNotice recipeId={favoriteAdded} />}
@@ -321,7 +387,8 @@ function MemberHome({
             Dodaj pierwszy przepis
           </Link>
         )}
-        <CategoryGrid columns={3} />
+        {/* Categories are in the desktop header's bar (§2); the tiles are for phones only (§5e). */}
+        <CategoryGrid columns={3} className="lg:hidden" />
       </PageContainer>
     </>
   )

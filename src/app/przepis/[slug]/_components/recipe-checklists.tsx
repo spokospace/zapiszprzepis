@@ -1,14 +1,27 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 import { Check } from 'lucide-react'
 import { TextSizeControls } from '@/app/components/ui/text-size-controls'
 import { useTextScale } from '@/app/components/ui/use-text-scale'
 import { useSessionStorage } from '@/app/components/ui/use-session-storage'
 import { checklistStorageKey, parseChecklist, toggleChecked } from '@/lib/recipe-checklist'
+import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { servingsLabel } from '@/lib/servings'
+import { ImageLightbox } from '@/app/components/image-lightbox'
 import type { Ingredient } from '@/lib/ingredients'
 import { CookingMode } from './cooking-mode'
+
+/** „Pokaż” / „Ukryj” — the two states of the step-photos toggle (ZMIANY §3). */
+const PHOTO_OPTIONS: [label: string, show: boolean][] = [
+  ['Pokaż', true],
+  ['Ukryj', false],
+]
+/** Remembered globally (not per recipe), so the choice carries across recipes. */
+const STEP_PHOTOS_KEY = 'stepPhotos'
+/** Stable empty list so „Ukryj” hides photos without a fresh array every render. */
+const NO_STEP_IMAGES: string[] = []
 
 interface IngredientGroup {
   section: string | null
@@ -21,6 +34,8 @@ interface RecipeChecklistsProps {
   title: string
   ingredientGroups: IngredientGroup[]
   steps: string[]
+  /** Archived image URL per step, index-aligned with `steps`; '' = that step has none (ZMIANY zdjęcia kroków). */
+  stepImages?: string[]
   /** Servings the source states; null/undefined hides "na N porcji". */
   servings?: number | null
   /** Rendered under the steps: in the steps column from lg (video, gallery; E01-S17). */
@@ -79,10 +94,57 @@ function IngredientRow({
  * From lg (E01-S17, A9) a `1fr 1.6fr` grid: the ingredients in a panel | the steps
  * plus `children`. Below lg it is one column, in the same order.
  */
-export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, servings, children }: RecipeChecklistsProps) {
+export function RecipeChecklists({
+  recipeId,
+  title,
+  ingredientGroups,
+  steps,
+  stepImages = [],
+  servings,
+  children,
+}: RecipeChecklistsProps) {
   const { level, setLevel } = useTextScale()
   const [raw, setRaw] = useSessionStorage(checklistStorageKey(recipeId))
   const state = useMemo(() => parseChecklist(raw), [raw])
+
+  // „Zdjęcia kroków: Pokaż / Ukryj” (ZMIANY §3): only when some step has a photo.
+  // The choice is remembered globally; default „Pokaż”. localStorage is read after
+  // mount (a lazy initializer would mismatch the server HTML); a private window keeps
+  // the default.
+  const showToggle = stepImages.some(Boolean)
+  const [showPhotos, setShowPhotos] = useState(true)
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STEP_PHOTOS_KEY)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (stored !== null) setShowPhotos(stored === '1')
+    } catch {
+      // storage blocked — keep the default „Pokaż”
+    }
+  }, [])
+  function pickPhotos(show: boolean) {
+    setShowPhotos(show)
+    try {
+      window.localStorage.setItem(STEP_PHOTOS_KEY, show ? '1' : '0')
+    } catch {
+      // ignore
+    }
+  }
+
+  // „Ukryj” drops the photos everywhere (the list, the viewer, cooking mode) in one
+  // place. Tapping a photo opens the shared viewer captioned „Krok N”, so a photo
+  // shared with the gallery still says which step it belongs to.
+  const visibleStepImages = showPhotos ? stepImages : NO_STEP_IMAGES
+  const stepPhotos = useMemo(
+    () =>
+      steps.flatMap((_, i) =>
+        visibleStepImages[i]
+          ? [{ step: i, src: visibleStepImages[i], caption: `Krok ${i + 1}`, alt: `Zdjęcie do kroku ${i + 1}` }]
+          : [],
+      ),
+    [steps, visibleStepImages],
+  )
+  const [photoIndex, setPhotoIndex] = useState<number | null>(null)
 
   const toggle = (index: number) => setRaw(JSON.stringify(toggleChecked(state, 'ingredients', index)))
 
@@ -109,7 +171,7 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
 
       {steps.length > 0 && (
         <div className="mb-8 lg:col-span-2">
-          <CookingMode title={title} steps={steps} />
+          <CookingMode title={title} steps={steps} stepImages={visibleStepImages} />
         </div>
       )}
 
@@ -152,9 +214,36 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
 
       <div>
         <section aria-labelledby="steps-heading" className="mb-10">
-          <h2 id="steps-heading" className="mb-3 text-[24px] font-bold text-ink">
-            Przygotowanie
-          </h2>
+          {/* The toggle sits beside the heading and wraps under it at 320 px (ZMIANY §3). */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <h2 id="steps-heading" className="text-[24px] font-bold text-ink">
+              Przygotowanie
+            </h2>
+            {showToggle && (
+              <div role="group" aria-label="Zdjęcia kroków" className="flex items-center gap-2.5">
+                <span className="text-[17px] font-bold text-ink">Zdjęcia kroków</span>
+                {/* One shared 2 px frame; the two buttons are glued, selected = dark fill. */}
+                <div className="flex overflow-hidden rounded-xl border-2 border-border-dark">
+                  {PHOTO_OPTIONS.map(([label, show]) => {
+                    const active = showPhotos === show
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => pickPhotos(show)}
+                        className={`min-h-12 min-w-[88px] px-3 text-[17px] font-bold ${
+                          active ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-surface-3'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
           {steps.length === 0 ? (
             <p className="text-[19px] text-ink-soft">Brak kroków przygotowania.</p>
           ) : (
@@ -165,6 +254,28 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
                     Krok {i + 1}
                   </p>
                   <p className="text-scalable leading-[1.6] text-ink">{step}</p>
+                  {/* Source photo under the step text, same <li>; 4:3, no layout jump (ZMIANY §2).
+                      A tap opens the full-screen viewer, like a gallery photo. */}
+                  {visibleStepImages[i] && (
+                    <figure className="mt-1.5 max-w-full md:max-w-[520px]">
+                      <button
+                        type="button"
+                        onClick={() => setPhotoIndex(stepPhotos.findIndex((p) => p.step === i))}
+                        aria-label={`Powiększ zdjęcie do kroku ${i + 1}`}
+                        className="relative block aspect-[4/3] w-full overflow-hidden rounded-[10px] bg-surface-3 md:rounded-xl"
+                      >
+                        <Image
+                          src={visibleStepImages[i]}
+                          alt={`Zdjęcie do kroku ${i + 1}`}
+                          fill
+                          sizes="(min-width: 768px) 520px, 100vw"
+                          loading="lazy"
+                          className="object-cover transition-transform hover:scale-105"
+                          unoptimized={!isArchivedImageUrl(visibleStepImages[i])}
+                        />
+                      </button>
+                    </figure>
+                  )}
                 </li>
               ))}
             </ol>
@@ -172,6 +283,10 @@ export function RecipeChecklists({ recipeId, title, ingredientGroups, steps, ser
         </section>
         {children}
       </div>
+
+      {stepPhotos.length > 0 && (
+        <ImageLightbox label="Podgląd zdjęcia kroku" items={stepPhotos} index={photoIndex} onIndex={setPhotoIndex} />
+      )}
     </div>
   )
 }

@@ -40,11 +40,19 @@ const GUEST_EXTRA = RECIPE_CATEGORIES[HOME_CATEGORIES.length]
  * "Kategorie" tiles (E01-S04): 3 columns for a guest (from 360px), 2 for a signed-in
  * user. The empty search screen titles them „Albo wybierz kategorię” (4a, E01-S26).
  */
-export function CategoryGrid({ columns, title = 'Kategorie' }: { columns: keyof typeof COLUMNS; title?: string }) {
+export function CategoryGrid({
+  columns,
+  title = 'Kategorie',
+  className = '',
+}: {
+  columns: keyof typeof COLUMNS
+  title?: string
+  className?: string
+}) {
   const categories = columns === 3 ? [...HOME_CATEGORIES, GUEST_EXTRA] : HOME_CATEGORIES
   const tile = TILE[columns]
   return (
-    <section aria-labelledby="categories-heading">
+    <section aria-labelledby="categories-heading" className={className}>
       <h2 id="categories-heading" className="mb-3 text-[22px] font-bold text-ink">
         {title}
       </h2>

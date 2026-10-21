@@ -51,8 +51,13 @@ export const TILE_SIZES_1_TO_3 = '(min-width: 72rem) 22.2rem, (min-width: 40rem)
 /** The list grid (search, category, profile, Moje przepisy): a phone gets the full width, md 3 cols, lg 4 cols (E01-S31 §2). */
 export const LIST_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 48rem) 33vw, calc(100vw - 2rem)'
 
-/** The list container (E01-S31 §2): one column on a phone, 3 from md (768), 4 from lg (1024). */
-export const LIST_CARDS_CLASS = 'flex flex-col gap-3 md:grid md:grid-cols-3 md:gap-4 lg:grid-cols-4'
+/**
+ * The list container (E01-S31 §2, ZMIANY_prototyp §6): one column on a phone; from md a
+ * grid that auto-fills 200 px columns, so 768–1024 px gets 3 roomy cards rather than 4
+ * squished ones, and wider screens add columns on their own.
+ */
+export const LIST_CARDS_CLASS =
+  'flex flex-col gap-3 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] md:gap-4'
 
 const PHOTO_HEIGHT = {
   list: 'h-[210px] md:h-[180px]',
