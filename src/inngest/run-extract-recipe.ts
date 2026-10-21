@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
-import { slugify } from '@/lib/slugify'
+import { NUMBERED_SLUG_ATTEMPTS, recipeSlug, recipeSlugCandidate } from '@/lib/slugify'
 import {
   archiveRecipeImages,
   archiveStepImages,
@@ -793,7 +793,7 @@ Rules:
       return { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' }
     }
 
-    const baseSlug = slugify(title)
+    const baseSlug = recipeSlug(title)
     // Per-user unique keys now; global ones once the existing duplicates are
     // collapsed (E01-S03a) and the slug migration lands (E01-S03b). Both
     // generations are matched below, so the deploy gap is covered: the per-user
@@ -805,13 +805,15 @@ Rules:
     const GLOBAL_URL_KEY = 'recipes_source_url_uniq'
     const FINGERPRINT_KEY = 'recipes_user_source_fingerprint_uniq'
     const GLOBAL_FINGERPRINT_KEY = 'recipes_source_fingerprint_uniq'
-    const MAX_ATTEMPTS = 10
+    // The numbered suffixes, then a few random ones: a title saved more than
+    // NUMBERED_SLUG_ATTEMPTS times still gets a slug instead of failing the share.
+    const MAX_ATTEMPTS = NUMBERED_SLUG_ATTEMPTS + 3
 
     let recipe: { id: number } | null = null
     let lastInsertError: { message: string } | null = null
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      const slug = attempt === 1 ? baseSlug : `${baseSlug}-${attempt}`
+      const slug = recipeSlugCandidate(baseSlug, attempt)
 
       const { data, error } = await supabase
         .from('recipes')
@@ -969,8 +971,9 @@ Rules:
       }
 
       // Slug collision against a different URL with the same title: retry with
-      // a `-2`, `-3`, … suffix. Global (E01-S03b) or per-user, same handling —
-      // the retry lands the lowest free suffix because the DB rejects taken ones.
+      // a `-2`, `-3`, … suffix, then a random one. Global (E01-S03b) or per-user,
+      // same handling — the retry lands the lowest free suffix because the DB
+      // rejects taken ones.
       if (error?.message.includes(SLUG_KEY) || error?.message.includes(GLOBAL_SLUG_KEY)) continue
 
       // Any other error is terminal.
