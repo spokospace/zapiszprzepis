@@ -87,8 +87,8 @@ describe('RecipeHeader source badge (E01-S31 §3)', () => {
 
   it('sits on the photo when there is one, inline when there is not', () => {
     const withPhoto = render({ image_url: 'https://x.supabase.co/storage/v1/object/public/recipe-images/1/c.webp' })
-    expect(withPhoto).toContain('absolute bottom-3 left-3')
-    expect(render({})).not.toContain('absolute bottom-3 left-3')
+    expect(withPhoto).toContain('absolute bottom-0 left-px')
+    expect(render({})).not.toContain('absolute bottom-0 left-px')
   })
 
   it('a page-less recipe (no URL) gets a plain, link-less badge', () => {
