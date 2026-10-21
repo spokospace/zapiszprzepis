@@ -129,3 +129,13 @@ describe('RecipeCard image sizes (#253)', () => {
     for (const sizes of [CAROUSEL_SIZES, TILE_SIZES_1_TO_3, LIST_SIZES]) expect(sizes).not.toMatch(/\dpx/)
   })
 })
+
+describe('RecipeCard photo is decorative (WCAG 1.1.1, #410)', () => {
+  it('renders an empty alt and keeps the photo out of the a11y tree', () => {
+    // The visible title names the card's link, so the dish photo adds no information a
+    // name-only alt would not duplicate: empty alt + aria-hidden is the decorative choice.
+    const img = card({ imageUrl: ARCHIVED_COVER }).match(/<img[^>]*>/)?.[0] ?? ''
+    expect(img).toContain('alt=""')
+    expect(img).toContain('aria-hidden="true"')
+  })
+})

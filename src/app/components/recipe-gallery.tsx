@@ -44,7 +44,9 @@ export function RecipeGallery({ images, title }: RecipeGalleryProps) {
             >
               <Image
                 src={src}
+                // The button is named ("Powiększ zdjęcie i z N"), so the thumbnail is decorative.
                 alt=""
+                aria-hidden
                 fill
                 sizes="(max-width: 640px) 50vw, 240px"
                 className="object-cover hover:scale-105 transition-transform"
