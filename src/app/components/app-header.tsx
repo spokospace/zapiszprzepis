@@ -12,10 +12,14 @@ import { PageContainer } from './page-container'
 import { HeaderNav } from './header-nav'
 import { HeaderSearch } from './header-search'
 import { CategoryBar } from './category-bar'
+import { ReturnPointRecorder } from './return-point-recorder'
+import { useHydrated } from './ui/use-hydrated'
+import { useSessionStorage } from './ui/use-session-storage'
 import type { FailedSharesResult } from '@/lib/failed-shares'
 import type { MenuSummary } from '@/lib/menu-summary'
 import { notificationBadge } from '@/lib/notification-badge'
 import { ADD_RECIPE_PATH, PRZEPIS_PAGE_RE, SEARCH_PATH } from '@/lib/routes'
+import { parseReturnPoint, resolveRecipeBackTarget, RETURN_POINT_KEY } from '@/lib/return-point'
 
 /** A value, or the promise of one a server component passed down without awaiting it (#226). */
 type Awaitable<T> = T | PromiseLike<T>
@@ -72,19 +76,32 @@ export function AppHeader({
   const showBack = pathname !== '/'
   const backTarget = useHeaderBackTarget()
   const onRecipe = PRZEPIS_PAGE_RE.test(pathname)
+  // On a recipe page „← Wróć” skips the recipes visited on the way and names the screen
+  // the visitor started from (handoff 13, §3); elsewhere it steps back one entry.
+  const hydrated = useHydrated()
+  const [storedReturnPoint] = useSessionStorage(RETURN_POINT_KEY)
+  const recipeBackTarget = resolveRecipeBackTarget({
+    onRecipe,
+    hydrated,
+    returnPoint: parseReturnPoint(storedReturnPoint),
+    listTarget: backTarget,
+  })
 
   return (
     // Below lg /szukaj is a full screen with its own „✕ Zamknij” bar (E01-S26).
     <header
       className={`sticky top-0 z-20 bg-white/95 backdrop-blur ${pathname === SEARCH_PATH ? 'max-lg:hidden' : ''}`}
     >
+      <Suspense fallback={null}>
+        <ReturnPointRecorder />
+      </Suspense>
       {/* Row 1: a 2 px grey rule below lg (mobile 1c, E01-S19); a 1 px black rule from lg
           (ZMIANY_prototyp §2). Desktop (A8/A9) from lg: a guest gets „Zaloguj się”; a
           signed-in user gets „Ulubione”, the search field and „Dodaj przepis”. */}
       <div className="border-b-2 border-border-card lg:border-b lg:border-ink">
         <PageContainer className="flex min-h-16 items-center justify-between gap-2 py-1 pr-3 pl-4 sm:px-6 lg:min-h-0 lg:gap-6 lg:px-8 lg:py-3">
           <div className="flex min-w-0 items-center gap-2 lg:gap-6">
-            {showBack && <PageBackLink className="lg:hidden" target={onRecipe ? backTarget : null} />}
+            {showBack && <PageBackLink className="lg:hidden" target={recipeBackTarget} />}
             <Link
               href="/"
               aria-label="Zapisz Przepis — strona główna"
