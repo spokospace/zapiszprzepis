@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { headerBackLabel, RecipeListBar, RecipeListNav } from './recipe-list-bar'
+import { headerBackLabel, neighbours, RecipeListBar, RecipeListNav } from './recipe-list-bar'
 import { RecipeBreadcrumbs } from './recipe-header'
 import type { ListPosition } from '@/lib/recipe-list-context'
 
@@ -66,14 +66,29 @@ describe('RecipeListNav (C3 phones, A9 desktop)', () => {
     expect(html).not.toContain('rounded-field')
   })
 
-  it('gives both arrows the accent colour from lg (A9)', () => {
-    expect(html.match(/class="lucide lucide-arrow-(left|right) shrink-0 lg:text-action"/g)).toHaveLength(2)
+  it('shows only „Następny” for a recipe not opened from a list (handoff 13, §7)', () => {
+    expect(html).not.toContain('Poprzedni przepis')
+    expect(html).toContain('Krem z pieczonej papryki')
+    expect(html).not.toContain('Barszcz czerwony')
+    // The one button sits on its own side at 420 px from lg.
+    expect(html).toContain('lg:w-[420px] lg:justify-self-end')
   })
 
-  it('names the list in 16 px from lg, "Poprzedni przepis" in 14 px bold below', () => {
+  it('gives the arrow the accent colour from lg (A9)', () => {
+    expect(html.match(/class="lucide lucide-arrow-(left|right) shrink-0 lg:text-action"/g)).toHaveLength(1)
+  })
+
+  it('names the list in 16 px from lg, "Następny przepis" in 14 px bold below', () => {
     expect(html).toContain(
-      '<span class="text-[14px] font-bold text-ink-soft lg:text-[16px] lg:font-normal"><span class="lg:hidden">Poprzedni przepis</span>',
+      '<span class="text-[14px] font-bold text-ink-soft lg:text-[16px] lg:font-normal"><span class="lg:hidden">Następny przepis</span>',
     )
+  })
+
+  it('gives „Poprzedni” only to a recipe opened from a list, never at the first one', () => {
+    expect(neighbours(POSITION, null).prev).toBeNull()
+    expect(neighbours(POSITION, 'fav').prev).toEqual(POSITION.prev)
+    expect(neighbours({ ...POSITION, prev: null }, 'fav').prev).toBeNull()
+    expect(neighbours(POSITION, 'fav').next).toEqual(POSITION.next)
   })
 })
 
