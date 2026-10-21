@@ -31,9 +31,9 @@ interface HomeSearchProps {
    */
   compact?: boolean
   /**
-   * The home hero (ZMIANY_prototyp §5b): one rounded field with „Szukaj” glued to its
-   * end (no own radius) — 56 px from lg, 52 px on a phone. „Powiedz” sits inside the
-   * field from lg; on a phone it drops to „Powiedz, czego szukasz” below. Hero only.
+   * The home hero (handoff 14): a visible bold label, a pill field with a text „Szukaj”
+   * button inside it (60 px, 68 px from lg), and „albo” + „Powiedz, czego szukasz” in a
+   * row below the field — „Powiedz” is no longer inside it. Hero only.
    */
   attached?: boolean
 }
@@ -85,8 +85,7 @@ export function HomeSearch({
     },
   }
 
-  // „Powiedz” for the attached hero field: inside it from lg, a wider button below on
-  // a phone — same handler, only the classes and label differ.
+  // „Powiedz” buttons share one handler; only the classes and label differ.
   const voiceButton = (className: string, buttonLabel: string) =>
     micSupported && (
       <button type="button" onClick={startListening} className={className}>
@@ -99,7 +98,13 @@ export function HomeSearch({
     <form ref={formRef} role="search" method="get" action={SEARCH_PATH}>
       <label
         htmlFor={id}
-        className={compact ? 'sr-only' : `mb-2 block text-[18px] ${strongLabel ? 'font-bold text-ink' : 'text-ink-soft'}`}
+        className={
+          compact
+            ? 'sr-only'
+            : attached
+              ? 'mb-2.5 block text-[19px] font-bold text-ink'
+              : `mb-2 block text-[18px] ${strongLabel ? 'font-bold text-ink' : 'text-ink-soft'}`
+        }
       >
         {label}
       </label>
@@ -107,35 +112,31 @@ export function HomeSearch({
 
       {attached ? (
         <>
-          {/* One rounded field, 52/56 px, with „Szukaj” glued to the end; the frame's
-              overflow-hidden clips the button so it needs no radius of its own. */}
+          {/* One pill field (60 px, 68 px from lg) with a text „Szukaj” button inside it. */}
           <div
-            className={`flex items-stretch overflow-hidden rounded-pill border-2 ${FRAME[tone]} bg-white has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus`}
+            className={`flex items-center gap-2 rounded-pill border-2 ${FRAME[tone]} bg-white pr-[5px] pl-6 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus`}
           >
-            <span className="flex items-center pr-1 pl-3.5 text-ink-soft">
-              <Search aria-hidden="true" className="h-[22px] w-[22px]" />
-            </span>
             <input
               {...sharedInput}
               type="search"
-              className="h-14 min-w-0 flex-1 bg-transparent text-[18px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none! [&::-webkit-search-cancel-button]:appearance-none"
+              className="h-14 min-w-0 flex-1 bg-transparent text-[19px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none! lg:h-16 lg:placeholder:text-[19px] [&::-webkit-search-cancel-button]:appearance-none"
             />
-            {/* From lg „Powiedz” sits inside the field; on a phone it is the button below. */}
-            {voiceButton(
-              'my-auto mr-1 hidden h-11 shrink-0 items-center gap-1.5 rounded-pill border-2 border-ink px-3 text-[16px] font-bold text-ink hover:bg-surface-3 lg:inline-flex',
-              'Powiedz',
-            )}
             <button
               type="submit"
-              className="m-1 inline-flex shrink-0 items-center gap-2 rounded-pill bg-action px-4 text-[17px] font-bold text-white transition-colors hover:bg-action-hover lg:px-6"
+              className="inline-flex h-12 shrink-0 items-center rounded-pill bg-action px-5 text-[19px] font-bold text-white transition-colors hover:bg-action-hover lg:h-14 lg:px-8"
             >
-              <Search aria-hidden="true" className="h-5 w-5" />
-              <span className="hidden min-[360px]:inline">{submitLabel ?? 'Szukaj'}</span>
+              {submitLabel ?? 'Szukaj'}
             </button>
           </div>
-          {voiceButton(
-            'mt-3 inline-flex min-h-12 max-w-full items-center gap-2 rounded-pill border-2 border-ink px-3.5 text-[17px] font-bold text-ink hover:bg-surface-3 lg:hidden',
-            'Powiedz, czego szukasz',
+          {/* „Powiedz” lives outside the field, in its own row; no row at all without the Web Speech API. */}
+          {micSupported && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-2">
+              <span className="text-[18px] text-ink-soft">albo</span>
+              {voiceButton(
+                'inline-flex h-[52px] max-w-full items-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold text-ink hover:bg-surface-3',
+                'Powiedz, czego szukasz',
+              )}
+            </div>
           )}
         </>
       ) : (
