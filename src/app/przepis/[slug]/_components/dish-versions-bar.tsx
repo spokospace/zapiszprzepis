@@ -11,7 +11,7 @@ export function DishVersionsBar({ count, dishAccusative }: { count: number; dish
   return (
     <a
       href="#inne-przepisy"
-      className="mt-4 flex min-h-[60px] items-center gap-3 rounded-[12px] border-2 border-border-accent bg-surface-accent px-4 py-3 text-ink no-underline! lg:mt-5"
+      className="mt-4 flex min-h-[60px] items-center gap-3 rounded-tile border-2 border-border-accent bg-surface-accent px-4 py-3 text-ink no-underline! lg:mt-5"
     >
       <Layers aria-hidden="true" size={24} className="shrink-0 text-action-text" />
       <span className="min-w-0 flex-1 text-[18px] font-bold break-words">{versionsBarLabel(count, dishAccusative)}</span>

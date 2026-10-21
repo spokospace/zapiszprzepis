@@ -15,7 +15,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-action text-white hover:bg-action-hover',
   // #111827 with white text (17:1): secondary actions on light surfaces (A5 gallery lock, cooking mode).
   dark: 'bg-ink text-white hover:bg-ink-soft',
-  outline: 'bg-white text-ink border-2 border-field hover:bg-surface-3',
+  // Secondary: white with a 2 px #111827 frame (style 1b).
+  outline: 'bg-white text-ink border-2 border-ink hover:bg-surface-3',
   danger: 'bg-white text-danger border-2 border-danger hover:bg-surface-3',
   // Brand blue: white text only at 19px+ bold (large text, 4.2:1 vs AA's 3:1).
   facebook: 'bg-facebook text-white hover:brightness-90',
@@ -26,7 +27,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
 // styled as a button is recognisable by its shape, so it drops the global link
 // underline (the `!` beats the unlayered `a` rule in globals.css).
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-field font-bold no-underline! ' +
+  'inline-flex items-center justify-center gap-2 rounded-pill font-bold no-underline! ' +
   'leading-tight wrap-anywhere transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
 
 /** Shared class string so <Link> and <button> render identically. */

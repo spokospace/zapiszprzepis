@@ -24,7 +24,7 @@ const TILE = {
     stroke: 2,
   },
   3: {
-    link: 'min-h-[64px] flex-col justify-center gap-1.5 rounded-[12px] bg-surface-accent px-1 py-3.5 text-center text-[16px] text-action-text hover:bg-surface-accent-2',
+    link: 'min-h-[64px] flex-col justify-center gap-1.5 rounded-tile bg-surface-accent px-1 py-3.5 text-center text-[16px] text-action-text hover:bg-surface-accent-2',
     icon: 'h-[26px] w-[26px]',
     stroke: 1.75,
   },

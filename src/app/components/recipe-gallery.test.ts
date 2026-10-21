@@ -13,8 +13,8 @@ describe('RecipeGallery grid (A9)', () => {
     expect(html).not.toMatch(/gray-\d00/)
   })
 
-  it('rounds the thumbnails at 12 px, four a row from lg', () => {
+  it('rounds the thumbnails with the 4 px tile token, four a row from lg', () => {
     expect(html).toContain('lg:grid-cols-4')
-    expect(html).toMatch(/<button type="button" class="[^"]*rounded-\[12px\] bg-surface-3"[^>]*aria-label="Powiększ zdjęcie 1 z 2"/)
+    expect(html).toMatch(/<button type="button" class="[^"]*rounded-tile bg-surface-3"[^>]*aria-label="Powiększ zdjęcie 1 z 2"/)
   })
 })

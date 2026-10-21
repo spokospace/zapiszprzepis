@@ -79,9 +79,12 @@
   --color-focus: #1d4ed8;
 
   /* Radii */
-  --radius-field: 14px;          /* buttons / inputs */
-  --radius-card: 16px;           /* cards */
-  --radius-pill: 999px;          /* chips / circles */
+  --radius-pill: 999px;          /* buttons / chips / circles (style 1b) */
+  --radius-tile: 4px;            /* tiles / cards / photos / info frames (style 1b) */
+  /* Deprecated aliases: screens not yet migrated to style 1b keep their old
+     corners. Remove once nothing uses rounded-field / rounded-card (Phase 4). */
+  --radius-field: 14px;
+  --radius-card: 16px;
 
   /* Minimum touch target (2.5.8) */
   --spacing-touch: 48px;
