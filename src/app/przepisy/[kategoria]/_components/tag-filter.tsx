@@ -1,10 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useOptimistic, useRef, useState } from 'react'
+import type { MouseEvent } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { chipClasses } from '@/app/components/ui/chip'
 import { recipesNoun } from '@/app/components/app-menu-model'
+import { useListTransition } from '@/app/components/list-transition'
 
 export interface TagChip {
   value: string
@@ -13,6 +16,13 @@ export interface TagChip {
   selected: boolean
   /** The category URL with this tag toggled. */
   href: string
+}
+
+/** The selection after a tap on `value`: toggled, as the server will answer (the optimistic state, #435). */
+export function toggleTag(current: ReadonlySet<string>, value: string): Set<string> {
+  const next = new Set(current)
+  if (!next.delete(value)) next.add(value)
+  return next
 }
 
 /** Chips shown before "Pokaż wszystkie (N)". Selected chips sort first, so they are always visible. */
@@ -29,6 +39,22 @@ export const VISIBLE_CHIPS = 8
 export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ciasteczka?" (screen 6). */ question: string }) {
   const [expanded, setExpanded] = useState(false)
   const listId = useId()
+  const router = useRouter()
+  const { startTransition } = useListTransition()
+  // A tap marks the chip at once; the server answer (the new list, counts and order) replaces it (#435).
+  const selectedNow = useMemo(() => new Set(chips.filter((c) => c.selected).map((c) => c.value)), [chips])
+  const [selectedValues, toggleSelected] = useOptimistic(selectedNow, toggleTag)
+
+  function onChipClick(event: MouseEvent<HTMLAnchorElement>, chip: TagChip) {
+    // A modified click (new tab) and a non-primary button keep the browser's behaviour.
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    startTransition(() => {
+      toggleSelected(chip.value)
+      router.push(chip.href, { scroll: false })
+    })
+  }
+
   const hidden = chips.length - VISIBLE_CHIPS
   const scrollerRef = useRef<HTMLUListElement>(null)
   const [canLeft, setCanLeft] = useState(false)
@@ -86,13 +112,14 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
             <Link
               href={chip.href}
               scroll={false}
-              className={`${chipClasses(chip.selected)} max-md:whitespace-nowrap`}
+              onClick={(event) => onChipClick(event, chip)}
+              className={`${chipClasses(selectedValues.has(chip.value))} max-md:whitespace-nowrap`}
             >
               {/* Name reads "kruche 12 przepisów, wybrany": the visible "kruche 12" stays
                   one contiguous run (WCAG 2.5.3), the explicit spaces keep the two
                   flex items from merging into "kruche12". */}
               <span>
-                {chip.selected && <span aria-hidden="true">✓ </span>}
+                {selectedValues.has(chip.value) && <span aria-hidden="true">✓ </span>}
                 {chip.label}{' '}
               </span>
               <span className="text-[16px] font-normal opacity-80">
@@ -100,7 +127,7 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
                 <span className="sr-only">
                   {' '}
                   {recipesNoun(chip.count)}
-                  {chip.selected && ', wybrany'}
+                  {selectedValues.has(chip.value) && ', wybrany'}
                 </span>
               </span>
             </Link>

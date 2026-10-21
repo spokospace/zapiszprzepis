@@ -1,7 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { TagFilter, VISIBLE_CHIPS, type TagChip } from './tag-filter'
+
+// The chips navigate through the router inside the list's transition; a static render needs a stub.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
+
+import { TagFilter, toggleTag, VISIBLE_CHIPS, type TagChip } from './tag-filter'
 
 const chip = (i: number): TagChip => ({
   value: `tag-${i}`,
@@ -60,5 +64,22 @@ describe('TagFilter on a phone (style 1b)', () => {
 
   it('shows no scroll buttons before hydration (they appear only when there is more to scroll)', () => {
     expect(html).not.toContain('Przewiń filtry')
+  })
+})
+
+describe('TagFilter instant feedback (#435)', () => {
+  it('toggles a tag in the optimistic selection without touching the original', () => {
+    const before = new Set(['kruche'])
+    expect([...toggleTag(before, 'czekoladowe')].sort()).toEqual(['czekoladowe', 'kruche'])
+    expect([...toggleTag(before, 'kruche')]).toEqual([])
+    expect([...before]).toEqual(['kruche'])
+  })
+
+  it('renders a selected chip as selected (✓, "wybrany") and keeps every chip a real link', () => {
+    const chips = [{ ...chip(1), selected: true }, chip(2)]
+    const html = renderToStaticMarkup(createElement(TagFilter, { chips, question: 'Jakie ciasta?' }))
+    expect(html).toContain('✓ ')
+    expect(html).toContain(', wybrany')
+    expect(html.match(/<a [^>]*href="\/przepisy\/ciasta\?tag=tag-\d"/g)).toHaveLength(2)
   })
 })

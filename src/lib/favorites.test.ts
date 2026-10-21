@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { applyFavoriteIntent, getFavoriteIds, parseRecipeId, withFavoriteIntent } from './favorites'
+import { applyFavoriteIntent, getFavoriteIds, getUserFavoriteIds, parseRecipeId, withFavoriteIntent } from './favorites'
 
 describe('parseRecipeId', () => {
   it('accepts positive integers, as numbers or numeric strings', () => {
@@ -120,6 +120,30 @@ describe('getFavoriteIds', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { client } = fakeLookup({ data: null, error: { code: 'x' } })
     await expect(getFavoriteIds(client, 'u1', [1])).resolves.toEqual(new Set())
+    spy.mockRestore()
+  })
+})
+
+describe('getUserFavoriteIds', () => {
+  function fakeAll(result: { data: { recipe_id: number }[] | null; error: { code: string } | null }) {
+    const eq = vi.fn(() => Promise.resolve(result))
+    const select = vi.fn(() => ({ eq }))
+    const from = vi.fn(() => ({ select }))
+    return { client: { from } as unknown as SupabaseClient, from, select, eq }
+  }
+
+  it('reads all of the user\'s favorites in one query that needs no card ids', async () => {
+    const { client, from, select, eq } = fakeAll({ data: [{ recipe_id: 3 }, { recipe_id: 9 }], error: null })
+    await expect(getUserFavoriteIds(client, 'u1')).resolves.toEqual(new Set([3, 9]))
+    expect(from).toHaveBeenCalledWith('favorites')
+    expect(select).toHaveBeenCalledWith('recipe_id')
+    expect(eq).toHaveBeenCalledWith('user_id', 'u1')
+  })
+
+  it('is empty on error, so hearts render off', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { client } = fakeAll({ data: null, error: { code: 'x' } })
+    await expect(getUserFavoriteIds(client, 'u1')).resolves.toEqual(new Set())
     spy.mockRestore()
   })
 })
