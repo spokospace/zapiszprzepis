@@ -29,13 +29,12 @@ import { isYoutubeHost } from '@/lib/youtube'
 import { decodeEntities } from '@/lib/html-entities'
 import { sliceBalancedDiv } from '@/lib/html-div'
 import { GALLERY_LIMIT } from '@/lib/recipe-image-archive'
+import { BROWSER_UA } from '@/lib/public-fetch'
 
 const CRAWLER_UA = 'facebookexternalhit/1.1'
 // The only logged-out user-agent Facebook serves a group post's text and
 // comments to; facebookexternalhit gets og: tags only, a browser a login wall.
 const SEARCH_BOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
-const BROWSER_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
 const FACEBOOK_HOSTS = new Set(['facebook.com', 'fb.watch', 'fb.me'])
 

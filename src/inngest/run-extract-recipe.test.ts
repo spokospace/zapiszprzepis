@@ -184,6 +184,71 @@ describe('runExtractRecipe — Risk 2: junk input gate', () => {
   })
 })
 
+describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () => {
+  const JINA_MARKDOWN = 'Składniki: 200 g mąki, 2 jajka, mleko. Sposób przygotowania: wymieszaj i smaż na patelni. '.repeat(10)
+
+  // Firecrawl out of credits; Jina and the page itself answer unless told not to.
+  function makeOutOfCreditsFetch({ jinaOk = true }: { jinaOk?: boolean } = {}) {
+    return vi.fn().mockImplementation((url: string) => {
+      if (url.includes('firecrawl.dev')) {
+        return Promise.resolve({ ok: false, status: 402, statusText: '', json: async () => ({ success: false }) })
+      }
+      if (url.startsWith('https://r.jina.ai/')) {
+        return Promise.resolve(
+          jinaOk
+            ? {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                  data: {
+                    title: 'Naleśniki',
+                    url: BASE_EVENT.sharedUrl,
+                    content: JINA_MARKDOWN,
+                    httpStatus: 200,
+                    metadata: { 'og:image': 'https://example.com/nalesniki.jpg' },
+                  },
+                }),
+              }
+            : { ok: false, status: 451, json: async () => ({}) },
+        )
+      }
+      if (url.includes('openai.com')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ choices: [{ message: { content: VALID_RECIPE_JSON } }] }),
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, headers: new Headers(), text: async () => '<p>Naleśniki</p>' })
+    })
+  }
+
+  it('extracts the recipe from Jina Reader when Firecrawl answers 402', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeOutOfCreditsFetch()
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    expect(JSON.parse(String(extraction?.[1]?.body)).messages[1].content).toContain(`# Naleśniki\n\n${JINA_MARKDOWN.trim()}`)
+    expect(mock.insertArgs('recipes')?.image_url).toBe('https://example.com/nalesniki.jpg')
+    // The main scrape, its retry and the embed scan share one Jina read.
+    expect(fetch.mock.calls.filter((c) => String(c[0]).startsWith('https://r.jina.ai/'))).toHaveLength(1)
+  })
+
+  it("keeps Firecrawl's error when Jina has nothing either", async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+
+    await expect(
+      runExtractRecipe(BASE_EVENT, { fetch: makeOutOfCreditsFetch({ jinaOk: false }), supabase: mock.supabase as any }),
+    ).rejects.toThrow('Firecrawl failed: HTTP 402')
+
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+})
+
 describe('runExtractRecipe — LLM output the database would reject (#134)', () => {
   const withCategory = (category: unknown) => JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), category })
 
