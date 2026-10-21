@@ -168,37 +168,23 @@ async function getMemberRows(supabase: ServerClient, userId: string, hasFullAcce
 type MemberRows = Awaited<ReturnType<typeof getMemberRows>>
 
 /**
- * The hero both homes share (E01-S31 §5a): `bg-surface-accent`, two columns from
- * ~832 px — the greeting (38 px H1), subtitle and the one search field on the left,
- * „Przepis dnia” on the right — collapsing to one column (search, then the photo full
- * width) on a phone. `auto-fit`/`minmax` does the collapse without a breakpoint.
+ * The hero both homes share (handoff 14): one column with searching as the only task.
+ * From md it is centered (H1 up to 64 px, field block at most 780 px); on a phone it
+ * keeps today's left-aligned layout. „Przepis dnia” is no longer in here — it is its
+ * own block under a rule, rendered by the page after the hero.
  */
-function Hero({
-  id,
-  title,
-  subtitle,
-  children,
-  recipeOfDay,
-}: {
-  id: string
-  title: string
-  subtitle: string
-  children: ReactNode
-  recipeOfDay?: ReactNode
-}) {
+function Hero({ id, title, subtitle, children }: { id: string; title: string; subtitle: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="bg-white">
-      <PageContainer className="py-6 lg:py-10">
-        <div className="grid items-center gap-8 [grid-template-columns:repeat(auto-fit,minmax(min(100%,25rem),1fr))]">
-          <div>
-            <h1 id={id} className="text-[32px] leading-[1.15] font-extrabold text-ink lg:text-[50px] lg:leading-[1.1]">
-              {title}
-            </h1>
-            <p className="mt-3 mb-4 text-[19px] leading-normal text-ink-soft lg:mb-5">{subtitle}</p>
-            {children}
-          </div>
-          {recipeOfDay}
-        </div>
+      <PageContainer className="flex flex-col items-start gap-4 py-7 md:items-center md:gap-[18px] md:pt-16 md:pb-[52px] md:text-center">
+        <h1
+          id={id}
+          className="text-[32px] leading-[1.15] font-extrabold text-ink md:text-[48px] md:leading-[1.05] lg:text-[64px] lg:leading-[1.02]"
+        >
+          {title}
+        </h1>
+        <p className="text-[19px] leading-normal text-ink-soft md:text-[20px] md:leading-[1.45]">{subtitle}</p>
+        <div className="w-full max-w-[780px] text-left md:mt-3.5">{children}</div>
       </PageContainer>
     </section>
   )
@@ -282,7 +268,6 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
         id="hero-heading"
         title="Czego dziś szukasz?"
         subtitle="Przepisy z internetu w jednym miejscu. Zawsze pod ręką, kiedy gotujesz."
-        recipeOfDay={recipeOfDay}
       >
         <HomeSearch
           id="home-search-guest"
@@ -294,6 +279,7 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
         />
         <PopularSearches />
       </Hero>
+      {recipeOfDay}
       <PageContainer className="flex flex-col gap-8 pt-6">
         {recentRecipes.length > 0 && (
           <RecipeRow
@@ -340,7 +326,6 @@ function MemberHome({
         id="hero-heading"
         title={homeGreeting(vocative)}
         subtitle="Szukaj w swoich przepisach i ulubionych albo we wszystkich."
-        recipeOfDay={recipeOfDay}
       >
         <HomeSearch
           id="home-search-member"
@@ -352,6 +337,7 @@ function MemberHome({
         />
         <PopularSearches />
       </Hero>
+      {recipeOfDay}
       <PageContainer className="flex flex-col gap-8 pt-6">
         {favoriteAdded !== null && !shown.has(favoriteAdded) && <FavoriteAddedNotice recipeId={favoriteAdded} />}
         {mine.length > 0 && (
