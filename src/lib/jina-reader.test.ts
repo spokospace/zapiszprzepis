@@ -102,22 +102,27 @@ describe('readerScrape', () => {
     expect(await readerScrape(PAGE, { fetch })).toEqual({ markdown: 'Składniki', html: '', metadata: {} })
   })
 
-  it('is null when Jina errors, returns no content or cannot be reached', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  it('throws the reason when Jina errors, returns no content or cannot be reached', async () => {
     const withJina = (jina: () => Promise<unknown>) =>
       vi.fn().mockImplementation((url: string) =>
         url.startsWith('https://r.jina.ai/') ? jina() : Promise.resolve(htmlResponse('<p>x</p>')),
       )
 
-    expect(await readerScrape(PAGE, { fetch: withJina(() => Promise.resolve(jinaResponse({}, 451))) })).toBeNull()
-    expect(await readerScrape(PAGE, { fetch: withJina(() => Promise.resolve(jinaResponse({ content: '  ' }))) })).toBeNull()
-    expect(await readerScrape(PAGE, { fetch: withJina(() => Promise.reject(new Error('timeout'))) })).toBeNull()
+    await expect(
+      readerScrape(PAGE, { fetch: withJina(() => Promise.resolve(jinaResponse({}, 429))) }),
+    ).rejects.toThrow(/^Jina Reader: HTTP 429$/)
+    await expect(
+      readerScrape(PAGE, { fetch: withJina(() => Promise.resolve(jinaResponse({ content: '  ' }))) }),
+    ).rejects.toThrow(/^Jina Reader: no content$/)
+    await expect(
+      readerScrape(PAGE, { fetch: withJina(() => Promise.reject(new Error('The operation timed out'))) }),
+    ).rejects.toThrow(/^Jina Reader: The operation timed out$/)
   })
 
   it('never sends a private address anywhere', async () => {
     const fetch = vi.fn()
 
-    expect(await readerScrape('http://127.0.0.1/admin', { fetch })).toBeNull()
+    await expect(readerScrape('http://127.0.0.1/admin', { fetch })).rejects.toThrow('Jina Reader: private address')
     expect(fetch).not.toHaveBeenCalled()
   })
 })
