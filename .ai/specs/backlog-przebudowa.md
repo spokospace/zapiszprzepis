@@ -150,7 +150,7 @@ Jeden przepis na znormalizowany `source_url` (globalnie), publiczny slug `/przep
 
 - **Given** dwóch użytkowników udostępnia ten sam link, **When** drugi go doda, **Then** nie powstaje kopia; przepis trafia do jego Ulubionych + komunikat „Ten przepis już jest… Dodaliśmy go do Twoich ulubionych.” + „Otwórz przepis”.
 - **Given** istniejący przepis, **When** otwierany jest stary adres `/recipes/{slug}`, **Then** 301 → `/przepis/{slug}` (unikalny, sufiks przy kolizji, bez loginu w ścieżce).
-- **Given** karta lub strona przepisu, **When** renderuje źródło, **Then** pokazuje domenę bez `www`/ścieżki (`aniagotuje.pl`) lub „YouTube · {kanał}” / „Facebook · {profil}”; dla przepisów bez strony „Z książki kucharskiej” / „Przepis od: {podane}”.
+- **Given** karta lub strona przepisu, **When** renderuje źródło, **Then** pokazuje domenę bez `www`/ścieżki (`aniagotuje.pl`) lub „YouTube · {kanał}” / Facebook jako logo „f” + sama nazwa autora (bez prefiksu „Facebook ·”); dla przepisów bez strony „Z książki kucharskiej” / „Przepis od: {podane}”.
 - **Given** przepis, **When** renderuje autora, **Then** „Dodała/Dodał {displayName}” (forma wg płci) z podkreślonym linkiem do `/u/{username}`; username generowany z imienia (małe litery, `ł→l`, bez diakrytyków, sufiks unikalności), nieedytowalny.
 - **Pliki:** migracje `supabase/` (globalny unikalny indeks dedup, kolumna/relacja „added_by/first_sharer”, pola profilu), `src/lib/url-normalize.ts`, `src/lib/recipe-dedup.ts`, `src/lib/slugify.ts`, logika źródła (nowy util), `next.config`/route dla 301.
 - **Uwaga risk-high:** migracja schematu w górę i w dół + plan rollbacku w PR; zmiana semantyki dedup z per-user na globalną — test izolacji i idempotencji.

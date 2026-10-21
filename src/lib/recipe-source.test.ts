@@ -43,8 +43,8 @@ describe('sourceLabel', () => {
     expect(sourceLabel('youtube', 'https://youtu.be/abc')).toBe('YouTube')
   })
 
-  it('names a known Facebook author before the platform, whatever the link shape', () => {
-    const wiola = 'Facebook · Kulinarna Wiola'
+  it('shows a known Facebook author alone (the "f" logo names the platform), whatever the link shape', () => {
+    const wiola = 'Kulinarna Wiola'
     expect(sourceLabel('facebook_text', 'https://www.facebook.com/100069645633702/posts/pfbid0289YMoX2fdF/')).toBe(wiola)
     expect(sourceLabel('facebook_reel', 'https://www.facebook.com/100069645633702/videos/sernik/1784278505620096/')).toBe(wiola)
     expect(
@@ -52,8 +52,8 @@ describe('sourceLabel', () => {
     ).toBe(wiola)
   })
 
-  it('names the author stored at import, ahead of the known-profile map', () => {
-    expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Fefe Deni')).toBe('Facebook · Fefe Deni')
+  it('shows the author stored at import — alone for Facebook, after "YouTube ·" for YouTube', () => {
+    expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Fefe Deni')).toBe('Fefe Deni')
     expect(sourceLabel('youtube', 'https://youtu.be/abc', 'PALCE LIZAĆ')).toBe('YouTube · PALCE LIZAĆ')
     expect(sourceLabel('web_blog', 'https://www.polskiekulinaria.pl/tiramisu', 'Ania')).toBe('polskiekulinaria.pl')
   })
@@ -63,7 +63,7 @@ describe('sourceLabel', () => {
       'YouTube · Mikołaj Drożdżyński',
     )
     expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Gotowaczka - Pyszne domowe gotowanie')).toBe(
-      'Facebook · Gotowaczka',
+      'Gotowaczka',
     )
   })
 
@@ -73,7 +73,7 @@ describe('sourceLabel', () => {
       'YouTube · Smaki Katriny-najlepsze przepisy',
     )
     expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Alex & Cris P')).toBe(
-      'Facebook · Alex & Cris P',
+      'Alex & Cris P',
     )
     // A head too short to stand on its own keeps the whole name.
     expect(sourceLabel('youtube', 'https://youtu.be/abc', 'Ab - Kuchnia')).toBe('YouTube · Ab - Kuchnia')

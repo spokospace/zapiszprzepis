@@ -1,13 +1,33 @@
-import { BookOpen, ExternalLink, Globe, MonitorPlay, User, Users } from 'lucide-react'
+import { BookOpen, ExternalLink, Globe, MonitorPlay, User } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 import type { SourceKind } from '@/lib/recipe-source'
 
-// lucide-react dropped its brand glyphs, so these are neutral stand-ins; the
-// visible text always names the platform ("YouTube · …", "Facebook"), so the
-// icon only has to read as "video" / "community" and need not be a logo. The
-// blog-platform marks (WordPress / Blogger) are hand-drawn for the same reason,
-// monochrome like the rest so they inherit the badge's ink colour.
+// lucide-react dropped its brand glyphs, so the platform marks here are
+// hand-drawn — monochrome, inheriting the badge's ink colour via currentColor.
+// Facebook gets its "f": the FB badge shows the author's name alone, so the logo
+// is what names the platform. WordPress / Blogger are a circled / boxed letter.
+// YouTube keeps a neutral "video" lucide glyph, since its text still says
+// "YouTube · …".
 type BadgeIcon = ComponentType<SVGProps<SVGSVGElement>>
+
+/**
+ * Facebook's roundel, monochrome so it inherits the badge's ink colour. A square
+ * 16×16 viewBox (like the WordPress / Blogger marks) so it fills the badge icon
+ * box — the earlier tall "f"-only glyph (320×512) letterboxed into 18 px read as
+ * a broken mark. The "f" is knocked out of the solid disc, white on the badge.
+ */
+function FacebookIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className={`source-icon-facebook ${className ?? ''}`}
+      {...props}
+    >
+      <path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z" />
+    </svg>
+  )
+}
 
 /** A circled "W" — reads as WordPress next to the blog's name. */
 function WordPressIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
@@ -52,7 +72,7 @@ const ICON: Record<SourceKind, BadgeIcon> = {
   wordpress: WordPressIcon,
   blogger: BloggerIcon,
   youtube: MonitorPlay,
-  facebook: Users,
+  facebook: FacebookIcon,
   book: BookOpen,
   person: User,
 }
