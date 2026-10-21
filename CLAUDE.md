@@ -25,6 +25,18 @@ The project has exactly one GitHub account, `spokospace`: owner, author of every
 - Merge (squash) when the validation gate — `pnpm typecheck`, `pnpm lint`, `pnpm test` — passes on the PR head merged with the current `master`. Workers Builds runs only on `master` (preview builds for PR branches are off to save Cloudflare build minutes), so a PR has no Cloudflare check to wait for; after merging, confirm the `master` build passed (`SDLC.md`). Manual QA (`needs-qa`) is advisory for this account; this rule overrides the QA gate in `SDLC.md`. Note on the PR that it merged on green tests without manual QA.
 - Still never merge: a draft, a PR with a merge conflict, a PR labeled `do-not-merge` / `blocked`, or one whose description or runbook requires a manual production step first (e.g. a migration applied through the Management API) until the owner confirms that step is done.
 
+## Po każdym deployu i każdej zmianie sekretu: `pnpm smoke:prod`
+
+Po każdym buildzie `master` (Workers Builds) i po każdej zmianie zmiennej albo sekretu Workera (panel Cloudflare, `wrangler secret put`) uruchom `pnpm smoke:prod`. Skrypt otwiera publiczne strony produkcji i sprawdza, czy każdy plik `/_next/static` (CSS, JS, fonty), do którego się odwołują, zwraca 200. Exit 1 = produkcja jest zepsuta.
+
+**Dlaczego:** 2026-10-22 zapis sekretu `JINA_API_KEY` w panelu od razu wdrożył nową wersję Workera („Add secret: …”, źródło Dashboard), której HTML odwoływał się do nieistniejących plików: cała strona bez CSS i z `ChunkLoadError`, mimo że ostatni build był zielony. Zielony build nie dowodzi, że produkcja działa.
+
+**Jak stosować:**
+- „Zrobione/wdrożone” piszesz dopiero po `✓` ze `pnpm smoke:prod` na produkcji (obok sprawdzenia samej zmiany).
+- Czerwony wynik: Cloudflare → Workers & Pages → zapiszprzepis → **Builds** → **Retry** przy ostatnim buildzie `master` (wgrywa kod i pliki razem; sekrety zostają), potem skrypt jeszcze raz. Agent nie ma dostępu do tego konta — poproś właściciela.
+- Sekret zmieniaj, gdy żaden build nie trwa, i od razu po nim zrób Retry buildu `master` + `pnpm smoke:prod`.
+- Dowolny adres jako argument: `pnpm smoke:prod https://<version>-zapiszprzepis.<subdomain>.workers.dev`.
+
 ## Przebudowa (epik E01) — zasady projektowe: WCAG, czytelność, model
 
 Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelność; grupa docelowa obejmuje osoby starsze). Backlog: `.ai/specs/backlog-przebudowa.md`. Tokeny i prymitywy: `src/app/globals.css` + `src/app/components/ui/`.
