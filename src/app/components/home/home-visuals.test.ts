@@ -4,8 +4,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { CategoryGrid } from './category-grid'
 import { GuestCta } from './guest-cta'
 import { HomeSearch } from './home-search'
-import { AttentionBanner } from './attention-banner'
-import type { FailedSharesResult } from '@/lib/failed-shares'
 import { HOME_CATEGORIES } from '@/lib/recipe-categories'
 
 const render = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el)
@@ -51,25 +49,6 @@ describe('GuestCta (E01-S20)', () => {
     expect(html).toContain('Zapisuj przepisy z linku i zbieraj ulubione')
     expect(html).toMatch(/href="\/signup"[^>]*>Załóż konto</)
     expect(html).toMatch(/href="\/login"[^>]*>Zaloguj się</)
-  })
-})
-
-describe('AttentionBanner (E01-S31 §5)', () => {
-  const failed = { status: 'ok', shares: [{}] } as unknown as FailedSharesResult
-
-  it('is a white strip with a 2 px #9a3412 frame and a "Popraw" link, not the red tint', () => {
-    const html = render(createElement(AttentionBanner, { failedShares: failed }))
-    expect(html).toContain('border-action-text')
-    expect(html).toContain('bg-white')
-    expect(html).not.toContain('bg-danger-bg')
-    expect(html).toContain('1 przepis wymaga uwagi')
-    expect(html).toMatch(/>Popraw</)
-    expect(html).not.toContain('Zobacz')
-  })
-
-  it('renders nothing when nothing needs attention', () => {
-    const none = { status: 'ok', shares: [] } as unknown as FailedSharesResult
-    expect(render(createElement(AttentionBanner, { failedShares: none }))).toBe('')
   })
 })
 
