@@ -5,7 +5,7 @@ import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/serve
 import { getUserFavoriteIds } from '@/lib/favorites'
 import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { getCategoryDescription } from '@/lib/category-descriptions'
-import { categoryNoun, parsePageParam, parseTagParam, tagFacets, tagSummary } from '@/lib/category-tags'
+import { categoryNoun, parsePageParam, parseTagParam, tagFacetsFromCounts, tagSummary, type TagCount } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
@@ -52,9 +52,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
  * Every recipe in one category, for guests too (E01-S09), with tag chips
  * (`?tag=a,b`, AND logic) and an aria-live summary (E01-S16), as list cards
  * with "Pokaż kolejne N" (E01-S22, screen 6). Reads the guest-safe
- * public_recipes view: one light read of every recipe's tags for the counters
- * and the category total, one read of the cards shown. An unknown category is
- * a 404, an empty one an empty state.
+ * public_recipes view: the `category_tag_facets` RPC aggregates the per-tag
+ * counters in Postgres (#444), a head count gives the category total, and one
+ * read returns the cards shown. An unknown category is a 404, an empty one an
+ * empty state.
  */
 export default async function CategoryPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   const { kategoria: category } = await params
@@ -76,9 +77,17 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   // The viewer's favorites are read in parallel with the list, not after it (#435).
   const userPromise = getCurrentUser()
   const favoritesPromise = userPromise.then((u) => (u ? getUserFavoriteIds(supabase, u.id) : new Set<number>()))
-  const [user, tagRows, { data: recipes, count, error }, favoriteIds] = await Promise.all([
+  // The "… w kategorii" total equals the cards `count` when nothing is filtered, so
+  // only a filtered view needs its own unfiltered head count (#444); no rows transferred.
+  const categoryCountPromise =
+    selected.length > 0
+      ? supabase.from('public_recipes').select('id', { count: 'exact', head: true }).eq('category', category)
+      : null
+  const [user, facets, categoryCount, { data: recipes, count, error }, favoriteIds] = await Promise.all([
     userPromise,
-    supabase.from('public_recipes').select('tags').eq('category', category),
+    // Per-tag counters, aggregated in Postgres (#444) instead of reading every row's tags.
+    supabase.rpc('category_tag_facets', { p_category: category, p_selected: selected }),
+    categoryCountPromise,
     // "Pokaż kolejne" re-renders the list from the top, one page longer.
     cards
       .order('created_at', { ascending: false })
@@ -92,20 +101,21 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     throw new Error(`[przepisy] Query failed: ${error.message}`)
   }
   // The counters are an aid, not the content: without them the list still works.
-  if (tagRows.error) console.error('[przepisy] Tag counts failed:', tagRows.error)
+  if (facets.error) console.error('[przepisy] Tag facets failed:', facets.error)
+  if (categoryCount?.error) console.error('[przepisy] Category count failed:', categoryCount.error)
 
   const label = categoryLabel(category)
   const Icon = CATEGORY_ICONS[category]
   const total = count ?? 0
   const filtered = selected.length > 0
-  // The whole category, from the tag read; the list count stands in when that failed and nothing is filtered.
-  const categoryTotal = tagRows.error ? (filtered ? null : total) : (tagRows.data ?? []).length
+  // The whole category size: the unfiltered cards count, or a filtered view's own head count (null if it failed).
+  const categoryTotal = filtered ? (categoryCount?.error ? null : (categoryCount?.count ?? 0)) : total
   const clearHref = categoryPath(category)
   const pageHref = (p: number) => categoryPath(category, { tags: selected, page: p })
 
-  const chips: TagChip[] = tagRows.error
+  const chips: TagChip[] = facets.error
     ? []
-    : tagFacets(tagRows.data ?? [], selected).map((f) => ({
+    : tagFacetsFromCounts((facets.data ?? []) as TagCount[], selected).map((f) => ({
         ...f,
         href: categoryPath(category, {
           tags: f.selected ? selected.filter((t) => t !== f.value) : [...selected, f.value],
