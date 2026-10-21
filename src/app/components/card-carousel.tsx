@@ -17,15 +17,20 @@ const CAROUSEL_CLASS =
 
 /**
  * The grid from sm. `tiles`: 2 columns, 4 from lg (home, Podobne; E01-S17).
- * `rows`: one wide card a row, 2 from lg (Inne przepisy; E01-S21).
+ * `versions`: 2 columns, 3 from lg, all cards visible (Inne wersje; handoff 16).
+ * Rows are 32 px apart from lg, columns 20–24 px.
  */
 const GRID = {
-  tiles: 'sm:grid-cols-2 lg:grid-cols-4 lg:gap-5',
-  rows: 'sm:grid-cols-1 sm:gap-6 lg:grid-cols-2',
+  tiles: 'sm:grid-cols-2 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-8',
+  versions: 'sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-3',
 } as const
 
 /** One card: 3/4 of the screen on a phone, so the next one peeks in; a grid cell from sm. */
-const CAROUSEL_ITEM_CLASS = 'w-3/4 shrink-0 snap-start sm:w-auto'
+const CAROUSEL_ITEM_CLASS = {
+  tiles: 'w-3/4 shrink-0 snap-start sm:w-auto',
+  // Handoff 16: a 270 px card on a phone, the next one peeking in.
+  versions: 'w-[270px] shrink-0 snap-start sm:w-auto',
+} as const
 
 /** Where the strip stands; `none` when every card fits (from sm, or a single card). */
 type Edge = 'start' | 'middle' | 'end' | 'none'
@@ -39,7 +44,7 @@ function edgeOf(list: HTMLElement | null): Edge {
 }
 
 // A label never breaks mid-word: from 360 px the two share a row, at 320 px they stack, full width.
-const STEP_BUTTON = `${buttonClasses('outline', 'md')} grow whitespace-nowrap aria-disabled:cursor-not-allowed aria-disabled:opacity-50`
+const STEP_BUTTON = `${buttonClasses('outline', 'lg')} grow whitespace-nowrap aria-disabled:cursor-not-allowed aria-disabled:opacity-50`
 
 /**
  * A row of cards inside a page (home "Ostatnio dodane", recipe "Podobne" and "Inne przepisy"). No
@@ -96,7 +101,7 @@ export function CardCarousel({
     <>
       <ul ref={listRef} id={listId} className={`${CAROUSEL_CLASS} ${GRID[layout]}`}>
         {items.map(({ key, card }) => (
-          <li key={key} className={CAROUSEL_ITEM_CLASS}>
+          <li key={key} className={CAROUSEL_ITEM_CLASS[layout]}>
             {card}
           </li>
         ))}

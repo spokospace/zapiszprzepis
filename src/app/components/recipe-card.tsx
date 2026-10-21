@@ -57,7 +57,7 @@ export const LIST_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 48rem) 33vw, 
  * squished ones, and wider screens add columns on their own.
  */
 export const LIST_CARDS_CLASS =
-  'flex flex-col gap-6 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]'
+  'flex flex-col gap-6 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] md:gap-x-6 md:gap-y-8'
 
 const PHOTO_HEIGHT = {
   list: 'h-[210px] md:h-[180px]',

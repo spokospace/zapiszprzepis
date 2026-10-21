@@ -253,9 +253,57 @@ export function versionsBarLabel(n: number, dishAccusative: string | null): stri
   return `Mamy jeszcze ${n} ${phrase} na ${dishAccusative ?? 'to danie'}`
 }
 
-/** Heading: "Inne przepisy na {acc} (N)" (or "Inne wersje tego dania (N)"). */
-export function versionsHeading(n: number, dishAccusative: string | null): string {
-  return dishAccusative ? `Inne przepisy na ${dishAccusative} (${n})` : `Inne wersje tego dania (${n})`
+/**
+ * The genitive of common dish names, for "Inne wersje pączków". The data carries only the
+ * nominative (`dish`) and the accusative, and Polish genitives are not derivable from
+ * them, so this is a curated map; a dish missing here gets the case-free heading. A
+ * `dish_genitive` column would replace it but needs a migration and a backfill.
+ */
+const DISH_GENITIVE: Readonly<Record<string, string>> = {
+  pączki: 'pączków',
+  pierogi: 'pierogów',
+  naleśniki: 'naleśników',
+  placki: 'placków',
+  'placki ziemniaczane': 'placków ziemniaczanych',
+  racuchy: 'racuchów',
+  faworki: 'faworków',
+  kopytka: 'kopytek',
+  gołąbki: 'gołąbków',
+  kotlety: 'kotletów',
+  'kotlety mielone': 'kotletów mielonych',
+  krokiety: 'krokietów',
+  muffinki: 'muffinek',
+  babeczki: 'babeczek',
+  bułeczki: 'bułeczek',
+  drożdżówki: 'drożdżówek',
+  ciasteczka: 'ciasteczek',
+  szarlotka: 'szarlotki',
+  sernik: 'sernika',
+  makowiec: 'makowca',
+  babka: 'babki',
+  brownie: 'brownie',
+  tiramisu: 'tiramisu',
+  lasagne: 'lasagne',
+  pizza: 'pizzy',
+  chleb: 'chleba',
+  bigos: 'bigosu',
+  rosół: 'rosołu',
+  barszcz: 'barszczu',
+  'zupa pomidorowa': 'zupy pomidorowej',
+  'zupa ogórkowa': 'zupy ogórkowej',
+  'sałatka jarzynowa': 'sałatki jarzynowej',
+}
+
+/** The genitive of a dish ("pączki" → "pączków"), or null when it is not in the map. */
+export function dishGenitive(dish: string | null | undefined): string | null {
+  const key = dish?.trim().toLocaleLowerCase('pl')
+  return key ? (DISH_GENITIVE[key] ?? null) : null
+}
+
+/** Heading (handoff 16): "Inne wersje {dania w dopełniaczu} (N)", else "Inne wersje tego dania (N)". */
+export function versionsHeading(n: number, dish: string | null | undefined): string {
+  const genitive = dishGenitive(dish)
+  return genitive ? `Inne wersje ${genitive} (${n})` : `Inne wersje tego dania (${n})`
 }
 
 // --- "Podobne" exclusion ---------------------------------------------------

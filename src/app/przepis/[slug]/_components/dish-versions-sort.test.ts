@@ -37,9 +37,9 @@ const html = renderToStaticMarkup(
 )
 
 describe('DishVersionsSort', () => {
-  it('puts every server-rendered card in the carousel, one wide card a row from sm', () => {
-    expect(html.match(/<li class="w-3\/4 [^"]*"><i data-card/g)).toHaveLength(2)
-    expect(html).toMatch(/<ul id="[^"]+" class="[^"]*sm:grid-cols-1 sm:gap-6 lg:grid-cols-2/)
+  it('puts every server-rendered card in the carousel: 270 px on a phone, 2 columns from sm, 3 from lg', () => {
+    expect(html.match(/<li class="w-\[270px\] [^"]*"><i data-card/g)).toHaveLength(2)
+    expect(html).toMatch(/<ul id="[^"]+" class="[^"]*sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-3/)
   })
 
   it('names the carousel buttons after the section heading', () => {

@@ -3,8 +3,15 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 // The version cards are the shared RecipeCard, whose heart pulls in server-only
-// actions; stub it so the card renders in a test (no heart is passed anyway).
-vi.mock('@/app/components/favorite-button', () => ({ FavoriteButton: () => null }))
+// actions; stub it with a marker that shows where the heart sits and what it was given.
+vi.mock('@/app/components/favorite-button', () => ({
+  FavoriteButton: ({ recipeId, initialFavorited, isAuthenticated }: { recipeId: number; initialFavorited: boolean; isAuthenticated: boolean }) =>
+    createElement('i', {
+      'data-heart': String(recipeId),
+      'data-favorited': String(initialFavorited),
+      'data-auth': String(isAuthenticated),
+    }),
+}))
 
 import { DishVersionsBar } from './dish-versions-bar'
 import { DishVersions } from './dish-versions'
@@ -62,7 +69,8 @@ function section(props: Partial<Parameters<typeof DishVersions>[0]>) {
     createElement(DishVersions, {
       versions: [],
       totalCount: 0,
-      dishAccusative: 'sernik',
+      dish: 'sernik',
+      favoriteIds: null,
       order: 'popularne',
       current,
       ...props,
@@ -75,15 +83,26 @@ describe('DishVersions', () => {
     expect(section({ versions: [], totalCount: 0 })).toBe('')
   })
 
-  it('shows the heading (accusative + N) and the caption', () => {
-    const html = section({ versions: [row()], totalCount: 1, dishAccusative: 'sernik' })
+  it('shows the heading (genitive + N) and the caption (handoff 16)', () => {
+    const html = section({ versions: [row()], totalCount: 5, dish: 'pączki' })
     expect(html).toContain('id="inne-przepisy"')
-    expect(html).toContain('Inne przepisy na sernik (1)')
-    expect(html).toContain('Czym różnią się od przepisu')
+    expect(html).toContain('Inne wersje pączków (5)')
+    expect(html).toContain('Czym różnią się od tego przepisu')
+    expect(html).not.toContain('przepisu, który oglądasz')
   })
 
-  it('uses the case-free heading without an accusative', () => {
-    expect(section({ versions: [row()], totalCount: 1, dishAccusative: null })).toContain('Inne wersje tego dania (1)')
+  it('uses the case-free heading for an unknown or missing dish', () => {
+    expect(section({ versions: [row()], totalCount: 1, dish: null })).toContain('Inne wersje tego dania (1)')
+    expect(section({ versions: [row()], totalCount: 1, dish: 'nieznane' })).toContain('Inne wersje tego dania (1)')
+  })
+
+  it('puts a heart on every card, filled for the viewer\'s favorites, login-bound for a guest', () => {
+    const rows = [row({ id: 1, slug: 'a' }), row({ id: 2, slug: 'b' })]
+    const member = section({ versions: rows, totalCount: 2, favoriteIds: new Set([2]) })
+    expect(member).toContain('data-heart="1" data-favorited="false" data-auth="true"')
+    expect(member).toContain('data-heart="2" data-favorited="true" data-auth="true"')
+    const guest = section({ versions: rows, totalCount: 2, favoriteIds: null })
+    expect(guest).toContain('data-heart="1" data-favorited="false" data-auth="false"')
   })
 
   it('hides the sort control with fewer than two versions', () => {
@@ -121,5 +140,21 @@ describe('DishVersions', () => {
     // current has no ingredients, so the version only adds.
     expect(html).toContain('Ma dodatkowo:')
     expect(html).toContain('rodzynki')
+  })
+
+  it('sets the differences under a thin rule, in plain ink, cut to two lines (handoff 16)', () => {
+    const html = section({
+      versions: [row({ ingredients: [{ name: 'rodzynki' }] as unknown })],
+      totalCount: 1,
+    })
+    expect(html).toContain('border-t border-border-card pt-2')
+    expect(html).toContain('<p class="line-clamp-2 break-words"><b>Ma dodatkowo:</b>')
+    // The old green / red labels are gone: colour must not carry the meaning.
+    expect(html).not.toContain('#166534')
+    expect(html).not.toContain('#991b1b')
+  })
+
+  it('shows no rule when a version differs in nothing', () => {
+    expect(section({ versions: [row()], totalCount: 1 })).not.toContain('pt-2 text-[16px] leading-[1.4]')
   })
 })

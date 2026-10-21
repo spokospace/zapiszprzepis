@@ -102,14 +102,12 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
   return (
     <div className="mb-12 border-t border-border-card pt-8">
       {recipe.tags.length > 0 && (
-        <section aria-labelledby="ten-przepis-jest" className="mb-10">
-          <h2 id="ten-przepis-jest" className="text-[24px] font-bold text-ink">
-            Ten przepis jest
+        <section aria-labelledby="zobacz-wiecej" className="mb-10">
+          <h2 id="zobacz-wiecej" className="mb-4 text-[24px] font-bold text-ink">
+            Zobacz więcej przepisów:
           </h2>
-          <p className="mt-1 mb-4 text-[16px] text-ink-soft">
-            Kliknij, żeby zobaczyć podobne {label.toLocaleLowerCase('pl')}.
-          </p>
-          {/* Screen 6: accent buttons with a tag icon, each opening the category filtered by it. */}
+          {/* Handoff 16: 52 px white pills with a 2 px ink frame and a tag icon, each opening
+              the category filtered by that tag. */}
           <ul className="flex flex-wrap gap-2">
             {recipe.tags.map((tag) => (
               <li key={tag}>
@@ -117,7 +115,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
                   href={categoryPath(recipe.category, { tags: [tag] })}
                   // wrap-anywhere, like chipClasses: the label's anonymous flex item would not
                   // shrink below its longest word otherwise (WCAG 1.4.10).
-                  className="inline-flex min-h-[48px] items-center gap-2 rounded-pill border-2 border-ink bg-white px-4 text-[17px] font-bold wrap-anywhere text-action-text no-underline! hover:border-action-text"
+                  className="inline-flex min-h-[52px] items-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold wrap-anywhere text-action-text no-underline! hover:bg-surface-accent"
                 >
                   <Tag aria-hidden="true" className="h-5 w-5 shrink-0" />
                   {tagLabel(tag)}
