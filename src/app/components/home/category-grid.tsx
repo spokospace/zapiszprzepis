@@ -5,10 +5,10 @@ import { categoryPath } from '@/lib/routes'
 // Names never break mid-word: `break-words` breaks only as a last resort and
 // `categoryDisplayLabel` binds Polish one-letter words. Tiles are sized to fit the
 // longest name ("Ciasteczka") at 16px — the guest grid drops to 2 columns below 360px
-// and the signed-in grid to 1. Desktop (E01-S17, A8): the guest row is 9 columns, the
-// signed-in grid 4.
+// and the signed-in grid to 2 as well, collapsing to 1 only below 300px. Desktop
+// (E01-S17, A8): the guest row is 9 columns, the signed-in grid 4.
 const COLUMNS = {
-  2: 'grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4',
+  2: 'grid-cols-1 min-[300px]:grid-cols-2 lg:grid-cols-4',
   3: 'grid-cols-2 min-[360px]:grid-cols-3 lg:grid-cols-9',
 } as const
 
