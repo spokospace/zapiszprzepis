@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
@@ -81,5 +83,21 @@ describe('TagFilter instant feedback (#435)', () => {
     expect(html).toContain('✓ ')
     expect(html).toContain(', wybrany')
     expect(html.match(/<a [^>]*href="\/przepisy\/ciasta\?tag=tag-\d"/g)).toHaveLength(2)
+  })
+})
+
+describe('TagFilter scroll buttons (phone)', () => {
+  // The buttons only render once the row can scroll (client state), so their classes are checked in the source.
+  const source = readFileSync(join(process.cwd(), 'src/app/przepisy/[kategoria]/_components/tag-filter.tsx'), 'utf8')
+
+  it('reach the screen edges like the row, so no chip peeks out beside them', () => {
+    expect(source).toContain('-left-4')
+    expect(source).toContain('sm:-left-6')
+    expect(source).toContain('-right-4')
+    expect(source).toContain('sm:-right-6')
+  })
+
+  it('are phone-only', () => {
+    expect(source.match(/text-ink[^"]*md:hidden/g)).toHaveLength(2)
   })
 })
