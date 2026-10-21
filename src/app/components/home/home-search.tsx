@@ -38,7 +38,7 @@ interface HomeSearchProps {
   attached?: boolean
 }
 
-const FRAME = { field: 'border-field', action: 'border-action' } as const
+const FRAME = { field: 'border-field', action: 'border-ink' } as const
 
 /**
  * The one search field (E01-S04 home, E01-S05 /szukaj and "Moje przepisy"): a
@@ -110,7 +110,7 @@ export function HomeSearch({
           {/* One rounded field, 52/56 px, with „Szukaj” glued to the end; the frame's
               overflow-hidden clips the button so it needs no radius of its own. */}
           <div
-            className={`flex items-stretch overflow-hidden rounded-card border-2 ${FRAME[tone]} bg-white shadow-[0_2px_0_rgba(154,52,18,0.12)] has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus`}
+            className={`flex items-stretch overflow-hidden rounded-pill border-2 ${FRAME[tone]} bg-white has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus`}
           >
             <span className="flex items-center pr-1 pl-3.5 text-ink-soft">
               <Search aria-hidden="true" className="h-[22px] w-[22px]" />
@@ -118,23 +118,23 @@ export function HomeSearch({
             <input
               {...sharedInput}
               type="search"
-              className="h-[52px] min-w-0 flex-1 bg-transparent text-[18px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none! lg:h-14 [&::-webkit-search-cancel-button]:appearance-none"
+              className="h-14 min-w-0 flex-1 bg-transparent text-[18px] text-ink placeholder:text-[17px] placeholder:text-ink-muted focus-visible:outline-none! [&::-webkit-search-cancel-button]:appearance-none"
             />
             {/* From lg „Powiedz” sits inside the field; on a phone it is the button below. */}
             {voiceButton(
-              'my-auto mr-2 hidden h-11 shrink-0 items-center gap-1.5 rounded-pill border-2 border-field px-3 text-[16px] font-bold text-ink hover:bg-surface-3 lg:inline-flex',
+              'my-auto mr-1 hidden h-11 shrink-0 items-center gap-1.5 rounded-pill border-2 border-ink px-3 text-[16px] font-bold text-ink hover:bg-surface-3 lg:inline-flex',
               'Powiedz',
             )}
             <button
               type="submit"
-              className="inline-flex shrink-0 items-center gap-2 bg-action px-3.5 text-[17px] font-bold text-white transition-colors hover:bg-action-hover lg:px-6"
+              className="m-1 inline-flex shrink-0 items-center gap-2 rounded-pill bg-action px-4 text-[17px] font-bold text-white transition-colors hover:bg-action-hover lg:px-6"
             >
               <Search aria-hidden="true" className="h-5 w-5" />
               <span className="hidden min-[360px]:inline">{submitLabel ?? 'Szukaj'}</span>
             </button>
           </div>
           {voiceButton(
-            'mt-3 inline-flex min-h-12 max-w-full items-center gap-2 rounded-field border-2 border-field px-3.5 text-[17px] font-bold text-ink hover:bg-surface-3 lg:hidden',
+            'mt-3 inline-flex min-h-12 max-w-full items-center gap-2 rounded-pill border-2 border-ink px-3.5 text-[17px] font-bold text-ink hover:bg-surface-3 lg:hidden',
             'Powiedz, czego szukasz',
           )}
         </>
@@ -144,7 +144,7 @@ export function HomeSearch({
         // field frame (E01-S20), which takes the focus ring while the input is focused.
         <div className="flex flex-wrap gap-x-2 gap-y-3 lg:max-w-[760px]">
           <div
-            className={`flex h-[60px] min-w-0 flex-1 basis-full items-center gap-2 rounded-field border-2 ${FRAME[tone]} bg-white pr-1 pl-3 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus lg:h-16 lg:basis-0`}
+            className={`flex h-[60px] min-w-0 flex-1 basis-full items-center gap-2 rounded-pill border-2 ${FRAME[tone]} bg-white pr-1 pl-3 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus lg:h-16 lg:basis-0`}
           >
             <Search aria-hidden="true" className="h-[22px] w-[22px] shrink-0 text-ink-soft" />
             <input

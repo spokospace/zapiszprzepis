@@ -95,7 +95,7 @@ export function HeaderSearchPanel({
         <button
           type="button"
           onClick={onVoice}
-          className="mx-2 mb-1 inline-flex min-h-12 items-center gap-2 rounded-field border-2 border-field px-3 text-[17px] font-bold text-ink hover:bg-surface-3"
+          className="mx-2 mb-1 inline-flex min-h-12 items-center gap-2 rounded-pill border-2 border-ink px-3 text-[17px] font-bold text-ink hover:bg-surface-3"
         >
           <Mic aria-hidden="true" className="h-[22px] w-[22px]" />
           Powiedz

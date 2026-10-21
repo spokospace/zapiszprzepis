@@ -57,7 +57,7 @@ export const LIST_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 48rem) 33vw, 
  * squished ones, and wider screens add columns on their own.
  */
 export const LIST_CARDS_CLASS =
-  'flex flex-col gap-3 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] md:gap-4'
+  'flex flex-col gap-6 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]'
 
 const PHOTO_HEIGHT = {
   list: 'h-[210px] md:h-[180px]',
@@ -84,8 +84,8 @@ export function RecipeCard({
   // The title link is stretched over the whole card, so the card is one big
   // target while the heart is a sibling, not a control nested inside a link.
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-card border-2 border-border-card bg-white">
-      <div className={`relative w-full shrink-0 bg-surface-3 ${PHOTO_HEIGHT[photo]}`}>
+    <article className="group relative flex h-full flex-col">
+      <div className={`relative w-full shrink-0 overflow-hidden rounded-tile bg-surface-3 ${PHOTO_HEIGHT[photo]}`}>
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -94,7 +94,7 @@ export function RecipeCard({
             alt=""
             aria-hidden
             fill
-            className="object-cover transition-transform group-hover:scale-105"
+            className="object-cover transition-opacity group-hover:opacity-[.92]"
             sizes={sizes}
             unoptimized={!isArchivedImageUrl(imageUrl)}
           />
@@ -103,7 +103,7 @@ export function RecipeCard({
         )}
         {/* Source on the photo, bottom-left; pointer-events-none so the whole card still
             leads to the recipe (handoff §1: the badge is not a link on a card). */}
-        <div className="pointer-events-none absolute bottom-2 left-2 z-10 max-w-[calc(100%-1rem)]">
+        <div className="pointer-events-none absolute bottom-1.5 left-px z-10 max-w-[calc(100%-1px)]">
           <SourceBadge kind={source.kind} text={source.text} variant="card" />
         </div>
         {favorite && (
@@ -119,14 +119,14 @@ export function RecipeCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 p-3">
+      <div className="flex flex-1 flex-col gap-1 pt-3">
         {/* Two lines at most, words wrapped whole (handoff §1). */}
-        <h3 className="line-clamp-2 text-[20px] leading-[1.25] font-bold break-words text-ink group-hover:text-action-text">
+        <h3 className="line-clamp-2 text-[21px] leading-[1.25] font-bold break-words text-ink group-hover:text-action-text">
           <Link href={recipePath(slug, { from })} className="no-underline! after:absolute after:inset-0">
             {title}
           </Link>
         </h3>
-        {description && <p className="line-clamp-2 text-[16px] leading-snug text-ink-soft">{description}</p>}
+        {description && <p className="line-clamp-2 text-[17px] leading-snug text-ink-soft">{description}</p>}
         {children}
       </div>
     </article>

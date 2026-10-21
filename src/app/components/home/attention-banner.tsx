@@ -20,14 +20,16 @@ export function AttentionBanner({ failedShares, className = '' }: { failedShares
   return (
     <Link
       href={NOTIFICATIONS_PATH}
-      className={`flex min-h-16 items-center gap-3 rounded-field border-2 border-action-text bg-white px-3.5 py-3 no-underline! ${className}`}
+      className={`flex min-h-16 items-center gap-3 rounded-tile border-2 border-action-text bg-white px-3.5 py-3 no-underline! ${className}`}
     >
       <CircleAlert aria-hidden="true" className="h-7 w-7 shrink-0 text-action-text" />
       <span className="flex-1 text-[17px] leading-snug font-bold text-ink">
         {attentionLabel(failedShares.shares.length)}
         <span className="sr-only">.</span>
+        {/* On a phone the whole frame is the link, and says so. */}
+        <span className="mt-0.5 block text-[16px] font-normal text-ink-soft sm:hidden">Dotknij, żeby spróbować ponownie</span>
       </span>
-      <span className="text-[17px] font-bold text-action-text underline underline-offset-4">Popraw</span>
+      <span className="hidden text-[17px] font-bold text-action-text underline underline-offset-4 sm:inline">Popraw</span>
     </Link>
   )
 }

@@ -19,13 +19,13 @@ const COLUMNS = {
  */
 const TILE = {
   2: {
-    link: 'h-14 gap-1.5 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-2 text-[16px] text-ink hover:border-action-text',
+    link: 'h-14 gap-1.5 rounded-tile border border-ink bg-white px-2 text-[16px] text-ink hover:bg-surface-2',
     icon: 'h-5 w-5',
     stroke: 2,
   },
   3: {
-    link: 'min-h-[64px] flex-col justify-center gap-1.5 rounded-tile bg-surface-accent px-1 py-3.5 text-center text-[16px] text-action-text hover:bg-surface-accent-2',
-    icon: 'h-[26px] w-[26px]',
+    link: 'min-h-[76px] flex-col justify-center gap-1.5 rounded-tile border border-ink bg-white px-1 py-3 text-center text-[16px] text-ink hover:bg-surface-2',
+    icon: 'h-6 w-6',
     stroke: 1.75,
   },
 } as const
@@ -53,10 +53,10 @@ export function CategoryGrid({
   const tile = TILE[columns]
   return (
     <section aria-labelledby="categories-heading" className={className}>
-      <h2 id="categories-heading" className="mb-3 text-[22px] font-bold text-ink">
+      <h2 id="categories-heading" className="mb-3 border-t border-ink pt-5 text-[26px] font-bold text-ink">
         {title}
       </h2>
-      <ul className={`grid ${COLUMNS[columns]} gap-2`}>
+      <ul className={`grid ${COLUMNS[columns]} gap-2.5`}>
         {categories.map(({ value, label }) => {
           const Icon = CATEGORY_ICONS[value]
           return (

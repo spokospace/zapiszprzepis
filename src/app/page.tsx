@@ -189,14 +189,14 @@ function Hero({
   recipeOfDay?: ReactNode
 }) {
   return (
-    <section aria-labelledby={id} className="bg-surface-accent">
+    <section aria-labelledby={id} className="bg-white">
       <PageContainer className="py-6 lg:py-10">
         <div className="grid items-center gap-8 [grid-template-columns:repeat(auto-fit,minmax(min(100%,25rem),1fr))]">
           <div>
-            <h1 id={id} className="text-[28px] leading-[1.15] font-bold text-ink lg:text-[38px] lg:leading-[1.1]">
+            <h1 id={id} className="text-[32px] leading-[1.15] font-extrabold text-ink lg:text-[50px] lg:leading-[1.1]">
               {title}
             </h1>
-            <p className="mt-3 mb-4 text-[17px] leading-normal text-ink-soft lg:mb-5">{subtitle}</p>
+            <p className="mt-3 mb-4 text-[19px] leading-normal text-ink-soft lg:mb-5">{subtitle}</p>
             {children}
           </div>
           {recipeOfDay}
@@ -233,7 +233,7 @@ function RecipeRow({
 }) {
   return (
     <section aria-labelledby={id}>
-      <h2 id={id} className="mb-3 text-[22px] font-bold text-ink">
+      <h2 id={id} className="mb-4 border-t border-ink pt-5 text-[28px] font-bold text-ink">
         {heading}
       </h2>
       <RecipeListSnapshot
@@ -268,7 +268,7 @@ function RecipeRow({
       {more && (
         <Link
           href={more.href}
-          className="mt-3 flex min-h-14 items-center justify-center rounded-field border-2 border-action px-4 text-center text-[18px] font-bold text-action-text no-underline! hover:bg-surface-accent sm:inline-flex"
+          className="mt-4 inline-flex min-h-12 items-center text-[18px] font-bold text-action-text underline underline-offset-4 hover:text-action-hover"
         >
           {more.label}
         </Link>
@@ -381,7 +381,7 @@ function MemberHome({
           // access it shows the access-code gate, 3c).
           <Link
             href={ADD_RECIPE_PATH}
-            className="flex min-h-16 items-center gap-3.5 rounded-card border-2 border-border-card bg-white p-4 text-[20px] font-bold text-ink no-underline! hover:border-border-card-2 hover:bg-surface-2"
+            className="flex min-h-16 items-center gap-3.5 rounded-tile border border-ink bg-white p-4 text-[20px] font-bold text-ink no-underline! hover:border-border-card-2 hover:bg-surface-2"
           >
             <Plus aria-hidden="true" className="h-7 w-7 shrink-0 text-action-text" />
             Dodaj pierwszy przepis

@@ -16,11 +16,10 @@ interface RecipeOfTheDayProps {
 }
 
 /**
- * „Przepis dnia” (ZMIANY_prototyp §5c): the whole photo is the link to the recipe.
- * A white „Przepis dnia” badge top-left, a dark gradient along the bottom carrying
- * the white title, the subtitle and the source badge. Desktop: 300 px, rounded,
- * shadowed; mobile: full-bleed 260 px with no radius (it breaks out of the hero's
- * padding). The candidate already has a photo and is never a YouTube recipe.
+ * „Przepis dnia” (style 1b): the whole block is the link to the recipe. A 4 px photo
+ * (desktop 300 px; mobile full-bleed 220 px with no radius, breaking out of the hero's
+ * padding) carries the source tab; the label, title and subtitle sit below it, on
+ * white. The candidate already has a photo and is never a YouTube recipe.
  */
 export function RecipeOfTheDay({
   slug,
@@ -36,32 +35,29 @@ export function RecipeOfTheDay({
     <Link
       href={recipePath(slug)}
       aria-label={`Przepis dnia: ${title}`}
-      className="group relative -mx-4 -mb-6 block h-[260px] overflow-hidden bg-surface-3 no-underline! focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus sm:-mx-6 md:mx-0 md:mb-0 md:h-[300px] md:rounded-tile md:shadow-[0_10px_30px_rgba(17,24,39,0.12)]"
+      className="group -mx-4 block no-underline! focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus sm:-mx-6 md:mx-0"
     >
-      {imageUrl && (
-        <Image
-          src={imageUrl}
-          alt=""
-          fill
-          className="object-cover transition-transform group-hover:scale-105"
-          sizes="(min-width: 768px) 560px, 100vw"
-          unoptimized={!isArchivedImageUrl(imageUrl)}
-        />
-      )}
-      <span className="absolute top-3 left-3 z-10 max-w-[calc(100%-1.5rem)] truncate rounded-tile bg-white px-2.5 py-1 text-[16px] font-bold text-action-text">
-        Przepis dnia
-      </span>
-      <div
-        className="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-1.5 p-4 pt-16"
-        style={{ backgroundImage: 'linear-gradient(180deg, transparent, rgba(17,24,39,.82) 46%, rgba(17,24,39,.9))' }}
-      >
-        <h2 className="text-[24px] leading-tight font-bold break-words text-white group-hover:underline md:text-[28px]">
-          {title}
-        </h2>
-        {description && <p className="line-clamp-1 text-[17px] text-white/90">{description}</p>}
-        <div className="max-w-[calc(100%-1rem)]">
+      <div className="relative h-[220px] overflow-hidden bg-surface-3 md:h-[300px] md:rounded-tile">
+        {imageUrl && (
+          <Image
+            src={imageUrl}
+            alt=""
+            fill
+            className="object-cover transition-opacity group-hover:opacity-[.92]"
+            sizes="(min-width: 768px) 560px, 100vw"
+            unoptimized={!isArchivedImageUrl(imageUrl)}
+          />
+        )}
+        <div className="absolute bottom-1.5 left-px z-10 max-w-[calc(100%-1px)]">
           <SourceBadge kind={source.kind} text={source.text} variant="card" />
         </div>
+      </div>
+      <div className="px-4 pt-3 sm:px-6 md:px-0">
+        <p className="text-[16px] font-bold tracking-[.08em] text-action-text uppercase">Przepis dnia</p>
+        <h2 className="mt-1 text-[24px] leading-tight font-bold break-words text-ink group-hover:underline md:text-[26px]">
+          {title}
+        </h2>
+        {description && <p className="mt-1 line-clamp-2 text-[17px] text-ink-soft">{description}</p>}
       </div>
     </Link>
   )

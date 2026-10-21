@@ -19,18 +19,23 @@ describe('CategoryGrid (E01-S20)', () => {
     // Home eight + the desktop-only ninth.
     expect(svgCount(html)).toBe(HOME_CATEGORIES.length + 1)
     expect(html).not.toMatch(/<svg(?![^>]*aria-hidden="true")/)
-    expect(html).toContain('bg-surface-accent')
+    // Style 1b: white tile, 1 px ink frame, 4 px corners, no tint.
+    expect(html).toContain('border-ink')
+    expect(html).toContain('rounded-tile')
+    expect(html).not.toContain('bg-surface-accent')
+    expect(html).toContain('min-h-[76px]')
     expect(html).toContain('text-[16px]')
     // No mid-word break: break-words (a last resort) replaces wrap-anywhere.
     expect(html).toContain('break-words')
     expect(html).not.toContain('wrap-anywhere')
   })
 
-  it('renders the signed-in tile as a 56 px accent-framed row', () => {
+  it('renders the signed-in tile as a 56 px ink-framed row', () => {
     const html = render(createElement(CategoryGrid, { columns: 2 }))
     expect(svgCount(html)).toBe(HOME_CATEGORIES.length)
     expect(html).toContain('h-14')
-    expect(html).toContain('border-border-accent')
+    expect(html).toContain('border-ink')
+    expect(html).not.toContain('border-border-accent')
     expect(html).toContain('text-[16px]')
     expect(html).toContain('break-words')
     expect(html).not.toContain('wrap-anywhere')
@@ -39,9 +44,10 @@ describe('CategoryGrid (E01-S20)', () => {
 })
 
 describe('GuestCta (E01-S20)', () => {
-  it('is the dark A1 block with sign-up and log-in links', () => {
+  it('is a plain block under a 1 px rule with sign-up and log-in links', () => {
     const html = render(createElement(GuestCta))
-    expect(html).toContain('bg-surface-dark')
+    expect(html).toContain('border-t border-ink')
+    expect(html).not.toContain('bg-surface-dark')
     expect(html).toContain('Zapisuj przepisy z linku i zbieraj ulubione')
     expect(html).toMatch(/href="\/signup"[^>]*>Załóż konto</)
     expect(html).toMatch(/href="\/login"[^>]*>Zaloguj się</)
@@ -76,9 +82,9 @@ describe('HomeSearch looks (E01-S20)', () => {
     expect(html).toMatch(/<label for="s"[^>]*>Szukaj przepisu po nazwie lub składniku</)
   })
 
-  it('renders the guest hero field with the orange frame and A1 placeholder', () => {
+  it('renders the guest hero field as an ink-framed pill with the A1 placeholder', () => {
     const html = render(createElement(HomeSearch, { id: 'g', tone: 'action', placeholder: 'Danie lub składnik, np. dynia' }))
-    expect(html).toContain('border-action')
+    expect(html).toContain('border-ink')
     expect(html).toContain('placeholder="Danie lub składnik, np. dynia"')
   })
 
