@@ -139,3 +139,19 @@ describe('RecipeCard photo is decorative (WCAG 1.1.1, #410)', () => {
     expect(img).toContain('aria-hidden="true"')
   })
 })
+
+describe('RecipeCard look (style 1b)', () => {
+  it('has no frame or background: just a 4 px photo with the text below', () => {
+    const html = card()
+    expect(html).toContain('rounded-tile')
+    expect(html).not.toContain('border-2')
+    expect(html).not.toContain('rounded-card')
+    expect(html).not.toContain('group-hover:scale-105')
+  })
+
+  it('pins the source tab to the photo corner without a shadow', () => {
+    const html = card()
+    expect(html).toContain('bottom-1.5 left-px')
+    expect(html).not.toContain('shadow-sm')
+  })
+})

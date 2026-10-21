@@ -103,7 +103,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
             unoptimized={!isArchivedImageUrl(recipe.image_url)}
           />
           {/* Source on the photo, bottom-left (E01-S31 §3). */}
-          <div className="absolute bottom-3 left-3 z-10 max-w-[calc(100%-1.5rem)]">{sourceBadge}</div>
+          <div className="absolute bottom-0 left-px z-10 max-w-[calc(100%-1px)]">{sourceBadge}</div>
         </div>
       )}
 

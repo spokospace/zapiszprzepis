@@ -83,9 +83,13 @@ interface SourceBadgeProps {
 export function SourceBadge({ kind, text, href, variant }: SourceBadgeProps) {
   const Icon = ICON[kind]
 
+  // Style 1b: white, no frame or shadow, flush with the photo's left edge (the caller
+  // places it at left 1 px / bottom 6 px); square on the left, 2 px on the right.
+  const TAB = 'inline-flex max-w-full items-center gap-1.5 rounded-r-[2px] bg-white py-1 pr-3 pl-2.5 text-[16px] font-bold text-ink'
+
   if (variant === 'card') {
     return (
-      <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-white px-2.5 py-[5px] text-[16px] font-bold text-ink shadow-sm">
+      <span className={TAB}>
         <Icon aria-hidden="true" className="h-[18px] w-[18px] shrink-0" />
         <span className="truncate">{text}</span>
       </span>
@@ -95,29 +99,24 @@ export function SourceBadge({ kind, text, href, variant }: SourceBadgeProps) {
   const inner = (
     <>
       <Icon aria-hidden="true" className="h-[18px] w-[18px] shrink-0 md:h-5 md:w-5" />
-      <span className={`truncate ${href ? 'underline' : ''}`}>{text}</span>
+      <span className={`truncate ${href ? 'underline underline-offset-2' : ''}`}>{text}</span>
       {href && <ExternalLink aria-hidden="true" className="h-4 w-4 shrink-0 md:h-[18px] md:w-[18px]" />}
     </>
   )
 
-  // A page-less recipe (book / person): no link, no border, no ExternalLink.
-  if (!href) {
-    return (
-      <span className="inline-flex max-w-full min-h-12 items-center gap-2 rounded-pill bg-white px-3.5 text-[16px] font-bold text-ink md:px-4 md:text-[17px]">
-        {inner}
-      </span>
-    )
-  }
+  // A page-less recipe (book / person): the same tab, no link, no ExternalLink.
+  if (!href) return <span className={TAB}>{inner}</span>
 
+  // The link keeps a 48 px touch target (WCAG 2.5.8) through a transparent box around the tab.
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener"
       aria-label={`Otwórz oryginał: ${text} (nowa karta)`}
-      className="inline-flex max-w-full min-h-12 items-center gap-2 rounded-pill border-2 border-[#6b7280] bg-white px-3.5 text-[16px] font-bold text-ink no-underline! md:px-4 md:text-[17px]"
+      className="inline-flex max-w-full min-h-12 items-center no-underline!"
     >
-      {inner}
+      <span className={TAB}>{inner}</span>
     </a>
   )
 }

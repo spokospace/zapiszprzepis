@@ -49,3 +49,20 @@ describe('SourceBadge', () => {
     expect(html).not.toContain('border-2')
   })
 })
+
+describe('SourceBadge look (style 1b)', () => {
+  it('is a flat white tab: no frame, no shadow, square on the photo edge', () => {
+    const html = renderToStaticMarkup(createElement(SourceBadge, { kind: 'website', text: 'aniagotuje.pl', variant: 'card' }))
+    expect(html).toContain('bg-white')
+    expect(html).toContain('rounded-r-[2px]')
+    expect(html).not.toContain('shadow')
+    expect(html).not.toContain('border')
+  })
+
+  it('keeps a 48 px touch target around the link tab', () => {
+    const html = renderToStaticMarkup(
+      createElement(SourceBadge, { kind: 'website', text: 'aniagotuje.pl', href: 'https://aniagotuje.pl/x', variant: 'recipe' }),
+    )
+    expect(html).toMatch(/<a [^>]*min-h-12/)
+  })
+})
