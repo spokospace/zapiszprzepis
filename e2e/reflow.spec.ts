@@ -129,7 +129,8 @@ test('recipe page reflows at 320 px, A++', async ({ page }) => {
 
   const ingredient = 'section[aria-labelledby="ingredients-heading"] label'
   await inject(page, 'h1', LONG_TITLE)
-  await inject(page, 'header p span:has-text("Źródło:")', `Źródło: ${LONG_WORD}.pl`)
+  // The source is a badge on the photo now (E01-S31 §3); a long name must clip, not widen.
+  await inject(page, 'header a[aria-label^="Otwórz oryginał"] span.truncate', `${LONG_WORD}.pl`)
   await inject(page, 'header p a[href^="/u/"]', LONG_WORD)
   await inject(page, `${ingredient} > span.text-scalable`, LONG_TITLE)
   await inject(page, `${ingredient} > b`, LONG_AMOUNT, 1)

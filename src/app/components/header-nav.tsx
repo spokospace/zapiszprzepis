@@ -1,92 +1,25 @@
-'use client'
-
-import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ChevronDown } from 'lucide-react'
-import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
-import { SEARCH_PATH, categoryPath } from '@/lib/routes'
+import { Heart } from 'lucide-react'
 
-const NAV_ITEM =
-  'inline-flex min-h-[48px] items-center gap-1 rounded-field px-3 text-[18px] font-semibold text-ink no-underline! hover:bg-surface-3'
+const FAVORITES_PATH = '/ulubione'
 
 /**
- * The guest desktop header's "Przepisy" + "Kategorie ▾" (E01-S17, A8).
- * "Kategorie" is a disclosure: a button with aria-expanded that shows every
- * category; Escape, a click outside or focus leaving it closes it (Escape
- * returns focus to the button), and so does navigating. Without JS the same categories stay
- * reachable from the home grid.
+ * The signed-in desktop header's „Ulubione” link (ZMIANY_prototyp §2, row 1): its
+ * heart, 17 px bold, no fill or border, underline on hover. Categories moved to the
+ * row-2 CategoryBar and „Moje przepisy” to MENU, so this is all that remains here;
+ * a guest gets nothing (they sign in from the right cluster, browse from the bar).
  */
-export function HeaderNav({ className = '' }: { className?: string }) {
-  const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const pathname = usePathname()
-
-  // A navigation (a category picked, back/forward) never leaves the panel open.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setOpen(false), [pathname])
-
-  useEffect(() => {
-    if (!open) return
-    function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
-      setOpen(false)
-      buttonRef.current?.focus()
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [open])
-
+export function HeaderNav({ className = '', member = false }: { className?: string; member?: boolean }) {
+  if (!member) return null
   return (
-    <nav aria-label="Przepisy" className={`items-center gap-1 ${className}`}>
-      <Link href={SEARCH_PATH} className={NAV_ITEM}>
-        Przepisy
-      </Link>
-      <div
-        ref={rootRef}
-        className="relative"
-        // Tabbing past the last category (or back before the button) closes the panel.
-        onBlur={(event) => {
-          if (!rootRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false)
-        }}
+    <nav aria-label="Ulubione" className={`items-center ${className}`}>
+      <Link
+        href={FAVORITES_PATH}
+        className="inline-flex min-h-[48px] items-center gap-2 rounded-pill px-2 text-[17px] font-bold text-ink no-underline! hover:underline"
       >
-        <button
-          ref={buttonRef}
-          type="button"
-          aria-expanded={open}
-          aria-controls="header-categories"
-          onClick={() => setOpen((o) => !o)}
-          className={NAV_ITEM}
-        >
-          Kategorie
-          <ChevronDown aria-hidden="true" className={`h-5 w-5 transition-transform ${open ? 'rotate-180' : ''}`} />
-        </button>
-        <ul
-          id="header-categories"
-          hidden={!open}
-          className="absolute left-0 top-full z-30 mt-2 grid w-[420px] grid-cols-2 gap-1 rounded-card border border-border-card-2 bg-white p-2 shadow-lg"
-        >
-          {RECIPE_CATEGORIES.map(({ value, label }) => (
-            <li key={value}>
-              <Link
-                href={categoryPath(value)}
-                onClick={() => setOpen(false)}
-                className="flex min-h-[48px] items-center rounded-field px-3 text-[18px] font-semibold text-ink no-underline! hover:bg-surface-3"
-              >
-                {label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
+        <Heart aria-hidden="true" className="h-[22px] w-[22px] shrink-0 text-action-text" />
+        Ulubione
+      </Link>
     </nav>
   )
 }

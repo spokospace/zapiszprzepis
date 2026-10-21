@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Tag } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { rankSimilar, sharedTagsCaption, similarHeading, SIMILAR_LIMIT } from '@/lib/category-tags'
+import { rankSimilar, sharedTagsCaption, similarHeading } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { getFavoriteIds } from '@/lib/favorites'
@@ -70,7 +70,8 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
   try {
     const [candidates, fill, count] = await Promise.all([
       recipe.tags.length > 0 ? others(CANDIDATES, recipe.tags) : null,
-      others(SIMILAR_LIMIT),
+      // A wider top-up pool: rankSimilar may drop recipes that contradict the diet.
+      others(CANDIDATES),
       supabase.from('public_recipes').select('id', { count: 'exact', head: true }).eq('category', recipe.category),
     ])
     const error = candidates?.error ?? fill.error
@@ -101,14 +102,12 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
   return (
     <div className="mb-12 border-t border-border-card pt-8">
       {recipe.tags.length > 0 && (
-        <section aria-labelledby="ten-przepis-jest" className="mb-10">
-          <h2 id="ten-przepis-jest" className="text-[24px] font-bold text-ink">
-            Ten przepis jest
+        <section aria-labelledby="zobacz-wiecej" className="mb-10">
+          <h2 id="zobacz-wiecej" className="mb-4 text-[24px] font-bold text-ink">
+            Zobacz więcej przepisów:
           </h2>
-          <p className="mt-1 mb-4 text-[16px] text-ink-soft">
-            Kliknij, żeby zobaczyć podobne {label.toLocaleLowerCase('pl')}.
-          </p>
-          {/* Screen 6: accent buttons with a tag icon, each opening the category filtered by it. */}
+          {/* Handoff 16: 52 px white pills with a 2 px ink frame and a tag icon, each opening
+              the category filtered by that tag. */}
           <ul className="flex flex-wrap gap-2">
             {recipe.tags.map((tag) => (
               <li key={tag}>
@@ -116,7 +115,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
                   href={categoryPath(recipe.category, { tags: [tag] })}
                   // wrap-anywhere, like chipClasses: the label's anonymous flex item would not
                   // shrink below its longest word otherwise (WCAG 1.4.10).
-                  className="inline-flex min-h-[48px] items-center gap-2 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-4 text-[17px] font-bold wrap-anywhere text-action-text no-underline! hover:border-action-text"
+                  className="inline-flex min-h-[52px] items-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold wrap-anywhere text-action-text no-underline! hover:bg-surface-accent"
                 >
                   <Tag aria-hidden="true" className="h-5 w-5 shrink-0" />
                   {tagLabel(tag)}
@@ -148,9 +147,8 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
                   sourceType={r.source_type}
                   sourceUrl={r.source_url}
                   sourceAuthor={r.source_author}
+                  photo="carousel"
                   sizes={CAROUSEL_SIZES}
-                  // Every card here is in the recipe's own category, so no category badge (screen 6).
-                  showCategory={false}
                   favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: userId !== null }}
                 />
               ),
@@ -162,7 +160,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
         <Link
           href={categoryPath(recipe.category)}
           // A5 / screen 6: a full-width 56 px accent button.
-          className="mt-4 flex min-h-[56px] w-full items-center justify-center rounded-field border-[1.5px] border-border-accent bg-surface-accent px-4 text-center text-[19px] font-bold text-action-text no-underline! hover:border-action-text"
+          className="mt-4 flex min-h-[56px] w-full items-center justify-center rounded-pill border-2 border-ink bg-white px-4 text-center text-[19px] font-bold text-action-text no-underline! hover:border-action-text"
         >
           Wszystkie {label.toLocaleLowerCase('pl')}
           {total != null && ` (${total})`} →

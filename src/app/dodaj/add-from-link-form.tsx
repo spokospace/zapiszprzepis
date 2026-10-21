@@ -82,7 +82,7 @@ export function AddFromLinkFormView({ value, onValueChange, error, canPaste, pas
           autoFocus={autoFocus}
           aria-invalid={message ? true : undefined}
           aria-describedby={message ? ERROR_ID : undefined}
-          className={`min-h-[56px] min-w-0 flex-1 rounded-field border-2 bg-white px-4 text-[19px] text-ink placeholder:text-ink-muted ${
+          className={`min-h-[56px] min-w-0 flex-1 rounded-tile border-2 bg-white px-4 text-[19px] text-ink placeholder:text-ink-muted ${
             message ? 'border-danger' : 'border-field'
           }`}
         />

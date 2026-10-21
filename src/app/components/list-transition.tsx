@@ -27,7 +27,7 @@ export function useListTransition(): ListTransitionValue {
 }
 
 /** The list's results: dimmed and aria-busy while a control's navigation is pending. */
-export function ListResults({ children }: { children: ReactNode }) {
+export function ListResults({ children, className = '' }: { children: ReactNode; className?: string }) {
   const { isPending } = useListTransition()
   return (
     <>
@@ -37,7 +37,7 @@ export function ListResults({ children }: { children: ReactNode }) {
       </p>
       <div
         aria-busy={isPending || undefined}
-        className={`transition-opacity motion-reduce:transition-none ${isPending ? 'opacity-50' : ''}`}
+        className={`transition-opacity motion-reduce:transition-none ${isPending ? 'opacity-50' : ''} ${className}`}
       >
         {children}
       </div>

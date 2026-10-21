@@ -7,13 +7,11 @@ import { PageContainer } from '@/app/components/page-container'
 import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
-import { originalLinkLabel } from '@/lib/recipe-source'
-import { ExternalLink } from 'lucide-react'
 import { getSiteUrl } from '@/lib/site-url'
 import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
-import { parseSteps } from '@/lib/steps'
+import { parseSteps, visibleStepImages } from '@/lib/steps'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
@@ -24,6 +22,7 @@ import { SimilarRecipes } from './_components/similar-recipes'
 import { DishVersionsBar } from './_components/dish-versions-bar'
 import { DishVersions } from './_components/dish-versions'
 import { parseVersionsSort, type DishVersionRow } from '@/lib/dish-versions'
+import { getFavoriteIds } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
@@ -113,6 +112,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   if (dishVersionsResult?.error) console.error('[recipe] dish_versions failed:', dishVersionsResult.error)
   const versions = (dishVersionsResult?.data ?? []) as DishVersionRow[]
   const versionsTotal = versions[0]?.total_count ?? 0
+  // The hearts on the version cards: the viewer's favorites among them (null = guest).
+  const versionFavoriteIds = user ? await getFavoriteIds(supabase, user.id, versions.map((v) => v.id)) : null
   const versionsOrder = parseVersionsSort(wersje)
   const currentRecipe = {
     servings: typedRecipe.servings,
@@ -128,6 +129,10 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // groupBySection splits ingredients by optional `section`.
   const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
   const steps = parseSteps(typedRecipe.steps)
+  // Per-step photos, index-aligned with steps; empty until the column/view migration
+  // and an import that captures them land (recipes without them render exactly as today).
+  // Signed-in users only: a guest gets plain step text, with no photo or toggle.
+  const stepImages = visibleStepImages(typedRecipe.step_images, Boolean(user))
   const listKey = parseListKey(from)
   const canonicalUrl = `${await getSiteUrl()}${recipePath(typedRecipe.slug)}`
 
@@ -176,7 +181,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               isAuthenticated={Boolean(user)}
               title={typedRecipe.title}
               shareUrl={canonicalUrl}
-              sourceUrl={typedRecipe.source_url}
             />
           }
         />
@@ -187,6 +191,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           title={typedRecipe.title}
           ingredientGroups={ingredientGroups}
           steps={steps}
+          stepImages={stepImages}
           servings={typedRecipe.servings}
         >
           {typedRecipe.youtube_id && (
@@ -217,27 +222,16 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           )}
         </RecipeChecklists>
 
-        {/* The end of the recipe (handoff C3, items 11–13): the original, then
-            Poprzedni / Następny, then the tags and similar recipes. From lg the
-            original is "Oryginał" in the header instead (A9). */}
-        {typedRecipe.source_url && (
-          <a
-            href={typedRecipe.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${buttonClasses('outline', 'md')} mb-6 w-full no-underline! sm:w-auto lg:hidden`}
-          >
-            <ExternalLink aria-hidden="true" size={20} className="shrink-0" />
-            {originalLinkLabel(typedRecipe.source_type, typedRecipe.source_url)}
-            <span className="sr-only"> (otwiera nową kartę)</span>
-          </a>
-        )}
+        {/* The end of the recipe (handoff C3, items 12–13): Poprzedni / Następny, then
+            the tags and similar recipes. The original is reached from the source badge
+            on the photo now (E01-S31 §3), so there is no "Otwórz oryginał" button here. */}
         <RecipeListNav slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
 
         <DishVersions
           versions={versions}
           totalCount={versionsTotal}
-          dishAccusative={typedRecipe.dish_accusative ?? null}
+          dish={typedRecipe.dish ?? null}
+          favoriteIds={versionFavoriteIds}
           order={versionsOrder}
           current={currentRecipe}
         />

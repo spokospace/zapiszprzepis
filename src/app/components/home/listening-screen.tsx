@@ -41,7 +41,7 @@ export function ListeningScreen({ heard, onStop }: { heard: string; onStop: () =
         ref={stopRef}
         type="button"
         onClick={onStop}
-        className="inline-flex min-h-14 items-center gap-2 rounded-field border-2 border-field bg-white px-5 text-[19px] font-bold text-ink hover:bg-surface-3"
+        className="inline-flex min-h-14 items-center gap-2 rounded-pill border-2 border-field bg-white px-5 text-[19px] font-bold text-ink hover:bg-surface-3"
       >
         <Keyboard aria-hidden="true" className="h-6 w-6" />
         Przestań słuchać i pisz

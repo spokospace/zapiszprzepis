@@ -3,7 +3,6 @@ import { buttonClasses } from '@/app/components/ui/button'
 import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { searchPath, type SearchScope } from '@/lib/routes'
-import { recipeTotalMinutes } from '@/lib/recipe-meta'
 import { SEARCH_MAX_PAGES, SEARCH_PAGE_SIZE, type SearchResult } from '@/lib/search'
 
 interface SearchResultsProps {
@@ -40,13 +39,12 @@ export function SearchResults({ q, scope, page, category, rows, total, favoriteI
           // scroll-mt clears the sticky header (~73 px) when "Pokaż kolejne" jumps here.
           <li key={r.id} id={`wynik-${i + 1}`} className="scroll-mt-28">
             <RecipeCard
-              variant="list"
               from="szukaj"
               slug={r.slug}
               title={r.title}
               imageUrl={r.image_url}
               category={r.category}
-              minutes={recipeTotalMinutes(r)}
+              description={r.description}
               sourceType={r.source_type}
               sourceUrl={r.source_url}
               sourceAuthor={r.source_author}

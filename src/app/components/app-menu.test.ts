@@ -16,11 +16,14 @@ function categoryLinks(): string[] {
 }
 
 describe('AppMenu category tiles (C5)', () => {
-  it('renders every category as an icon + name tile on the accent surface, without an underline', () => {
+  it('renders every category as a flat icon + name row (no tile background), without an underline', () => {
     const links = categoryLinks()
     expect(links).toHaveLength(RECIPE_CATEGORIES.length)
     for (const link of links) {
-      expect(link).toContain('bg-surface-accent')
+      expect(link).not.toContain('bg-surface-accent')
+      expect(link).not.toContain('rounded-field')
+      expect(link).toContain('border-b border-border-card-2')
+      expect(link).toContain('min-h-[56px]')
       expect(link).toContain('no-underline!')
       expect(link).toContain('<svg')
       expect(link).toContain('aria-hidden="true"')
@@ -43,10 +46,10 @@ describe('AppMenu category tiles (C5)', () => {
     expect(syropy).toContain('i napary')
   })
 
-  it('frames the current category in the action colour', () => {
+  it('marks the current category with a fill and the action colour', () => {
     const current = categoryLinks().find((l) => l.includes('href="/przepisy/zupy"')) ?? ''
     expect(current).toContain('aria-current="page"')
-    expect(current).toContain('border-action ')
+    expect(current).toContain('bg-surface-3 text-action-text')
   })
 })
 
@@ -65,13 +68,13 @@ describe('AppMenu "Powiadomienia" (E01-S15b)', () => {
     return html.match(/<li><a[^>]*href="\/powiadomienia"[^>]*>.*?<\/a><\/li>/)?.[0] ?? ''
   }
 
-  it('lists a "Powiadomienia" row in "Moje" at every width, with a dot named for screen readers', () => {
+  it('lists a "Powiadomienia" row in "Moje" at every width, with a counter named for screen readers', () => {
     const r = row(renderMenu({ count: 2, loadFailed: false }))
     expect(r).toContain('Powiadomienia')
     expect(r).toContain('bg-action')
-    // A dot, never a number — not even the raw count leaks into the markup.
-    expect(r).not.toContain('>2</span>')
-    expect(r).toContain(', masz nowe powiadomienia')
+    // A counter (style 1b), hidden from assistive tech; the sr-only text carries the count.
+    expect(r).toMatch(/<span aria-hidden="true" class="[^"]*min-w-7[^"]*">2<\/span>/)
+    expect(r).toContain(', 2 nowe powiadomienia')
   })
 
   it('puts a dot on the MENU button, with the text equivalent in its accessible name', () => {
@@ -142,5 +145,32 @@ describe('AppMenu items carry no underline (#390)', () => {
     expect(settings).toContain('no-underline!')
     expect(settings).not.toContain('underline-offset')
     pathname = '/przepisy/zupy'
+  })
+})
+
+describe('AppMenu style 1b', () => {
+  const html = (isAuthenticated: boolean) => renderToStaticMarkup(createElement(AppMenu, { isAuthenticated, summary: null }))
+
+  it('starts the drawer with "Strona główna" for a guest and a signed-in user, replacing history', () => {
+    for (const signedIn of [true, false]) {
+      const nav = html(signedIn).match(/<nav[^>]*aria-label="Menu główne"[^>]*>.*?<\/nav>/)?.[0] ?? ''
+      const first = nav.match(/<a [^>]*>.*?<\/a>/)?.[0] ?? ''
+      expect(first).toContain('href="/"')
+      expect(first).toContain('Strona główna')
+    }
+  })
+
+  it('names the button "Menu" in sentence case at 16 px, at least 64 px wide (#412)', () => {
+    const button = html(true).match(/<button[^>]*aria-controls="app-menu"[^>]*>.*?<\/button>/)?.[0] ?? ''
+    expect(button).toContain('Menu')
+    expect(button).not.toContain('MENU')
+    expect(button).toContain('min-w-16')
+    expect(button).toContain('text-base')
+  })
+
+  it('keeps the header bar fixed while only the list scrolls', () => {
+    const out = html(true)
+    expect(out).toContain('overflow-hidden')
+    expect(out).toContain('overscroll-contain')
   })
 })

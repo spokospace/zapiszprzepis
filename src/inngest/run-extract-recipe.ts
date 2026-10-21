@@ -3,11 +3,14 @@ import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { NUMBERED_SLUG_ATTEMPTS, recipeSlug, recipeSlugCandidate } from '@/lib/slugify'
 import {
   archiveRecipeImages,
+  archiveStepImages,
   buildGallery,
   coverImage,
   isPrivateUrl,
+  jsonLdHowToStepImages,
   pickGalleryImages,
 } from '@/lib/recipe-image-archive'
+import { splitLlmSteps, buildStepImageSources } from '@/lib/step-image-extract'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutubeTranscript } from '@/lib/youtube'
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
@@ -112,6 +115,8 @@ interface RecipeData {
   title: string
   ingredients: Array<{ name: string; amount?: string; unit?: string; section?: string }>
   steps: string[]
+  /** One entry per step (index-aligned): the in-content image URL the LLM picked, or null. */
+  stepImages?: (string | null)[]
   category: string
   imageUrl?: string
   prepTimeMinutes?: number | null
@@ -458,7 +463,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
   "ingredients": [
       {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "section": "section heading or empty string"}
   ],
-  "steps": ["Step 1 description", "Step 2 description"],
+  "steps": [{"text": "Step 1 description", "image": "image URL from the content that shows THIS step, or null"}],
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
   "prepTimeMinutes": integer or null,
   "cookTimeMinutes": integer or null,
@@ -481,6 +486,7 @@ Rules:
 - Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
 - ${STEP_FORM_RULE}
 - ${STEP_CONTENT_RULE}
+- Each step is an object {"text": "...", "image": "..." | null}. "text" is the instruction (same rules as above). "image": a photo that illustrates THIS step. Use ONLY an image URL that appears verbatim in the provided Page HTML (an <img> src/data-src inside or right next to this step, or a schema.org HowToStep image) — copy it EXACTLY, do not shorten, guess, or build one. NEVER use the dish's main/cover photo, a logo, an avatar, an ad or a related-recipe thumbnail. When a step has no clearly matching in-content photo, set "image" to null. Most steps will be null; that is expected.
 - Return null for any non-time field the source does not specify. Do not guess.
 - Times stated in the source, or computed from durations it states (a sum of step times, a stated "razem 1,5 godz"), are source data: set "timesEstimated" to false.
 - When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
@@ -539,9 +545,12 @@ Rules:
       const { category, coerced } = toRecipeCategory(parsed.category)
       if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
       // A missing method comes back as null as often as []; the gate below
-      // and the steps column both want the list. servings must fit the column
-      // (1–99) or it fails the insert.
-      return { ...parsed, steps: parsed.steps ?? [], category, servings: toServings(parsed.servings) }
+      // and the steps column both want the list. Steps now arrive as
+      // {text, image}; split them so `steps` stays a string[] (its many
+      // consumers and the column) and the per-step images ride alongside.
+      // servings must fit the column (1–99) or it fails the insert.
+      const { steps, images: stepImages } = splitLlmSteps(parsed.steps)
+      return { ...parsed, steps, stepImages, category, servings: toServings(parsed.servings) }
     }
 
     // The user's other recipes, for the labelling pass below; read while the
@@ -628,6 +637,18 @@ Rules:
     // LLM's reading of the text; the full-page embed scan keeps the <script>
     // blocks a main-content scrape may drop.
     const servings = jsonLdServings(html) ?? jsonLdServings(embedHtml) ?? recipeJSON.servings
+
+    // Per-step photos (ZMIANA zdjęcia kroków): the LLM's in-content pick per step,
+    // kept only when the URL really is in the page, filled from the page's
+    // schema.org HowToStep images where they line up. Archived once the row exists.
+    const stepImageSources = buildStepImageSources({
+      steps: recipeJSON.steps,
+      llmImages: recipeJSON.stepImages ?? [],
+      howToImages: jsonLdHowToStepImages(html, sourceUrl ?? undefined),
+      html: `${html}\n${embedHtml}`,
+      pageUrl: sourceUrl ?? undefined,
+      coverUrl: ogImage,
+    })
 
     // Title casing, the distinguishing note and the tags, judged against the
     // user's own recipes (minus this one, on a refresh) so the note tells
@@ -826,17 +847,18 @@ Rules:
 
       if (data) {
         recipe = data
-        // Archive the external og:image into Supabase Storage. On failure
-        // image_url keeps whatever durableImageUrl put there.
-        const archived = await archiveRecipeImages(supabase, userId, data.id, ogImage, gallery)
-        if (archived.cover != null || archived.gallery?.length) {
-          await supabase
-            .from('recipes')
-            .update({
-              ...(archived.cover != null ? { image_url: archived.cover } : {}),
-              ...(archived.gallery?.length ? { image_urls: archived.gallery } : {}),
-            })
-            .eq('id', data.id)
+        // Archive the external og:image, gallery and per-step photos into Supabase
+        // Storage. On failure image_url keeps whatever durableImageUrl put there.
+        const [archived, stepImages] = await Promise.all([
+          archiveRecipeImages(supabase, userId, data.id, ogImage, gallery),
+          archiveStepImages(supabase, userId, data.id, stepImageSources),
+        ])
+        const update: Database['public']['Tables']['recipes']['Update'] = {}
+        if (archived.cover != null) update.image_url = archived.cover
+        if (archived.gallery?.length) update.image_urls = archived.gallery
+        if (stepImages.some(Boolean)) update.step_images = stepImages
+        if (Object.keys(update).length > 0) {
+          await supabase.from('recipes').update(update).eq('id', data.id)
         }
         break
       } else {
@@ -921,13 +943,19 @@ Rules:
           // is only kept when there was no prior value AND archive failed.
           // The gallery follows the same rule: archived photos replace whatever
           // is there, which is how the backfill gives old recipes a gallery.
-          const archived = await archiveRecipeImages(supabase, userId, existing.id, ogImage, gallery)
+          const [archived, stepImages] = await Promise.all([
+            archiveRecipeImages(supabase, userId, existing.id, ogImage, gallery),
+            archiveStepImages(supabase, userId, existing.id, stepImageSources),
+          ])
           if (archived.cover != null) {
             gapFill.image_url = archived.cover
           } else if (ogImage != null && existing.image_url == null && durableImageUrl != null) {
             gapFill.image_url = durableImageUrl
           }
           if (archived.gallery?.length) gapFill.image_urls = archived.gallery
+          // Per-step photos follow the gallery rule: a refresh/backfill replaces
+          // what is there, and only when the source yielded some.
+          if (stepImages.some(Boolean)) gapFill.step_images = stepImages
 
           // Fill the dish columns only when this row was never classified (never
           // overwrite a reviewed value), the same guard as a refresh.

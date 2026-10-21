@@ -17,12 +17,12 @@ export function LoadingStatus({ children }: { children: ReactNode }) {
   )
 }
 
-/** RecipeCard's shape (border, 4:3 image box, title, note, category and source row) with no content. */
+/** RecipeCard's shape (4 px image box, title, note, category and source row) with no content. */
 function RecipeCardSkeleton() {
   return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden">
-      <div className="aspect-[4/3] bg-gray-100" />
-      <div className="p-4">
+    <div>
+      <div className="aspect-[4/3] rounded-tile bg-gray-100" />
+      <div className="pt-3">
         <SkeletonBar className="h-5 w-3/4" />
         <SkeletonBar className="mt-2 h-4 w-1/2" />
         <div className="mt-3 flex items-center justify-between gap-2">

@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ChefHat, Sun, X } from 'lucide-react'
 import { clampStep, isLastStep, progressRatio, progressSegments, stepLabel } from '@/lib/cooking-mode'
+import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { createScreenWakeLock, type ScreenWakeLock } from '@/lib/wake-lock'
 
 /**
@@ -49,6 +51,8 @@ function exitFullscreen() {
 interface CookingModeProps {
   title: string
   steps: string[]
+  /** Archived image per step, index-aligned; '' = none. Already emptied when „Ukryj” (ZMIANY §4). */
+  stepImages?: string[]
 }
 
 /**
@@ -59,7 +63,7 @@ interface CookingModeProps {
  * dialog still covers the viewport. One same-URL history entry lets the system
  * Back gesture close the mode instead of leaving the recipe.
  */
-export function CookingMode({ title, steps }: CookingModeProps) {
+export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -174,7 +178,7 @@ export function CookingMode({ title, steps }: CookingModeProps) {
         onClick={start}
         aria-haspopup="dialog"
         aria-controls="cooking-mode"
-        className="inline-flex min-h-[58px] w-full items-center justify-center gap-2.5 rounded-field bg-ink px-5 text-[19px] font-bold wrap-anywhere text-white hover:bg-ink-soft"
+        className="inline-flex min-h-[58px] w-full items-center justify-center gap-2.5 rounded-pill bg-ink px-5 text-[19px] font-bold wrap-anywhere text-white hover:bg-ink-soft"
       >
         <ChefHat aria-hidden="true" className="h-6 w-6 shrink-0" />
         Tryb gotowania
@@ -211,7 +215,7 @@ export function CookingMode({ title, steps }: CookingModeProps) {
             <button
               type="button"
               onClick={finish}
-              className="inline-flex min-h-[56px] shrink-0 items-center gap-1.5 rounded-field px-3.5 text-[18px] font-bold text-white hover:bg-white/10"
+              className="inline-flex min-h-[56px] shrink-0 items-center gap-1.5 rounded-pill px-3.5 text-[18px] font-bold text-white hover:bg-white/10"
             >
               <X aria-hidden="true" className="h-[26px] w-[26px]" />
               Zakończ
@@ -248,6 +252,19 @@ export function CookingMode({ title, steps }: CookingModeProps) {
             {/* Announced after every "Dalej" / "Wstecz". */}
             <div aria-live="polite" className="flex min-h-0 flex-col gap-5">
               <p className="text-[22px] font-bold text-accent-dark">{stepLabel(current, total)}</p>
+              {/* Above the text when this step has a photo; it reserves no space otherwise (ZMIANY §4). */}
+              {stepImages[current] && (
+                <div className="relative h-[min(34vh,300px)] w-full max-w-[420px] shrink-0 overflow-hidden rounded-tile bg-black/20">
+                  <Image
+                    src={stepImages[current]}
+                    alt={`Zdjęcie do kroku ${current + 1}`}
+                    fill
+                    sizes="420px"
+                    className="object-cover"
+                    unoptimized={!isArchivedImageUrl(stepImages[current])}
+                  />
+                </div>
+              )}
               <p className="min-h-0 overflow-y-auto text-[30px] leading-[1.45] font-semibold text-pretty break-words">
                 {steps[current]}
               </p>
@@ -272,7 +289,7 @@ export function CookingMode({ title, steps }: CookingModeProps) {
               type="button"
               onClick={() => go(-1)}
               disabled={current === 0}
-              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-card border-2 border-border-dark text-[20px] font-bold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-pill border-2 border-border-dark text-[20px] font-bold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ArrowLeft aria-hidden="true" className="h-6 w-6" />
               Wstecz
@@ -282,7 +299,7 @@ export function CookingMode({ title, steps }: CookingModeProps) {
               type="button"
               ref={nextRef}
               onClick={() => (last ? finish() : go(1))}
-              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-card bg-orange-bright text-[22px] font-bold text-ink hover:bg-progress"
+              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-pill bg-orange-bright text-[22px] font-bold text-ink hover:bg-progress"
             >
               {last ? 'Gotowe' : 'Dalej'}
               {last ? (

@@ -435,6 +435,60 @@ export function jsonLdImage(html: string, pageUrl?: string): string | undefined 
 }
 
 /**
+ * The per-step photos a page declares in its schema.org Recipe JSON-LD
+ * (`recipeInstructions` → `HowToStep.image`), resolved against `pageUrl`, one
+ * entry per step in source order ('' where a step has no image). HowToSection
+ * groups are flattened; a plain-string step yields ''. This is the deterministic
+ * source of step photos (ZMIANA zdjęcia kroków) — index-aligned with the source's
+ * own steps; the caller aligns it to the (LLM-cleaned) stored steps by position.
+ */
+export function jsonLdHowToStepImages(html: string, pageUrl?: string): string[] {
+  const base = parseBase(pageUrl)
+  const stepImage = (node: Record<string, unknown>): string => {
+    const href = ldImageHref(node.image)
+    if (!href) return ''
+    try {
+      return new URL(href, base).href
+    } catch {
+      return ''
+    }
+  }
+  // recipeInstructions: an array of HowToStep | HowToSection | string, a single
+  // HowToStep/HowToSection, or a plain string (the whole method, no per-step image).
+  const flatten = (instructions: unknown): string[] => {
+    if (Array.isArray(instructions)) return instructions.flatMap(flatten)
+    if (!instructions || typeof instructions !== 'object') return instructions ? [''] : []
+    const node = instructions as Record<string, unknown>
+    if (ldType(node).includes('howtosection') && node.itemListElement != null) return flatten(node.itemListElement)
+    return [stepImage(node)]
+  }
+
+  let steps: string[] = []
+  const visit = (node: unknown): void => {
+    if (steps.length > 0) return
+    if (Array.isArray(node)) return node.forEach(visit)
+    if (!node || typeof node !== 'object') return
+    const record = node as Record<string, unknown>
+    if (ldType(record).includes('recipe') && record.recipeInstructions != null) {
+      steps = flatten(record.recipeInstructions)
+      if (steps.length > 0) return
+    }
+    for (const value of Object.values(record)) if (value && typeof value === 'object') visit(value)
+  }
+  for (const [, body] of html.matchAll(LD_JSON_RE)) {
+    try {
+      visit(JSON.parse(body.trim()))
+    } catch {
+      // A malformed block contributes no steps.
+    }
+    if (steps.length > 0) break
+  }
+  // Drop a trailing all-'' result (a single-string method, or no images at all):
+  // nothing to align, and it saves the caller a length check against the steps.
+  return steps.some(Boolean) ? steps : []
+}
+
+/**
  * The cover for a rendered blog page: the page's declared og:image, resolved
  * against the page when it is given relative. A misconfigured SEO plugin can
  * emit a stale site-wide og:image — the same unrelated photo on every post
@@ -734,6 +788,29 @@ export async function archiveGallery(
   // A refresh may find fewer photos than last time; stale files must not linger.
   await removeGallery(supabase, userId, recipeId, kept)
   return gallery
+}
+
+/**
+ * Archives per-step source photos into Storage at `<user>/<recipe>/step-<n>`,
+ * returning a list index-aligned with the steps: the Storage URL where that step
+ * had a downloadable photo, '' otherwise (a null source, or a failed download —
+ * never a hotlink). Returns `[]` when no step has a source, so callers can run it
+ * unconditionally.
+ */
+export async function archiveStepImages(
+  supabase: SupabaseClient,
+  userId: string,
+  recipeId: number,
+  sources: readonly (string | null)[],
+): Promise<string[]> {
+  if (!sources.some(Boolean)) return []
+  const folder = galleryFolder(userId, recipeId)
+  const archived = await Promise.all(
+    sources.map((source, i) =>
+      source ? archiveImageAt(supabase, `${folder}/step-${i}`, source) : Promise.resolve(null),
+    ),
+  )
+  return archived.map((url) => url ?? '')
 }
 
 /**

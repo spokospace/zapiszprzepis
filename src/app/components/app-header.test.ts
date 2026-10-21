@@ -31,15 +31,17 @@ function render(isAuthenticated: boolean, hasFullAccess = true) {
   )
 }
 
-describe('AppHeader "Dodaj przepis" (desktop A9; handoff v8, E01-S25)', () => {
-  it('is a desktop-only button in the action colour, linking to /dodaj — in MENU below lg', () => {
+describe('AppHeader "Dodaj przepis" (desktop A9; ZMIANY_prototyp §2)', () => {
+  it('is a desktop-only outline button linking to /dodaj — in MENU below lg', () => {
     const html = render(true)
     const dodaj = html.match(/<a[^>]*href="\/dodaj"[^>]*>.*?<\/a>/)?.[0] ?? ''
     expect(dodaj).toMatch(/class="hidden /)
     expect(dodaj).toContain('lg:inline-flex')
     expect(dodaj).toContain('Dodaj przepis</a>')
-    expect(dodaj).toContain('bg-action')
-    expect(dodaj).not.toContain('bg-orange-500')
+    // An outline, not a fill: border + accent text, never the filled action bg.
+    expect(dodaj).toContain('border-2 border-action')
+    expect(dodaj).toContain('text-action-text')
+    expect(dodaj).not.toMatch(/\bbg-action\b/)
   })
 
   it('stays visible without full access — /dodaj shows the code gate (3c)', () => {
@@ -66,24 +68,26 @@ describe('AppHeader mobile 1c layout (E01-S19)', () => {
     const login = render(false).match(/<a[^>]*href="\/login"[^>]*>Zaloguj się<\/a>/)?.[0] ?? ''
     expect(login).toMatch(/class="hidden /)
     expect(login).toContain('lg:inline-flex')
-    expect(login).toContain('border-2 border-field')
+    // Same outline as „Dodaj przepis” (ZMIANY_prototyp §2): accent border, not the field grey.
+    expect(login).toContain('border-2 border-action')
   })
 
   // #286 followed the design handoff back to the old lettering image and undid #276 (#320).
-  // Handoff v8 (E01-S25): below lg the text „Zapisz Przepis” alone; the icon from lg.
-  it('shows the text logo below lg and the icon only from lg, never the old lettering image', () => {
+  // E01-S31 §4a/§5 (owner decision 2026-10-20): the text „Zapisz Przepis” alone at every
+  // width — no icon, on desktop too — and never the old lettering image.
+  it('shows the text logo with no icon image at any width, never the old lettering image', () => {
     pathname = '/'
     for (const signedIn of [true, false]) {
       const html = render(signedIn)
       expect(html).not.toContain('logo-lettering.svg')
-      const icon = html.match(/<img[^>]*src="\/logo-icon.svg"[^>]*>/)?.[0] ?? ''
-      expect(icon).toMatch(/class="hidden [^"]*lg:block/)
+      expect(html).not.toContain('logo-icon.svg')
       const wordmark = html.match(/<span aria-hidden="true" class="([^"]*)">.*?Przepis<\/span><\/span>/)
       expect(wordmark?.[0]).toContain('>Zapisz</span>')
       const classes = (wordmark?.[1] ?? '').split(' ')
       expect(classes).not.toContain('hidden')
       // 24 px from 360 px; 20 px below, so the text + Szukaj + MENU fit at 320 px.
-      expect(classes).toEqual(expect.arrayContaining(['text-[20px]', 'min-[360px]:text-[24px]', 'lg:text-[1.625rem]']))
+      expect(classes).toEqual(expect.arrayContaining(['text-[20px]', 'min-[360px]:text-[24px]']))
+      expect(classes).not.toContain('lg:text-[1.625rem]')
     }
   })
 
@@ -150,7 +154,10 @@ describe('AppHeader "Szukaj" (handoff v8, E01-S25)', () => {
     for (const signedIn of [true, false]) {
       const link = searchButton(render(signedIn))
       expect(link).toContain('href="/szukaj"')
-      expect(link).toContain('h-14 w-16')
+      expect(link).toContain('h-14 min-w-16')
+      // #412: a 16 px bold caption, sentence case.
+      expect(link).toContain('text-base')
+      expect(link).not.toContain('text-[13px]')
       expect(link).toContain('flex-col')
       expect(link).toContain('lg:hidden')
       expect(link).toMatch(/<svg[^>]*aria-hidden="true"[^>]*>.*<\/svg>Szukaj<\/a>$/)
@@ -172,7 +179,14 @@ function headerSearchInput(html: string): string {
 // E01-S17 follow-up (#navbar-search): the desktop header carries one combobox search
 // field — the single search surface — rendered on every signed-in page incl /szukaj.
 describe('AppHeader desktop search field (E01-S17 follow-up)', () => {
-  it.each(['/', '/szukaj', '/przepis/sernik', '/settings'])('is one combobox GET field on %s', (path) => {
+  it('is left out on the start page, whose hero already has the one field (E01-S31 §5)', () => {
+    pathname = '/'
+    const html = render(true)
+    expect(headerSearchInput(html)).toBe('')
+    expect(html).not.toContain('aria-label="Szukaj w serwisie"')
+  })
+
+  it.each(['/szukaj', '/przepis/sernik', '/settings'])('is one combobox GET field on %s', (path) => {
     pathname = path
     const html = render(true)
     const input = headerSearchInput(html)
@@ -227,5 +241,31 @@ describe('AppHeader while the notifications check and counters load (#226)', () 
   it('keeps a working MENU without a badge until the counts arrive', () => {
     pathname = '/'
     expect(renderPending()).toContain('data-testid="menu" data-notifications="null"')
+  })
+})
+
+// ZMIANY_prototyp §2: row 1 is logo · Ulubione (signed-in) · search · Dodaj/Zaloguj · MENU,
+// with „Moje przepisy” in MENU and the categories in the row-2 bar — no more „Kategorie ▾”.
+describe('AppHeader signed-in desktop nav (ZMIANY_prototyp §2)', () => {
+  it('leads row 1 with „Ulubione” and its heart, and drops „Moje przepisy”/„Kategorie ▾”/„Przepisy”', () => {
+    const html = render(true)
+    const ulubione = html.match(/<a[^>]*href="\/ulubione"[^>]*>[\s\S]*?<\/a>/)?.[0] ?? ''
+    expect(ulubione).toContain('text-action-text')
+    expect(ulubione).toMatch(/<svg[\s\S]*<\/svg>Ulubione<\/a>$/)
+    expect(html).not.toContain('>Moje przepisy<')
+    expect(html).not.toMatch(/href="\/szukaj">Przepisy</)
+    // No „Kategorie ▾” disclosure button any more.
+    expect(html).not.toMatch(/aria-controls="header-categories"/)
+  })
+
+  it('shows a guest no „Ulubione”', () => {
+    expect(render(false)).not.toContain('>Ulubione')
+  })
+
+  it('renders the desktop category bar (row 2) with the category links', () => {
+    const html = render(true)
+    expect(html).toContain('aria-label="Kategorie"')
+    expect(html).toContain('href="/przepisy/obiady"')
+    expect(html).toContain('href="/przepisy/salatki"')
   })
 })

@@ -11,11 +11,11 @@ export function popularMinusRecent(recent: readonly string[]): string[] {
 }
 
 /**
- * The signed-in home's H1. `vocative` is the user's name in the vocative case
- * ("Aniu") once E01-S12 provides it; unknown or blank falls back to a plain
- * greeting, never to a guessed or nominative form.
+ * The home H1 (handoff 14): "Czego dziś szukasz, Aniu?". `vocative` is the user's
+ * name in the vocative case (E01-S12); unknown or blank falls back to the guest's
+ * "Czego dziś szukasz?", never to a guessed or nominative form.
  */
 export function homeGreeting(vocative: string | null | undefined): string {
   const name = vocative?.trim()
-  return name ? `Dzień dobry, ${name}!` : 'Dzień dobry!'
+  return name ? `Czego dziś szukasz, ${name}?` : 'Czego dziś szukasz?'
 }

@@ -1,32 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { UtensilsCrossed } from 'lucide-react'
-import { recipePath } from '@/lib/routes'
-import { sourceLabel } from '@/lib/recipe-source'
-import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ArrowDownUp, Check, ChevronDown } from 'lucide-react'
 import { chipClasses } from '@/app/components/ui/chip'
 import { CardCarousel } from '@/app/components/card-carousel'
-import {
-  sortVersions,
-  parseVersionsSort,
-  versionBadges,
-  ingredientDiff,
-  type DishVersionRow,
-  type VersionsSort,
-} from '@/lib/dish-versions'
-
-/** The viewed recipe's fields the diff and the badges compare against. */
-export interface CurrentRecipe {
-  servings: number | null
-  prep_time_minutes: number | null
-  cook_time_minutes: number | null
-  total_time_minutes: number | null
-  times_estimated: boolean
-  ingredients: unknown
-}
+import { sortVersions, parseVersionsSort, type DishVersionRow, type VersionsSort } from '@/lib/dish-versions'
 
 const STORAGE_KEY = 'zp.versionsSort'
 
@@ -37,27 +15,37 @@ const OPTIONS: { key: VersionsSort; label: string; announce: string }[] = [
 ]
 
 /**
- * The versions list with its sort control (E01-S21). Server-rendered in
- * `initialOrder` (from ?wersje=), so it works without JS — each segment is a
- * real link that reloads with the new order. With JS, a click re-sorts the rows
- * already on the page (no request), updates the URL with replaceState and
+ * The versions list with its sort control (E01-S21, E01-S31 §4b). The cards are
+ * rendered on the server (they are the shared RecipeCard, which pulls in
+ * server-only code) and passed in keyed by id; this island only re-orders them.
+ * Server-rendered in `initialOrder` (from ?wersje=), so it works without JS — each
+ * control is a real link that reloads with the new order. With JS a click re-sorts
+ * the rows already on the page (no request), updates the URL with replaceState and
  * announces the change; the choice is remembered per viewer in localStorage and
  * applied on mount only when the URL did not pin an order.
+ *
+ * Desktop keeps the three pills (11a); on a phone they wrap into two rows, so below
+ * md the control is a single „Kolejność: {wybrana} ▾” button that opens the options
+ * as a `<details>` disclosure (11b) — one tap, full names, closes on Esc / outside
+ * click, focus returns to the button.
  */
 export function DishVersionsSort({
   versions,
   initialOrder,
-  current,
   label,
+  cards,
 }: {
   versions: DishVersionRow[]
   initialOrder: VersionsSort
-  current: CurrentRecipe
   /** The section heading, naming the carousel's buttons for screen readers. */
   label: string
+  /** Server-rendered cards keyed by recipe id, re-ordered here without a request. */
+  cards: Record<number, ReactNode>
 }) {
   const [order, setOrder] = useState<VersionsSort>(initialOrder)
   const [announce, setAnnounce] = useState('')
+  const detailsRef = useRef<HTMLDetailsElement>(null)
+  const summaryRef = useRef<HTMLElement>(null)
 
   // The stored choice wins only when the URL pins no order (an explicit
   // ?wersje= beats it). Guarded: a private window simply keeps the default.
@@ -75,7 +63,33 @@ export function DishVersionsSort({
     }
   }, [])
 
+  // Below md the dropdown is a native `<details>`; close it on Esc (focus back on
+  // the button) and on a click outside, the way a listbox would (E01-S31 §4b).
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && detailsRef.current?.open) closeMenu(true)
+    }
+    function onPointerDown(event: PointerEvent) {
+      const details = detailsRef.current
+      if (details?.open && !details.contains(event.target as Node)) details.open = false
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [])
+
   const rows = useMemo(() => sortVersions(versions, order), [versions, order])
+  const current = OPTIONS.find((o) => o.key === order) ?? OPTIONS[0]
+
+  /** Imperatively close the uncontrolled dropdown, optionally returning focus to its button. */
+  function closeMenu(refocus = false) {
+    const details = detailsRef.current
+    if (details) details.open = false
+    if (refocus) summaryRef.current?.focus()
+  }
 
   function pick(event: React.MouseEvent, key: VersionsSort) {
     event.preventDefault()
@@ -99,27 +113,78 @@ export function DishVersionsSort({
   return (
     <>
       {versions.length >= 2 && (
-        <div role="group" aria-labelledby="wersje-kolejnosc" className="mb-5 flex flex-wrap items-center gap-2">
-          {/* wrap-anywhere: a flex item never shrinks below its longest word otherwise (WCAG 1.4.10). */}
-          <span id="wersje-kolejnosc" className="mr-1 text-[16px] font-bold wrap-anywhere text-ink-soft">
-            Kolejność:
-          </span>
-          {OPTIONS.map(({ key, label }) => {
-            const active = order === key
-            return (
-              <a
-                key={key}
-                href={`?wersje=${key}#inne-przepisy`}
-                aria-current={active ? 'true' : undefined}
-                onClick={(e) => pick(e, key)}
-                className={chipClasses(active)}
-              >
-                {active ? '✓ ' : ''}
-                {label}
-              </a>
-            )
-          })}
-        </div>
+        <>
+          {/* Desktop (11a): the three pills, wrapping only from md where there is room. */}
+          <div
+            role="group"
+            aria-labelledby="wersje-kolejnosc"
+            className="mb-5 hidden flex-wrap items-center gap-2 md:flex"
+          >
+            {/* wrap-anywhere: a flex item never shrinks below its longest word otherwise (WCAG 1.4.10). */}
+            <span id="wersje-kolejnosc" className="mr-1 text-[16px] font-bold wrap-anywhere text-ink-soft">
+              Kolejność:
+            </span>
+            {OPTIONS.map(({ key, label }) => {
+              const active = order === key
+              return (
+                <a
+                  key={key}
+                  href={`?wersje=${key}#inne-przepisy`}
+                  aria-current={active ? 'true' : undefined}
+                  onClick={(e) => pick(e, key)}
+                  className={chipClasses(active)}
+                >
+                  {active ? '✓ ' : ''}
+                  {label}
+                </a>
+              )
+            })}
+          </div>
+
+          {/* Phone (11b): one compact button that shows the current choice and opens the
+              options. A `<details>` so it still works without JS (the links reload with
+              ?wersje=); with JS the clicks re-sort in place and close the menu. */}
+          <details ref={detailsRef} className="group relative mb-5 md:hidden">
+            <summary
+              ref={summaryRef}
+              aria-label={`Kolejność: ${current.label}. Zmień kolejność`}
+              className="inline-flex min-h-[48px] max-w-full cursor-pointer list-none items-center gap-2 rounded-pill border-2 border-ink px-3.5 text-[16px] font-bold text-ink [&::-webkit-details-marker]:hidden"
+            >
+              <ArrowDownUp aria-hidden="true" className="h-[18px] w-[18px] shrink-0" />
+              <span className="min-w-0 wrap-anywhere">
+                <span className="font-normal text-ink-soft">Kolejność: </span>
+                {current.label}
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                className="h-[18px] w-[18px] shrink-0 transition-transform group-open:rotate-180"
+              />
+            </summary>
+            <ul className="absolute z-10 mt-2 flex w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-tile border-2 border-ink bg-white shadow-[0_8px_24px_rgba(17,24,39,.12)]">
+              {OPTIONS.map(({ key, label }) => {
+                const active = order === key
+                return (
+                  <li key={key} className="border-t border-border-card-2 first:border-t-0">
+                    <a
+                      href={`?wersje=${key}#inne-przepisy`}
+                      aria-current={active ? 'true' : undefined}
+                      onClick={(e) => {
+                        pick(e, key)
+                        closeMenu(true)
+                      }}
+                      className={`flex min-h-[56px] items-center justify-between gap-2 px-4 text-[17px] no-underline! ${
+                        active ? 'bg-surface-3 font-bold text-ink' : 'text-ink hover:bg-surface-2'
+                      }`}
+                    >
+                      <span className="min-w-0 wrap-anywhere">{label}</span>
+                      {active && <Check aria-hidden="true" className="h-5 w-5 shrink-0" />}
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          </details>
+        </>
       )}
 
       {/* A swipeable strip with buttons on a phone; one card a row from sm, two from lg.
@@ -127,80 +192,13 @@ export function DishVersionsSort({
       <CardCarousel
         key={order}
         label={label}
-        layout="rows"
-        items={rows.map((v) => ({ key: v.id, card: <VersionCard version={v} current={current} /> }))}
+        layout="versions"
+        items={rows.map((v) => ({ key: v.id, card: cards[v.id] }))}
       />
 
       <div role="status" aria-live="polite" className="sr-only">
         {announce}
       </div>
     </>
-  )
-}
-
-function VersionCard({ version: v, current }: { version: DishVersionRow; current: CurrentRecipe }) {
-  const heading = v.variant_note ?? v.title
-  const badges = versionBadges(current, v)
-  const diff = ingredientDiff(current.ingredients, v.ingredients)
-  const badgeLabels = [badges.servings, badges.time].filter((b): b is string => Boolean(b))
-
-  return (
-    // On a phone (a carousel card) the photo spans the card above the text; from sm a 72 px thumbnail beside it.
-    <article className="relative flex h-full flex-col gap-3 rounded-2xl border-2 border-border-card p-4 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-[3px] has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus sm:flex-row sm:gap-4">
-      <div className="relative flex aspect-[4/3] w-full shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-accent-2 sm:aspect-auto sm:h-[72px] sm:w-[72px]">
-        {v.image_url ? (
-          <Image
-            src={v.image_url}
-            alt=""
-            fill
-            // 3/4 of the strip less the card's padding and frame; the thumbnail from 40rem.
-            sizes="(min-width: 40rem) 72px, calc(75vw - 3.5rem)"
-            className="object-cover"
-            unoptimized={!isArchivedImageUrl(v.image_url)}
-          />
-        ) : (
-          // The RPC returns no category (a version may sit in another one), so a neutral icon.
-          <UtensilsCrossed aria-hidden="true" strokeWidth={1.5} className="h-12 w-12 text-action-text sm:h-8 sm:w-8" />
-        )}
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h3 className="text-[19px] font-bold leading-snug text-ink">
-          <Link href={recipePath(v.slug)} className="after:absolute after:inset-0 focus-visible:outline-none!">
-            {heading}
-            {v.variant_note && <span className="sr-only"> — {v.title}</span>}
-          </Link>
-        </h3>
-        {v.variant_note && <p className="text-[16px] break-words text-ink-soft">{v.title}</p>}
-        <p className="text-[16px] break-words text-ink-soft">{sourceLabel(v.source_type, v.source_url, v.source_author)}</p>
-
-        {badgeLabels.length > 0 && (
-          <ul className="mt-1 flex flex-wrap gap-2">
-            {badgeLabels.map((label) => (
-              <li key={label} className="inline-flex rounded-pill bg-surface-3 px-3 py-1 text-[16px] text-ink">
-                {label}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {diff.plus.length > 0 && (
-          <p className="mt-1 text-[16px] break-words text-success">
-            <span className="sr-only">Składniki, których nie ma w oglądanym przepisie: </span>
-            <b>+ jest:</b> {diff.plus.join(', ')}
-          </p>
-        )}
-        {diff.minus.length > 0 && (
-          <p className="text-[16px] break-words text-danger">
-            <span className="sr-only">Składniki z oglądanego przepisu, których nie ma w tej wersji: </span>
-            <b>− nie ma:</b> {diff.minus.join(', ')}
-          </p>
-        )}
-
-        <span aria-hidden="true" className="mt-1 text-[16px] font-bold text-action-text underline underline-offset-2">
-          Otwórz ten przepis →
-        </span>
-      </div>
-    </article>
   )
 }

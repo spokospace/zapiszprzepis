@@ -26,11 +26,60 @@ export function sourceLabel(
   const platform = PLATFORM_LABELS[sourceType]
   if (platform) {
     const author = sourceAuthor || (sourceUrl ? facebookAuthorName(sourceUrl) : null)
-    return author ? `${platform} · ${author}` : platform
+    return author ? `${platform} · ${trimAuthorTail(author)}` : platform
   }
-  const host = sourceUrl ? siteHost(sourceUrl) : null
-  if (host) return host
+  const web = sourceUrl ? webSource(sourceUrl) : null
+  if (web) return web.name
   return sourceType === 'web_blog' ? 'Blog' : 'Inny'
+}
+
+/**
+ * Trims a trailing marketing descriptor from a Facebook/YouTube author or channel
+ * name so the source badge stays short (#413): a tail after a space-padded dash,
+ * "Mikołaj Drożdżyński - Z Pasją do Gotowania" → "Mikołaj Drożdżyński". Kept
+ * conservative — the dash must have a space on both sides, so hyphenated or compact
+ * names ("Smaki Katriny-najlepsze przepisy", "Alex & Cris P") are left alone, and
+ * the kept head must still carry real content (≥ 3 chars).
+ */
+function trimAuthorTail(name: string): string {
+  const head = name.split(/\s[-–—]\s/)[0].trim()
+  return head.length >= 3 ? head : name
+}
+
+/** Which icon the source badge shows (2026-10-20 handoff §1). `website` is the
+ *  generic globe; `wordpress` / `blogger` mark a recipe hosted on those blogging
+ *  platforms. `book` and `person` are kept for the future page-less recipes (a
+ *  cookbook or a person) the handoff names. */
+export type SourceKind = 'website' | 'wordpress' | 'blogger' | 'youtube' | 'facebook' | 'book' | 'person'
+
+/** The blog-platform badge icon a web source may carry; null keeps the globe. */
+type BlogBrand = Extract<SourceKind, 'wordpress' | 'blogger'> | null
+
+export function sourceKind(sourceType: RecipeSource): SourceKind {
+  if (sourceType === 'youtube') return 'youtube'
+  if (sourceType === 'facebook_text' || sourceType === 'facebook_reel') return 'facebook'
+  return 'website'
+}
+
+/**
+ * The source badge's icon kind and the text a reader sees, from one place: the
+ * card shows it on the photo (not a link — the whole card links to the recipe),
+ * the recipe page shows the same as a link to the original (E01-S31). A recipe
+ * from a multi-tenant blog host (blogspot.com, wordpress.com …) gets that
+ * platform's icon.
+ */
+export function formatSource(
+  sourceType: RecipeSource,
+  sourceUrl: string | null,
+  sourceAuthor: string | null = null,
+): { kind: SourceKind; text: string } {
+  const text = sourceLabel(sourceType, sourceUrl, sourceAuthor)
+  const base = sourceKind(sourceType)
+  if (base === 'website' && sourceUrl) {
+    const brand = webSource(sourceUrl)?.brand
+    if (brand) return { kind: brand, text }
+  }
+  return { kind: base, text }
 }
 
 /** The platform in the locative, for "Otwórz oryginał na {…}" (design handoff C3, item 11). */
@@ -47,15 +96,44 @@ const PLATFORM_LOCATIVE: Partial<Record<RecipeSource, string>> = {
  */
 export function originalLinkLabel(sourceType: RecipeSource, sourceUrl: string): string {
   const platform = PLATFORM_LOCATIVE[sourceType]
-  const where = platform ?? siteHost(sourceUrl)
+  const where = platform ?? webSource(sourceUrl)?.name
   return where ? `Otwórz oryginał na ${where}` : 'Otwórz oryginał'
 }
 
-/** The site's domain without "www.", or null when the URL does not parse. */
-function siteHost(url: string): string | null {
+/**
+ * Multi-tenant blog hosts where the subdomain is the blog, not the platform. On
+ * these the full host ("agusiowesmakolyki.blogspot.com") is too long for a card
+ * badge, so the reader sees just the blog's own name ("agusiowesmakolyki") —
+ * still enough to tell two blogs on the same platform apart. Each `domain` is the
+ * platform part anchored at the host's end; `brand` picks the badge icon, `null`
+ * keeps the generic globe. The blogspot pattern covers every TLD (foo.blogspot.de,
+ * foo.blogspot.co.uk …), mirroring `isBlogspotUrl` in blogger-feed.ts so a blog's
+ * label and icon never disagree with how the importer classified its host.
+ */
+const BLOG_PLATFORMS: { domain: RegExp; brand: BlogBrand }[] = [
+  { domain: /\.blogspot\.[a-z]{2,}(\.[a-z]{2,})?$/i, brand: 'blogger' },
+  { domain: /\.wordpress\.com$/i, brand: 'wordpress' },
+  { domain: /\.home\.blog$/i, brand: 'wordpress' },
+  { domain: /\.weebly\.com$/i, brand: null },
+]
+
+/**
+ * The reader-facing name of a web source and its platform brand, from a URL. The
+ * host without "www."; on a known multi-tenant host, just the blog's subdomain
+ * label. Null when the URL does not parse.
+ */
+function webSource(url: string): { name: string; brand: BlogBrand } | null {
+  let host: string
   try {
-    return new URL(url).hostname.replace(/^www\./, '')
+    host = new URL(url).hostname.replace(/^www\./, '')
   } catch {
     return null
   }
+  for (const { domain, brand } of BLOG_PLATFORMS) {
+    const match = domain.exec(host)
+    // match.index is the dot before the platform domain; > 0 means a real
+    // subdomain label precedes it (a bare "blogspot.com" host keeps its name).
+    if (match && match.index > 0) return { name: host.slice(0, match.index), brand }
+  }
+  return { name: host, brand: null }
 }

@@ -3,8 +3,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { CategoryGrid } from './category-grid'
 import { GuestCta } from './guest-cta'
-import { HomeSearch } from './home-search'
-import { MemberTiles } from './member-tiles'
+import { HomeSearch, VOICE_ROW_CLASS } from './home-search'
 import { HOME_CATEGORIES } from '@/lib/recipe-categories'
 
 const render = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el)
@@ -18,18 +17,23 @@ describe('CategoryGrid (E01-S20)', () => {
     // Home eight + the desktop-only ninth.
     expect(svgCount(html)).toBe(HOME_CATEGORIES.length + 1)
     expect(html).not.toMatch(/<svg(?![^>]*aria-hidden="true")/)
-    expect(html).toContain('bg-surface-accent')
+    // Style 1b: white tile, 1 px ink frame, 4 px corners, no tint.
+    expect(html).toContain('border-ink')
+    expect(html).toContain('rounded-tile')
+    expect(html).not.toContain('bg-surface-accent')
+    expect(html).toContain('min-h-[76px]')
     expect(html).toContain('text-[16px]')
     // No mid-word break: break-words (a last resort) replaces wrap-anywhere.
     expect(html).toContain('break-words')
     expect(html).not.toContain('wrap-anywhere')
   })
 
-  it('renders the signed-in tile as a 56 px accent-framed row', () => {
+  it('renders the signed-in tile as a 56 px ink-framed row', () => {
     const html = render(createElement(CategoryGrid, { columns: 2 }))
     expect(svgCount(html)).toBe(HOME_CATEGORIES.length)
     expect(html).toContain('h-14')
-    expect(html).toContain('border-border-accent')
+    expect(html).toContain('border-ink')
+    expect(html).not.toContain('border-border-accent')
     expect(html).toContain('text-[16px]')
     expect(html).toContain('break-words')
     expect(html).not.toContain('wrap-anywhere')
@@ -38,28 +42,13 @@ describe('CategoryGrid (E01-S20)', () => {
 })
 
 describe('GuestCta (E01-S20)', () => {
-  it('is the dark A1 block with sign-up and log-in links', () => {
+  it('is a plain block under a 1 px rule with sign-up and log-in links', () => {
     const html = render(createElement(GuestCta))
-    expect(html).toContain('bg-surface-dark')
+    expect(html).toContain('border-t border-ink')
+    expect(html).not.toContain('bg-surface-dark')
     expect(html).toContain('Zapisuj przepisy z linku i zbieraj ulubione')
     expect(html).toMatch(/href="\/signup"[^>]*>Załóż konto</)
     expect(html).toMatch(/href="\/login"[^>]*>Zaloguj się</)
-  })
-})
-
-describe('MemberTiles (E01-S20)', () => {
-  it('shows three rows with a chevron each for full access', () => {
-    const html = render(createElement(MemberTiles, { hasFullAccess: true }))
-    expect(html).toContain('Moje przepisy')
-    expect((html.match(/lucide-chevron-right/g) ?? []).length).toBe(3)
-    expect(html).toContain('text-[20px]')
-  })
-
-  it('drops "Moje przepisy" and locks adding without full access', () => {
-    const html = render(createElement(MemberTiles, { hasFullAccess: false }))
-    expect(html).not.toContain('Moje przepisy')
-    expect(html).toContain('Wymaga kodu lub pełnego dostępu')
-    expect((html.match(/lucide-chevron-right/g) ?? []).length).toBe(2)
   })
 })
 
@@ -72,10 +61,48 @@ describe('HomeSearch looks (E01-S20)', () => {
     expect(html).toMatch(/<label for="s"[^>]*>Szukaj przepisu po nazwie lub składniku</)
   })
 
-  it('renders the guest hero field with the orange frame and A1 placeholder', () => {
+  it('renders the guest hero field as an ink-framed pill with the A1 placeholder', () => {
     const html = render(createElement(HomeSearch, { id: 'g', tone: 'action', placeholder: 'Danie lub składnik, np. dynia' }))
-    expect(html).toContain('border-action')
+    expect(html).toContain('border-ink')
     expect(html).toContain('placeholder="Danie lub składnik, np. dynia"')
+  })
+
+  it('renders the attached hero field with a visible bold label and a text-only "Szukaj" (handoff 14)', () => {
+    const html = render(
+      createElement(HomeSearch, {
+        id: 'h',
+        attached: true,
+        tone: 'action',
+        label: 'Wpisz nazwę dania lub składnik',
+        strongLabel: true,
+      }),
+    )
+    expect(html).toMatch(/<label for="h" class="[^"]*text-\[19px\] font-bold text-ink[^"]*">Wpisz nazwę dania lub składnik</)
+    expect(html).toContain('rounded-pill border-2 border-ink')
+    // „Szukaj” is a text button, not an icon; the field has no leading icon either.
+    expect(html).toMatch(/<button type="submit"[^>]*>Szukaj<\/button>/)
+    expect(html).not.toContain('lucide-search')
+  })
+
+  it('stacks the voice row on a phone (3c/3d) and centers „albo” + button from md', () => {
+    // The row only renders where the Web Speech API exists, so its classes are checked directly.
+    expect(VOICE_ROW_CLASS).toContain('flex-col')
+    expect(VOICE_ROW_CLASS).toContain('md:flex-row')
+    expect(VOICE_ROW_CLASS).toContain('md:justify-center')
+    expect(VOICE_ROW_CLASS).not.toMatch(/(^| )justify-center/)
+  })
+
+  it('shows the 50 px, 18 px "Szukaj" on a phone and the larger one from md', () => {
+    const html = render(createElement(HomeSearch, { id: 'p', attached: true, tone: 'action' }))
+    expect(html).toMatch(/<button type="submit" class="[^"]*h-\[50px\][^"]*text-\[18px\][^"]*md:h-12[^"]*md:text-\[19px\]/)
+  })
+
+  it('keeps „Powiedz” out of the attached field', () => {
+    // The Web Speech API is absent on the server, so the voice row is not rendered; either
+    // way no „Powiedz” button may sit inside the field frame (the old lg:inline-flex one).
+    const html = render(createElement(HomeSearch, { id: 'v', attached: true, tone: 'action' }))
+    expect(html).not.toContain('lg:inline-flex')
+    expect(html).not.toContain('albo')
   })
 
   it('renders the C1 member label and a single "Szukaj" submit', () => {

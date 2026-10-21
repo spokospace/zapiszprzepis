@@ -124,7 +124,7 @@ export function HeaderSearch({ className = '' }: { className?: string }) {
       className={`relative min-w-0 max-w-[460px] flex-1 ${className}`}
     >
       <div className="flex min-w-0 flex-1 gap-2">
-        <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-field border-2 border-field bg-white pr-1 pl-3 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus">
+        <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-pill border-2 border-field bg-white pr-1 pl-3 has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus">
           <Search aria-hidden="true" className="h-5 w-5 shrink-0 text-ink-soft" />
           <label htmlFor="header-search" className="sr-only">
             Szukaj przepisu lub składnika
@@ -155,7 +155,7 @@ export function HeaderSearch({ className = '' }: { className?: string }) {
             does not show two magnifying glasses side by side. */}
         <button
           type="submit"
-          className="inline-flex h-12 shrink-0 items-center rounded-field border-2 border-field bg-white px-4 text-[17px] font-bold text-ink hover:bg-surface-3"
+          className="inline-flex h-12 shrink-0 items-center rounded-pill border-2 border-ink bg-white px-4 text-[17px] font-bold text-ink hover:bg-surface-3"
         >
           Szukaj
         </button>
@@ -180,7 +180,7 @@ export function HeaderSearch({ className = '' }: { className?: string }) {
         <p
           role="status"
           aria-live="polite"
-          className="absolute top-[calc(100%+6px)] left-0 z-30 w-full rounded-field border-2 border-border-card bg-white px-3 py-2 text-[16px] text-ink shadow-lg"
+          className="absolute top-[calc(100%+6px)] left-0 z-30 w-full rounded-tile border-2 border-border-card bg-white px-3 py-2 text-[16px] text-ink shadow-lg"
         >
           {micMessage}
         </p>

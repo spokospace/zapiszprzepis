@@ -3,14 +3,14 @@ import { homeGreeting, POPULAR_SEARCHES } from './home'
 
 describe('homeGreeting', () => {
   it('greets by the vocative', () => {
-    expect(homeGreeting('Aniu')).toBe('Dzień dobry, Aniu!')
-    expect(homeGreeting('  Marku ')).toBe('Dzień dobry, Marku!')
+    expect(homeGreeting('Aniu')).toBe('Czego dziś szukasz, Aniu?')
+    expect(homeGreeting('  Marku ')).toBe('Czego dziś szukasz, Marku?')
   })
 
-  it('falls back to a plain greeting when the vocative is unknown', () => {
-    expect(homeGreeting(null)).toBe('Dzień dobry!')
-    expect(homeGreeting(undefined)).toBe('Dzień dobry!')
-    expect(homeGreeting('   ')).toBe('Dzień dobry!')
+  it('falls back to the guest heading when the vocative is unknown', () => {
+    expect(homeGreeting(null)).toBe('Czego dziś szukasz?')
+    expect(homeGreeting(undefined)).toBe('Czego dziś szukasz?')
+    expect(homeGreeting('   ')).toBe('Czego dziś szukasz?')
   })
 })
 

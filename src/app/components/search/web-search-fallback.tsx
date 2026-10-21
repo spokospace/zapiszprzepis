@@ -108,7 +108,7 @@ function hostname(url: string): string {
 /** Exa results in the 1c card look: title, site, a short excerpt, open / save. */
 function WebResults({ results, canSave, onClose }: { results: ExaResult[]; canSave: boolean; onClose: () => void }) {
   return (
-    <div className="mt-4 rounded-card border-2 border-border-card bg-white">
+    <div className="mt-4 rounded-tile border-2 border-border-card bg-white">
       <div className="flex items-center justify-between gap-3 border-b-2 border-border-card py-1 pr-1 pl-4">
         <h3 className="text-[19px] font-bold text-ink">
           {results.length === 0 ? 'Nic nie znaleźliśmy' : `Znalezione w internecie: ${results.length}`}
@@ -116,7 +116,7 @@ function WebResults({ results, canSave, onClose }: { results: ExaResult[]; canSa
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex min-h-[48px] shrink-0 items-center gap-1.5 rounded-field px-3 text-[17px] font-bold text-ink hover:bg-surface-3"
+          className="inline-flex min-h-[48px] shrink-0 items-center gap-1.5 rounded-pill px-3 text-[17px] font-bold text-ink hover:bg-surface-3"
         >
           <X aria-hidden="true" className="h-5 w-5" />
           Zamknij

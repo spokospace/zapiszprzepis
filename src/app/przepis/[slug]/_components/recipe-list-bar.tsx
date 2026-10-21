@@ -26,7 +26,7 @@ export const LIST_BAR =
   'lg:flex lg:border-b-0'
 
 // A button-shaped link: bordered, so no underline (as in the header's "Dodaj").
-const NAV = 'flex min-h-[64px] items-center gap-3 rounded-field border-2 px-4 py-2 leading-tight no-underline!'
+const NAV = 'flex min-h-[64px] items-center gap-3 rounded-tile border px-4 py-2 leading-tight no-underline!'
 
 type ListState =
   | { kind: 'pending' }
@@ -122,11 +122,14 @@ function NavLink({
   from,
   direction,
   listLabel,
+  solo,
 }: {
   item: ListItem | null
   from: ListKey | null
   direction: 'prev' | 'next'
   listLabel: string
+  /** The only button of the pair: from lg it is 420 px wide on its own side (handoff 13). */
+  solo?: boolean
 }) {
   // At a list end: nothing to stack on mobile; an empty cell from lg so the other
   // button keeps its side.
@@ -140,7 +143,7 @@ function NavLink({
   return (
     <Link
       href={recipePath(item.slug, { from })}
-      className={`${NAV} ${prev ? '' : 'justify-between'} border-field bg-white text-ink hover:bg-surface-3`}
+      className={`${NAV} ${prev ? '' : 'justify-between'} ${solo ? `lg:w-[420px] ${prev ? 'lg:justify-self-start' : 'lg:justify-self-end'}` : ''} border-ink bg-white text-ink hover:bg-surface-3`}
     >
       {prev && arrow}
       <span className="flex min-w-0 flex-col">
@@ -161,6 +164,14 @@ function NavLink({
 }
 
 /**
+ * Which neighbours get a button: „Poprzedni” only when the recipe was opened from a
+ * list (`linkFrom`), „Następny” whenever there is one (handoff 13, §7).
+ */
+export function neighbours(position: ListPosition, linkFrom: ListKey | null): { prev: ListItem | null; next: ListItem | null } {
+  return { prev: linkFrom ? position.prev : null, next: position.next }
+}
+
+/**
  * Poprzedni / Następny at the end of the recipe (handoff C3, item 12): stacked 64 px
  * buttons on mobile under a 2 px rule, side by side from lg.
  */
@@ -171,13 +182,18 @@ export function RecipeListNav(props: RecipeListProps) {
   if (state.kind !== 'ready') return null
 
   const { position, linkFrom } = state
+  // „Poprzedni” only for a recipe opened from a list (a category, Ulubione, Moje
+  // przepisy, search results); from the recipe of the day, a carousel or a link there is
+  // just „Następny przepis” (handoff 13, §7).
+  const { prev, next } = neighbours(position, linkFrom)
+  if (!prev && !next) return null
   return (
     <nav
       aria-label="Poprzedni i następny przepis"
-      className="mb-10 grid grid-cols-1 gap-2 border-t-2 border-border-card pt-4 lg:grid-cols-2 lg:gap-4 lg:pt-6"
+      className="mb-10 grid grid-cols-1 gap-2 border-t border-ink pt-4 lg:grid-cols-2 lg:gap-4 lg:pt-6"
     >
-      <NavLink item={position.prev} from={linkFrom} direction="prev" listLabel={position.label} />
-      <NavLink item={position.next} from={linkFrom} direction="next" listLabel={position.label} />
+      <NavLink item={prev} from={linkFrom} direction="prev" listLabel={position.label} solo={!next} />
+      <NavLink item={next} from={linkFrom} direction="next" listLabel={position.label} solo={!prev} />
     </nav>
   )
 }

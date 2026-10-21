@@ -43,7 +43,7 @@ export function SearchCategoryFilter({ options, selected, children }: SearchCate
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex min-h-[48px] items-center gap-1.5 rounded-[12px] border-2 border-field bg-white px-3 text-[16px] font-bold text-ink hover:bg-surface-3"
+          className="inline-flex min-h-[48px] items-center gap-1.5 rounded-pill border-2 border-field bg-white px-3 text-[16px] font-bold text-ink hover:bg-surface-3"
         >
           <SlidersHorizontal aria-hidden="true" className="h-5 w-5 shrink-0" />
           {active ? `Kategoria: ${active.label}` : 'Kategoria'}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseSteps } from '@/lib/steps'
+import { parseSteps, parseStepImages, visibleStepImages } from '@/lib/steps'
 
 // #135 — malformed `steps` jsonb crashed the recipe detail RSC with a 500, which
 // also hid the delete button. parseSteps must never throw and must only return
@@ -30,5 +30,46 @@ describe('parseSteps', () => {
     expect(parseSteps(42)).toEqual([])
     expect(parseSteps(null)).toEqual([])
     expect(parseSteps(undefined)).toEqual([])
+  })
+})
+
+describe('parseStepImages', () => {
+  it('keeps URLs by position and blanks the rest, so it stays index-aligned with steps', () => {
+    expect(parseStepImages(['https://cdn/step-1.jpg', '', 'https://cdn/step-3.jpg'])).toEqual([
+      'https://cdn/step-1.jpg',
+      '',
+      'https://cdn/step-3.jpg',
+    ])
+    // A gap (null / non-http) becomes '' at the same index, never dropped.
+    expect(parseStepImages(['https://cdn/a.jpg', null, 'data:image/png;base64,x', 'http://cdn/d.jpg'])).toEqual([
+      'https://cdn/a.jpg',
+      '',
+      '',
+      'http://cdn/d.jpg',
+    ])
+  })
+
+  it('parses a JSON-array string and trims', () => {
+    expect(parseStepImages('[" https://cdn/a.jpg ", ""]')).toEqual(['https://cdn/a.jpg', ''])
+  })
+
+  it('returns [] for malformed input (never throws)', () => {
+    expect(parseStepImages({ 0: 'https://cdn/a.jpg' })).toEqual([])
+    expect(parseStepImages('not json')).toEqual([])
+    expect(parseStepImages(null)).toEqual([])
+    expect(parseStepImages(undefined)).toEqual([])
+  })
+})
+
+describe('visibleStepImages', () => {
+  const raw = ['https://cdn/step-1.jpg', '', 'https://cdn/step-3.jpg']
+
+  it('gives a signed-in user the step photos', () => {
+    expect(visibleStepImages(raw, true)).toEqual(parseStepImages(raw))
+  })
+
+  it('gives a guest none, whatever is stored', () => {
+    expect(visibleStepImages(raw, false)).toEqual([])
+    expect(visibleStepImages(undefined, false)).toEqual([])
   })
 })

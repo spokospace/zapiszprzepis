@@ -14,7 +14,7 @@ import { resizeAvatar } from './resize-avatar'
 const initialState: SettingsFormState = { status: 'idle' }
 
 const INPUT =
-  'min-h-[60px] w-full rounded-field border-2 border-field bg-white px-4 text-[19px] text-ink ' +
+  'min-h-[60px] w-full rounded-tile border-2 border-field bg-white px-4 text-[19px] text-ink ' +
   'aria-[invalid=true]:border-danger'
 const LABEL = 'block text-[19px] font-bold text-ink'
 const HELP = 'text-[16px] text-ink-soft'
@@ -230,7 +230,7 @@ export function SettingsForm({
             gender is not chosen or nothing was added yet. */}
         <p
           aria-live="polite"
-          className="rounded-[14px] border-[1.5px] border-border-accent bg-surface-accent px-4 py-3.5 text-[18px] leading-normal text-ink"
+          className="rounded-tile border-[1.5px] border-border-accent bg-surface-accent px-4 py-3.5 text-[18px] leading-normal text-ink"
         >
           {greetingText} {addedLine ?? 'Tak przywitamy Cię na stronie głównej.'}
         </p>

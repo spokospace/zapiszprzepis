@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PWARegister } from "./components/pwa-register";
+import { SiteFooter } from "./components/site-footer";
 
 export const metadata: Metadata = {
   title: "Zapisz Przepis",
@@ -40,8 +41,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl" className="h-full antialiased">
-      <body className="min-h-full flex flex-col mx-auto w-full max-w-screen-2xl">
+      {/* Full width so section backgrounds (the home hero, the header border) reach the
+          viewport edges; content stays centred at 1152 px via PageContainer (E01-S31 §4). */}
+      <body className="min-h-full flex flex-col w-full">
         {children}
+        <SiteFooter />
         <PWARegister />
       </body>
     </html>

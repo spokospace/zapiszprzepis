@@ -55,7 +55,7 @@ export function AccessCodeGateView({ state, pending, formAction, code, onCodeCha
   return (
     <section
       aria-labelledby="access-code-heading"
-      className="flex flex-col gap-[18px] rounded-card border-2 border-border-card bg-white px-4 py-6 sm:px-5"
+      className="flex flex-col gap-[18px] rounded-tile border-2 border-border-card bg-white px-4 py-6 sm:px-5"
     >
       <span className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-accent text-action-text">
         <Lock aria-hidden="true" className="h-[30px] w-[30px]" />
@@ -88,7 +88,7 @@ export function AccessCodeGateView({ state, pending, formAction, code, onCodeCha
           aria-invalid={invalid || undefined}
           aria-describedby={error ? ERROR_ID : undefined}
           // Uppercase is display only: the server normalizes case, spaces and dashes.
-          className={`min-h-[60px] w-full rounded-field border-2 bg-white px-[14px] font-mono text-[20px] font-bold tracking-[.06em] text-ink uppercase placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-muted ${
+          className={`min-h-[60px] w-full rounded-tile border-2 bg-white px-[14px] font-mono text-[20px] font-bold tracking-[.06em] text-ink uppercase placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-muted ${
             invalid ? 'border-danger' : 'border-field'
           }`}
         />

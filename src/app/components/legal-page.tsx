@@ -47,10 +47,13 @@ export function LegalList({ children }: { children: ReactNode }) {
 /**
  * Links to the three legal pages, for /signup and the legal pages themselves.
  * /login (3a) has its own one-line footer built from the same path constants.
+ *
+ * Hidden from `lg` up, where the global {@link SiteFooter} (also `lg`-only) carries
+ * the same three links — below `lg` the footer is hidden and this is the only copy.
  */
 export function LegalLinks({ className }: { className?: string }) {
   return (
-    <nav aria-label="Informacje prawne" className={className}>
+    <nav aria-label="Informacje prawne" className={['lg:hidden', className].filter(Boolean).join(' ')}>
       <ul className="flex flex-wrap gap-x-6 gap-y-1 text-[16px] text-ink-soft">
         <li>
           <Link href={TERMS_PATH} className="inline-flex min-h-[48px] items-center text-ink-soft">

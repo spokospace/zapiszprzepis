@@ -1,55 +1,42 @@
+import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { categoryLabel } from '@/lib/recipe-categories'
-import { listCardLines } from '@/lib/recipe-meta'
-import { sourceLabel, type RecipeSource } from '@/lib/recipe-source'
+import { formatSource, type RecipeSource } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { recipePath } from '@/lib/routes'
 import type { ListKey } from '@/lib/recipe-list-context'
 import { FavoriteButton } from './favorite-button'
 import { NoPhoto } from './no-photo'
+import { SourceBadge } from './source-badge'
 
 interface RecipeCardProps {
   slug: string
   title: string
   imageUrl?: string | null
+  /** Only for the no-photo placeholder's category icon. */
   category: string
-  /** Short note that tells same-titled recipes apart ("z rowkami, na żółtkach"). */
+  /** Short note that tells same-titled recipes apart ("z musem jabłkowym"). */
   description?: string | null
   sourceType: RecipeSource
   sourceUrl: string | null
   sourceAuthor: string | null
-  /** The list this card sits in, for the recipe page's list bar (E01-S07). */
+  /** The list this card sits in, for the recipe page's back link (E01-S07). */
   from?: ListKey
   /** The heart on the card's photo (E01-S06); no heart without it. */
   favorite?: { recipeId: number; favorited: boolean; isAuthenticated: boolean }
   /**
-   * `tile` (default): the grid card (home, Ulubione, Moje przepisy, Podobne).
-   * `list` (E01-S22): the one list card of search, category and profile — on a
-   * phone the photo across the card's full width over the title, from sm a
-   * thumbnail beside it.
+   * Photo height (E01-S31 §2). `list` (default): a full-width card in the
+   * one-column list / grid — 210 px on a phone, 180 from md. `carousel`: a card
+   * in a scrolling strip (Podobne, Inne przepisy, home rows) — 170 px, 180 from md.
    */
-  variant?: 'tile' | 'list'
-  /** List only: total time ("Zupy · 45 min"), left out when unknown. */
-  minutes?: number | null
-  /** List only: from sm a 96 px thumbnail + 20 px title (search, C2) or 84 + 19 (category 6, profile 7). */
-  thumb?: 84 | 96
-  /** List only, on a category page: "czas · źródło" and these tag labels instead of the category. */
-  /** Tile only: the category badge under the source. Off where every card shares the category (Podobne). */
-  showCategory?: boolean
-  inCategory?: { tagLabels: readonly string[] }
-  /**
-   * Tile only: the image's `sizes`, matching the caller's grid (#253). The default fits
-   * Moje przepisy (one column on a phone); the carousel passes CAROUSEL_SIZES, Ulubione TILE_SIZES_1_TO_3.
-   */
+  photo?: 'list' | 'carousel'
+  /** The image's `sizes`, matching the caller's grid (#253). */
   sizes?: string
+  /** Extra content under the subtitle — the versions row's time and diffs (E01-S31 §4). */
+  children?: ReactNode
 }
 
-/** The list cards' container: one column, two from lg so they don't stretch to 1088 px (E01-S17). */
-export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
-
-
-// A tile's `sizes` per grid, so a phone fetches an archived image at the width the card
+// A card's `sizes` per grid, so a phone fetches an archived image at the width the card
 // really has, not the whole screen (#253). The grids sit in PageContainer: 68rem
 // (1088 px) of content at most, so from there a column has a fixed width. In rem, like
 // Tailwind's breakpoints and widths: with a larger browser font a grid keeps fewer
@@ -61,6 +48,21 @@ export const LIST_CARDS_CLASS = 'flex flex-col gap-3 lg:grid lg:grid-cols-2'
 export const CAROUSEL_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 40rem) 50vw, calc(75vw - 1.5rem)'
 /** Ulubione: one a row on a phone (100vw − 2rem), three from sm, (68 − 2 × 0.75) / 3 ≈ 22.2rem (355 px) at most. */
 export const TILE_SIZES_1_TO_3 = '(min-width: 72rem) 22.2rem, (min-width: 40rem) 33vw, calc(100vw - 2rem)'
+/** The list grid (search, category, profile, Moje przepisy): a phone gets the full width, md 3 cols, lg 4 cols (E01-S31 §2). */
+export const LIST_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 48rem) 33vw, calc(100vw - 2rem)'
+
+/**
+ * The list container (E01-S31 §2, ZMIANY_prototyp §6): one column on a phone; from md a
+ * grid that auto-fills 200 px columns, so 768–1024 px gets 3 roomy cards rather than 4
+ * squished ones, and wider screens add columns on their own.
+ */
+export const LIST_CARDS_CLASS =
+  'flex flex-col gap-6 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] md:gap-x-6 md:gap-y-8'
+
+const PHOTO_HEIGHT = {
+  list: 'h-[210px] md:h-[180px]',
+  carousel: 'h-[170px] md:h-[180px]',
+} as const
 
 export function RecipeCard({
   slug,
@@ -73,119 +75,60 @@ export function RecipeCard({
   sourceAuthor,
   from,
   favorite,
-  variant = 'tile',
-  minutes,
-  thumb = 96,
-  inCategory,
-  showCategory = true,
-  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
+  photo = 'list',
+  sizes = LIST_SIZES,
+  children,
 }: RecipeCardProps) {
-  // The top-right corner of the card: on the photo on a phone and on a tile; beside
-  // the title of a list card from sm, whose text column leaves it room (sm:pr-14).
-  const heart = favorite && (
-    <div className="absolute top-2 right-2 z-10">
-      <FavoriteButton
-        recipeId={favorite.recipeId}
-        initialFavorited={favorite.favorited}
-        isAuthenticated={favorite.isAuthenticated}
-        size="photo"
-        recipeTitle={title}
-      />
-    </div>
-  )
+  const source = formatSource(sourceType, sourceUrl, sourceAuthor)
 
-  if (variant === 'list') {
-    const lines = listCardLines({
-      category,
-      minutes: minutes ?? null,
-      source: sourceLabel(sourceType, sourceUrl, sourceAuthor),
-      tagLabels: inCategory?.tagLabels,
-      inCategory: Boolean(inCategory),
-    })
-    // No overflow-hidden on the frame: it would clip the focus outline of the link.
-    return (
-      <article className="@container relative flex h-full flex-col rounded-card border-2 border-border-card bg-white">
-        {/* Only the title is underlined: it names the link; the meta lines would just be noise. */}
-        <Link
-          href={recipePath(slug, { from })}
-          className="group flex flex-1 flex-col rounded-[14px] no-underline! sm:flex-row sm:gap-3 sm:p-3"
-        >
-          {/* A phone gets the photo across the whole card, 4:3 like the tiles; from sm it is a
-              thumbnail beside the title, and a card there is always wider than the old 280 px cut. */}
-          <div
-            className={`relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-t-[14px] bg-surface-3 sm:aspect-auto sm:rounded-[12px] ${thumb === 84 ? 'sm:h-[84px] sm:w-[84px]' : 'sm:h-24 sm:w-24'}`}
-          >
-            {imageUrl ? (
-              // The title sits right under (or beside) it, so the image is decorative here.
-              <Image
-                src={imageUrl}
-                alt=""
-                fill
-                className="object-cover"
-                sizes={`(min-width: 40rem) ${thumb === 84 ? '84px' : '6rem'}, calc(100vw - 2rem)`}
-                unoptimized={!isArchivedImageUrl(imageUrl)}
-              />
-            ) : (
-              <NoPhoto category={category} iconClassName="h-14 w-14 sm:h-9 sm:w-9" />
-            )}
-          </div>
-          <div className={`flex min-w-0 flex-col gap-1.5 p-3 sm:p-0 ${favorite ? 'sm:pr-14' : ''}`}>
-            {/* Two lines at most (C2), words wrapped whole. A tiny card gets 18 px and a third line,
-                so a long word still fits instead of being cut; only a word wider than that breaks. */}
-            <h3
-              className={`line-clamp-2 leading-[1.25] font-bold break-words text-ink group-hover:text-action-text @max-[280px]:line-clamp-3 @max-[280px]:text-[18px] ${thumb === 84 ? 'text-[19px]' : 'text-[20px]'}`}
-            >
-              {title}
-            </h3>
-            {lines.map((line) => (
-              <p key={line} className="text-[16px] leading-snug break-words text-ink-soft">
-                {line}
-              </p>
-            ))}
-          </div>
-        </Link>
-        {heart}
-      </article>
-    )
-  }
-
-  // The title link is stretched over the whole card, so the card stays one big
+  // The title link is stretched over the whole card, so the card is one big
   // target while the heart is a sibling, not a control nested inside a link.
   return (
-    <article className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-card border border-border-card bg-white transition-shadow hover:shadow-lg">
-      {/* Image container */}
-      <div className="relative aspect-[4/3] w-full bg-surface-3">
+    <article className="group relative flex h-full flex-col">
+      <div className={`relative w-full shrink-0 overflow-hidden rounded-tile bg-surface-3 ${PHOTO_HEIGHT[photo]}`}>
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={title}
+            // The title sits right under it and names the card's link, so the image is decorative:
+            // empty alt plus aria-hidden keeps it out of the a11y tree and makes the intent explicit.
+            alt=""
+            aria-hidden
             fill
-            className="object-cover group-hover:scale-105 transition-transform"
+            className="object-cover transition-opacity group-hover:opacity-[.92]"
             sizes={sizes}
             unoptimized={!isArchivedImageUrl(imageUrl)}
           />
         ) : (
           <NoPhoto category={category} iconClassName="h-12 w-12" />
         )}
+        {/* Source on the photo, bottom-left; pointer-events-none so the whole card still
+            leads to the recipe (handoff §1: the badge is not a link on a card). */}
+        <div className="pointer-events-none absolute bottom-1.5 left-px z-10 max-w-[calc(100%-1px)]">
+          <SourceBadge kind={source.kind} text={source.text} variant="card" />
+        </div>
+        {favorite && (
+          <div className="absolute top-2 right-2 z-10">
+            <FavoriteButton
+              recipeId={favorite.recipeId}
+              initialFavorited={favorite.favorited}
+              isAuthenticated={favorite.isAuthenticated}
+              size="photo"
+              recipeTitle={title}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Card content */}
-      <div className="flex-1 p-3">
-        <h3 className="line-clamp-3 text-[19px] leading-snug font-bold break-words text-ink group-hover:text-action-text">
+      <div className="flex flex-1 flex-col gap-1 pt-3">
+        {/* Two lines at most, words wrapped whole (handoff §1). */}
+        <h3 className="line-clamp-2 text-[21px] leading-[1.25] font-bold break-words text-ink group-hover:text-action-text">
           <Link href={recipePath(slug, { from })} className="no-underline! after:absolute after:inset-0">
             {title}
           </Link>
         </h3>
-        {description && <p className="mt-1 line-clamp-2 text-[16px] text-ink-soft">{description}</p>}
-        <p className="mt-1 text-[16px] break-words text-ink-soft">{sourceLabel(sourceType, sourceUrl, sourceAuthor)}</p>
-        {showCategory && (
-          <span className="mt-2 inline-block rounded-pill bg-surface-accent-2 px-2.5 py-0.5 text-[16px] font-bold text-action-text">
-            {categoryLabel(category)}
-          </span>
-        )}
+        {description && <p className="line-clamp-2 text-[17px] leading-snug text-ink-soft">{description}</p>}
+        {children}
       </div>
-
-      {heart}
     </article>
   )
 }

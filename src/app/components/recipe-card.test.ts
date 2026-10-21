@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { CAROUSEL_SIZES, RecipeCard, TILE_SIZES_1_TO_3 } from './recipe-card'
+import { CAROUSEL_SIZES, LIST_SIZES, RecipeCard, TILE_SIZES_1_TO_3 } from './recipe-card'
 
 // The heart pulls in server actions; a marker shows where the card puts it.
 vi.mock('./favorite-button', () => ({
@@ -22,43 +22,90 @@ const card = (props: Partial<Parameters<typeof RecipeCard>[0]> = {}) =>
     }),
   )
 
-describe('RecipeCard list variant on a phone', () => {
-  it('runs the photo across the card, then a thumbnail from sm', () => {
-    const html = card({ variant: 'list', thumb: 84 })
-    expect(html).toMatch(/class="relative aspect-\[4\/3\] w-full [^"]*sm:h-\[84px\] sm:w-\[84px\]/)
-    expect(html).toContain('flex-col')
-    expect(html).toContain('sm:flex-row')
+describe('RecipeCard source badge', () => {
+  it('shows the source on the photo, not a category chip or a source line', () => {
+    // A real photo, so the no-photo placeholder (which also uses the accent surface) is absent.
+    const html = card({ imageUrl: 'https://x.supabase.co/storage/v1/object/public/recipe-images/1/cover.webp' })
+    expect(html).toContain('lucide-globe')
+    expect(html).toContain('aniagotuje.pl')
+    // No category chip (handoff §1): the old accent pill and category label are gone.
+    expect(html).not.toContain('bg-surface-accent-2')
+    expect(html).not.toContain('Ciasta')
+  })
+
+  it('names the platform and channel for YouTube', () => {
+    const html = card({ sourceType: 'youtube', sourceUrl: 'https://youtu.be/x', sourceAuthor: 'Kuchnia Ani' })
+    expect(html).toContain('lucide-monitor-play')
+    expect(html).toContain('YouTube · Kuchnia Ani')
+  })
+
+  it('lets a card click through the badge to the recipe (badge is not a link)', () => {
+    expect(card()).toContain('pointer-events-none')
   })
 })
 
+describe('RecipeCard subtitle', () => {
+  it('shows the description under the title when there is one', () => {
+    expect(card({ description: 'z musem jabłkowym' })).toContain('z musem jabłkowym')
+  })
+
+  it('renders no empty paragraph without a description', () => {
+    expect(card()).not.toContain('<p class="line-clamp-2 text-[16px]')
+  })
+})
+
+const ARCHIVED_COVER = 'https://x.supabase.co/storage/v1/object/public/recipe-images/1/cover.webp'
+
 describe('RecipeCard without a photo', () => {
-  it('shows the category icon, hidden from screen readers', () => {
-    for (const variant of ['list', 'tile'] as const) {
-      const html = card({ variant })
-      expect(html).toContain('lucide-cake')
-      expect(html).toMatch(/<div aria-hidden="true"[^>]*bg-surface-accent-2[^>]*><svg/)
-    }
+  it('shows the category icon placeholder, hidden from screen readers', () => {
+    expect(card({ imageUrl: null })).toContain('lucide-cake')
+    // With a real photo there is no placeholder icon.
+    expect(card({ imageUrl: ARCHIVED_COVER })).not.toContain('lucide-cake')
   })
 
   it('falls back to the "Inne" icon for a category it does not know', () => {
-    expect(card({ variant: 'list', category: 'nieznana' })).toContain('lucide-utensils-crossed')
+    expect(card({ imageUrl: null, category: 'nieznana' })).toContain('lucide-utensils-crossed')
   })
 })
 
 describe('RecipeCard heart', () => {
   const favorite = { recipeId: 1, favorited: false, isAuthenticated: true }
 
-  it('sits on the photo corner of both variants, with no bar under the card', () => {
-    for (const variant of ['list', 'tile'] as const) {
-      const html = card({ variant, favorite })
-      expect(html).toContain('<div class="absolute top-2 right-2 z-10"><i data-heart="photo" data-title="Sernik"></i></div>')
-      expect(html).not.toContain('border-t-2')
-    }
+  it('sits in the photo corner, with no bar under the card', () => {
+    const html = card({ favorite })
+    expect(html).toContain('<div class="absolute top-2 right-2 z-10"><i data-heart="photo" data-title="Sernik"></i></div>')
+    expect(html).not.toContain('border-t-2')
   })
 
-  it('keeps a list card title clear of the heart beside it from sm', () => {
-    expect(card({ variant: 'list', favorite })).toContain('sm:pr-14')
-    expect(card({ variant: 'list' })).not.toContain('sm:pr-14')
+  it('renders no heart without the favorite prop', () => {
+    expect(card()).not.toContain('data-heart')
+  })
+})
+
+describe('RecipeCard photo height (handoff §2)', () => {
+  it('is taller in a list than in a carousel', () => {
+    expect(card()).toContain('h-[210px]')
+    expect(card({ photo: 'carousel' })).toContain('h-[170px]')
+  })
+})
+
+describe('RecipeCard extra content', () => {
+  it('renders children under the subtitle (versions row)', () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        RecipeCard,
+        {
+          slug: 's',
+          title: 'T',
+          category: 'ciasta',
+          sourceType: 'web_blog' as const,
+          sourceUrl: null,
+          sourceAuthor: null,
+        },
+        createElement('b', null, 'Ma dodatkowo: masło'),
+      ),
+    )
+    expect(html).toContain('Ma dodatkowo: masło')
   })
 })
 
@@ -69,26 +116,42 @@ const imgSizes = (props: Partial<Parameters<typeof RecipeCard>[0]> = {}) =>
   card({ imageUrl: ARCHIVED, ...props }).match(/<img[^>]*\ssizes="([^"]*)"/)?.[1]
 
 describe('RecipeCard image sizes (#253)', () => {
-  it('keeps the one-column default when the caller passes none (Moje przepisy)', () => {
-    expect(imgSizes()).toBe('(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw')
+  it('defaults to the list grid widths', () => {
+    expect(imgSizes()).toBe(LIST_SIZES)
   })
 
-  it("uses the caller's sizes on a tile", () => {
+  it("uses the caller's sizes when passed (carousels, Ulubione)", () => {
     expect(imgSizes({ sizes: CAROUSEL_SIZES })).toBe(CAROUSEL_SIZES)
     expect(imgSizes({ sizes: TILE_SIZES_1_TO_3 })).toBe(TILE_SIZES_1_TO_3)
   })
 
-  it('asks for the width a card has on a phone: 3/4 of the strip, or the whole row in Ulubione', () => {
-    expect(CAROUSEL_SIZES).toMatch(/, calc\(75vw - 1\.5rem\)$/)
-    expect(TILE_SIZES_1_TO_3).toMatch(/, calc\(100vw - 2rem\)$/)
-  })
-
   it('uses rem like the grids, so a larger browser font moves both together', () => {
-    for (const sizes of [CAROUSEL_SIZES, TILE_SIZES_1_TO_3]) expect(sizes).not.toMatch(/\dpx/)
+    for (const sizes of [CAROUSEL_SIZES, TILE_SIZES_1_TO_3, LIST_SIZES]) expect(sizes).not.toMatch(/\dpx/)
+  })
+})
+
+describe('RecipeCard photo is decorative (WCAG 1.1.1, #410)', () => {
+  it('renders an empty alt and keeps the photo out of the a11y tree', () => {
+    // The visible title names the card's link, so the dish photo adds no information a
+    // name-only alt would not duplicate: empty alt + aria-hidden is the decorative choice.
+    const img = card({ imageUrl: ARCHIVED_COVER }).match(/<img[^>]*>/)?.[0] ?? ''
+    expect(img).toContain('alt=""')
+    expect(img).toContain('aria-hidden="true"')
+  })
+})
+
+describe('RecipeCard look (style 1b)', () => {
+  it('has no frame or background: just a 4 px photo with the text below', () => {
+    const html = card()
+    expect(html).toContain('rounded-tile')
+    expect(html).not.toContain('border-2')
+    expect(html).not.toContain('rounded-card')
+    expect(html).not.toContain('group-hover:scale-105')
   })
 
-  it('gives a list card the full width on a phone and its thumbnail from sm, whatever the caller passes', () => {
-    expect(imgSizes({ variant: 'list', sizes: CAROUSEL_SIZES })).toBe('(min-width: 40rem) 6rem, calc(100vw - 2rem)')
-    expect(imgSizes({ variant: 'list', thumb: 84 })).toBe('(min-width: 40rem) 84px, calc(100vw - 2rem)')
+  it('pins the source tab to the photo corner without a shadow', () => {
+    const html = card()
+    expect(html).toContain('bottom-1.5 left-px')
+    expect(html).not.toContain('shadow-sm')
   })
 })

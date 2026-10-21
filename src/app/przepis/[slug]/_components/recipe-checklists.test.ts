@@ -3,13 +3,14 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { RecipeChecklists } from './recipe-checklists'
 
-function render(servings: number | null) {
+function render(servings: number | null, stepImages?: string[]) {
   return renderToStaticMarkup(
     createElement(RecipeChecklists, {
       recipeId: 1,
       title: 'Zupa krem z dyni',
       ingredientGroups: [{ section: null, items: [{ name: 'dynia', amount: '1', unit: 'kg' }] }],
       steps: ['Dynię pokroić.', '2 ząbki czosnku posiekać.'],
+      stepImages,
       servings,
     }),
   )
@@ -27,7 +28,42 @@ describe('RecipeChecklists headings (C3)', () => {
   })
 
   it('sets the section headings at 24 px (README: H2 22–24 px)', () => {
-    expect(render(null)).toContain('<h2 id="steps-heading" class="mb-3 text-[24px] font-bold text-ink">Przygotowanie</h2>')
+    expect(render(null)).toContain('<h2 id="steps-heading" class="text-[24px] font-bold text-ink">Przygotowanie</h2>')
+  })
+})
+
+// ZMIANA_zdjecia_krokow: a source photo under the step text, and a „Zdjęcia kroków” toggle,
+// only for recipes that have at least one step photo.
+describe('RecipeChecklists step photos', () => {
+  it('shows no toggle and no step figure when no step has a photo', () => {
+    const html = render(null)
+    expect(html).not.toContain('aria-label="Zdjęcia kroków"')
+    expect(html).not.toContain('<figure')
+    expect(html).not.toContain('Zdjęcie do kroku')
+  })
+
+  it('renders the „Zdjęcia kroków: Pokaż / Ukryj” group when a step has a photo', () => {
+    const html = render(null, ['https://cdn.example/step-1.jpg', ''])
+    expect(html).toContain('role="group" aria-label="Zdjęcia kroków"')
+    // „Pokaż” is the default (aria-pressed), „Ukryj” is not.
+    expect(html).toMatch(/aria-pressed="true"[^>]*>Pokaż</)
+    expect(html).toMatch(/aria-pressed="false"[^>]*>Ukryj</)
+  })
+
+  it('places a 4:3 figure only under the steps that have a photo, with an alt', () => {
+    const html = render(null, ['https://cdn.example/step-1.jpg', ''])
+    const list = html.match(/<ol class="space-y-5">[\s\S]*<\/ol>/)?.[0] ?? ''
+    expect(list).toContain('<figure')
+    expect(list).toContain('aspect-[4/3]')
+    expect(list).toContain('Zdjęcie do kroku 1')
+    // The second step has '' → no figure, no empty frame.
+    expect(list).not.toContain('Zdjęcie do kroku 2')
+    expect(list.match(/<figure/g)).toHaveLength(1)
+  })
+
+  it('makes each step photo a tap-to-enlarge button', () => {
+    const html = render(null, ['https://cdn.example/step-1.jpg', ''])
+    expect(html).toMatch(/<button[^>]*aria-label="Powiększ zdjęcie do kroku 1"/)
   })
 })
 

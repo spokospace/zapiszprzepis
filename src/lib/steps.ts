@@ -30,3 +30,31 @@ export function parseSteps(raw: unknown): string[] {
 export function isStepText(step: unknown): step is string {
   return typeof step === 'string' && step.trim().length > 0
 }
+
+/**
+ * Coerce the stored `recipes.step_images` (text[]) into a list index-aligned with
+ * `steps`: element i is step i's archived image URL, or '' when that step has none.
+ * Positions are preserved (never filtered) so steps[i] and stepImages[i] stay in
+ * sync. Non-strings and non-http values become ''. Never throws (RSC boundary).
+ */
+export function parseStepImages(raw: unknown): string[] {
+  let value = raw
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value)
+    } catch {
+      return []
+    }
+  }
+  if (!Array.isArray(value)) return []
+  return value.map((img) => (typeof img === 'string' && /^https?:\/\//.test(img.trim()) ? img.trim() : ''))
+}
+
+/**
+ * The step photos a viewer may see: only a signed-in user gets them. A guest gets
+ * an empty list, so no photo, toggle or lightbox is rendered and the image URLs
+ * never reach the page they receive — the steps read as plain text.
+ */
+export function visibleStepImages(raw: unknown, isSignedIn: boolean): string[] {
+  return isSignedIn ? parseStepImages(raw) : []
+}
