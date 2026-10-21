@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ACCESS_GATE_HREF, ADD_RECIPE_HREF, buildMenuModel, recipesNoun } from './app-menu-model'
+import { ACCESS_GATE_HREF, ADD_RECIPE_HREF, buildMenuModel, newNotificationsNoun, recipesNoun } from './app-menu-model'
 
 const keys = (model: ReturnType<typeof buildMenuModel>) => model.mine?.map((e) => e.key)
 
@@ -68,5 +68,15 @@ describe('recipesNoun', () => {
     [112, 'przepisów'],
   ])('%i → %s', (count, noun) => {
     expect(recipesNoun(count)).toBe(noun)
+  })
+})
+
+describe('newNotificationsNoun', () => {
+  it('inflects Polish plurals', () => {
+    expect(newNotificationsNoun(1)).toBe('nowe powiadomienie')
+    expect(newNotificationsNoun(3)).toBe('nowe powiadomienia')
+    expect(newNotificationsNoun(5)).toBe('nowych powiadomień')
+    expect(newNotificationsNoun(12)).toBe('nowych powiadomień')
+    expect(newNotificationsNoun(22)).toBe('nowe powiadomienia')
   })
 })

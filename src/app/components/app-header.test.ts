@@ -154,7 +154,10 @@ describe('AppHeader "Szukaj" (handoff v8, E01-S25)', () => {
     for (const signedIn of [true, false]) {
       const link = searchButton(render(signedIn))
       expect(link).toContain('href="/szukaj"')
-      expect(link).toContain('h-14 w-16')
+      expect(link).toContain('h-14 min-w-16')
+      // #412: a 16 px bold caption, sentence case.
+      expect(link).toContain('text-base')
+      expect(link).not.toContain('text-[13px]')
       expect(link).toContain('flex-col')
       expect(link).toContain('lg:hidden')
       expect(link).toMatch(/<svg[^>]*aria-hidden="true"[^>]*>.*<\/svg>Szukaj<\/a>$/)

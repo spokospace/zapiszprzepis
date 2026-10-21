@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, BookOpen, Heart, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
+import { Bell, BookOpen, Heart, House, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { buttonClasses } from '@/app/components/ui/button'
 import { categoryDisplayLabel, CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
@@ -11,7 +11,7 @@ import { categoryPath, NOTIFICATIONS_PATH } from '@/lib/routes'
 import type { MenuSummary } from '@/lib/menu-summary'
 import type { NotificationBadge } from '@/lib/notification-badge'
 import { NotificationDot } from './notification-dot'
-import { buildMenuModel, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
+import { buildMenuModel, newNotificationsNoun, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
 
 const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
   'my-recipes': BookOpen,
@@ -21,7 +21,7 @@ const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
 
 // "× Zamknij": 56 px, 18 px bold (handoff C5).
 const LABELED_ICON_BUTTON =
-  'inline-flex min-h-14 items-center gap-1.5 rounded-field px-3 text-[18px] font-bold text-ink hover:bg-surface-3'
+  'inline-flex min-h-14 items-center gap-1.5 rounded-pill px-3 text-[18px] font-bold text-ink hover:bg-surface-3'
 
 // "Ustawienia | Wyloguj": 64 px rows, 18 px bold (handoff C5). no-underline!:
 // "Ustawienia" is a <Link>, so the global `a` underline would show through
@@ -76,8 +76,8 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
 
 /**
  * "Powiadomienia" in "Moje" (E01-S15b): the single entry point in the header
- * drawer at every width — the standalone bell is gone. A dot (not a number)
- * marks "something new"; its text equivalent is in the row's accessible name.
+ * drawer at every width — the standalone bell is gone. A counter marks
+ * "something new"; its text equivalent is in the row's accessible name.
  */
 function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBadge; active: boolean; onNavigate: () => void }) {
   return (
@@ -94,8 +94,17 @@ function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBa
       </span>
       {badge.count > 0 && (
         <>
-          <NotificationDot className="ml-auto" />
-          <span className="sr-only">, masz nowe powiadomienia</span>
+          {/* A counter, not a dot (style 1b): at least 28 px square, #c2410c with white
+              16 px bold text (5.2:1); its text equivalent is the sr-only count below. */}
+          <span
+            aria-hidden="true"
+            className="ml-auto inline-flex min-h-7 min-w-7 items-center justify-center rounded-pill bg-action px-2 text-[16px] leading-none font-bold text-white"
+          >
+            {badge.count}
+          </span>
+          <span className="sr-only">
+            , {badge.count} {newNotificationsNoun(badge.count)}
+          </span>
         </>
       )}
     </Link>
@@ -140,9 +149,9 @@ export function AppMenu({
         onClick={() => dialogRef.current?.showModal()}
         aria-haspopup="dialog"
         aria-controls="app-menu"
-        // Mobile 1c (E01-S19): icon over a 13 px bold caption, 60x56 like Dodaj.
+        // Mobile 1c (E01-S19, #412): icon over a 16 px bold caption, at least 64x56.
         // The desktop header (E01-S17) keeps the 48 px inline row.
-        className="relative inline-flex h-14 w-[60px] flex-col items-center justify-center gap-0.5 rounded-field text-[13px] leading-none font-bold text-ink hover:bg-surface-3 lg:h-auto lg:min-h-[48px] lg:w-auto lg:flex-row lg:gap-1.5 lg:px-2.5 lg:text-sm lg:leading-5 lg:font-semibold"
+        className="relative inline-flex h-14 min-w-16 flex-col items-center justify-center gap-0.5 rounded-pill text-base leading-none font-bold text-ink hover:bg-surface-3 lg:h-auto lg:min-h-[48px] lg:w-auto lg:flex-row lg:gap-1.5 lg:px-2.5 lg:text-sm lg:leading-5 lg:font-semibold"
       >
         {/* The only header signal for notifications at every width (E01-S15b): a
             fixed-size dot on the MENU icon, never a number — smallest footprint
@@ -155,7 +164,7 @@ export function AppMenu({
             <NotificationDot className="absolute -top-1.5 -right-1.5" tone={notifications.loadFailed ? 'ink' : 'action'} />
           )}
         </span>
-        MENU
+        Menu
         {notifications && notifications.count > 0 && <span className="sr-only">, nowe powiadomienia</span>}
         {notifications?.loadFailed && <span className="sr-only">, nie udało się sprawdzić powiadomień</span>}
       </button>
@@ -172,10 +181,10 @@ export function AppMenu({
         // Open animation (ZMIANY_prototyp §4): the panel slides in (280 ms), the backdrop
         // fades (200 ms); prefers-reduced-motion drops both. Desktop panel 460 px with a
         // soft left shadow; mobile stays full width.
-        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full max-w-none bg-surface p-0 text-ink transition-transform duration-[280ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none backdrop:bg-black/40 backdrop:transition-opacity backdrop:duration-200 backdrop:ease-out backdrop:motion-reduce:transition-none starting:open:translate-x-full starting:open:backdrop:opacity-0 sm:w-[460px] sm:shadow-[-12px_0_32px_rgba(17,24,39,0.18)]"
+        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-surface p-0 text-ink transition-transform duration-[280ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none backdrop:bg-black/40 backdrop:transition-opacity backdrop:duration-200 backdrop:ease-out backdrop:motion-reduce:transition-none starting:open:translate-x-full starting:open:backdrop:opacity-0 sm:w-[460px] sm:shadow-[-12px_0_32px_rgba(17,24,39,0.18)]"
       >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between border-b-2 border-border-card py-1 pr-2 pl-5">
+          <div className="flex shrink-0 items-center justify-between border-b-2 border-border-card py-1 pr-2 pl-5">
             <h2 id="app-menu-title" className="text-[22px] font-bold text-ink">
               Menu
             </h2>
@@ -185,7 +194,22 @@ export function AppMenu({
             </button>
           </div>
 
-          <nav aria-label="Menu główne" className="flex-1 overflow-x-hidden overflow-y-auto py-4">
+          <nav aria-label="Menu główne" className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-4">
+            {/* Style 1b: the start page is the first item for everyone. `replace` swaps the
+                history entry, so Back does not walk through the pages visited before. */}
+            <Link
+              href="/"
+              replace
+              onClick={close}
+              aria-current={pathname === '/' ? 'page' : undefined}
+              className={`flex min-h-14 items-center gap-3 border-b-2 border-border-card px-5 text-[19px] font-bold no-underline! hover:bg-surface-2 ${
+                pathname === '/' ? 'bg-surface-3 text-action-text' : 'text-ink'
+              }`}
+            >
+              <House aria-hidden="true" className="h-6 w-6 shrink-0" />
+              Strona główna
+            </Link>
+            <div className="pt-4" />
             {mine ? (
               <section aria-labelledby="app-menu-mine" className="pb-4">
                 <h3 id="app-menu-mine" className={SECTION_HEADING}>
@@ -235,7 +259,7 @@ export function AppMenu({
                   two from there up; 16 px + tight spacing keep the longest name ("Ciasteczka")
                   on one line even in the 330 px panel. break-words is the last-resort net
                   (WCAG 1.4.10); bindOrphans (see its doc) handles Polish one-letter words. */}
-              <ul className="grid grid-cols-1 gap-2 px-5 min-[360px]:grid-cols-2">
+              <ul className="grid grid-cols-1 border-t border-border-card-2 min-[360px]:grid-cols-2">
                 {RECIPE_CATEGORIES.map(({ value, label }) => {
                   const href = categoryPath(value)
                   const active = pathname === href
@@ -246,11 +270,12 @@ export function AppMenu({
                         href={href}
                         onClick={close}
                         aria-current={active ? 'page' : undefined}
-                        // C5: the home C1 tile (E01-S20) — #fff7ed, a 1.5 px #fed7aa frame,
-                        // the category icon beside a 16 px bold name.
+                        // Style 1b: a flat row — 56 px, a 1 px #d1d5db line below, a 20 px #9a3412
+                        // icon and a 17 px bold name; no background or radius. The current
+                        // category adds a fill, never colour alone.
                         className={[
-                          'flex h-full min-h-[56px] items-center gap-1.5 rounded-field border-[1.5px] bg-surface-accent px-2 py-2 text-[16px] font-bold break-words no-underline! hover:border-action-text',
-                          active ? 'border-action text-action-text' : 'border-border-accent text-ink',
+                          'flex h-full min-h-[56px] items-center gap-2 border-b border-border-card-2 px-5 py-2 text-[17px] font-bold break-words no-underline! hover:bg-surface-2',
+                          active ? 'bg-surface-3 text-action-text' : 'text-ink',
                         ].join(' ')}
                       >
                         <Icon aria-hidden="true" strokeWidth={2} className="h-5 w-5 shrink-0 text-action-text" />
