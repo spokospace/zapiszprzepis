@@ -151,13 +151,14 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
           </li>
         )}
       </ul>
-      {/* Phone only: the gradient buttons fade the chips under them, so their label always sits on white. */}
+      {/* Phone only: the gradient buttons fade the chips under them, so their label always sits on white.
+          They reach the screen edges (the row bleeds out of the page padding), or a chip would peek out beside them. */}
       {canLeft && (
         <button
           type="button"
           aria-label="Przewiń filtry wstecz"
           onClick={() => scrollByPage(-1)}
-          className="absolute top-0 bottom-0 left-0 flex items-center pr-10 pl-1 text-[16px] font-bold text-ink md:hidden"
+          className="absolute top-0 bottom-0 -left-4 flex items-center pr-10 pl-4 text-[16px] font-bold text-ink sm:-left-6 sm:pl-6 md:hidden"
           style={{ background: 'linear-gradient(90deg, #fff 0, #fff calc(100% - 36px), transparent)' }}
         >
           <ChevronLeft aria-hidden="true" className="h-5 w-5" />
@@ -169,7 +170,7 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
           type="button"
           aria-label="Przewiń filtry dalej"
           onClick={() => scrollByPage(1)}
-          className="absolute top-0 right-0 bottom-0 flex items-center pr-1 pl-10 text-[16px] font-bold text-ink md:hidden"
+          className="absolute top-0 -right-4 bottom-0 flex items-center pr-4 pl-10 text-[16px] font-bold text-ink sm:-right-6 sm:pr-6 md:hidden"
           style={{ background: 'linear-gradient(270deg, #fff 0, #fff calc(100% - 36px), transparent)' }}
         >
           Więcej
