@@ -7,6 +7,7 @@ config({ path: '.env.local' })
 const port = process.env.E2E_PORT ?? '3001'
 const baseURL = `http://localhost:${port}`
 const REFLOW = /reflow\.spec\.ts/
+const MENU_DRAWER = /menu-drawer\.spec\.ts/
 const IMAGE_ALLOWLIST = /image-optimizer-allowlist\.spec\.ts/
 
 export default defineConfig({
@@ -27,7 +28,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: [REFLOW, IMAGE_ALLOWLIST],
+      testIgnore: [REFLOW, MENU_DRAWER, IMAGE_ALLOWLIST],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json',
@@ -50,6 +51,12 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
       // Signs the dev QA accounts in once, for the signed-in screens.
       dependencies: ['reflow-setup'],
+    },
+    // The header MENU drawer on a phone (#448): guest only, no sign-in.
+    {
+      name: 'menu-drawer',
+      testMatch: MENU_DRAWER,
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
   webServer: {

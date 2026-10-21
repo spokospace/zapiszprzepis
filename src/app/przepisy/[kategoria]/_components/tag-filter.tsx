@@ -97,11 +97,13 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
       </p>
       <div className="relative">
       {/* Phone: one row, scrolled sideways, running to the screen edges. From md the chips wrap.
-          The vertical padding keeps a chip's focus ring from being clipped by the scroller. */}
+          The vertical padding keeps a chip's focus ring from being clipped by the scroller.
+          `relative`: the row must contain the chips' absolute sr-only text, or it escapes the
+          clip and widens the page (#448). */}
       <ul
         ref={scrollerRef}
         id={listId}
-        className="-mx-4 -my-1 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 md:mx-0 md:my-0 md:flex-wrap md:overflow-visible md:p-0 [&::-webkit-scrollbar]:hidden"
+        className="relative -mx-4 -my-1 flex gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 md:mx-0 md:my-0 md:flex-wrap md:overflow-visible md:p-0 [&::-webkit-scrollbar]:hidden"
       >
         {chips.map((chip, i) => (
           <li

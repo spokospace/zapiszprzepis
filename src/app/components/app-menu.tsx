@@ -178,12 +178,17 @@ export function AppMenu({
         onClick={(event) => {
           if (event.target === event.currentTarget) close()
         }}
-        // Open animation (ZMIANY_prototyp §4): the panel slides in (280 ms), the backdrop
-        // fades (200 ms); prefers-reduced-motion drops both. Desktop panel 460 px with a
-        // soft left shadow; mobile stays full width.
-        className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-surface p-0 text-ink transition-transform duration-[280ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none backdrop:bg-black/40 backdrop:transition-opacity backdrop:duration-200 backdrop:ease-out backdrop:motion-reduce:transition-none starting:open:translate-x-full starting:open:backdrop:opacity-0 sm:w-[460px] sm:shadow-[-12px_0_32px_rgba(17,24,39,0.18)]"
+        // A transparent full-viewport frame that never moves: the panel inside slides,
+        // and this box clips it. Sliding the <dialog> itself put its box up to a full
+        // viewport width past the right edge mid-animation, which left the page
+        // sideways-scrollable on Android with a larger system font (#448). `clip`, not
+        // `hidden`: a clip box is no scroll container, so focus can't scroll the panel.
+        className="group fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-clip bg-transparent p-0 text-ink backdrop:bg-black/40 backdrop:transition-opacity backdrop:duration-200 backdrop:ease-out backdrop:motion-reduce:transition-none starting:open:backdrop:opacity-0"
       >
-        <div className="flex h-full flex-col">
+        {/* Open animation (ZMIANY_prototyp §4): the panel slides in (280 ms), the backdrop
+            fades (200 ms); prefers-reduced-motion drops both. Desktop panel 460 px with a
+            soft left shadow; mobile stays full width. */}
+        <div className="ml-auto flex h-full w-full flex-col bg-surface transition-transform duration-[280ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none starting:group-open:translate-x-full sm:w-[460px] sm:shadow-[-12px_0_32px_rgba(17,24,39,0.18)]">
           <div className="flex shrink-0 items-center justify-between border-b-2 border-border-card py-1 pr-2 pl-5">
             <h2 id="app-menu-title" className="text-[22px] font-bold text-ink">
               Menu
