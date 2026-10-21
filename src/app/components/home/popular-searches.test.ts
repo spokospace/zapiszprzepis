@@ -23,6 +23,11 @@ describe('PopularSearches in the hero (handoff 14)', () => {
     expect(html).toContain('rounded-pill border-2 border-border-dark')
   })
 
+  it('centers the lead-in and the pills from md', () => {
+    expect(html).toContain('md:items-center md:text-center')
+    expect(html).toContain('md:justify-center')
+  })
+
   it('hides only the fifth pill on a phone', () => {
     expect(html.match(/max-sm:hidden/g)).toHaveLength(1)
     expect(html).toMatch(/<li class="max-sm:hidden"><a [^>]*>naleśniki</)
