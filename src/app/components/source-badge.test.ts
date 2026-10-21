@@ -26,6 +26,13 @@ describe('SourceBadge', () => {
     expect(render({ kind: 'wordpress', text: 'panimkuchniasmakowita' })).toContain('source-icon-wordpress')
   })
 
+  it('shows the Facebook "f" logo next to the author name alone', () => {
+    const html = render({ kind: 'facebook', text: 'Kulinarna Wiola' })
+    expect(html).toContain('source-icon-facebook')
+    expect(html).toContain('Kulinarna Wiola')
+    expect(html).not.toContain('Facebook')
+  })
+
   it('on the recipe page links to the original in a new tab, with the name underlined', () => {
     const html = render({
       variant: 'recipe',
