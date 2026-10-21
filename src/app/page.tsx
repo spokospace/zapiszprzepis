@@ -283,7 +283,7 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
       <Hero
         id="hero-heading"
         title="Czego dziś szukasz?"
-        subtitle="Przepisy z Facebooka, YouTube i blogów, spisane po polsku i zapisane na stałe."
+        subtitle="Przepisy z internetu w jednym miejscu. Zawsze pod ręką, kiedy gotujesz."
         recipeOfDay={recipeOfDay}
       >
         <HomeSearch id="home-search-guest" attached tone="action" placeholder="Danie lub składnik" />
