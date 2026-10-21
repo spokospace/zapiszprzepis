@@ -35,3 +35,43 @@ describe('refreshRecipe — full-access gate (E01-S11)', () => {
     expect(inngest.send).not.toHaveBeenCalled()
   })
 })
+
+describe('refreshRecipe — a share that could not be queued (#382)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('marks the new share failed when Inngest rejects the event, instead of leaving it pending', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const shareUpdate = vi.fn()
+    const recipesQuery: any = {
+      select: () => recipesQuery,
+      eq: () => recipesQuery,
+      single: async () => ({ data: { source_url: 'https://example.com/x' }, error: null }),
+    }
+    const sharesQuery: any = {
+      insert: () => sharesQuery,
+      select: () => sharesQuery,
+      single: async () => ({ data: { id: 5 }, error: null }),
+      update: (values: unknown) => ({
+        eq: async (...args: unknown[]) => {
+          shareUpdate(values, ...args)
+          return { error: null }
+        },
+      }),
+    }
+    vi.mocked(createSupabaseServerClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from: (table: string) => (table === 'recipes' ? recipesQuery : sharesQuery),
+    } as any)
+    vi.mocked(getFullAccess).mockResolvedValue(true)
+    vi.mocked(inngest.send).mockRejectedValue(new Error('Inngest 503'))
+    const data = new FormData()
+    data.set('slug', 'tiramisu')
+
+    await expect(refreshRecipe(data)).rejects.toThrow('REDIRECT /przepis/tiramisu?refreshing=1')
+
+    expect(shareUpdate).toHaveBeenCalledWith({ status: 'failed', error_message: 'Failed to queue extraction' }, 'id', 5)
+  })
+})
+

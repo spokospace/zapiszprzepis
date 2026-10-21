@@ -90,3 +90,68 @@ describe('retryShare — full-access gate (E02-S01 / audit C6)', () => {
     expect(inngest.send).not.toHaveBeenCalled()
   })
 })
+
+describe('retryShare — a share stuck in pending (#382)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  /** Records the UPDATE's filters; every step of either chain hands back the same recorder. */
+  function recordingStub(selectRow: unknown) {
+    const updateFilters: unknown[][] = []
+    const updateChain: any = {
+      eq: vi.fn((...args: unknown[]) => {
+        updateFilters.push(args)
+        return updateChain
+      }),
+      select: vi.fn().mockResolvedValue({ data: [{ id: 42 }], error: null }),
+    }
+    const from = vi.fn(() => ({
+      select: vi.fn(() => ({ eq: vi.fn(() => ({ single: vi.fn().mockResolvedValue({ data: selectRow, error: null }) })) })),
+      update: vi.fn(() => updateChain),
+    }))
+    return { supabase: { from } as any, updateFilters }
+  }
+
+  const minutesAgo = (m: number) => new Date(Date.now() - m * 60 * 1000).toISOString()
+
+  it('retries a share pending for more than 15 minutes, gated on the state it read', async () => {
+    const updatedAt = minutesAgo(30)
+    const { supabase, updateFilters } = recordingStub({
+      id: 42,
+      shared_url: 'https://example.com/x',
+      share_intent: {},
+      status: 'pending',
+      updated_at: updatedAt,
+    })
+    vi.mocked(requireUser).mockResolvedValue({ supabase, user: USER } as any)
+    vi.mocked(getFullAccess).mockResolvedValue(true)
+
+    await retryShare(42)
+
+    expect(updateFilters).toEqual([
+      ['id', 42],
+      ['status', 'pending'],
+      ['updated_at', updatedAt],
+    ])
+    expect(inngest.send).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves a share pending for 2 minutes alone — it is still being processed', async () => {
+    const { supabase, updateFilters } = recordingStub({
+      id: 42,
+      shared_url: 'https://example.com/x',
+      share_intent: {},
+      status: 'pending',
+      updated_at: minutesAgo(2),
+    })
+    vi.mocked(requireUser).mockResolvedValue({ supabase, user: USER } as any)
+    vi.mocked(getFullAccess).mockResolvedValue(true)
+
+    await retryShare(42)
+
+    expect(updateFilters).toEqual([])
+    expect(inngest.send).not.toHaveBeenCalled()
+  })
+})
+

@@ -798,10 +798,12 @@ Rules:
         })
         .eq('id', refreshed.id)
 
-      await supabase
+      const { error: shareError } = await supabase
         .from('recipe_shares')
         .update({ recipe_id: refreshed.id, status: 'completed' })
         .eq('id', shareId)
+      // Thrown, so the catch below fails the share rather than leaving it pending (#382).
+      if (shareError) throw new Error(`Share update failed: ${shareError.message}`)
 
       return { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' }
     }
@@ -997,19 +999,24 @@ Rules:
       throw new Error(`Database insert failed: ${lastInsertError?.message ?? 'exhausted slug retry attempts'}`)
     }
 
-    await supabase
+    const { error: shareError } = await supabase
       .from('recipe_shares')
       .update({ recipe_id: recipe.id, status: 'completed' })
       .eq('id', shareId)
+    // Thrown, so the catch below fails the share rather than leaving it pending (#382).
+    if (shareError) throw new Error(`Share update failed: ${shareError.message}`)
 
     return { recipeId: recipe.id, title, category: recipeJSON.category, status: 'completed' }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
 
-    await supabase
+    const { error: failError } = await supabase
       .from('recipe_shares')
       .update({ status: 'failed', error_message: errorMessage })
       .eq('id', shareId)
+    // The original error is what Inngest retries on; this one is only logged.
+    // A share left pending is caught later as stale (#382).
+    if (failError) console.error('[extract-recipe] Failed to mark share failed:', failError.message)
 
     throw error
   }
