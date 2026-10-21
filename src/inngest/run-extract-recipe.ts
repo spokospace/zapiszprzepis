@@ -33,6 +33,7 @@ import { STEP_CONTENT_RULE, STEP_FORM_RULE } from '@/lib/step-form'
 import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantNoteSibling } from '@/lib/recipe-dish'
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
 import { jsonLdServings, toServings } from '@/lib/servings'
+import { toIngredients, toMinutes } from '@/lib/extracted-recipe'
 
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -549,8 +550,20 @@ Rules:
       // {text, image}; split them so `steps` stays a string[] (its many
       // consumers and the column) and the per-step images ride alongside.
       // servings must fit the column (1–99) or it fails the insert.
+      // Ingredients without a string name are dropped (dedup trims `name`), and
+      // a time the int columns cannot take ("15-20", 37.5) becomes null (#381).
       const { steps, images: stepImages } = splitLlmSteps(parsed.steps)
-      return { ...parsed, steps, stepImages, category, servings: toServings(parsed.servings) }
+      return {
+        ...parsed,
+        ingredients: toIngredients(parsed.ingredients),
+        steps,
+        stepImages,
+        category,
+        servings: toServings(parsed.servings),
+        prepTimeMinutes: toMinutes(parsed.prepTimeMinutes),
+        cookTimeMinutes: toMinutes(parsed.cookTimeMinutes),
+        totalTimeMinutes: toMinutes(parsed.totalTimeMinutes),
+      }
     }
 
     // The user's other recipes, for the labelling pass below; read while the

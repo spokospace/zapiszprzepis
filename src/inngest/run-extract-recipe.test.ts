@@ -1587,6 +1587,55 @@ describe('runExtractRecipe — servings', () => {
   })
 })
 
+describe('runExtractRecipe — malformed model output (#381)', () => {
+  const withFields = (fields: Record<string, unknown>) => JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), ...fields })
+
+  it('saves the recipe without a nameless ingredient instead of crashing the dedup', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    const ingredients = [{ amount: '2', unit: 'szt.' }, { name: '  ' }, { name: 'Mąka', amount: 200, unit: 'g' }]
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withFields({ ingredients }) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({
+      ingredients: [{ name: 'Mąka', amount: '200', unit: 'g', section: '' }],
+    })
+    expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
+  })
+
+  it('stores null for a time the int column cannot take, and keeps a whole-number string', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: withFields({ prepTimeMinutes: '15-20', cookTimeMinutes: 37.5, totalTimeMinutes: '45' }) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({
+      prep_time_minutes: null,
+      cook_time_minutes: null,
+      total_time_minutes: 45,
+    })
+  })
+
+  it('fails with the no-usable-recipe reason, and saves nothing, when no ingredient has a name', async () => {
+    const mock = makeSupabaseMock()
+
+    await expect(
+      runExtractRecipe(BASE_EVENT, {
+        fetch: makeFetchMock({ openaiContent: withFields({ ingredients: [{ amount: '2' }, 'mąka', null] }) }),
+        supabase: mock.supabase as any,
+      }),
+    ).rejects.toThrow('no usable recipe')
+    expect(mock.didInsert('recipes')).toBe(false)
+    expect(mock.didUpdate('recipe_shares', { status: 'failed' })).toBe(true)
+  })
+})
+
 describe('runExtractRecipe — dish classification (E01-S21)', () => {
   // Routes the two gpt-4.1 calls (labelling vs dish) and the extraction call by
   // the request body, so the dish classifier gets a dish answer.
