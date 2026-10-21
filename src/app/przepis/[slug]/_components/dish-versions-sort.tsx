@@ -192,7 +192,7 @@ export function DishVersionsSort({
       <CardCarousel
         key={order}
         label={label}
-        layout="rows"
+        layout="versions"
         items={rows.map((v) => ({ key: v.id, card: cards[v.id] }))}
       />
 

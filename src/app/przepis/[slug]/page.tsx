@@ -22,6 +22,7 @@ import { SimilarRecipes } from './_components/similar-recipes'
 import { DishVersionsBar } from './_components/dish-versions-bar'
 import { DishVersions } from './_components/dish-versions'
 import { parseVersionsSort, type DishVersionRow } from '@/lib/dish-versions'
+import { getFavoriteIds } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
@@ -111,6 +112,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   if (dishVersionsResult?.error) console.error('[recipe] dish_versions failed:', dishVersionsResult.error)
   const versions = (dishVersionsResult?.data ?? []) as DishVersionRow[]
   const versionsTotal = versions[0]?.total_count ?? 0
+  // The hearts on the version cards: the viewer's favorites among them (null = guest).
+  const versionFavoriteIds = user ? await getFavoriteIds(supabase, user.id, versions.map((v) => v.id)) : null
   const versionsOrder = parseVersionsSort(wersje)
   const currentRecipe = {
     servings: typedRecipe.servings,
@@ -227,7 +230,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
         <DishVersions
           versions={versions}
           totalCount={versionsTotal}
-          dishAccusative={typedRecipe.dish_accusative ?? null}
+          dish={typedRecipe.dish ?? null}
+          favoriteIds={versionFavoriteIds}
           order={versionsOrder}
           current={currentRecipe}
         />

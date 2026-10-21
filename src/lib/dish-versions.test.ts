@@ -203,8 +203,11 @@ describe('versionsBarLabel & versionsHeading', () => {
     expect(versionsBarLabel(5, null)).toBe('Mamy jeszcze 5 innych przepisów na to danie')
   })
 
-  it('headings use the accusative or the case-free fallback', () => {
-    expect(versionsHeading(3, 'szarlotkę')).toBe('Inne przepisy na szarlotkę (3)')
+  it('headings use the genitive of a known dish or the case-free fallback', () => {
+    expect(versionsHeading(5, 'pączki')).toBe('Inne wersje pączków (5)')
+    expect(versionsHeading(3, 'Szarlotka')).toBe('Inne wersje szarlotki (3)')
+    // Not in the map, or no dish: the case-free wording.
+    expect(versionsHeading(3, 'tajemnicze danie')).toBe('Inne wersje tego dania (3)')
     expect(versionsHeading(3, null)).toBe('Inne wersje tego dania (3)')
   })
 })
