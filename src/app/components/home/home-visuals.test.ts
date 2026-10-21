@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { CategoryGrid } from './category-grid'
 import { GuestCta } from './guest-cta'
-import { HomeSearch } from './home-search'
+import { HomeSearch, VOICE_ROW_CLASS } from './home-search'
 import { HOME_CATEGORIES } from '@/lib/recipe-categories'
 
 const render = (el: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(el)
@@ -82,6 +82,13 @@ describe('HomeSearch looks (E01-S20)', () => {
     // „Szukaj” is a text button, not an icon; the field has no leading icon either.
     expect(html).toMatch(/<button type="submit"[^>]*>Szukaj<\/button>/)
     expect(html).not.toContain('lucide-search')
+  })
+
+  it('centers the „albo” + „Powiedz, czego szukasz” row from md and keeps it left on a phone', () => {
+    // The row only renders where the Web Speech API exists, so its classes are checked directly.
+    expect(VOICE_ROW_CLASS).toContain('md:justify-center')
+    expect(VOICE_ROW_CLASS).not.toContain('justify-center ')
+    expect(VOICE_ROW_CLASS).toContain('flex-wrap')
   })
 
   it('keeps „Powiedz” out of the attached field', () => {
