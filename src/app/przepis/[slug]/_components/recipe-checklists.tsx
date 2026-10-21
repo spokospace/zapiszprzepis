@@ -262,7 +262,7 @@ export function RecipeChecklists({
                         type="button"
                         onClick={() => setPhotoIndex(stepPhotos.findIndex((p) => p.step === i))}
                         aria-label={`Powiększ zdjęcie do kroku ${i + 1}`}
-                        className="relative block aspect-[4/3] w-full overflow-hidden rounded-[10px] bg-surface-3 md:rounded-xl"
+                        className="relative block aspect-[4/3] w-full overflow-hidden rounded-tile bg-surface-3"
                       >
                         <Image
                           src={visibleStepImages[i]}

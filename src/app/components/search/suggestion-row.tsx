@@ -19,7 +19,7 @@ export function SuggestionRowContent({
 }) {
   return (
     <>
-      <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[10px] bg-surface-3">
+      <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-tile bg-surface-3">
         {imageUrl ? (
           <Image
             src={imageUrl}

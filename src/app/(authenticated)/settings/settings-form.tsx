@@ -230,7 +230,7 @@ export function SettingsForm({
             gender is not chosen or nothing was added yet. */}
         <p
           aria-live="polite"
-          className="rounded-[14px] border-[1.5px] border-border-accent bg-surface-accent px-4 py-3.5 text-[18px] leading-normal text-ink"
+          className="rounded-tile border-[1.5px] border-border-accent bg-surface-accent px-4 py-3.5 text-[18px] leading-normal text-ink"
         >
           {greetingText} {addedLine ?? 'Tak przywitamy Cię na stronie głównej.'}
         </p>

@@ -15,7 +15,7 @@ describe('OAuthButtons — screen 3a (E01-S12b)', () => {
     const html = renderToStaticMarkup(createElement(OAuthButtons, { providers: ['facebook', 'google'], next: '/dodaj' }))
     expect(html.indexOf('Zaloguj przez Facebooka')).toBeLessThan(html.indexOf('Zaloguj przez Google'))
     expect(html).toContain('bg-facebook')
-    expect(html).toContain('border-field')
+    expect(html).toContain('border-ink')
     expect(html).toContain('value="facebook"')
     expect(html).toContain('value="google"')
     expect(html.match(/name="next" value="\/dodaj"/g)).toHaveLength(2)

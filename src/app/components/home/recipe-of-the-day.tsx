@@ -36,7 +36,7 @@ export function RecipeOfTheDay({
     <Link
       href={recipePath(slug)}
       aria-label={`Przepis dnia: ${title}`}
-      className="group relative -mx-4 -mb-6 block h-[260px] overflow-hidden bg-surface-3 no-underline! focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus sm:-mx-6 md:mx-0 md:mb-0 md:h-[300px] md:rounded-[20px] md:shadow-[0_10px_30px_rgba(17,24,39,0.12)]"
+      className="group relative -mx-4 -mb-6 block h-[260px] overflow-hidden bg-surface-3 no-underline! focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus sm:-mx-6 md:mx-0 md:mb-0 md:h-[300px] md:rounded-tile md:shadow-[0_10px_30px_rgba(17,24,39,0.12)]"
     >
       {imageUrl && (
         <Image
@@ -48,7 +48,7 @@ export function RecipeOfTheDay({
           unoptimized={!isArchivedImageUrl(imageUrl)}
         />
       )}
-      <span className="absolute top-3 left-3 z-10 max-w-[calc(100%-1.5rem)] truncate rounded-[8px] bg-white px-2.5 py-1 text-[16px] font-bold text-action-text">
+      <span className="absolute top-3 left-3 z-10 max-w-[calc(100%-1.5rem)] truncate rounded-tile bg-white px-2.5 py-1 text-[16px] font-bold text-action-text">
         Przepis dnia
       </span>
       <div

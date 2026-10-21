@@ -110,7 +110,7 @@ export function HomeSearch({
           {/* One rounded field, 52/56 px, with „Szukaj” glued to the end; the frame's
               overflow-hidden clips the button so it needs no radius of its own. */}
           <div
-            className={`flex items-stretch overflow-hidden rounded-[16px] border-2 ${FRAME[tone]} bg-white shadow-[0_2px_0_rgba(154,52,18,0.12)] has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus`}
+            className={`flex items-stretch overflow-hidden rounded-card border-2 ${FRAME[tone]} bg-white shadow-[0_2px_0_rgba(154,52,18,0.12)] has-[input:focus-visible]:outline-3 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus`}
           >
             <span className="flex items-center pr-1 pl-3.5 text-ink-soft">
               <Search aria-hidden="true" className="h-[22px] w-[22px]" />
@@ -122,7 +122,7 @@ export function HomeSearch({
             />
             {/* From lg „Powiedz” sits inside the field; on a phone it is the button below. */}
             {voiceButton(
-              'my-auto mr-2 hidden h-11 shrink-0 items-center gap-1.5 rounded-[10px] border-2 border-field px-3 text-[16px] font-bold text-ink hover:bg-surface-3 lg:inline-flex',
+              'my-auto mr-2 hidden h-11 shrink-0 items-center gap-1.5 rounded-pill border-2 border-field px-3 text-[16px] font-bold text-ink hover:bg-surface-3 lg:inline-flex',
               'Powiedz',
             )}
             <button
@@ -157,7 +157,7 @@ export function HomeSearch({
             {compact && defaultValue && hasText ? (
               <Link
                 href={searchPath('', scope)}
-                className="inline-flex h-12 shrink-0 items-center gap-1 rounded-[10px] px-2 text-[17px] font-bold text-ink no-underline! hover:bg-surface-3"
+                className="inline-flex h-12 shrink-0 items-center gap-1 rounded-pill px-2 text-[17px] font-bold text-ink no-underline! hover:bg-surface-3"
               >
                 <X aria-hidden="true" className="h-5 w-5" />
                 Wyczyść
@@ -170,7 +170,7 @@ export function HomeSearch({
                   setFieldValue('')
                   inputRef.current?.focus()
                 }}
-                className="inline-flex h-12 shrink-0 items-center gap-1 rounded-[10px] px-2 text-[17px] font-bold text-ink hover:bg-surface-3"
+                className="inline-flex h-12 shrink-0 items-center gap-1 rounded-pill px-2 text-[17px] font-bold text-ink hover:bg-surface-3"
               >
                 <X aria-hidden="true" className="h-5 w-5" />
                 Wyczyść
@@ -181,7 +181,7 @@ export function HomeSearch({
                 <button
                   type="button"
                   onClick={startListening}
-                  className="inline-flex h-12 shrink-0 items-center gap-1 rounded-[10px] border-2 border-field px-2 text-[16px] font-bold text-ink hover:bg-surface-3"
+                  className="inline-flex h-12 shrink-0 items-center gap-1 rounded-pill border-2 border-field px-2 text-[16px] font-bold text-ink hover:bg-surface-3"
                 >
                   <Mic aria-hidden="true" className="h-[22px] w-[22px]" />
                   Powiedz

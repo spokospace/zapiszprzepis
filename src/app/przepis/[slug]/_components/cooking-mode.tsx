@@ -254,7 +254,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
               <p className="text-[22px] font-bold text-accent-dark">{stepLabel(current, total)}</p>
               {/* Above the text when this step has a photo; it reserves no space otherwise (ZMIANY §4). */}
               {stepImages[current] && (
-                <div className="relative h-[min(34vh,300px)] w-full max-w-[420px] shrink-0 overflow-hidden rounded-[14px] bg-black/20">
+                <div className="relative h-[min(34vh,300px)] w-full max-w-[420px] shrink-0 overflow-hidden rounded-tile bg-black/20">
                   <Image
                     src={stepImages[current]}
                     alt={`Zdjęcie do kroku ${current + 1}`}
