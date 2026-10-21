@@ -58,6 +58,27 @@ describe('sourceLabel', () => {
     expect(sourceLabel('web_blog', 'https://www.polskiekulinaria.pl/tiramisu', 'Ania')).toBe('polskiekulinaria.pl')
   })
 
+  it('trims a marketing tail after a space-padded dash from a social author (#413)', () => {
+    expect(sourceLabel('youtube', 'https://youtu.be/abc', 'Mikołaj Drożdżyński - Z Pasją do Gotowania')).toBe(
+      'YouTube · Mikołaj Drożdżyński',
+    )
+    expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Gotowaczka - Pyszne domowe gotowanie')).toBe(
+      'Facebook · Gotowaczka',
+    )
+  })
+
+  it('leaves compact and hyphenated social names untouched', () => {
+    // No space around the hyphen: a single name, not a tail.
+    expect(sourceLabel('youtube', 'https://youtu.be/abc', 'Smaki Katriny-najlepsze przepisy')).toBe(
+      'YouTube · Smaki Katriny-najlepsze przepisy',
+    )
+    expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/1/posts/2/', 'Alex & Cris P')).toBe(
+      'Facebook · Alex & Cris P',
+    )
+    // A head too short to stand on its own keeps the whole name.
+    expect(sourceLabel('youtube', 'https://youtu.be/abc', 'Ab - Kuchnia')).toBe('YouTube · Ab - Kuchnia')
+  })
+
   it('keeps the bare platform for unknown profiles, groups and reels', () => {
     expect(sourceLabel('facebook_text', 'https://www.facebook.com/123456/posts/789/')).toBe('Facebook')
     expect(sourceLabel('facebook_text', 'https://www.facebook.com/groups/100069645633702/posts/2/')).toBe('Facebook')
@@ -67,6 +88,18 @@ describe('sourceLabel', () => {
 
   it("names a blog by its domain, without www", () => {
     expect(sourceLabel('web_blog', 'https://www.polskiekulinaria.pl/tiramisu')).toBe('polskiekulinaria.pl')
+  })
+
+  it('drops the platform suffix of a multi-tenant blog host, leaving the blog name', () => {
+    expect(sourceLabel('web_blog', 'https://kuchennepoczynaniamoniki.blogspot.com/2020/sernik')).toBe(
+      'kuchennepoczynaniamoniki',
+    )
+    expect(sourceLabel('web_blog', 'https://panimkuchniasmakowita.wordpress.com/')).toBe('panimkuchniasmakowita')
+    expect(sourceLabel('web_blog', 'https://kanarkowa.weebly.com/przepis')).toBe('kanarkowa')
+    // Blogger's country mirrors (matches isBlogspotUrl in blogger-feed.ts), not just .com.
+    expect(sourceLabel('web_blog', 'https://kuchniaukrysi.blogspot.co.uk/x')).toBe('kuchniaukrysi')
+    // The bare platform host (no subdomain) keeps its full name.
+    expect(sourceLabel('web_blog', 'https://blogspot.com/')).toBe('blogspot.com')
   })
 
   it('falls back to a generic label without a usable URL', () => {
@@ -83,6 +116,12 @@ describe('originalLinkLabel', () => {
 
   it('names a site by its domain, without www', () => {
     expect(originalLinkLabel('web_blog', 'https://www.aniagotuje.pl/przepis/zupa')).toBe('Otwórz oryginał na aniagotuje.pl')
+  })
+
+  it('names a multi-tenant blog by its short name', () => {
+    expect(originalLinkLabel('web_blog', 'https://kuchennepoczynaniamoniki.blogspot.com/2020/sernik')).toBe(
+      'Otwórz oryginał na kuchennepoczynaniamoniki',
+    )
   })
 
   it('falls back to a plain label for an unparseable URL', () => {
@@ -113,6 +152,22 @@ describe('formatSource', () => {
     expect(formatSource('facebook_text', 'https://www.facebook.com/groups/1/posts/2/')).toEqual({
       kind: 'facebook',
       text: 'Facebook',
+    })
+  })
+
+  it('picks the blog platform icon and the short name for a multi-tenant host', () => {
+    expect(formatSource('web_blog', 'https://kuchennepoczynaniamoniki.blogspot.com/2020/sernik')).toEqual({
+      kind: 'blogger',
+      text: 'kuchennepoczynaniamoniki',
+    })
+    expect(formatSource('web_blog', 'https://panimkuchniasmakowita.wordpress.com/')).toEqual({
+      kind: 'wordpress',
+      text: 'panimkuchniasmakowita',
+    })
+    // weebly is a known multi-tenant host but has no brand icon: short name, globe.
+    expect(formatSource('web_blog', 'https://kanarkowa.weebly.com/x')).toEqual({
+      kind: 'website',
+      text: 'kanarkowa',
     })
   })
 })

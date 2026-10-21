@@ -1,11 +1,56 @@
-import { BookOpen, ExternalLink, Globe, MonitorPlay, User, Users, type LucideIcon } from 'lucide-react'
+import { BookOpen, ExternalLink, Globe, MonitorPlay, User, Users } from 'lucide-react'
+import type { ComponentType, SVGProps } from 'react'
 import type { SourceKind } from '@/lib/recipe-source'
 
 // lucide-react dropped its brand glyphs, so these are neutral stand-ins; the
 // visible text always names the platform ("YouTube · …", "Facebook"), so the
-// icon only has to read as "video" / "community" and need not be a logo.
-const ICON: Record<SourceKind, LucideIcon> = {
+// icon only has to read as "video" / "community" and need not be a logo. The
+// blog-platform marks (WordPress / Blogger) are hand-drawn for the same reason,
+// monochrome like the rest so they inherit the badge's ink colour.
+type BadgeIcon = ComponentType<SVGProps<SVGSVGElement>>
+
+/** A circled "W" — reads as WordPress next to the blog's name. */
+function WordPressIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`source-icon-wordpress ${className ?? ''}`}
+      {...props}
+    >
+      <circle cx="12" cy="12" r="9.25" />
+      <polyline points="6.5,8 8.9,16 12,10.5 15.1,16 17.5,8" />
+    </svg>
+  )
+}
+
+/** A "b" in a rounded square — Blogger's mark, monochrome. */
+function BloggerIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`source-icon-blogger ${className ?? ''}`}
+      {...props}
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <path d="M10 7v6.5a3 3 0 1 0 3-3h-3" />
+    </svg>
+  )
+}
+
+const ICON: Record<SourceKind, BadgeIcon> = {
   website: Globe,
+  wordpress: WordPressIcon,
+  blogger: BloggerIcon,
   youtube: MonitorPlay,
   facebook: Users,
   book: BookOpen,

@@ -21,6 +21,11 @@ describe('SourceBadge', () => {
     expect(render()).toContain('truncate')
   })
 
+  it('shows the platform mark for a blog hosted on WordPress / Blogger', () => {
+    expect(render({ kind: 'blogger', text: 'kuchennepoczynaniamoniki' })).toContain('source-icon-blogger')
+    expect(render({ kind: 'wordpress', text: 'panimkuchniasmakowita' })).toContain('source-icon-wordpress')
+  })
+
   it('on the recipe page links to the original in a new tab, with the name underlined', () => {
     const html = render({
       variant: 'recipe',
