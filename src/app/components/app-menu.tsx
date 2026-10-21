@@ -114,7 +114,7 @@ function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBa
 /**
  * Header "MENU" button + drawer (E01-S09): "Moje" (or the guest's sign-in
  * CTA), every category, and the "Ustawienia | Wyloguj" footer. Full screen on
- * phones, a 330px right-side panel from `sm` up. Built on a native `<dialog>`
+ * phones, a 460px right-side panel from `sm` up. Built on a native `<dialog>`
  * opened with `showModal()`, which gives Escape to close, a focus trap, focus
  * return to the MENU button and an inert page behind it without extra code.
  */

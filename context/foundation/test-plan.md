@@ -145,6 +145,12 @@ Playwright project `reflow` (no password sign-in, no `setup` dependency): `e2e/r
 - **New screen with user text:** add it to `SCREENS`, or for targeted strings a test
   with `open()` + `inject()` + `expectNoHorizontalScroll()`.
 - **Run:** `pnpm test:reflow` (starts `next dev`; `E2E_PORT=3107` for a free port).
+- **Menu drawer on a phone (#448):** project `menu-drawer`, `e2e/menu-drawer.spec.ts`,
+  also run by `pnpm test:reflow`. At 412 px with every font size scaled ×1 / ×1.3 / ×2
+  (Chromium can't emulate Android's system font size), the page must not scroll
+  sideways before, during any frame of, or after the slide-in; plus the close paths
+  („Zamknij”, Escape, a link, a click beside the panel), focus return, scroll lock and
+  reduced motion. Guest only, no sign-in.
 
 ### 6.6 Per-rollout-phase notes
 TBD — each rollout phase's final sub-phase appends its concrete location, naming,
