@@ -24,6 +24,7 @@
     "rewrite:recipe-steps": "node --env-file-if-exists=.env.local --import tsx scripts/rewrite-recipe-steps.ts",
     "apply:recipe-fixes": "node --env-file-if-exists=.env.local --import tsx scripts/apply-recipe-fixes.ts",
     "update:recipe-blog-domains": "node --import tsx scripts/update-recipe-blog-domains.ts",
+    "smoke:prod": "node --import tsx scripts/smoke-prod-assets.ts",
     "render:banner": "node docs/banner/render.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
