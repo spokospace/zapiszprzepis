@@ -114,3 +114,17 @@ export async function getFavoriteIds(
   }
   return new Set((data ?? []).map((row: { recipe_id: number }) => row.recipe_id))
 }
+
+/**
+ * Every recipe id the user has favorited, in one query that needs no list of cards, so a
+ * page can run it in parallel with the list instead of after it (#435). A user's favorites
+ * are few; PostgREST caps the answer at 1000 rows. Empty on error, so hearts render off.
+ */
+export async function getUserFavoriteIds(supabase: SupabaseClient, userId: string): Promise<Set<number>> {
+  const { data, error } = await supabase.from('favorites').select('recipe_id').eq('user_id', userId)
+  if (error) {
+    console.error('[favorites] lookup failed', { code: error.code })
+    return new Set()
+  }
+  return new Set((data ?? []).map((row: { recipe_id: number }) => row.recipe_id))
+}

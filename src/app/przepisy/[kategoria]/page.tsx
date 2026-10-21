@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
-import { getFavoriteIds } from '@/lib/favorites'
+import { getUserFavoriteIds } from '@/lib/favorites'
 import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { getCategoryDescription } from '@/lib/category-descriptions'
 import { categoryNoun, parsePageParam, parseTagParam, tagFacets, tagSummary } from '@/lib/category-tags'
@@ -11,6 +11,8 @@ import { categoryPath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
 import { PageContainer } from '@/app/components/page-container'
 import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
+import { ListLink } from '@/app/components/list-link'
+import { ListResults, ListTransition } from '@/app/components/list-transition'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { recipesNoun } from '@/app/components/app-menu-model'
 import { buttonClasses } from '@/app/components/ui/button'
@@ -71,14 +73,18 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     )
     .eq('category', category)
   if (selected.length > 0) cards = cards.contains('tags', selected)
-  const [user, tagRows, { data: recipes, count, error }] = await Promise.all([
-    getCurrentUser(),
+  // The viewer's favorites are read in parallel with the list, not after it (#435).
+  const userPromise = getCurrentUser()
+  const favoritesPromise = userPromise.then((u) => (u ? getUserFavoriteIds(supabase, u.id) : new Set<number>()))
+  const [user, tagRows, { data: recipes, count, error }, favoriteIds] = await Promise.all([
+    userPromise,
     supabase.from('public_recipes').select('tags').eq('category', category),
     // "Pokaż kolejne" re-renders the list from the top, one page longer.
     cards
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .range(0, shown - 1),
+    favoritesPromise,
   ])
 
   if (error) {
@@ -109,8 +115,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const list = recipes ?? []
   const remaining = total - list.length
 
-  // The favorites bar on each card (E01-S06); favorites are private, so only with a session.
-  const favoriteIds = user ? await getFavoriteIds(supabase, user.id, list.map((r) => r.id)) : new Set<number>()
+  // favoriteIds (the hearts on the cards, E01-S06) was read above; favorites are private, so only with a session.
 
   return (
     <main className="min-h-screen bg-surface">
@@ -129,8 +134,11 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           </div>
         </header>
 
+        {/* One transition for the chips and the list: a tap marks the chip at once and the list dims until the new one has rendered (#435). */}
+        <ListTransition>
         {chips.length > 0 && <TagFilter chips={chips} question={`Jakie ${categoryNoun(label)}?`} />}
 
+        <ListResults className="flex flex-col gap-4">
         {(filtered || list.length > 0) && (
           <div
             className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-tile px-4 py-3 ${filtered ? 'bg-surface-accent' : 'bg-surface-3'}`}
@@ -139,9 +147,9 @@ export default async function CategoryPage({ params, searchParams }: { params: P
               {filtered ? tagSummary(total, selected) : `Wszystkie: ${total} ${recipesNoun(total)}`}
             </p>
             {filtered && (
-              <Link href={clearHref} scroll={false} className={buttonClasses('outline', 'md')}>
+              <ListLink href={clearHref} className={buttonClasses('outline', 'md')}>
                 <span aria-hidden="true">×&nbsp;</span>Wyczyść
-              </Link>
+              </ListLink>
             )}
           </div>
         )}
@@ -193,6 +201,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
             </ol>
           </>
         )}
+        </ListResults>
 
         {remaining > 0 && page < MAX_PAGE && list.length > 0 && (
           <Link
@@ -202,6 +211,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
             Pokaż kolejne {Math.min(PAGE_SIZE, remaining)}
           </Link>
         )}
+        </ListTransition>
       </PageContainer>
     </main>
   )
