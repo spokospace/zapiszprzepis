@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
-import { getFailedShares, NO_FAILED_SHARES, type FailedSharesResult } from '@/lib/failed-shares'
+import { getFailedShares, NO_FAILED_SHARES } from '@/lib/failed-shares'
 import { getMenuSummary } from '@/lib/menu-summary'
 import { homeGreeting } from '@/lib/home'
 import { getGreetingName } from '@/lib/first-name'
@@ -17,7 +17,6 @@ import { HomeSearch } from '@/app/components/home/home-search'
 import { PopularSearches } from '@/app/components/home/popular-searches'
 import { CategoryGrid } from '@/app/components/home/category-grid'
 import { GuestCta } from '@/app/components/home/guest-cta'
-import { AttentionBanner } from '@/app/components/home/attention-banner'
 import { RecipeOfTheDay } from '@/app/components/home/recipe-of-the-day'
 import { FavoriteAddedNotice } from '@/app/components/favorite-button'
 import { parseRecipeId } from '@/lib/favorites'
@@ -74,7 +73,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       <main className="min-h-screen bg-white pb-10">
         {user && memberRows ? (
           <MemberHome
-            failedShares={failedShares}
             vocative={vocative(greetingName)}
             favoriteAdded={parseRecipeId(fav_added)}
             rows={memberRows}
@@ -294,9 +292,9 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
           strongLabel
           placeholder="np. sernik, zupa z dyni, kurczak"
         />
+        <PopularSearches />
       </Hero>
       <PageContainer className="flex flex-col gap-8 pt-6">
-        <PopularSearches />
         {recentRecipes.length > 0 && (
           <RecipeRow
             id="recent-heading"
@@ -316,7 +314,6 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
 }
 
 function MemberHome({
-  failedShares,
   vocative,
   favoriteAdded,
   rows,
@@ -324,8 +321,6 @@ function MemberHome({
   favoritesCount,
   recipeOfDay,
 }: {
-  /** The header's result, reused for the E01-S15 banner (no extra query). */
-  failedShares: FailedSharesResult
   /** "Aniu" from the S13 first name (else the display name) via the S12 rule; null → "Czego dziś szukasz?". */
   vocative: string | null
   /** A guest-home card heart's login round-trip ends here (E01-S06); a row card shows the toast itself when it holds that recipe. */
@@ -355,8 +350,7 @@ function MemberHome({
           strongLabel
           placeholder="np. zupa z dyni"
         />
-        {/* E01-S15: "N przepisów wymaga uwagi" under the field; older users miss the badge alone. */}
-        <AttentionBanner failedShares={failedShares} className="mt-4" />
+        <PopularSearches />
       </Hero>
       <PageContainer className="flex flex-col gap-8 pt-6">
         {favoriteAdded !== null && !shown.has(favoriteAdded) && <FavoriteAddedNotice recipeId={favoriteAdded} />}

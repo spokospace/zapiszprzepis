@@ -2,19 +2,25 @@ import Link from 'next/link'
 import { POPULAR_SEARCHES } from '@/lib/home'
 import { searchPath } from '@/lib/routes'
 
-/** "Często szukane" (guest home, E01-S04): pill links that run a search. */
+/** How many terms the hero shows on desktop; a phone shows one fewer (handoff 14). */
+const HERO_TERMS = 5
+
+/**
+ * "Często szukane" inside the home hero (handoff 14, guest and signed in): under a 1 px
+ * rule, a lead-in line and pill links that run a search. The list itself is shared with
+ * the header search panel and /szukaj, so the hero only slices it. Plain links, so it
+ * works without JS.
+ */
 export function PopularSearches() {
   return (
-    <section aria-labelledby="popular-heading">
-      <h2 id="popular-heading" className="mb-3 text-[22px] font-bold text-ink">
-        Często szukane
-      </h2>
+    <section aria-label="Często szukane" className="mt-8 flex flex-col gap-3 border-t border-border-card-2 pt-5">
+      <p className="text-[18px] font-bold text-ink">Nie wiesz, co wpisać? Kliknij jedno z najczęściej szukanych:</p>
       <ul className="flex flex-wrap gap-2">
-        {POPULAR_SEARCHES.map((term) => (
-          <li key={term}>
+        {POPULAR_SEARCHES.slice(0, HERO_TERMS).map((term, i) => (
+          <li key={term} className={i === HERO_TERMS - 1 ? 'max-sm:hidden' : undefined}>
             <Link
               href={searchPath(term)}
-              className="inline-flex min-h-[48px] items-center rounded-pill border-2 border-border-chip bg-white px-4 text-[17px] font-bold wrap-anywhere text-ink no-underline! hover:bg-surface-3"
+              className="inline-flex h-[52px] items-center rounded-pill border-2 border-border-dark bg-white px-5 text-[18px] font-bold wrap-anywhere text-ink no-underline! hover:bg-surface-3"
             >
               {term}
             </Link>
