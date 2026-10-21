@@ -3,6 +3,7 @@
 // the client/server sort. All pure, so they are unit-tested without a DB or DOM.
 import { parseIngredients } from '@/lib/ingredients'
 import { polishPlural } from '@/lib/recipe-meta'
+import { servingsCount } from '@/lib/servings'
 import { formatMinutes } from '@/lib/format-minutes'
 import type { RecipeSource } from '@/lib/recipe-source'
 
@@ -222,7 +223,7 @@ const TIME_DELTA_THRESHOLD = 10
 export function versionBadges(current: BadgeTimes, other: BadgeTimes): { servings: string | null; time: string | null } {
   let servings: string | null = null
   if (other.servings != null) {
-    servings = `${other.servings} ${polishPlural(other.servings, 'porcja', 'porcje', 'porcji')}`
+    servings = servingsCount(other.servings)
     if (current.servings != null) {
       const delta = other.servings - current.servings
       if (delta > 0) servings += ` (o ${delta} więcej)`

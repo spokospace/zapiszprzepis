@@ -8,6 +8,7 @@ import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
+import { buildRecipeJsonLd, serializeJsonLd } from '@/lib/recipe-json-ld'
 import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
@@ -134,10 +135,16 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // Signed-in users only: a guest gets plain step text, with no photo or toggle.
   const stepImages = visibleStepImages(typedRecipe.step_images, Boolean(user))
   const listKey = parseListKey(from)
-  const canonicalUrl = `${await getSiteUrl()}${recipePath(typedRecipe.slug)}`
+  const siteUrl = await getSiteUrl()
+  const canonicalUrl = `${siteUrl}${recipePath(typedRecipe.slug)}`
+  // schema.org/Recipe for Google rich results. Built from guest-safe fields only
+  // (no gallery, no step photos): Googlebot is anonymous, so the markup must match
+  // what an anonymous visitor sees. No rating/nutrition — we store neither.
+  const recipeJsonLd = serializeJsonLd(buildRecipeJsonLd(typedRecipe, siteUrl))
 
   return (
     <main className="min-h-screen bg-white py-6 sm:py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
       {duplicate === '1' && (
         <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
       )}
