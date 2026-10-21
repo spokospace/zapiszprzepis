@@ -88,6 +88,31 @@ describe('HomeSearch looks (E01-S20)', () => {
     expect(html).toContain('placeholder="Danie lub składnik, np. dynia"')
   })
 
+  it('renders the attached hero field with a visible bold label and a text-only "Szukaj" (handoff 14)', () => {
+    const html = render(
+      createElement(HomeSearch, {
+        id: 'h',
+        attached: true,
+        tone: 'action',
+        label: 'Wpisz nazwę dania lub składnik',
+        strongLabel: true,
+      }),
+    )
+    expect(html).toMatch(/<label for="h" class="[^"]*text-\[19px\] font-bold text-ink[^"]*">Wpisz nazwę dania lub składnik</)
+    expect(html).toContain('rounded-pill border-2 border-ink')
+    // „Szukaj” is a text button, not an icon; the field has no leading icon either.
+    expect(html).toMatch(/<button type="submit"[^>]*>Szukaj<\/button>/)
+    expect(html).not.toContain('lucide-search')
+  })
+
+  it('keeps „Powiedz” out of the attached field', () => {
+    // The Web Speech API is absent on the server, so the voice row is not rendered; either
+    // way no „Powiedz” button may sit inside the field frame (the old lg:inline-flex one).
+    const html = render(createElement(HomeSearch, { id: 'v', attached: true, tone: 'action' }))
+    expect(html).not.toContain('lg:inline-flex')
+    expect(html).not.toContain('albo')
+  })
+
   it('renders the C1 member label and a single "Szukaj" submit', () => {
     const html = render(
       createElement(HomeSearch, { id: 'm', label: 'Czego szukasz?', strongLabel: true, submitLabel: 'Szukaj' }),

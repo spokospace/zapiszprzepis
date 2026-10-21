@@ -286,7 +286,14 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
         subtitle="Przepisy z internetu w jednym miejscu. Zawsze pod ręką, kiedy gotujesz."
         recipeOfDay={recipeOfDay}
       >
-        <HomeSearch id="home-search-guest" attached tone="action" placeholder="Danie lub składnik" />
+        <HomeSearch
+          id="home-search-guest"
+          attached
+          tone="action"
+          label="Wpisz nazwę dania lub składnik"
+          strongLabel
+          placeholder="np. sernik, zupa z dyni, kurczak"
+        />
       </Hero>
       <PageContainer className="flex flex-col gap-8 pt-6">
         <PopularSearches />
@@ -319,7 +326,7 @@ function MemberHome({
 }: {
   /** The header's result, reused for the E01-S15 banner (no extra query). */
   failedShares: FailedSharesResult
-  /** "Aniu" from the S13 first name (else the display name) via the S12 rule; null → "Dzień dobry!". */
+  /** "Aniu" from the S13 first name (else the display name) via the S12 rule; null → "Czego dziś szukasz?". */
   vocative: string | null
   /** A guest-home card heart's login round-trip ends here (E01-S06); a row card shows the toast itself when it holds that recipe. */
   favoriteAdded: number | null
@@ -344,10 +351,9 @@ function MemberHome({
           id="home-search-member"
           attached
           tone="action"
-          label="Czego szukasz?"
+          label="Wpisz nazwę dania lub składnik"
           strongLabel
           placeholder="np. zupa z dyni"
-          submitLabel="Szukaj"
         />
         {/* E01-S15: "N przepisów wymaga uwagi" under the field; older users miss the badge alone. */}
         <AttentionBanner failedShares={failedShares} className="mt-4" />
