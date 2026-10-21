@@ -18,6 +18,16 @@ export function servingsLabel(servings: number): string {
   return `na ${servings} ${polishPlural(servings, 'porcję', 'porcje', 'porcji')}`
 }
 
+/**
+ * The bare nominative count: "1 porcja", "2 porcje", "5 porcji". For a standalone
+ * yield value (schema.org recipeYield) or a comparison badge, where servingsLabel's
+ * accusative "na …" phrasing would not fit. One home for the "porcja/porcje/porcji"
+ * forms so they never drift between callers.
+ */
+export function servingsCount(servings: number): string {
+  return `${servings} ${polishPlural(servings, 'porcja', 'porcje', 'porcji')}`
+}
+
 // Words that make a yield a count of servings. Anything else ("1 tortownica 24 cm",
 // "24 sztuki", "1 l") counts something other than servings and is not one.
 const SERVINGS_WORDS = /porcj|os[óo]b|serv(es|ings?)|portions?|people|persons?/i

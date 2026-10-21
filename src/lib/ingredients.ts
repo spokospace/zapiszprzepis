@@ -34,6 +34,19 @@ export function parseIngredients(raw: unknown): Ingredient[] {
 }
 
 /**
+ * One ingredient on a single line — amount, unit and name joined in that order,
+ * empty parts dropped: `{amount:'2', unit:'szklanki', name:'mąki'}` → "2 szklanki
+ * mąki". Shared by the Markdown rendering and the JSON-LD `recipeIngredient`, so
+ * both read the ingredient exactly the same way.
+ */
+export function ingredientLine(ing: Ingredient): string {
+  return [ing.amount, ing.unit, ing.name]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(' ')
+}
+
+/**
  * Group ingredients by their optional `section`, preserving source order.
  * Ingredients with no section collapse into one unlabeled (`''`) group.
  *

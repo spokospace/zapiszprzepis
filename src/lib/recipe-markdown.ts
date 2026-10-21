@@ -1,4 +1,4 @@
-import { parseIngredients, groupBySection } from '@/lib/ingredients'
+import { parseIngredients, groupBySection, ingredientLine } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
 import { sourceLabel, originalLinkLabel, type RecipeSource } from '@/lib/recipe-source'
 import { buildFallbackMetaDescription } from '@/lib/recipe-tags'
@@ -20,14 +20,6 @@ export interface RecipeForMarkdown {
   source_url: string | null
   source_author: string | null
   youtube_id: string | null
-}
-
-/** "2 szklanki mąki" — amount, unit and name joined, empty parts dropped. */
-function ingredientLine(ing: { name?: string; amount?: string; unit?: string }): string {
-  return [ing.amount, ing.unit, ing.name]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(' ')
 }
 
 /** The one-line meta: times, servings and source, each part dropped when absent. */
