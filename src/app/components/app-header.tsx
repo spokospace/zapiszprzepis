@@ -119,7 +119,7 @@ export function AppHeader({
           {pathname !== SEARCH_PATH && (
             <Link
               href={SEARCH_PATH}
-              className="inline-flex h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-field text-[13px] leading-none font-bold text-ink no-underline! hover:bg-surface-3 lg:hidden"
+              className="inline-flex h-14 min-w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-field text-base leading-none font-bold text-ink no-underline! hover:bg-surface-3 lg:hidden"
             >
               <Search aria-hidden="true" className="h-6 w-6" />
               Szukaj

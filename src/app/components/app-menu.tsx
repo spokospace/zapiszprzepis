@@ -140,9 +140,9 @@ export function AppMenu({
         onClick={() => dialogRef.current?.showModal()}
         aria-haspopup="dialog"
         aria-controls="app-menu"
-        // Mobile 1c (E01-S19): icon over a 13 px bold caption, 60x56 like Dodaj.
+        // Mobile 1c (E01-S19): icon over a 16 px bold caption, ≥64×56 target.
         // The desktop header (E01-S17) keeps the 48 px inline row.
-        className="relative inline-flex h-14 w-[60px] flex-col items-center justify-center gap-0.5 rounded-field text-[13px] leading-none font-bold text-ink hover:bg-surface-3 lg:h-auto lg:min-h-[48px] lg:w-auto lg:flex-row lg:gap-1.5 lg:px-2.5 lg:text-sm lg:leading-5 lg:font-semibold"
+        className="relative inline-flex h-14 min-w-16 flex-col items-center justify-center gap-0.5 rounded-field text-base leading-none font-bold text-ink hover:bg-surface-3 lg:h-auto lg:min-h-[48px] lg:w-auto lg:flex-row lg:gap-1.5 lg:px-2.5 lg:text-sm lg:leading-5 lg:font-semibold"
       >
         {/* The only header signal for notifications at every width (E01-S15b): a
             fixed-size dot on the MENU icon, never a number — smallest footprint
@@ -155,7 +155,7 @@ export function AppMenu({
             <NotificationDot className="absolute -top-1.5 -right-1.5" tone={notifications.loadFailed ? 'ink' : 'action'} />
           )}
         </span>
-        MENU
+        Menu
         {notifications && notifications.count > 0 && <span className="sr-only">, nowe powiadomienia</span>}
         {notifications?.loadFailed && <span className="sr-only">, nie udało się sprawdzić powiadomień</span>}
       </button>
