@@ -13,8 +13,11 @@ const HERO_TERMS = 5
  */
 export function PopularSearches() {
   return (
-    <section aria-label="Często szukane" className="mt-8 flex flex-col gap-3 border-t border-border-card-2 pt-5 md:items-center md:text-center">
-      <p className="text-[18px] font-bold text-ink">Nie wiesz, co wpisać? Kliknij jedno z najczęściej szukanych:</p>
+    <section aria-label="Często szukane" className="mt-6 flex flex-col gap-3 border-t border-border-card-2 pt-4 md:mt-8 md:items-center md:pt-5 md:text-center">
+      <p className="text-[18px] font-bold text-ink">
+        <span className="md:hidden">Nie wiesz, co wpisać? Kliknij:</span>
+        <span className="max-md:hidden">Nie wiesz, co wpisać? Kliknij jedno z najczęściej szukanych:</span>
+      </p>
       <ul className="flex flex-wrap gap-2 md:justify-center">
         {POPULAR_SEARCHES.slice(0, HERO_TERMS).map((term, i) => (
           <li key={term} className={i === HERO_TERMS - 1 ? 'max-sm:hidden' : undefined}>
