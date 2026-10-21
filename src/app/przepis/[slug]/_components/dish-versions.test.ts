@@ -142,16 +142,15 @@ describe('DishVersions', () => {
     expect(html).toContain('rodzynki')
   })
 
-  it('sets the differences under a thin rule, in plain ink, cut to two lines (handoff 16)', () => {
+  it('sets the differences under a thin rule, cut to two lines, labels coloured (handoff 16)', () => {
     const html = section({
       versions: [row({ ingredients: [{ name: 'rodzynki' }] as unknown })],
       totalCount: 1,
     })
     expect(html).toContain('border-t border-border-card pt-2')
-    expect(html).toContain('<p class="line-clamp-2 break-words"><b>Ma dodatkowo:</b>')
-    // The old green / red labels are gone: colour must not carry the meaning.
-    expect(html).not.toContain('#166534')
-    expect(html).not.toContain('#991b1b')
+    expect(html).toContain('<p class="line-clamp-2 break-words"><b class="text-[#166534]">Ma dodatkowo:</b>')
+    // Colour reinforces the labels (the words still carry the meaning): green adds, red drops.
+    expect(html).toContain('text-[#166534]')
   })
 
   it('shows no rule when a version differs in nothing', () => {
