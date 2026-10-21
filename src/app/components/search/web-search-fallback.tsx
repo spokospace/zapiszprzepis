@@ -7,6 +7,7 @@ import { buttonClasses } from '@/app/components/ui/button'
 import { searchViaExa, type ExaResult } from '@/app/(authenticated)/recipes/search-via-exa-action'
 import { addRecipeFromUrl } from '@/app/(authenticated)/recipes/add-recipe-action'
 import { loginPath } from '@/lib/login-redirect'
+import { bindOrphans } from '@/lib/polish-typography'
 import { searchPath } from '@/lib/routes'
 
 type State =
@@ -48,13 +49,17 @@ export function WebSearchFallback({
         Nie ma tego, czego szukasz?
       </h2>
       <p className="mt-2 text-[19px] text-ink-soft">
-        {hasResults
-          ? 'Poszukaj tego przepisu na sprawdzonych stronach z przepisami.'
-          : `Żaden przepis nie pasuje do „${q}”. Sprawdź pisownię albo poszukaj na sprawdzonych stronach z przepisami.`}
+        {bindOrphans(
+          hasResults
+            ? 'Poszukaj tego przepisu na sprawdzonych stronach z przepisami.'
+            : `Żaden przepis nie pasuje do „${q}”. Sprawdź pisownię albo poszukaj na sprawdzonych stronach z przepisami.`,
+        )}
       </p>
       {!isAuthenticated ? (
         <>
-          <p className="mt-2 text-[17px] text-ink-soft">Wyszukiwanie w internecie jest dostępne po zalogowaniu.</p>
+          <p className="mt-2 text-[17px] text-ink-soft">
+            {bindOrphans('Wyszukiwanie w internecie jest dostępne po zalogowaniu.')}
+          </p>
           <Link href={loginPath(searchPath(q))} className={`${buttonClasses('primary', 'lg')} mt-4 w-full`}>
             Zaloguj się i szukaj w internecie
           </Link>

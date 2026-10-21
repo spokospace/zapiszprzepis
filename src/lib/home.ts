@@ -1,3 +1,5 @@
+import { bindOrphans } from './polish-typography'
+
 /**
  * "Często szukane" on the guest home (E01-S04). A curated list: there is no
  * search analytics to rank real queries yet.
@@ -8,6 +10,15 @@ export const POPULAR_SEARCHES = ['sernik', 'pierogi', 'rosół', 'szarlotka', 'n
 export function popularMinusRecent(recent: readonly string[]): string[] {
   const seen = new Set(recent.map((term) => term.toLocaleLowerCase('pl')))
   return POPULAR_SEARCHES.filter((term) => !seen.has(term.toLocaleLowerCase('pl')))
+}
+
+/**
+ * The heading over the search chips: „Ostatnio i często szukane” when recent
+ * searches are shown, „Często szukane” otherwise. The one-letter „i” is bound to
+ * the next word so it never ends a line (see bindOrphans).
+ */
+export function searchChipsHeading(hasRecent: boolean): string {
+  return hasRecent ? bindOrphans('Ostatnio i często szukane') : 'Często szukane'
 }
 
 /**

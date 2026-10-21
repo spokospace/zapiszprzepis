@@ -1,13 +1,15 @@
 import { Camera, Link as LinkIcon } from 'lucide-react'
 import { AddFromLinkForm } from './add-from-link-form'
 import type { AddRecipeError } from '@/lib/routes'
+import { bindOrphans } from '@/lib/polish-typography'
 
-// A7 wording from the design handoff (.ai/design/przebudowa-handoff, Propozycja A).
+// A7 wording from the design handoff (.ai/design/przebudowa-handoff, Propozycja A),
+// with Polish one-letter words bound to the next word (see bindOrphans).
 const STEPS = [
   'Wklejasz link, my spisujemy przepis po polsku.',
   'Trwa to 1–3 minuty. Możesz zamknąć stronę.',
   'Gotowy przepis pojawi się w „Moje przepisy”, a dzwonek da znać o problemie.',
-]
+].map(bindOrphans)
 
 /**
  * A7 (E01-S10): where the recipe comes from, the link form, and how adding
@@ -52,7 +54,7 @@ export function AddRecipePanel({ error = null, autoFocus }: { error?: AddRecipeE
           ))}
         </ol>
         <p className="mt-3 text-[16px] text-ink-soft">
-          Na telefonie możesz też użyć „Udostępnij → Zapisz Przepis” prosto z Facebooka lub YouTube.
+          {bindOrphans('Na telefonie możesz też użyć „Udostępnij → Zapisz Przepis” prosto z Facebooka lub YouTube.')}
         </p>
       </section>
     </div>

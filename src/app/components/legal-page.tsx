@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { DATA_DELETION_PATH, PRIVACY_POLICY_PATH, TERMS_PATH } from '@/lib/routes'
 import { PageContainer } from '@/app/components/page-container'
+import { bindOrphans } from '@/lib/polish-typography'
 
 /**
  * Shell of the legal pages (regulamin, polityka prywatności, usuwanie danych):
@@ -13,7 +14,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
     <main className="flex-1 py-8">
       <PageContainer narrow>
         <article className="mx-auto max-w-3xl text-[19px] leading-relaxed text-ink">
-          <h1 className="text-[32px] font-bold leading-tight">{title}</h1>
+          <h1 className="text-[32px] font-bold leading-tight">{bindOrphans(title)}</h1>
           <p className="mt-2 text-[16px] text-ink-soft">
             Obowiązuje od: 17 października 2026
           </p>
@@ -28,12 +29,12 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
 /** Inline link inside legal text: the accent link colour (links are underlined globally). */
 export const LEGAL_LINK = 'text-action-text hover:text-action-hover'
 
-/** A section heading with a stable anchor (#id) to link to. */
+/** A section heading with a stable anchor (#id) to link to. Headings bind Polish orphans; body prose does not. */
 export function LegalSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-24">
       <h2 id={`${id}-title`} className="mt-6 text-[24px] font-bold leading-snug">
-        {title}
+        {bindOrphans(title)}
       </h2>
       <div className="mt-3 flex flex-col gap-3">{children}</div>
     </section>

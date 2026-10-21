@@ -1,5 +1,6 @@
 import { MAX_TAGS, RECIPE_TAGS, isRecipeTag, tagLabel, type RecipeTag } from '@/lib/recipe-tags'
 import { recipesNoun } from '@/app/components/app-menu-model'
+import { bindOrphans } from '@/lib/polish-typography'
 
 /**
  * Tag filtering on the public category page and "Podobne" on the recipe page
@@ -109,15 +110,21 @@ export function joinWithAnd(items: readonly string[]): string {
   return `${items.slice(0, -1).join(', ')} i ${items[items.length - 1]}`
 }
 
-/** The category page's filter summary (screen 6): "3 przepisy: kruche i czekoladowe". */
+/**
+ * The category page's filter summary (screen 6): "3 przepisy: kruche i czekoladowe".
+ * Rendered text, so one-letter words are bound to the next word (see bindOrphans).
+ */
 export function tagSummary(count: number, selected: readonly string[]): string {
-  return `${count} ${recipesNoun(count)}: ${joinWithAnd(selected.map(tagLabel))}`
+  return bindOrphans(`${count} ${recipesNoun(count)}: ${joinWithAnd(selected.map(tagLabel))}`)
 }
 
-/** Under a "Podobne" card: what it shares with the recipe ("też kruche i czekoladowe"), null when nothing. */
+/**
+ * Under a "Podobne" card: what it shares with the recipe ("też kruche i czekoladowe"),
+ * null when nothing. Rendered text, so one-letter words are bound (see bindOrphans).
+ */
 export function sharedTagsCaption(own: readonly string[], other: readonly string[] | null): string | null {
   const shared = own.filter((t) => other?.includes(t))
-  return shared.length ? `też ${joinWithAnd(shared.map(tagLabel))}` : null
+  return shared.length ? bindOrphans(`też ${joinWithAnd(shared.map(tagLabel))}`) : null
 }
 
 /**

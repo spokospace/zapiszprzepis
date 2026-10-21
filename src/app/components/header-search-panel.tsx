@@ -3,6 +3,7 @@
 import type { MouseEvent, ReactNode } from 'react'
 import { History, Mic, Search, TrendingUp } from 'lucide-react'
 import { SuggestionRowContent } from './search/suggestion-row'
+import { searchChipsHeading } from '@/lib/home'
 
 /** One row of the desktop header search panel; the field drives it as a combobox. */
 export type HeaderSearchOption =
@@ -103,7 +104,7 @@ export function HeaderSearchPanel({
       )}
 
       <p id={`${listboxId}-label`} className="px-3 pb-1 text-[16px] font-bold text-ink-soft">
-        {browsing ? (hasRecent ? 'Ostatnio i często szukane' : 'Często szukane') : 'Podpowiedzi'}
+        {browsing ? searchChipsHeading(hasRecent) : 'Podpowiedzi'}
       </p>
 
       <div role="listbox" id={listboxId} aria-labelledby={`${listboxId}-label`}>

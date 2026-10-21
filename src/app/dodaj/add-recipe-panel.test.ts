@@ -25,8 +25,15 @@ describe('AddRecipePanel — A7 (E01-S10)', () => {
     expect(html).toContain('Jak to działa')
     expect(html.match(/<li>/g)).toHaveLength(3)
     expect(html.indexOf('Wklejasz link')).toBeLessThan(html.indexOf('1–3 minuty'))
-    expect(html).toContain('dzwonek da znać o problemie')
+    expect(html).toContain('dzwonek da znać o\u00a0problemie')
     expect(html).toContain('Udostępnij → Zapisz Przepis')
+  })
+
+  it('binds one-letter words to the next word so none ends a line (#392)', () => {
+    const html = renderToStaticMarkup(createElement(AddRecipePanel))
+    expect(html).toContain('pojawi się w\u00a0„Moje przepisy”, a\u00a0dzwonek')
+    expect(html).toContain('prosto z\u00a0Facebooka')
+    expect(html).not.toMatch(/ [aiouwz] /)
   })
 
   it('passes the error and focus through to the link form', () => {
