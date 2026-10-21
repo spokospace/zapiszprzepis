@@ -148,7 +148,7 @@ export function DishVersionsSort({
             <summary
               ref={summaryRef}
               aria-label={`Kolejność: ${current.label}. Zmień kolejność`}
-              className="inline-flex min-h-[48px] max-w-full cursor-pointer list-none items-center gap-2 rounded-field border-2 border-field px-3.5 text-[16px] font-bold text-ink [&::-webkit-details-marker]:hidden"
+              className="inline-flex min-h-[48px] max-w-full cursor-pointer list-none items-center gap-2 rounded-pill border-2 border-ink px-3.5 text-[16px] font-bold text-ink [&::-webkit-details-marker]:hidden"
             >
               <ArrowDownUp aria-hidden="true" className="h-[18px] w-[18px] shrink-0" />
               <span className="min-w-0 wrap-anywhere">
@@ -160,7 +160,7 @@ export function DishVersionsSort({
                 className="h-[18px] w-[18px] shrink-0 transition-transform group-open:rotate-180"
               />
             </summary>
-            <ul className="absolute z-10 mt-2 flex w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-field border-2 border-field bg-white shadow-[0_8px_24px_rgba(17,24,39,.12)]">
+            <ul className="absolute z-10 mt-2 flex w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-tile border-2 border-ink bg-white shadow-[0_8px_24px_rgba(17,24,39,.12)]">
               {OPTIONS.map(({ key, label }) => {
                 const active = order === key
                 return (

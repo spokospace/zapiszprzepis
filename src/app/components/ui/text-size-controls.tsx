@@ -30,8 +30,8 @@ export function TextSizeControls({ level, onChange }: TextSizeControlsProps) {
               aria-pressed={active}
               aria-label={`Wielkość tekstu ${l}`}
               onClick={() => onChange(l)}
-              className={`min-h-[48px] min-w-[52px] rounded-field border-2 px-3 font-bold leading-none transition-colors ${
-                active ? 'bg-ink text-white border-ink' : 'bg-white text-ink border-border-card-2 hover:bg-surface-3'
+              className={`min-h-[48px] min-w-[52px] rounded-pill border-2 px-3 font-bold leading-none transition-colors ${
+                active ? 'bg-ink text-white border-ink' : 'bg-white text-ink border-ink hover:bg-surface-3'
               }`}
               style={{ fontSize: l === 'A' ? 17 : l === 'A+' ? 19 : 22 }}
             >

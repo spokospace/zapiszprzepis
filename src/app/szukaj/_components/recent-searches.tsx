@@ -32,7 +32,7 @@ export function RecentSearchList() {
         <button
           type="button"
           onClick={clear}
-          className="min-h-12 rounded-field px-2 text-[16px] font-bold text-ink underline underline-offset-4 hover:bg-surface-3"
+          className="min-h-12 rounded-pill px-2 text-[16px] font-bold text-ink underline underline-offset-4 hover:bg-surface-3"
         >
           Wyczyść historię
         </button>

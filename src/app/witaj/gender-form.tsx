@@ -44,7 +44,7 @@ export function GenderForm({ next, error }: { next: string; error?: string }) {
       <input type="hidden" name="next" value={next} />
 
       {errorMessage && (
-        <p role="alert" className="rounded-field border-2 border-danger bg-white px-4 py-3 text-[19px] text-danger">
+        <p role="alert" className="rounded-tile border-2 border-danger bg-white px-4 py-3 text-[19px] text-danger">
           {errorMessage}
         </p>
       )}
@@ -58,7 +58,7 @@ export function GenderForm({ next, error }: { next: string; error?: string }) {
           return (
             <label
               key={option.value}
-              className={`flex min-h-[60px] cursor-pointer items-center justify-center gap-2 rounded-field border-2 px-4 text-[19px] font-bold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus ${
+              className={`flex min-h-[60px] cursor-pointer items-center justify-center gap-2 rounded-pill border-2 px-4 text-[19px] font-bold has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus ${
                 selected ? 'border-ink bg-ink text-white' : 'border-field bg-white text-ink hover:bg-surface-3'
               }`}
             >

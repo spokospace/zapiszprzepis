@@ -117,7 +117,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
                   href={categoryPath(recipe.category, { tags: [tag] })}
                   // wrap-anywhere, like chipClasses: the label's anonymous flex item would not
                   // shrink below its longest word otherwise (WCAG 1.4.10).
-                  className="inline-flex min-h-[48px] items-center gap-2 rounded-field border-[1.5px] border-border-accent bg-surface-accent px-4 text-[17px] font-bold wrap-anywhere text-action-text no-underline! hover:border-action-text"
+                  className="inline-flex min-h-[48px] items-center gap-2 rounded-pill border-2 border-ink bg-white px-4 text-[17px] font-bold wrap-anywhere text-action-text no-underline! hover:border-action-text"
                 >
                   <Tag aria-hidden="true" className="h-5 w-5 shrink-0" />
                   {tagLabel(tag)}
@@ -162,7 +162,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
         <Link
           href={categoryPath(recipe.category)}
           // A5 / screen 6: a full-width 56 px accent button.
-          className="mt-4 flex min-h-[56px] w-full items-center justify-center rounded-field border-[1.5px] border-border-accent bg-surface-accent px-4 text-center text-[19px] font-bold text-action-text no-underline! hover:border-action-text"
+          className="mt-4 flex min-h-[56px] w-full items-center justify-center rounded-pill border-2 border-ink bg-white px-4 text-center text-[19px] font-bold text-action-text no-underline! hover:border-action-text"
         >
           Wszystkie {label.toLocaleLowerCase('pl')}
           {total != null && ` (${total})`} →

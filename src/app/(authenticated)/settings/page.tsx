@@ -65,7 +65,7 @@ export default async function SettingsPage() {
             query (the MENU dot is the live signal), so it never holds up TTFB (#359). */}
         <Link
           href={NOTIFICATIONS_PATH}
-          className="mt-8 flex min-h-14 items-center gap-3 rounded-field border-2 border-field px-4 text-[19px] font-semibold text-ink no-underline! hover:bg-surface-2"
+          className="mt-8 flex min-h-14 items-center gap-3 rounded-pill border-2 border-field px-4 text-[19px] font-semibold text-ink no-underline! hover:bg-surface-2"
         >
           <Bell aria-hidden="true" className="h-6 w-6 shrink-0" />
           <span className="flex-1 underline underline-offset-4">Powiadomienia</span>

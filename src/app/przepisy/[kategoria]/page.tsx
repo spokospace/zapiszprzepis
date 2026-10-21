@@ -133,7 +133,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
 
         {(filtered || list.length > 0) && (
           <div
-            className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-field px-4 py-3 ${filtered ? 'bg-surface-accent' : 'bg-surface-3'}`}
+            className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-tile px-4 py-3 ${filtered ? 'bg-surface-accent' : 'bg-surface-3'}`}
           >
             <p role="status" aria-live="polite" className="min-w-0 text-[18px] leading-snug wrap-anywhere text-ink">
               {filtered ? tagSummary(total, selected) : `Wszystkie: ${total} ${recipesNoun(total)}`}
