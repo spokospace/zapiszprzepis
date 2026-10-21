@@ -173,7 +173,7 @@ type MemberRows = Awaited<ReturnType<typeof getMemberRows>>
  * left-aligned (handoff 14, 3c/3d: padding 28/16/24, gap 14, H1 36 px). „Przepis dnia” is no longer in here — it is its
  * own block under a rule, rendered by the page after the hero.
  */
-function Hero({ id, title, subtitle, children }: { id: string; title: string; subtitle: string; children: ReactNode }) {
+function Hero({ id, title, subtitle, children }: { id: string; title: string; subtitle: ReactNode; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="bg-white">
       <PageContainer className="flex flex-col items-start gap-3.5 pt-7 pb-6 md:items-center md:gap-[18px] md:pt-16 md:pb-[52px] md:text-center">
@@ -267,7 +267,13 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
       <Hero
         id="hero-heading"
         title="Czego dziś szukasz?"
-        subtitle="Przepisy z internetu w jednym miejscu. Zawsze pod ręką, kiedy gotujesz."
+        subtitle={
+          <>
+            Przepisy z internetu w jednym miejscu.
+            {/* Second sentence starts a new line on a phone only; from md the subtitle flows as one line. */}
+            <br className="md:hidden" /> Zawsze pod ręką, kiedy gotujesz.
+          </>
+        }
       >
         <HomeSearch
           id="home-search-guest"
