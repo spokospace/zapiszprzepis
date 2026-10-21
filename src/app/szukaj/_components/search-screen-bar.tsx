@@ -30,7 +30,8 @@ export function SearchScreenBar() {
         <X aria-hidden="true" className="h-6 w-6" />
         Zamknij
       </Link>
-      <h1 className="text-[20px] font-bold text-ink lg:sr-only">Szukaj przepisu</h1>
+      {/* min-w-0: lets the title wrap beside „Zamknij” at a large system font (#448). */}
+      <h1 className="min-w-0 text-[20px] font-bold text-ink lg:sr-only">Szukaj przepisu</h1>
     </div>
   )
 }

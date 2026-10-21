@@ -15,7 +15,7 @@ describe('SearchScreenBar (handoff v8 screen 4, E01-S26)', () => {
     expect(close).toContain('lg:hidden')
     expect(close).toContain('h-14')
     expect(close).toMatch(/<\/svg>Zamknij<\/a>$/)
-    expect(html).toContain('<h1 class="text-[20px] font-bold text-ink lg:sr-only">Szukaj przepisu</h1>')
+    expect(html).toContain('<h1 class="min-w-0 text-[20px] font-bold text-ink lg:sr-only">Szukaj przepisu</h1>')
   })
 })
 

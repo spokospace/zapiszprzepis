@@ -28,7 +28,8 @@ describe('RecipeChecklists headings (C3)', () => {
   })
 
   it('sets the section headings at 24 px (README: H2 22–24 px)', () => {
-    expect(render(null)).toContain('<h2 id="steps-heading" class="text-[24px] font-bold text-ink">Przygotowanie</h2>')
+    // min-w-0 lets the heading wrap at a large system font (#448).
+    expect(render(null)).toContain('<h2 id="steps-heading" class="min-w-0 text-[24px] font-bold text-ink">Przygotowanie</h2>')
   })
 })
 

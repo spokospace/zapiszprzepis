@@ -145,12 +145,17 @@ Playwright project `reflow` (no password sign-in, no `setup` dependency): `e2e/r
 - **New screen with user text:** add it to `SCREENS`, or for targeted strings a test
   with `open()` + `inject()` + `expectNoHorizontalScroll()`.
 - **Run:** `pnpm test:reflow` (starts `next dev`; `E2E_PORT=3107` for a free port).
-- **Menu drawer on a phone (#448):** project `menu-drawer`, `e2e/menu-drawer.spec.ts`,
-  also run by `pnpm test:reflow`. At 412 px with every font size scaled ×1 / ×1.3 / ×2
-  (Chromium can't emulate Android's system font size), the page must not scroll
-  sideways before, during any frame of, or after the slide-in; plus the close paths
-  („Zamknij”, Escape, a link, a click beside the panel), focus return, scroll lock and
-  reduced motion. Guest only, no sign-in.
+- **Phone layout (#448):** project `phone`, also run by `pnpm test:reflow`; helpers in
+  `e2e/phone.ts`. Chromium can't emulate Android's system font size, so `scaleFonts`
+  multiplies every computed font size; `sidewaysScroll` measures against the device
+  width, never `innerWidth`, which Chrome widens on a phone to fit overflowing content.
+  - `e2e/menu-drawer.spec.ts`: at 412 px, font ×1 / ×1.3 / ×2, the page must not scroll
+    sideways before, during any frame of, or after the slide-in; plus the close paths
+    („Zamknij”, Escape, a link, a click beside the panel), focus return, scroll lock
+    and reduced motion.
+  - `e2e/system-font.spec.ts`: every main screen (guest and signed in) at 320 / 360 /
+    412 px with font ×2 (the WCAG 1.4.4 level), as rendered, with the menu open and
+    after it closes. **New screen:** add it to `SCREENS`.
 
 ### 6.6 Per-rollout-phase notes
 TBD — each rollout phase's final sub-phase appends its concrete location, naming,

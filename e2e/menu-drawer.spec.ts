@@ -1,13 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
+import { phone, scaleFonts, sidewaysScroll } from './phone'
 
 /**
  * Header MENU drawer on a phone (#448): opening and closing it must never leave the
- * page sideways-scrollable, also with a larger Android system font. Guest only and
- * read-only (local dev runs against the production DB).
- *
- * Android's system font size enlarges every font, fixed px included, at an unchanged
- * viewport width; Chromium can't emulate that setting, so `scaleFonts` multiplies each
- * element's computed font size instead.
+ * page sideways-scrollable, also with a larger Android system font (`scaleFonts`).
+ * Guest only and read-only (local dev runs against the production DB).
  *
  * Run: pnpm test:reflow (starts `next dev` unless one is already on E2E_PORT).
  */
@@ -16,38 +13,18 @@ const menuButton = (page: Page) => page.locator('button[aria-controls="app-menu"
 const drawer = (page: Page) => page.locator('dialog#app-menu')
 
 async function open(page: Page, path = '/') {
-  await page.goto(path)
+  // An error page never scrolls sideways either: the screen itself must render.
+  expect((await page.goto(path))?.status(), `${path} did not render`).toBe(200)
   await page.waitForLoadState('networkidle')
-}
-
-/** Every font size × `factor`, the drawer's (rendered but hidden) content included. */
-async function scaleFonts(page: Page, factor: number) {
-  await page.evaluate((f) => {
-    const els = [...document.querySelectorAll<HTMLElement>('body, body *')]
-    const sizes = els.map((el) => parseFloat(getComputedStyle(el).fontSize))
-    els.forEach((el, i) => el.style.setProperty('font-size', `${sizes[i] * f}px`))
-  }, factor)
-}
-
-/** Whether the page itself can scroll sideways: its width, and a real scroll attempt. */
-async function pageScrollsSideways(page: Page) {
-  return page.evaluate(() => {
-    const root = document.documentElement
-    window.scrollTo(9999, window.scrollY)
-    const scrolled = window.scrollX
-    window.scrollTo(0, window.scrollY)
-    return root.scrollWidth > window.innerWidth || scrolled > 0
-  })
 }
 
 /**
  * Opens the drawer with the MENU button and samples every frame of the slide-in:
- * the <dialog> box must stay inside the viewport on all of them (#448), and the panel
- * inside it must actually move (the animation still runs).
+ * the <dialog> box must stay inside the device width on all of them (#448), and the
+ * panel inside it must actually move (the animation still runs).
  */
 async function openAndSampleFrames(page: Page) {
-  return page.evaluate(async () => {
-    const vw = document.documentElement.clientWidth
+  return page.evaluate(async (vw) => {
     const dialog = document.querySelector<HTMLDialogElement>('dialog#app-menu')!
     document.querySelector<HTMLButtonElement>('button[aria-controls="app-menu"]')!.click()
     let maxRight = 0
@@ -63,17 +40,17 @@ async function openAndSampleFrames(page: Page) {
       await new Promise(requestAnimationFrame)
     }
     return { vw, maxRight, minLeft, maxPanelShift }
-  })
+  }, page.viewportSize()!.width)
 }
 
 test.describe('phone, 412 px (Pixel 9)', () => {
-  test.use({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2.625 })
+  test.use(phone(412, 915))
 
   for (const factor of [1, 1.3, 2]) {
     test(`opening and closing never scrolls the page sideways, system font ×${factor}`, async ({ page }) => {
       await open(page)
       await scaleFonts(page, factor)
-      expect(await pageScrollsSideways(page), 'sideways before opening').toBe(false)
+      expect(await sidewaysScroll(page), 'sideways before opening').toBeNull()
 
       const frames = await openAndSampleFrames(page)
       expect(frames.maxRight, 'drawer box past the right edge mid-animation').toBeLessThanOrEqual(frames.vw + 0.5)
@@ -81,7 +58,7 @@ test.describe('phone, 412 px (Pixel 9)', () => {
       expect(frames.maxPanelShift, 'the panel no longer slides in').toBeGreaterThan(0)
 
       await expect(drawer(page)).toHaveJSProperty('open', true)
-      expect(await pageScrollsSideways(page), 'sideways while open').toBe(false)
+      expect(await sidewaysScroll(page), 'sideways while open').toBeNull()
       // The drawer's own lists wrap instead of scrolling sideways.
       const navOverflow = await page
         .locator('dialog#app-menu nav')
@@ -90,7 +67,7 @@ test.describe('phone, 412 px (Pixel 9)', () => {
 
       await page.getByRole('button', { name: 'Zamknij' }).click()
       await expect(drawer(page)).toHaveJSProperty('open', false)
-      expect(await pageScrollsSideways(page), 'sideways after closing').toBe(false)
+      expect(await sidewaysScroll(page), 'sideways after closing').toBeNull()
     })
   }
 
@@ -131,7 +108,7 @@ test.describe('phone, 412 px (Pixel 9)', () => {
     await page.locator('dialog#app-menu a[href="/przepisy/ciasta"]').click()
     await expect(page).toHaveURL(/\/przepisy\/ciasta$/)
     await expect(drawer(page)).toHaveJSProperty('open', false)
-    expect(await pageScrollsSideways(page), 'sideways after navigating').toBe(false)
+    expect(await sidewaysScroll(page), 'sideways after navigating').toBeNull()
   })
 
   test('the drawer fills the screen on a phone', async ({ page }) => {

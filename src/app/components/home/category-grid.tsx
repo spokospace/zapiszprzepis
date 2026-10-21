@@ -66,7 +66,9 @@ export function CategoryGrid({
                 className={`flex items-center font-bold break-words no-underline! ${tile.link}`}
               >
                 <Icon aria-hidden="true" strokeWidth={tile.stroke} className={`shrink-0 text-action-text ${tile.icon}`} />
-                <span className="min-w-0">{categoryDisplayLabel(label)}</span>
+                {/* max-w-full: in the centred 3-column tile the name is as wide as its
+                    longest word, so at a large system font break-words never got to act (#448). */}
+                <span className="min-w-0 max-w-full">{categoryDisplayLabel(label)}</span>
               </Link>
             </li>
           )

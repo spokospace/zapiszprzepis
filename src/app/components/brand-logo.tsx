@@ -25,12 +25,15 @@ export function BrandLogo() {
 /**
  * Decorative: the surrounding link or `role="img"` element carries the name.
  * Two words, „Zapisz Przepis” (handoff v8, #339); the gap is a margin, not a JSX
- * space, so formatting can never drop it.
+ * space, so formatting can never drop it. Without a space the pair never wrapped,
+ * so `<wbr />` lets „Przepis” drop to a second line at a large system font
+ * instead of widening the page (#448).
  */
 export function LogoWordmark({ className = 'text-[1.625rem]' }: { className?: string }) {
   return (
     <span aria-hidden="true" className={`font-bold ${className}`}>
       <span className="text-gray-900">Zapisz</span>
+      <wbr />
       <span className="ml-[.28em] text-action">Przepis</span>
     </span>
   )
