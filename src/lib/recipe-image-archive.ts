@@ -78,6 +78,29 @@ export function proxiedImageUrl(externalUrl: string): string {
   return `${IMAGE_PROXY}${encodeURIComponent(externalUrl)}`
 }
 
+/**
+ * A render-time URL for an EXTERNAL (non-archived) cover: the same wsrv.nl proxy,
+ * asking for a width-capped WebP instead of the blog's full-size original.
+ * `maxWidth` is the largest CSS width the image is shown at, times the device
+ * pixel ratio.
+ */
+export function cappedExternalImageUrl(externalUrl: string, maxWidth: number): string {
+  return `${IMAGE_PROXY}${encodeURIComponent(externalUrl)}&w=${maxWidth}&output=webp&q=75`
+}
+
+/**
+ * `src` + `unoptimized` for a recipe cover <Image>. An archived cover (Supabase
+ * Storage) goes through next/image's optimizer unchanged; an external one is
+ * swapped for a width-capped WebP from wsrv.nl and marked unoptimized, so it
+ * never passes through our own `/_next/image` (the #131 invariant holds) and the
+ * browser fetches a bounded image, not the blog's full-size original. Decides
+ * once, so the caller does not test the URL twice.
+ */
+export function coverImageProps(imageUrl: string, maxWidth: number): { src: string; unoptimized: boolean } {
+  if (isArchivedImageUrl(imageUrl)) return { src: imageUrl, unoptimized: false }
+  return { src: cappedExternalImageUrl(imageUrl, maxWidth), unoptimized: true }
+}
+
 // Polish shared hosting (home.pl, nazwa.pl) often serves a domain over https
 // with the host's default certificate — `*.home.pl` on babskieporady.pl — which
 // matches neither the domain nor any SAN, so the TLS handshake fails both here
