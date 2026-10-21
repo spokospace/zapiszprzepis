@@ -7,7 +7,7 @@ import {
   sharedTagsCaption,
   categoryNoun,
   similarHeading,
-  tagFacets,
+  tagFacetsFromCounts,
   tagSummary,
 } from '@/lib/category-tags'
 
@@ -106,17 +106,15 @@ describe('parsePageParam', () => {
   })
 })
 
-describe('tagFacets', () => {
-  const rows = [
-    { tags: ['kruche', 'czekoladowe'] },
-    { tags: ['kruche', 'czekoladowe', 'maslane'] },
-    { tags: ['kruche', 'owocowe'] },
-    { tags: ['owocowe'] },
-    { tags: null },
-  ]
-
-  it('counts every tag over the whole category when nothing is selected', () => {
-    expect(tagFacets(rows, []).map((f) => [f.value, f.count])).toEqual([
+describe('tagFacetsFromCounts', () => {
+  it('maps RPC (tag, count) rows, ordering by count then RECIPE_TAGS order and hiding zeros', () => {
+    const counts = [
+      { tag: 'kruche', count: 3 },
+      { tag: 'czekoladowe', count: 2 },
+      { tag: 'owocowe', count: 2 },
+      { tag: 'maslane', count: 1 },
+    ]
+    expect(tagFacetsFromCounts(counts, []).map((f) => [f.value, f.count])).toEqual([
       ['kruche', 3],
       ['czekoladowe', 2],
       ['owocowe', 2],
@@ -124,18 +122,27 @@ describe('tagFacets', () => {
     ])
   })
 
-  it('counts within the AND selection, puts selected first and hides dead ends', () => {
-    const facets = tagFacets(rows, ['kruche'])
-    expect(facets.map((f) => [f.value, f.count, f.selected])).toEqual([
-      ['kruche', 3, true],
+  it('puts a selected tag first even when the RPC returned no row for it (count 0)', () => {
+    const counts = [
+      { tag: 'kruche', count: 3 },
+      { tag: 'czekoladowe', count: 2 },
+    ]
+    expect(tagFacetsFromCounts(counts, ['grill']).map((f) => [f.value, f.count, f.selected])).toEqual([
+      ['grill', 0, true],
+      ['kruche', 3, false],
       ['czekoladowe', 2, false],
-      ['maslane', 1, false],
-      ['owocowe', 1, false],
     ])
   })
 
-  it('keeps a selected tag with no results so it can be removed', () => {
-    expect(tagFacets(rows, ['grill'])).toEqual([{ value: 'grill', label: 'grill', count: 0, selected: true }])
+  it('puts a selected tag that the RPC did count first', () => {
+    const counts = [
+      { tag: 'kruche', count: 3 },
+      { tag: 'czekoladowe', count: 2 },
+    ]
+    expect(tagFacetsFromCounts(counts, ['czekoladowe']).map((f) => [f.value, f.count, f.selected])).toEqual([
+      ['czekoladowe', 2, true],
+      ['kruche', 3, false],
+    ])
   })
 })
 

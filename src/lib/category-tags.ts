@@ -37,17 +37,21 @@ export interface TagFacet {
   selected: boolean
 }
 
+/** A `(tag, count)` row as returned by the `category_tag_facets` RPC. */
+export interface TagCount {
+  tag: string
+  count: number
+}
+
 /**
- * The chips for a category: every selected tag, plus every other tag that would
- * still leave results under AND logic, with that number as its counter.
- * Order: selected first, then most results, then the RECIPE_TAGS order.
+ * The category page's tag chips, from `category_tag_facets` RPC rows: every
+ * selected tag, plus every other tag with a count, ordered selected-first, then
+ * most results, then the RECIPE_TAGS order. The AND-logic conditioning on
+ * `selected` is done in SQL (`tags @> selected`); this only maps and orders.
  */
-export function tagFacets(rows: readonly { tags: readonly string[] | null }[], selected: readonly RecipeTag[]): TagFacet[] {
-  const matching = rows.filter((r) => selected.every((t) => r.tags?.includes(t)))
+export function tagFacetsFromCounts(rows: readonly TagCount[], selected: readonly RecipeTag[]): TagFacet[] {
   const counts = new Map<string, number>()
-  for (const row of matching) {
-    for (const tag of new Set(row.tags ?? [])) counts.set(tag, (counts.get(tag) ?? 0) + 1)
-  }
+  for (const r of rows) counts.set(r.tag, r.count)
   return RECIPE_TAGS.map((t) => ({
     value: t.value,
     label: t.label,
