@@ -22,18 +22,15 @@ interface Deps {
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
-async function readMarkdown(url: string, { fetch }: Deps): Promise<Omit<ReaderPage, 'html'> | null> {
+async function readMarkdown(url: string, { fetch }: Deps): Promise<Omit<ReaderPage, 'html'>> {
   const response = await fetch(`${JINA_READER}${url}`, {
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(45_000),
   })
-  if (!response.ok) {
-    console.warn('[jina-reader] HTTP', response.status, url)
-    return null
-  }
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
   const data = (await response.json())?.data
   const content = str(data?.content)
-  if (!content) return null
+  if (!content) throw new Error('no content')
   // The markdown often starts below the post's heading; the title is the
   // LLM's strongest signal, so it leads.
   const title = str(data.title)
@@ -47,15 +44,17 @@ async function readMarkdown(url: string, { fetch }: Deps): Promise<Omit<ReaderPa
   }
 }
 
-/** The page through Jina Reader plus its raw HTML, or null when Jina has no content for it. */
-export async function readerScrape(url: string, deps: Deps): Promise<ReaderPage | null> {
-  if (isPrivateUrl(url)) return null
+/**
+ * The page through Jina Reader plus its raw HTML. Throws "Jina Reader: …" with
+ * the reason when Jina has no content for it, so the caller can store why.
+ */
+export async function readerScrape(url: string, deps: Deps): Promise<ReaderPage> {
+  if (isPrivateUrl(url)) throw new Error('Jina Reader: private address')
   const [read, html] = await Promise.all([
     readMarkdown(url, deps).catch((err) => {
-      console.warn('[jina-reader] read failed:', err)
-      return null
+      throw new Error(`Jina Reader: ${err instanceof Error ? err.message : String(err)}`, { cause: err })
     }),
     fetchPublicHtml(url, deps),
   ])
-  return read && { ...read, html: html ?? '' }
+  return { ...read, html: html ?? '' }
 }

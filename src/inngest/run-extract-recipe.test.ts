@@ -237,15 +237,16 @@ describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () =>
     expect(fetch.mock.calls.filter((c) => String(c[0]).startsWith('https://r.jina.ai/'))).toHaveLength(1)
   })
 
-  it("keeps Firecrawl's error when Jina has nothing either", async () => {
+  it("leads with Firecrawl's error and adds Jina's reason when Jina has nothing either", async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const mock = makeSupabaseMock()
 
     await expect(
       runExtractRecipe(BASE_EVENT, { fetch: makeOutOfCreditsFetch({ jinaOk: false }), supabase: mock.supabase as any }),
-    ).rejects.toThrow('Firecrawl failed: HTTP 402')
+    ).rejects.toThrow(/^Firecrawl failed: HTTP 402; Jina Reader: HTTP 451$/)
 
     expect(mock.didInsert('recipes')).toBe(false)
+    expect(mock.didUpdate('recipe_shares', { error_message: 'Firecrawl failed: HTTP 402; Jina Reader: HTTP 451' })).toBe(true)
   })
 })
 

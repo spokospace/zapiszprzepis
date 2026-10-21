@@ -167,15 +167,16 @@ export async function runExtractRecipe(
   // When Firecrawl fails — down, or out of credits (HTTP 402) — Jina Reader
   // stands in, and Firecrawl is not asked again in this run. One read per URL:
   // the main scrape and the embed scan share it. With no content there
-  // either, Firecrawl's own error stands, so the failure keeps its reason.
-  let firecrawlError: unknown = null
-  const readerPages = new Map<string, Promise<ReaderPage | null>>()
+  // either, the error leads with Firecrawl's (the reader-facing copy keys on
+  // it) and appends Jina's reason, so recipe_shares.error_message says both.
+  let firecrawlError: string | null = null
+  const readerPages = new Map<string, Promise<ReaderPage>>()
   async function scrape(options: ReturnType<typeof buildFirecrawlOptions>) {
     if (firecrawlError == null) {
       try {
         return await firecrawlScrape(options)
       } catch (err) {
-        firecrawlError = err
+        firecrawlError = err instanceof Error ? err.message : String(err)
         console.warn('[extract-recipe] Firecrawl failed, falling back to Jina Reader:', err)
       }
     }
@@ -184,9 +185,11 @@ export async function runExtractRecipe(
       read = readerScrape(options.url, { fetch })
       readerPages.set(options.url, read)
     }
-    const page = await read
-    if (!page) throw firecrawlError
-    return page
+    try {
+      return await read
+    } catch (err) {
+      throw new Error(`${firecrawlError}; ${err instanceof Error ? err.message : String(err)}`, { cause: err })
+    }
   }
 
   // Recipe text comes from the main-content scrape, retrying with

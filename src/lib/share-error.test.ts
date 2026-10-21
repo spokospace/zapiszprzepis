@@ -17,6 +17,9 @@ describe('explainShareError — the raw pipeline message is never shown', () => 
     ['Firecrawl failed: HTTP 404', REASON_BLOCKED],
     ['Firecrawl failed: HTTP 429 Too Many Requests', REASON_NOT_RESPONDING],
     ['Firecrawl failed: HTTP 502 Bad Gateway', REASON_NOT_RESPONDING],
+    // The Jina Reader fallback's reason trails Firecrawl's; the copy keys on Firecrawl's.
+    ['Firecrawl failed: HTTP 402; Jina Reader: HTTP 429', REASON_BLOCKED],
+    ['Firecrawl failed: HTTP 502; Jina Reader: no content', REASON_NOT_RESPONDING],
     ['fetch failed', REASON_NOT_RESPONDING],
     ['The operation timed out', REASON_NOT_RESPONDING],
     ['OpenAI failed: HTTP 500 — upstream detail', REASON_GENERIC],
