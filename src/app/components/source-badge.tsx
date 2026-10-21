@@ -10,16 +10,21 @@ import type { SourceKind } from '@/lib/recipe-source'
 // "YouTube · …".
 type BadgeIcon = ComponentType<SVGProps<SVGSVGElement>>
 
-/** Facebook's "f" mark, monochrome so it inherits the badge's ink colour. */
+/**
+ * Facebook's roundel, monochrome so it inherits the badge's ink colour. A square
+ * 16×16 viewBox (like the WordPress / Blogger marks) so it fills the badge icon
+ * box — the earlier tall "f"-only glyph (320×512) letterboxed into 18 px read as
+ * a broken mark. The "f" is knocked out of the solid disc, white on the badge.
+ */
 function FacebookIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      viewBox="0 0 320 512"
+      viewBox="0 0 16 16"
       fill="currentColor"
       className={`source-icon-facebook ${className ?? ''}`}
       {...props}
     >
-      <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H176v92.66h59.28V512h91.46V288z" />
+      <path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z" />
     </svg>
   )
 }
