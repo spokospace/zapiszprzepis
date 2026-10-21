@@ -23,7 +23,9 @@ export function SuggestionRowContent({
         {imageUrl ? (
           <Image
             src={imageUrl}
+            // The title sits right beside it, so the thumbnail is decorative.
             alt=""
+            aria-hidden
             fill
             sizes="48px"
             className="object-cover"

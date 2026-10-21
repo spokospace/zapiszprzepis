@@ -89,8 +89,10 @@ export function RecipeCard({
         {imageUrl ? (
           <Image
             src={imageUrl}
-            // The title sits right under it and names the card's link, so the image is decorative.
+            // The title sits right under it and names the card's link, so the image is decorative:
+            // empty alt plus aria-hidden keeps it out of the a11y tree and makes the intent explicit.
             alt=""
+            aria-hidden
             fill
             className="object-cover transition-transform group-hover:scale-105"
             sizes={sizes}
