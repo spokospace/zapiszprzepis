@@ -1,13 +1,28 @@
-import { BookOpen, ExternalLink, Globe, MonitorPlay, User, Users } from 'lucide-react'
+import { BookOpen, ExternalLink, Globe, MonitorPlay, User } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 import type { SourceKind } from '@/lib/recipe-source'
 
-// lucide-react dropped its brand glyphs, so these are neutral stand-ins; the
-// visible text always names the platform ("YouTube · …", "Facebook"), so the
-// icon only has to read as "video" / "community" and need not be a logo. The
-// blog-platform marks (WordPress / Blogger) are hand-drawn for the same reason,
-// monochrome like the rest so they inherit the badge's ink colour.
+// lucide-react dropped its brand glyphs, so the platform marks here are
+// hand-drawn — monochrome, inheriting the badge's ink colour via currentColor.
+// Facebook gets its "f": the FB badge shows the author's name alone, so the logo
+// is what names the platform. WordPress / Blogger are a circled / boxed letter.
+// YouTube keeps a neutral "video" lucide glyph, since its text still says
+// "YouTube · …".
 type BadgeIcon = ComponentType<SVGProps<SVGSVGElement>>
+
+/** Facebook's "f" mark, monochrome so it inherits the badge's ink colour. */
+function FacebookIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 320 512"
+      fill="currentColor"
+      className={`source-icon-facebook ${className ?? ''}`}
+      {...props}
+    >
+      <path d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H176v92.66h59.28V512h91.46V288z" />
+    </svg>
+  )
+}
 
 /** A circled "W" — reads as WordPress next to the blog's name. */
 function WordPressIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
@@ -52,7 +67,7 @@ const ICON: Record<SourceKind, BadgeIcon> = {
   wordpress: WordPressIcon,
   blogger: BloggerIcon,
   youtube: MonitorPlay,
-  facebook: Users,
+  facebook: FacebookIcon,
   book: BookOpen,
   person: User,
 }

@@ -10,13 +10,16 @@ const PLATFORM_LABELS: Partial<Record<RecipeSource, string>> = {
 }
 
 /**
- * Where a recipe came from, as a reader would name it: the platform for
- * Facebook / YouTube, the site's own domain for a blog ("polskiekulinaria.pl")
- * — two same-titled recipes from different blogs are told apart by exactly
- * that. The platform comes first, then the author ("Facebook · Kulinarna
- * Wiola", "YouTube · Kuchnia Ani" — handoff C3 and CLAUDE.md): the one stored at import, or for recipes saved before that, a
- * known Facebook author read off the URL. Falls back to "Blog" / "Inny" when
- * the URL is missing or unparseable.
+ * Where a recipe came from, as a reader would name it: the site's own domain
+ * for a blog ("polskiekulinaria.pl") — two same-titled recipes from different
+ * blogs are told apart by exactly that. For a Facebook recipe the badge's "f"
+ * logo already names the platform, so the label is the author alone ("Kulinarna
+ * Wiola"); YouTube stays "YouTube · {channel}". This is an owner decision that
+ * overrides the "Facebook · {profil}" of the 2026-10-20 handoff (README §39) and
+ * the older CLAUDE.md note — do not "restore" the "Facebook ·" prefix. The author
+ * is the one stored at import, or for recipes saved before that, a known Facebook
+ * author read off the URL; with no author a Facebook recipe shows the bare
+ * "Facebook". Falls back to "Blog" / "Inny" when the URL is missing or unparseable.
  */
 export function sourceLabel(
   sourceType: RecipeSource,
@@ -26,7 +29,9 @@ export function sourceLabel(
   const platform = PLATFORM_LABELS[sourceType]
   if (platform) {
     const author = sourceAuthor || (sourceUrl ? facebookAuthorName(sourceUrl) : null)
-    return author ? `${platform} · ${trimAuthorTail(author)}` : platform
+    if (!author) return platform
+    const name = trimAuthorTail(author)
+    return isFacebookSource(sourceType) ? name : `${platform} · ${name}`
   }
   const web = sourceUrl ? webSource(sourceUrl) : null
   if (web) return web.name
@@ -55,9 +60,14 @@ export type SourceKind = 'website' | 'wordpress' | 'blogger' | 'youtube' | 'face
 /** The blog-platform badge icon a web source may carry; null keeps the globe. */
 type BlogBrand = Extract<SourceKind, 'wordpress' | 'blogger'> | null
 
+/** Facebook text post or reel — both carry the "f" badge and the author-only label. */
+function isFacebookSource(sourceType: RecipeSource): boolean {
+  return sourceType === 'facebook_text' || sourceType === 'facebook_reel'
+}
+
 export function sourceKind(sourceType: RecipeSource): SourceKind {
   if (sourceType === 'youtube') return 'youtube'
-  if (sourceType === 'facebook_text' || sourceType === 'facebook_reel') return 'facebook'
+  if (isFacebookSource(sourceType)) return 'facebook'
   return 'website'
 }
 
