@@ -287,6 +287,8 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
       </Hero>
       {recipeOfDay}
       <PageContainer className="flex flex-col gap-8 pt-6">
+        {/* Categories sit above the rows (handoff 17 prototype); in the desktop header's bar (§2), so tiles are phones only (§5e). */}
+        <CategoryGrid columns={3} className="lg:hidden" />
         {recentRecipes.length > 0 && (
           <RecipeRow
             id="recent-heading"
@@ -297,8 +299,6 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
             favoriteIds={null}
           />
         )}
-        {/* Categories are in the desktop header's bar (§2); the tiles are for phones only (§5e). */}
-        <CategoryGrid columns={3} className="lg:hidden" />
         <GuestCta />
       </PageContainer>
     </>
@@ -346,6 +346,8 @@ function MemberHome({
       {recipeOfDay}
       <PageContainer className="flex flex-col gap-8 pt-6">
         {favoriteAdded !== null && !shown.has(favoriteAdded) && <FavoriteAddedNotice recipeId={favoriteAdded} />}
+        {/* Categories sit above the rows (handoff 17 prototype); in the desktop header's bar (§2), so tiles are phones only (§5e). */}
+        <CategoryGrid columns={3} className="lg:hidden" />
         {mine.length > 0 && (
           <RecipeRow
             id="mine-heading"
@@ -379,8 +381,6 @@ function MemberHome({
             Dodaj pierwszy przepis
           </Link>
         )}
-        {/* Categories are in the desktop header's bar (§2); the tiles are for phones only (§5e). */}
-        <CategoryGrid columns={3} className="lg:hidden" />
       </PageContainer>
     </>
   )
