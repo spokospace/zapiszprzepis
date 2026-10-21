@@ -23,12 +23,12 @@ export function AddRecipePanel({ error = null, autoFocus }: { error?: AddRecipeE
           Skąd dodajesz przepis?
         </h2>
         <ul className="grid grid-cols-2 gap-2.5">
-          <li className="flex flex-col gap-1 rounded-card border-2 border-action bg-surface-accent p-3">
+          <li className="flex flex-col gap-1 rounded-tile border-2 border-action bg-white p-3">
             <LinkIcon aria-hidden="true" className="h-6 w-6 text-action-text" />
             <span className="text-[19px] font-bold text-ink">Z linku</span>
             <span className="text-[16px] text-ink-soft">Facebook, YouTube, blog</span>
           </li>
-          <li className="flex flex-col gap-1 rounded-card border-2 border-dashed border-field bg-surface-3 p-3">
+          <li className="flex flex-col gap-1 rounded-tile border-2 border-dashed border-field bg-surface-3 p-3">
             <Camera aria-hidden="true" className="h-6 w-6 text-ink-soft" />
             <span className="text-[19px] font-bold text-ink">Ze zdjęcia</span>
             <span className="text-[16px] text-ink-soft">Zrzut ekranu lub książka</span>

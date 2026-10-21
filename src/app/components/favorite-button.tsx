@@ -34,7 +34,7 @@ const BASE = 'inline-flex items-center justify-center gap-2 font-bold wrap-anywh
 const SIZE = {
   // no-underline!: a guest gets this as a link to /login, shaped like the button.
   // C3, item 5: 58 px, 19 px bold.
-  full: `${BASE} min-h-[58px] w-full rounded-field border-[2.5px] border-action px-5 text-[19px] no-underline! sm:w-auto`,
+  full: `${BASE} min-h-[58px] w-full rounded-pill border-[2.5px] border-action px-5 text-[19px] no-underline! sm:w-auto`,
   // No grey ring — a soft shadow sets the white circle off a light photo and the
   // heart itself carries the contrast (ZMIANY_prototyp §6).
   photo:
@@ -72,7 +72,7 @@ function FavoriteToast({ show, onUndo }: { show: boolean; onUndo: () => void }) 
   return (
     <div role="status" className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex justify-center empty:hidden">
       {show && (
-        <p className="pointer-events-auto flex items-center gap-3 rounded-field bg-ink px-4 py-2 text-[17px] text-white shadow-lg">
+        <p className="pointer-events-auto flex items-center gap-3 rounded-tile bg-ink px-4 py-2 text-[17px] text-white shadow-lg">
           Dodano do ulubionych ·
           <button type="button" onClick={onUndo} className="min-h-[48px] font-bold underline">
             Cofnij
@@ -192,7 +192,7 @@ export function FavoriteButton({
         // On a photo the message needs its own white ground to stay readable.
         <p
           role="alert"
-          className={`text-[16px] font-bold text-danger ${iconOnly ? 'max-w-[220px] rounded-field bg-white px-3 py-2 shadow-md' : ''}`}
+          className={`text-[16px] font-bold text-danger ${iconOnly ? 'max-w-[220px] rounded-tile bg-white px-3 py-2 shadow-md' : ''}`}
         >
           Nie udało się zapisać. Spróbuj ponownie.
         </p>

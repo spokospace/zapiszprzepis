@@ -20,7 +20,7 @@ export default function RecipeLoading() {
               <SkeletonBar className="h-7 w-32 rounded-full" />
               <SkeletonBar className="h-7 w-36 rounded-full" />
             </div>
-            <SkeletonBar className="mt-4 h-[58px] w-full rounded-field sm:w-72" />
+            <SkeletonBar className="mt-4 h-[58px] w-full rounded-pill sm:w-72" />
           </div>
           <div className="mb-12 grid gap-8 md:grid-cols-2">
             {[6, 4].map((lines, column) => (

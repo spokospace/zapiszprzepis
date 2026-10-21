@@ -201,7 +201,7 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
             {isLoading ? 'Logowanie...' : 'Zaloguj się'}
           </button>
 
-          <p className="mt-3 rounded-field bg-surface-2 px-4 py-3 text-[16px] text-ink-soft">
+          <p className="mt-3 rounded-tile bg-surface-2 px-4 py-3 text-[16px] text-ink-soft">
             Logujesz się po raz pierwszy? Możesz użyć{' '}
             <button
               type="button"

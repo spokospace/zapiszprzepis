@@ -177,7 +177,7 @@ export function RecipeChecklists({
 
       <section
         aria-labelledby="ingredients-heading"
-        className="mb-10 lg:rounded-card lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"
+        className="mb-10 lg:rounded-tile lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"
       >
         {/* C3, item 8: "Składniki" with "na 4 porcje" on the same baseline, only when
             the source states the servings. */}

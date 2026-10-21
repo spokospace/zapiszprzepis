@@ -25,7 +25,7 @@ export function SearchScreenBar() {
       <Link
         href="/"
         onClick={onClick}
-        className="inline-flex h-14 shrink-0 items-center gap-1.5 rounded-field px-2 text-[18px] leading-none font-bold text-ink no-underline! hover:bg-surface-3 lg:hidden"
+        className="inline-flex h-14 shrink-0 items-center gap-1.5 rounded-pill px-2 text-[18px] leading-none font-bold text-ink no-underline! hover:bg-surface-3 lg:hidden"
       >
         <X aria-hidden="true" className="h-6 w-6" />
         Zamknij

@@ -11,7 +11,7 @@ import { getSiteUrl } from '@/lib/site-url'
 import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
-import { parseSteps, parseStepImages } from '@/lib/steps'
+import { parseSteps, visibleStepImages } from '@/lib/steps'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
@@ -128,7 +128,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   const steps = parseSteps(typedRecipe.steps)
   // Per-step photos, index-aligned with steps; empty until the column/view migration
   // and an import that captures them land (recipes without them render exactly as today).
-  const stepImages = parseStepImages(typedRecipe.step_images)
+  // Signed-in users only: a guest gets plain step text, with no photo or toggle.
+  const stepImages = visibleStepImages(typedRecipe.step_images, Boolean(user))
   const listKey = parseListKey(from)
   const canonicalUrl = `${await getSiteUrl()}${recipePath(typedRecipe.slug)}`
 

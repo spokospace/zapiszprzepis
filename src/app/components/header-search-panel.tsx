@@ -89,7 +89,7 @@ export function HeaderSearchPanel({
       onMouseLeave={() => onHover(null)}
       // ZMIANY_prototyp §5b: a 2 px #6b7280 frame (3:1 on white), radius 16, a deep
       // soft shadow, 6 px below the field.
-      className="absolute top-[calc(100%+6px)] left-0 z-30 max-h-[70vh] w-full min-w-[20rem] overflow-y-auto rounded-card border-2 border-border-dark bg-white py-2 shadow-[0_12px_28px_rgba(17,24,39,0.18)]"
+      className="absolute top-[calc(100%+6px)] left-0 z-30 max-h-[70vh] w-full min-w-[20rem] overflow-y-auto rounded-2xl border-2 border-border-dark bg-white py-2 shadow-[0_12px_28px_rgba(17,24,39,0.18)]"
     >
       {browsing && micSupported && (
         <button

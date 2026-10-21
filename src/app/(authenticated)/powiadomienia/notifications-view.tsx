@@ -107,7 +107,7 @@ export function NotificationsView({ result }: { result: NotificationsResult }) {
       </p>
 
       {result.status === 'error' ? (
-        <div role="alert" className="flex flex-col items-start gap-3 rounded-card border-2 border-danger p-4">
+        <div role="alert" className="flex flex-col items-start gap-3 rounded-tile border-2 border-danger p-4">
           <p className="flex items-center gap-2 text-[19px] font-bold text-ink">
             <CircleAlert aria-hidden="true" className="h-6 w-6 shrink-0 text-danger" />
             Nie udało się sprawdzić powiadomień.
@@ -241,7 +241,7 @@ function Card({
   children?: ReactNode
 }) {
   return (
-    <li className={`flex flex-col gap-2 rounded-card border-2 bg-white p-4 ${border}`}>
+    <li className={`flex flex-col gap-2 rounded-tile border-2 bg-white p-4 ${border}`}>
       <div className="flex items-start gap-2.5">
         <span className="pt-px">{icon}</span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">

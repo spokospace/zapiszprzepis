@@ -26,7 +26,7 @@ export const LIST_BAR =
   'lg:flex lg:border-b-0'
 
 // A button-shaped link: bordered, so no underline (as in the header's "Dodaj").
-const NAV = 'flex min-h-[64px] items-center gap-3 rounded-field border-2 px-4 py-2 leading-tight no-underline!'
+const NAV = 'flex min-h-[64px] items-center gap-3 rounded-tile border px-4 py-2 leading-tight no-underline!'
 
 type ListState =
   | { kind: 'pending' }
@@ -140,7 +140,7 @@ function NavLink({
   return (
     <Link
       href={recipePath(item.slug, { from })}
-      className={`${NAV} ${prev ? '' : 'justify-between'} border-field bg-white text-ink hover:bg-surface-3`}
+      className={`${NAV} ${prev ? '' : 'justify-between'} border-ink bg-white text-ink hover:bg-surface-3`}
     >
       {prev && arrow}
       <span className="flex min-w-0 flex-col">
@@ -174,7 +174,7 @@ export function RecipeListNav(props: RecipeListProps) {
   return (
     <nav
       aria-label="Poprzedni i następny przepis"
-      className="mb-10 grid grid-cols-1 gap-2 border-t-2 border-border-card pt-4 lg:grid-cols-2 lg:gap-4 lg:pt-6"
+      className="mb-10 grid grid-cols-1 gap-2 border-t border-ink pt-4 lg:grid-cols-2 lg:gap-4 lg:pt-6"
     >
       <NavLink item={position.prev} from={linkFrom} direction="prev" listLabel={position.label} />
       <NavLink item={position.next} from={linkFrom} direction="next" listLabel={position.label} />

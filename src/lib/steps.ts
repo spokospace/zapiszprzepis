@@ -49,3 +49,12 @@ export function parseStepImages(raw: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value.map((img) => (typeof img === 'string' && /^https?:\/\//.test(img.trim()) ? img.trim() : ''))
 }
+
+/**
+ * The step photos a viewer may see: only a signed-in user gets them. A guest gets
+ * an empty list, so no photo, toggle or lightbox is rendered and the image URLs
+ * never reach the page they receive — the steps read as plain text.
+ */
+export function visibleStepImages(raw: unknown, isSignedIn: boolean): string[] {
+  return isSignedIn ? parseStepImages(raw) : []
+}

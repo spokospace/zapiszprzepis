@@ -179,7 +179,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
         {isOwner && (
           <section
             aria-label="Twój profil"
-            className="mb-6 rounded-card bg-surface-3 p-4"
+            className="mb-6 rounded-tile bg-surface-3 p-4"
           >
             <p className="mb-3 text-[19px] text-ink">Tak widzą Twój profil inni.</p>
             <Link href="/settings" className={`${buttonClasses('outline', 'lg')} w-full sm:w-auto`}>

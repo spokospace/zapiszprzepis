@@ -18,7 +18,7 @@ export function LockedGallery({ count, loginHref }: { count: number; loginHref: 
           and a 48 px dark "Zaloguj się" — the orange stays for the page's main action. */}
       {/* Block flow, not a centred flex column: a flex item will not shrink below its
           longest word, so a long one would widen the page at 320 px (WCAG 1.4.10). */}
-      <div className="rounded-field border-[1.5px] border-dashed border-border-card-2 bg-surface-2 p-5 text-center">
+      <div className="rounded-tile border-[1.5px] border-dashed border-border-card-2 bg-surface-2 p-5 text-center">
         <Lock aria-hidden="true" size={26} className="mx-auto text-ink-soft" />
         <p className="mt-2.5 mb-3 text-[18px] leading-[1.45] text-ink">
           Galeria {photosLabel(count)} jest dostępna po zalogowaniu.

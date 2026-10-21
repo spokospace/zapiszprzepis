@@ -178,7 +178,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
         onClick={start}
         aria-haspopup="dialog"
         aria-controls="cooking-mode"
-        className="inline-flex min-h-[58px] w-full items-center justify-center gap-2.5 rounded-field bg-ink px-5 text-[19px] font-bold wrap-anywhere text-white hover:bg-ink-soft"
+        className="inline-flex min-h-[58px] w-full items-center justify-center gap-2.5 rounded-pill bg-ink px-5 text-[19px] font-bold wrap-anywhere text-white hover:bg-ink-soft"
       >
         <ChefHat aria-hidden="true" className="h-6 w-6 shrink-0" />
         Tryb gotowania
@@ -215,7 +215,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
             <button
               type="button"
               onClick={finish}
-              className="inline-flex min-h-[56px] shrink-0 items-center gap-1.5 rounded-field px-3.5 text-[18px] font-bold text-white hover:bg-white/10"
+              className="inline-flex min-h-[56px] shrink-0 items-center gap-1.5 rounded-pill px-3.5 text-[18px] font-bold text-white hover:bg-white/10"
             >
               <X aria-hidden="true" className="h-[26px] w-[26px]" />
               Zakończ
@@ -289,7 +289,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
               type="button"
               onClick={() => go(-1)}
               disabled={current === 0}
-              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-card border-2 border-border-dark text-[20px] font-bold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-pill border-2 border-border-dark text-[20px] font-bold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ArrowLeft aria-hidden="true" className="h-6 w-6" />
               Wstecz
@@ -299,7 +299,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
               type="button"
               ref={nextRef}
               onClick={() => (last ? finish() : go(1))}
-              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-card bg-orange-bright text-[22px] font-bold text-ink hover:bg-progress"
+              className="inline-flex min-h-[72px] items-center justify-center gap-1.5 rounded-pill bg-orange-bright text-[22px] font-bold text-ink hover:bg-progress"
             >
               {last ? 'Gotowe' : 'Dalej'}
               {last ? (

@@ -56,8 +56,14 @@ describe('RecipeBreadcrumbs', () => {
 describe('RecipeListNav (C3 phones, A9 desktop)', () => {
   const html = renderToStaticMarkup(createElement(RecipeListNav, { slug: 'zupa', from: null, fallback: POSITION }))
 
-  it('sits under a 2 px rule (C3)', () => {
-    expect(html).toMatch(/^<nav aria-label="Poprzedni i następny przepis" class="[^"]*border-t-2 border-border-card pt-4/)
+  it('sits under a 1 px ink rule (style 1b)', () => {
+    expect(html).toMatch(/^<nav aria-label="Poprzedni i następny przepis" class="[^"]*border-t border-ink pt-4/)
+  })
+
+  it('frames the buttons with 1 px ink and 4 px corners', () => {
+    expect(html).toContain('rounded-tile border')
+    expect(html).toContain('border-ink bg-white')
+    expect(html).not.toContain('rounded-field')
   })
 
   it('gives both arrows the accent colour from lg (A9)', () => {
