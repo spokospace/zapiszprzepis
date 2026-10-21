@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, ChefHat, Sun, X } from 'lucide-react'
 import { clampStep, isLastStep, progressRatio, progressSegments, stepLabel } from '@/lib/cooking-mode'
+import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { createScreenWakeLock, type ScreenWakeLock } from '@/lib/wake-lock'
 
 /**
@@ -49,6 +51,8 @@ function exitFullscreen() {
 interface CookingModeProps {
   title: string
   steps: string[]
+  /** Archived image per step, index-aligned; '' = none. Already emptied when „Ukryj” (ZMIANY §4). */
+  stepImages?: string[]
 }
 
 /**
@@ -59,7 +63,7 @@ interface CookingModeProps {
  * dialog still covers the viewport. One same-URL history entry lets the system
  * Back gesture close the mode instead of leaving the recipe.
  */
-export function CookingMode({ title, steps }: CookingModeProps) {
+export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -248,6 +252,19 @@ export function CookingMode({ title, steps }: CookingModeProps) {
             {/* Announced after every "Dalej" / "Wstecz". */}
             <div aria-live="polite" className="flex min-h-0 flex-col gap-5">
               <p className="text-[22px] font-bold text-accent-dark">{stepLabel(current, total)}</p>
+              {/* Above the text when this step has a photo; it reserves no space otherwise (ZMIANY §4). */}
+              {stepImages[current] && (
+                <div className="relative h-[min(34vh,300px)] w-full max-w-[420px] shrink-0 overflow-hidden rounded-[14px] bg-black/20">
+                  <Image
+                    src={stepImages[current]}
+                    alt={`Zdjęcie do kroku ${current + 1}`}
+                    fill
+                    sizes="420px"
+                    className="object-cover"
+                    unoptimized={!isArchivedImageUrl(stepImages[current])}
+                  />
+                </div>
+              )}
               <p className="min-h-0 overflow-y-auto text-[30px] leading-[1.45] font-semibold text-pretty break-words">
                 {steps[current]}
               </p>

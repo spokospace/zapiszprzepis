@@ -35,8 +35,10 @@ const SIZE = {
   // no-underline!: a guest gets this as a link to /login, shaped like the button.
   // C3, item 5: 58 px, 19 px bold.
   full: `${BASE} min-h-[58px] w-full rounded-field border-[2.5px] border-action px-5 text-[19px] no-underline! sm:w-auto`,
-  // The shadow sets the white circle off a light photo; the heart itself carries the contrast.
-  photo: 'inline-flex h-12 w-12 items-center justify-center rounded-pill bg-white shadow-md transition-colors',
+  // No grey ring — a soft shadow sets the white circle off a light photo and the
+  // heart itself carries the contrast (ZMIANY_prototyp §6).
+  photo:
+    'inline-flex h-12 w-12 items-center justify-center rounded-pill bg-white shadow-[0_2px_8px_rgba(17,24,39,0.22)] transition-colors',
 } as const
 const LOOK = {
   full: { off: 'bg-white text-action-text hover:bg-surface-accent', on: 'bg-action text-white hover:bg-action-hover' },

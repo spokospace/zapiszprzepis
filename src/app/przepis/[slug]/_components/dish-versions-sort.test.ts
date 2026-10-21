@@ -49,4 +49,23 @@ describe('DishVersionsSort', () => {
   it('lets the "Kolejność:" label break a long word instead of widening the page (WCAG 1.4.10)', () => {
     expect(html).toContain('<span id="wersje-kolejnosc" class="mr-1 text-[16px] font-bold wrap-anywhere text-ink-soft">')
   })
+
+  it('keeps the desktop pills, hidden below md (11a)', () => {
+    expect(html).toMatch(/role="group" aria-labelledby="wersje-kolejnosc" class="[^"]*hidden[^"]*md:flex/)
+  })
+
+  // 11b: below md the three pills wrap awkwardly, so the order is one „Kolejność: …” button
+  // that opens a <details> list — working without JS via the same ?wersje= links.
+  it('offers a <details> order dropdown below md, showing the current choice (11b)', () => {
+    expect(html).toMatch(/<details[^>]*class="[^"]*md:hidden/)
+    expect(html).toMatch(/<summary[^>]*>[\s\S]*Kolejność: <\/span>Najpopularniejsze/)
+  })
+
+  it('lists every order as a ?wersje= link with the current one marked', () => {
+    for (const key of ['popularne', 'nowe', 'szybkie']) {
+      expect(html).toContain(`href="?wersje=${key}#inne-przepisy"`)
+    }
+    // The selected row carries aria-current and the check mark.
+    expect(html).toMatch(/aria-current="true"[\s\S]*?Najpopularniejsze<\/span><svg/)
+  })
 })

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   isPrivateUrl,
   archiveImage,
+  jsonLdHowToStepImages,
   pickRecipeImage,
   pickGalleryImages,
   buildGallery,
@@ -748,5 +749,44 @@ describe('isArchivedImageUrl', () => {
     ['https://www.najprzepis.pl/upload/66477920_8933c3cf37e485_full.jpg', false],
   ] as const)('%s → %s', (url, expected) => {
     expect(isArchivedImageUrl(url)).toBe(expected)
+  })
+})
+
+describe('jsonLdHowToStepImages', () => {
+  const ld = (recipeInstructions: unknown) =>
+    `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'Recipe',
+      recipeInstructions,
+    })}</script>`
+
+  it('returns a resolved image per HowToStep, in order, with "" where a step has none', () => {
+    const html = ld([
+      { '@type': 'HowToStep', text: 'Przesiej', image: 'https://cdn/s1.jpg' },
+      { '@type': 'HowToStep', text: 'Wymieszaj' },
+      { '@type': 'HowToStep', text: 'Piecz', image: { '@type': 'ImageObject', url: '/up/s3.jpg' } },
+    ])
+    expect(jsonLdHowToStepImages(html, 'https://blog.pl/ciasto')).toEqual([
+      'https://cdn/s1.jpg',
+      '',
+      'https://blog.pl/up/s3.jpg',
+    ])
+  })
+
+  it('flattens HowToSection groups into a flat per-step list', () => {
+    const html = ld([
+      {
+        '@type': 'HowToSection',
+        itemListElement: [
+          { '@type': 'HowToStep', text: 'A', image: 'https://cdn/a.jpg' },
+          { '@type': 'HowToStep', text: 'B' },
+        ],
+      },
+    ])
+    expect(jsonLdHowToStepImages(html, 'https://blog.pl/x')).toEqual(['https://cdn/a.jpg', ''])
+  })
+
+  it('returns [] when no step carries an image (nothing to align)', () => {
+    expect(jsonLdHowToStepImages(ld(['Przesiej', 'Piecz']), 'https://blog.pl/x')).toEqual([])
+    expect(jsonLdHowToStepImages('<p>no json-ld here</p>')).toEqual([])
   })
 })

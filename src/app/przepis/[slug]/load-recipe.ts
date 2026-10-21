@@ -18,6 +18,8 @@ type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_fingerprint'
   variant_note?: string | null
   /** coalesce(updated_at, created_at) for sitemap <lastmod>; optional until the Phase-1 view migration (#363). */
   last_modified?: string | null
+  /** Per-step archived image URLs, index-aligned with `steps`; optional until the step-images column/view migration. */
+  step_images?: string[] | null
 }
 
 /**

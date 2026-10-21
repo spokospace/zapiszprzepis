@@ -11,7 +11,7 @@ import { getSiteUrl } from '@/lib/site-url'
 import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
-import { parseSteps } from '@/lib/steps'
+import { parseSteps, parseStepImages } from '@/lib/steps'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
@@ -126,6 +126,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // groupBySection splits ingredients by optional `section`.
   const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
   const steps = parseSteps(typedRecipe.steps)
+  // Per-step photos, index-aligned with steps; empty until the column/view migration
+  // and an import that captures them land (recipes without them render exactly as today).
+  const stepImages = parseStepImages(typedRecipe.step_images)
   const listKey = parseListKey(from)
   const canonicalUrl = `${await getSiteUrl()}${recipePath(typedRecipe.slug)}`
 
@@ -184,6 +187,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           title={typedRecipe.title}
           ingredientGroups={ingredientGroups}
           steps={steps}
+          stepImages={stepImages}
           servings={typedRecipe.servings}
         >
           {typedRecipe.youtube_id && (
