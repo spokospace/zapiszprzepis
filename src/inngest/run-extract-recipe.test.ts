@@ -1587,6 +1587,19 @@ describe('runExtractRecipe — servings', () => {
   })
 })
 
+describe('runExtractRecipe — share update errors are not ignored (#382)', () => {
+  it('fails the share, instead of reporting success, when marking a new recipe completed fails', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queueList('recipe_shares', { data: null, error: { message: 'connection reset' } })
+
+    await expect(
+      runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock(), supabase: mock.supabase as any }),
+    ).rejects.toThrow('Share update failed: connection reset')
+    expect(mock.didUpdate('recipe_shares', { status: 'failed' })).toBe(true)
+  })
+})
+
 describe('runExtractRecipe — malformed model output (#381)', () => {
   const withFields = (fields: Record<string, unknown>) => JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), ...fields })
 

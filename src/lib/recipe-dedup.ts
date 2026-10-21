@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { normalizeUrl, sourceUrlPattern } from './url-normalize'
 import { sha256Hex } from './sha256'
+import { stalePendingCutoff } from './share-staleness'
 
 export type DedupResult =
   | { status: 'new'; normalizedUrl: string }
@@ -76,7 +77,14 @@ export async function findExistingRecipeForUrl(
   if (owner === 'own' && own) return { status: 'completed', slug: own.slug, normalizedUrl }
   if (owner === 'other' && other) return { status: 'other', recipeId: other.id, slug: other.slug, normalizedUrl }
 
-  const shares = supabase.from('recipe_shares').select('id').eq('user_id', userId).eq('status', 'pending')
+  // A share pending for longer than STALE_PENDING_MS stopped without a result
+  // (#382); it no longer blocks adding its link again.
+  const shares = supabase
+    .from('recipe_shares')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .gt('updated_at', stalePendingCutoff())
   const { data: pendingShare } = await matchKey(shares, 'shared_url', normalizedUrl).limit(1).maybeSingle()
 
   if (pendingShare) {

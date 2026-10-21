@@ -179,7 +179,7 @@ function makeClient(rows: Record<string, unknown>) {
   const calls: Call[] = []
   const from = (table: string) => {
     const chain: Record<string, unknown> = {}
-    for (const method of ['select', 'eq', 'like', 'limit', 'order']) {
+    for (const method of ['select', 'eq', 'gt', 'like', 'limit', 'order']) {
       chain[method] = (...args: unknown[]) => {
         calls.push({ table, method, args })
         return chain
@@ -239,6 +239,17 @@ describe('findExistingRecipeForUrl — one recipe per link across the site', () 
 
     const fresh = makeClient({})
     expect(await findExistingRecipeForUrl(fresh.client, USER, 'https://example.com/x')).toMatchObject({ status: 'new' })
+  })
+
+  it('only counts a pending share updated in the last 15 minutes, so a stuck one does not block the link (#382)', async () => {
+    const { client, calls } = makeClient({ recipe_shares: { id: 3 } })
+    await findExistingRecipeForUrl(client, USER, 'https://example.com/x')
+
+    const gt = calls.find((c) => c.table === 'recipe_shares' && c.method === 'gt')
+    expect(gt?.args[0]).toBe('updated_at')
+    const cutoff = Date.parse(String(gt?.args[1]))
+    expect(Date.now() - cutoff).toBeGreaterThanOrEqual(15 * 60 * 1000)
+    expect(Date.now() - cutoff).toBeLessThan(16 * 60 * 1000)
   })
 })
 

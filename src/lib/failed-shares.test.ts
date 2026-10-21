@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { getFailedShares } from '@/lib/failed-shares'
+import { STALE_PENDING_ERROR } from '@/lib/share-staleness'
 
 // failed-shares is server-only; the guard throws outside a server bundle.
 vi.mock('server-only', () => ({}))
@@ -24,6 +25,7 @@ function makeSupabase(
   const sharesQuery = {
     select: () => sharesQuery,
     eq: () => sharesQuery,
+    neq: () => sharesQuery,
     is: () => sharesQuery,
     order: async () => shares,
     in: async () => pending,
@@ -48,7 +50,7 @@ function makeSupabase(
   return { from: (table: string) => tables[table] } as any
 }
 
-const share = (id: number, url: string) => ({ id, shared_url: url, error_message: null })
+const share = (id: number, url: string) => ({ id, shared_url: url, error_message: null, status: 'failed' })
 
 describe('getFailedShares — the bell never shows a silent zero', () => {
   it('reports an error, not an empty list, when the shares query fails', async () => {
@@ -188,5 +190,47 @@ describe('getFailedShares — unread ready recipes for the badge (E01-S15)', () 
     )
 
     expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [share(1, 'https://a.example')] })
+  })
+})
+
+describe('getFailedShares — a share stuck in pending is a problem (#382)', () => {
+  const minutesAgo = (m: number) => new Date(Date.now() - m * 60 * 1000).toISOString()
+  const pendingShare = (id: number, url: string, updatedMinutesAgo: number) => ({
+    id,
+    shared_url: url,
+    error_message: null,
+    status: 'pending',
+    updated_at: minutesAgo(updatedMinutesAgo),
+  })
+
+  it('lists a share pending for more than 15 minutes as failed, with a reason the reader understands', async () => {
+    const stale = pendingShare(4, 'https://a.example', 16)
+    const supabase = makeSupabase({ data: [stale], error: null })
+
+    expect(await getFailedShares(supabase, USER)).toEqual({
+      status: 'ok',
+      unreadReady: 0,
+      shares: [{ ...stale, error_message: STALE_PENDING_ERROR }],
+    })
+  })
+
+  it('keeps a share pending for 2 minutes in progress, not in the bell', async () => {
+    const supabase = makeSupabase({ data: [pendingShare(4, 'https://a.example', 2)], error: null })
+
+    expect(await getFailedShares(supabase, USER)).toEqual({ status: 'ok', unreadReady: 0, shares: [] })
+  })
+
+  it('does not let a stale pending row hide an older failed row for the same link', async () => {
+    const stale = pendingShare(4, 'https://a.example', 30)
+    const supabase = makeSupabase(
+      { data: [stale, share(1, 'https://a.example')], error: null },
+      undefined,
+      undefined,
+      undefined,
+      { data: [{ shared_url: 'https://a.example', status: 'pending', updated_at: stale.updated_at }], error: null },
+    )
+
+    const result = await getFailedShares(supabase, USER)
+    expect(result).toMatchObject({ status: 'ok', shares: [{ id: 4, shared_url: 'https://a.example' }] })
   })
 })

@@ -7,10 +7,12 @@ import { requireUser } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { getFullAccess } from '@/lib/full-access'
 import { addRecipeErrorPath } from '@/lib/routes'
+import { isStalePending } from '@/lib/share-staleness'
 
 /**
  * "Ponów" — re-trigger extraction for a share whose automatic retries (Inngest
- * retries: 3) were exhausted and left it failed. Resets the share to pending
+ * retries: 3) were exhausted and left it failed, or whose run stopped and left
+ * it pending past STALE_PENDING_MS (#382). Resets the share to pending
  * and re-sends the recipe/extract event. Part of S-06 ("no shared request is
  * silently lost"). Called directly from the notification bell inside a
  * transition, so it takes a plain shareId rather than FormData and stays on the
@@ -34,27 +36,31 @@ export async function retryShare(shareId: number): Promise<void> {
   // RLS scopes recipe_shares to the current user.
   const { data: share } = await supabase
     .from('recipe_shares')
-    .select('id, shared_url, share_intent, status')
+    .select('id, shared_url, share_intent, status, updated_at')
     .eq('id', shareId)
     .single()
 
-  // Gone, or a concurrent retry already moved it off `failed` — nothing to do.
-  if (!share || share.status !== 'failed') {
+  // Gone, still genuinely in progress, or a concurrent retry already moved it
+  // off `failed` — nothing to do.
+  if (!share || (share.status !== 'failed' && !isStalePending(share))) {
     revalidatePath('/', 'layout')
     return
   }
 
   const intent = (share.share_intent ?? {}) as { title?: string | null; text?: string | null }
 
-  // Compare-and-swap on status: the guard above ran on the SELECT, so gate the
-  // UPDATE on `status = 'failed'` too. A concurrent "Ponów" that already flipped
-  // this share to `pending` leaves us with zero rows — don't double-dispatch.
-  const { data: reset, error: resetError } = await supabase
+  // Compare-and-swap: the guard above ran on the SELECT, so gate the UPDATE on
+  // the state it saw. A concurrent "Ponów" that already flipped this share (and
+  // so bumped `updated_at`) leaves us with zero rows — don't double-dispatch.
+  const casUpdate = supabase
     .from('recipe_shares')
     .update({ status: 'pending', error_message: null })
     .eq('id', share.id)
-    .eq('status', 'failed')
-    .select('id')
+    .eq('status', share.status)
+  const { data: reset, error: resetError } = await (share.status === 'pending'
+    ? casUpdate.eq('updated_at', share.updated_at)
+    : casUpdate
+  ).select('id')
   if (resetError) {
     console.error('[retry] Failed to reset share to pending:', resetError)
     revalidatePath('/', 'layout')

@@ -2,6 +2,7 @@ import 'server-only'
 import type { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getFailedShares, readyWindowStart } from '@/lib/failed-shares'
 import { explainShareError, shareDomain } from '@/lib/share-error'
+import { isStalePending } from '@/lib/share-staleness'
 
 type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
 
@@ -41,7 +42,7 @@ export async function getNotifications(
     getFailedShares(supabase, userId),
     supabase
       .from('recipe_shares')
-      .select('id, shared_url, created_at')
+      .select('id, shared_url, created_at, updated_at')
       .eq('user_id', userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
@@ -75,6 +76,8 @@ export async function getNotifications(
   const pendingSeen = new Set<string>()
   const inProgress: InProgressItem[] = []
   for (const s of pending.data ?? []) {
+    // A stale pending share (#382) is a problem, listed by getFailedShares.
+    if (isStalePending({ status: 'pending', updated_at: s.updated_at }, now)) continue
     if (pendingSeen.has(s.shared_url)) continue
     pendingSeen.add(s.shared_url)
     inProgress.push({

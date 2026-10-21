@@ -66,7 +66,13 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
         },
       })
     } catch (error) {
+      // Like the add flows: a share that was never queued is failed, not left
+      // pending to block re-adding its link (#382).
       console.error('[refresh] Failed to trigger re-extraction:', error)
+      await supabase
+        .from('recipe_shares')
+        .update({ status: 'failed', error_message: 'Failed to queue extraction' })
+        .eq('id', share.id)
     }
   }
 

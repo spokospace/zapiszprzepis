@@ -100,6 +100,22 @@ describe('getNotifications', () => {
     })
   })
 
+  it('leaves a share stuck in pending out of „W trakcie”, where getFailedShares lists it as a problem (#382)', async () => {
+    const { client } = makeSupabase((_t, calls) =>
+      status(calls) === 'pending'
+        ? ok([
+            { id: 7, shared_url: 'https://stuck.pl/c', created_at: '2026-10-17T11:00:00Z', updated_at: '2026-10-17T11:40:00Z' },
+            { id: 8, shared_url: 'https://fresh.pl/d', created_at: '2026-10-17T11:58:00Z', updated_at: '2026-10-17T11:58:00Z' },
+          ])
+        : ok([]),
+    )
+
+    const result = await getNotifications(client, USER, NOW)
+
+    expect(result).toMatchObject({ status: 'ok', inProgress: [{ id: 8, url: 'https://fresh.pl/d' }] })
+    if (result.status === 'ok') expect(result.inProgress).toHaveLength(1)
+  })
+
   it('scopes both share queries to the user, skips cleared rows and limits ready items to 14 days', async () => {
     const { client, queries } = makeSupabase(() => ok([]))
 

@@ -1,5 +1,6 @@
 import 'server-only'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { isStalePending, STALE_PENDING_ERROR } from '@/lib/share-staleness'
 
 export type FailedShare = {
   id: number
@@ -59,12 +60,13 @@ async function favoritedSourceUrls(supabase: ServerClient, userId: string, urls:
 /**
  * Which of `urls` the user has added again and is still being processed
  * (E01-S15): the link is "W trakcie", so an older failed row for it must not
- * keep claiming a problem. A failed lookup resolves nothing (over-report).
+ * keep claiming a problem. A stale pending row (#382) is not in progress — it
+ * is listed as a problem itself. A failed lookup resolves nothing (over-report).
  */
 async function pendingSourceUrls(supabase: ServerClient, userId: string, urls: string[]): Promise<Set<string>> {
   const { data, error } = await supabase
     .from('recipe_shares')
-    .select('shared_url')
+    .select('shared_url, status, updated_at')
     .eq('user_id', userId)
     .eq('status', 'pending')
     .in('shared_url', urls)
@@ -72,7 +74,8 @@ async function pendingSourceUrls(supabase: ServerClient, userId: string, urls: s
     console.error('[failed-shares] Failed to load pending shares:', error)
     return new Set()
   }
-  return new Set((data ?? []).map((s) => s.shared_url))
+  const now = new Date()
+  return new Set((data ?? []).filter((s) => !isStalePending(s, now)).map((s) => s.shared_url))
 }
 
 /**
@@ -89,6 +92,8 @@ async function pendingSourceUrls(supabase: ServerClient, userId: string, urls: s
  *  - Dedupe by URL: retries can leave several failed rows for one URL.
  *  - Re-added: a URL with a newer `pending` row is in progress, not a problem
  *    (E01-S15), so the bell, the home banner and /powiadomienia agree.
+ *  - Stuck: a `pending` row past STALE_PENDING_MS stopped without a result
+ *    (#382) and is listed as failed, so „Ponów” is offered for it.
  *
  * RLS scopes the recipe_shares query to the current user. The recipes lookup is
  * also scoped by `userId` explicitly, as defense in depth: if recipes ever became
@@ -136,10 +141,11 @@ async function countUnreadReady(supabase: ServerClient, userId: string): Promise
 
 /** `null` = could not check. */
 async function loadFailedShares(supabase: ServerClient, userId: string): Promise<FailedShare[] | null> {
-  const { data: failed, error: failedError } = await supabase
+  // Failed rows plus pending ones, so a stale pending share (#382) is caught.
+  const { data: rows, error: failedError } = await supabase
     .from('recipe_shares')
-    .select('id, shared_url, error_message, created_at')
-    .eq('status', 'failed')
+    .select('id, shared_url, error_message, created_at, status, updated_at')
+    .neq('status', 'completed')
     .is('recipe_id', null)
     .order('created_at', { ascending: false })
 
@@ -149,7 +155,12 @@ async function loadFailedShares(supabase: ServerClient, userId: string): Promise
     console.error('[failed-shares] Failed to load failed shares:', failedError)
     return null
   }
-  if (!failed || failed.length === 0) return []
+  const now = new Date()
+  const failed = (rows ?? []).flatMap((s) => {
+    if (s.status === 'failed') return [s]
+    return isStalePending(s, now) ? [{ ...s, error_message: STALE_PENDING_ERROR }] : []
+  })
+  if (failed.length === 0) return []
 
   const failedUrls = [...new Set(failed.map((s) => s.shared_url))]
   const [{ data: recipes, error: recipesError }, favoritedUrls, pendingUrls] = await Promise.all([
