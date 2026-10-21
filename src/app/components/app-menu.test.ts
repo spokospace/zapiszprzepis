@@ -170,7 +170,19 @@ describe('AppMenu style 1b', () => {
 
   it('keeps the header bar fixed while only the list scrolls', () => {
     const out = html(true)
-    expect(out).toContain('overflow-hidden')
+    expect(out).toContain('overflow-clip')
     expect(out).toContain('overscroll-contain')
+  })
+
+  it('slides the panel inside a fixed, clipping <dialog>, never the <dialog> itself (#448)', () => {
+    const out = html(false)
+    const dialog = out.match(/<dialog[^>]*class="([^"]+)"/)?.[1] ?? ''
+    const panel = out.match(/<dialog[^>]*>\s*<div class="([^"]+)"/)?.[1] ?? ''
+    expect(dialog).toMatch(/(^| )inset-0( |$)/)
+    expect(dialog).toContain('overflow-clip')
+    expect(dialog).not.toContain('translate-x-full')
+    expect(panel).toContain('starting:group-open:translate-x-full')
+    expect(panel).toContain('motion-reduce:transition-none')
+    expect(panel).toContain('sm:w-[460px]')
   })
 })

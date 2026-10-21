@@ -214,9 +214,10 @@ export function RecipeChecklists({
 
       <div>
         <section aria-labelledby="steps-heading" className="mb-10">
-          {/* The toggle sits beside the heading and wraps under it at 320 px (ZMIANY §3). */}
+          {/* The toggle sits beside the heading and wraps under it at 320 px (ZMIANY §3).
+              min-w-0, like „Składniki”: at a large system font the word outgrew a phone (#448). */}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <h2 id="steps-heading" className="text-[24px] font-bold text-ink">
+            <h2 id="steps-heading" className="min-w-0 text-[24px] font-bold text-ink">
               Przygotowanie
             </h2>
             {showToggle && (

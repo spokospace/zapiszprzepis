@@ -7,6 +7,7 @@ config({ path: '.env.local' })
 const port = process.env.E2E_PORT ?? '3001'
 const baseURL = `http://localhost:${port}`
 const REFLOW = /reflow\.spec\.ts/
+const PHONE = /(menu-drawer|system-font)\.spec\.ts/
 const IMAGE_ALLOWLIST = /image-optimizer-allowlist\.spec\.ts/
 
 export default defineConfig({
@@ -27,7 +28,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: [REFLOW, IMAGE_ALLOWLIST],
+      testIgnore: [REFLOW, PHONE, IMAGE_ALLOWLIST],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json',
@@ -49,6 +50,14 @@ export default defineConfig({
       testMatch: REFLOW,
       use: { ...devices['Desktop Chrome'] },
       // Signs the dev QA accounts in once, for the signed-in screens.
+      dependencies: ['reflow-setup'],
+    },
+    // Phone layout (#448): the MENU drawer, and every main screen at a large system
+    // font. Each spec sets its own phone viewport; signed-in screens reuse the QA sessions.
+    {
+      name: 'phone',
+      testMatch: PHONE,
+      use: { ...devices['Desktop Chrome'] },
       dependencies: ['reflow-setup'],
     },
   ],

@@ -68,7 +68,8 @@ export default async function SettingsPage() {
           className="mt-8 flex min-h-14 items-center gap-3 rounded-pill border-2 border-field px-4 text-[19px] font-semibold text-ink no-underline! hover:bg-surface-2"
         >
           <Bell aria-hidden="true" className="h-6 w-6 shrink-0" />
-          <span className="flex-1 underline underline-offset-4">Powiadomienia</span>
+          {/* min-w-0: lets the label wrap at a large system font instead of widening the page (#448). */}
+          <span className="min-w-0 flex-1 underline underline-offset-4">Powiadomienia</span>
           <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-ink-soft" />
         </Link>
         <form action={signOut} className="mt-8 border-t-2 border-border-card pt-5">

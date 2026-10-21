@@ -56,6 +56,13 @@ describe('TagFilter on a phone (style 1b)', () => {
     expect(ul).toContain('-mx-4')
   })
 
+  it("clips the chips' sr-only text inside the row, so it never widens the page (#448)", () => {
+    // sr-only is position: absolute; the row must be its containing block.
+    const ul = html.match(/<ul id="[^"]+" class="([^"]+)"/)?.[1] ?? ''
+    expect(ul).toMatch(/(^| )relative( |$)/)
+    expect(html).toContain('class="sr-only"')
+  })
+
   it('keeps a chip on one line so the row can scroll', () => {
     expect(html).toContain('max-md:whitespace-nowrap')
   })

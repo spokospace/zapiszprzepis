@@ -177,9 +177,11 @@ function Hero({ id, title, subtitle, children }: { id: string; title: string; su
   return (
     <section aria-labelledby={id} className="bg-white">
       <PageContainer className="flex flex-col items-start gap-3.5 pt-7 pb-6 md:items-center md:gap-[18px] md:pt-16 md:pb-[52px] md:text-center">
+        {/* max-w-full: under items-start the heading is as wide as its longest word;
+            at a large system font that word outgrew a phone and widened the page (#448). */}
         <h1
           id={id}
-          className="text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]"
+          className="max-w-full text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]"
         >
           {title}
         </h1>
