@@ -70,7 +70,8 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
   try {
     const [candidates, fill, count] = await Promise.all([
       recipe.tags.length > 0 ? others(CANDIDATES, recipe.tags) : null,
-      others(SIMILAR_LIMIT),
+      // A wider top-up pool: rankSimilar may drop recipes that contradict the diet.
+      others(CANDIDATES),
       supabase.from('public_recipes').select('id', { count: 'exact', head: true }).eq('category', recipe.category),
     ])
     const error = candidates?.error ?? fill.error

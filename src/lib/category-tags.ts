@@ -61,6 +61,9 @@ export function tagFacets(rows: readonly { tags: readonly string[] | null }[], s
 /** How many similar recipes the recipe page shows. */
 export const SIMILAR_LIMIT = 4
 
+const MEATLESS_TAGS: ReadonlySet<string> = new Set(['wegetarianskie', 'weganskie'])
+const MEAT_TAGS: ReadonlySet<string> = new Set(['miesne', 'rybne'])
+
 /**
  * "Podobne": `candidates` (same category, newest first) ranked by how many tags
  * they share with the recipe — newest wins a tie — then topped up from `fill`
@@ -75,7 +78,15 @@ export function rankSimilar<T extends { id: number; tags: readonly string[] | nu
 ): T[] {
   const own = new Set(tags)
   const shared = (r: T) => (r.tags ?? []).filter((t) => own.has(t)).length
+  // A meatless recipe is never "similar" to a meat or fish one, even in the top-up.
+  const meatless = tags.some((t) => MEATLESS_TAGS.has(t))
+  const eligible = (r: T) => {
+    if (!meatless) return true
+    const rt = r.tags ?? []
+    return rt.some((t) => MEATLESS_TAGS.has(t)) && !rt.some((t) => MEAT_TAGS.has(t))
+  }
   const ranked = candidates
+    .filter(eligible)
     .map((r) => ({ r, score: shared(r) }))
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score) // stable: keeps newest-first within a score
@@ -83,7 +94,7 @@ export function rankSimilar<T extends { id: number; tags: readonly string[] | nu
 
   const seen = new Set<number>()
   const result: T[] = []
-  for (const r of [...ranked, ...fill]) {
+  for (const r of [...ranked, ...fill.filter(eligible)]) {
     if (result.length >= limit) break
     if (seen.has(r.id)) continue
     seen.add(r.id)

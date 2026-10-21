@@ -142,6 +142,12 @@ describe('rankSimilar', () => {
     expect(rankSimilar(['kruche'], [r(2, ['kruche'])], fill).map((x) => x.id)).toEqual([2, 9, 8])
   })
 
+  it('keeps meat and untagged dishes out of the results for a meatless recipe', () => {
+    const candidates = [r(1, ['ziemniaczane', 'miesne']), r(2, ['wegetarianskie', 'ziemniaczane'])]
+    const fill = [r(3, ['miesne']), r(4, []), r(5, ['wegetarianskie'])]
+    expect(rankSimilar(['wegetarianskie', 'ziemniaczane'], candidates, fill).map((x) => x.id)).toEqual([2, 5])
+  })
+
   it('falls back to the newest for a recipe without tags, capped at the limit', () => {
     const fill = [r(5, []), r(6, []), r(7, []), r(8, []), r(9, [])]
     expect(rankSimilar([], [], fill).map((x) => x.id)).toEqual([5, 6, 7, 8])
