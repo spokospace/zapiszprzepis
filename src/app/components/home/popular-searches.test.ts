@@ -23,8 +23,15 @@ describe('PopularSearches in the hero (handoff 14)', () => {
     expect(html).toContain('rounded-pill border-2 border-border-dark')
   })
 
+  it('uses the short lead-in on a phone and the full one from md (3c/3d)', () => {
+    expect(html).toMatch(/<span class="md:hidden">Nie wiesz, co wpisać\? Kliknij:<\/span>/)
+    expect(html).toMatch(/<span class="max-md:hidden">Nie wiesz, co wpisać\? Kliknij jedno z najczęściej szukanych:<\/span>/)
+    expect(html).toContain('pt-4')
+  })
+
   it('centers the lead-in and the pills from md', () => {
-    expect(html).toContain('md:items-center md:text-center')
+    expect(html).toContain('md:items-center')
+    expect(html).toContain('md:text-center')
     expect(html).toContain('md:justify-center')
   })
 

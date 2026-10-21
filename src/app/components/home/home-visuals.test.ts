@@ -84,11 +84,17 @@ describe('HomeSearch looks (E01-S20)', () => {
     expect(html).not.toContain('lucide-search')
   })
 
-  it('centers the „albo” + „Powiedz, czego szukasz” row from md and keeps it left on a phone', () => {
+  it('stacks the voice row on a phone (3c/3d) and centers „albo” + button from md', () => {
     // The row only renders where the Web Speech API exists, so its classes are checked directly.
+    expect(VOICE_ROW_CLASS).toContain('flex-col')
+    expect(VOICE_ROW_CLASS).toContain('md:flex-row')
     expect(VOICE_ROW_CLASS).toContain('md:justify-center')
-    expect(VOICE_ROW_CLASS).not.toContain('justify-center ')
-    expect(VOICE_ROW_CLASS).toContain('flex-wrap')
+    expect(VOICE_ROW_CLASS).not.toMatch(/(^| )justify-center/)
+  })
+
+  it('shows the 50 px, 18 px "Szukaj" on a phone and the larger one from md', () => {
+    const html = render(createElement(HomeSearch, { id: 'p', attached: true, tone: 'action' }))
+    expect(html).toMatch(/<button type="submit" class="[^"]*h-\[50px\][^"]*text-\[18px\][^"]*md:h-12[^"]*md:text-\[19px\]/)
   })
 
   it('keeps „Powiedz” out of the attached field', () => {

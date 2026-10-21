@@ -169,17 +169,17 @@ type MemberRows = Awaited<ReturnType<typeof getMemberRows>>
 
 /**
  * The hero both homes share (handoff 14): one column with searching as the only task.
- * From md it is centered (H1 up to 64 px, field block at most 780 px); on a phone it
- * keeps today's left-aligned layout. „Przepis dnia” is no longer in here — it is its
+ * From md it is centered (H1 up to 64 px, field block at most 780 px); on a phone it is
+ * left-aligned (handoff 14, 3c/3d: padding 28/16/24, gap 14, H1 36 px). „Przepis dnia” is no longer in here — it is its
  * own block under a rule, rendered by the page after the hero.
  */
 function Hero({ id, title, subtitle, children }: { id: string; title: string; subtitle: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="bg-white">
-      <PageContainer className="flex flex-col items-start gap-4 py-7 md:items-center md:gap-[18px] md:pt-16 md:pb-[52px] md:text-center">
+      <PageContainer className="flex flex-col items-start gap-3.5 pt-7 pb-6 md:items-center md:gap-[18px] md:pt-16 md:pb-[52px] md:text-center">
         <h1
           id={id}
-          className="text-[32px] leading-[1.15] font-extrabold text-ink md:text-[48px] md:leading-[1.05] lg:text-[64px] lg:leading-[1.02]"
+          className="text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]"
         >
           {title}
         </h1>

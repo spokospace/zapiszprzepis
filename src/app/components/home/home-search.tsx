@@ -40,8 +40,11 @@ interface HomeSearchProps {
 
 const FRAME = { field: 'border-field', action: 'border-ink' } as const
 
-/** The „albo” + „Powiedz, czego szukasz” row: left on a phone, centered under the field from md (handoff 14). */
-export const VOICE_ROW_CLASS = 'mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-2 md:justify-center'
+/**
+ * The „albo” + „Powiedz, czego szukasz” row (handoff 14): on a phone just the button, full
+ * width (3c/3d); from md „albo” and the button side by side, centered under the field.
+ */
+export const VOICE_ROW_CLASS = 'mt-3 flex flex-col md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-x-3.5 md:gap-y-2'
 
 /**
  * The one search field (E01-S04 home, E01-S05 /szukaj and "Moje przepisy"): a
@@ -126,7 +129,7 @@ export function HomeSearch({
             />
             <button
               type="submit"
-              className="inline-flex h-12 shrink-0 items-center rounded-pill bg-action px-5 text-[19px] font-bold text-white transition-colors hover:bg-action-hover lg:h-14 lg:px-8"
+              className="inline-flex h-[50px] shrink-0 items-center rounded-pill bg-action px-5 text-[18px] font-bold text-white transition-colors hover:bg-action-hover md:h-12 md:text-[19px] lg:h-14 lg:px-8"
             >
               {submitLabel ?? 'Szukaj'}
             </button>
@@ -134,9 +137,9 @@ export function HomeSearch({
           {/* „Powiedz” lives outside the field, in its own row; no row at all without the Web Speech API. */}
           {micSupported && (
             <div className={VOICE_ROW_CLASS}>
-              <span className="text-[18px] text-ink-soft">albo</span>
+              <span className="text-[18px] text-ink-soft max-md:hidden">albo</span>
               {voiceButton(
-                'inline-flex h-[52px] max-w-full items-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold text-ink hover:bg-surface-3',
+                'inline-flex h-[52px] max-w-full items-center justify-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold text-ink hover:bg-surface-3 max-md:w-full',
                 'Powiedz, czego szukasz',
               )}
             </div>
