@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { coverImageProps } from '@/lib/recipe-image-archive'
 import { NoPhoto } from '@/app/components/no-photo'
 
 /**
@@ -22,14 +22,14 @@ export function SuggestionRowContent({
       <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-tile bg-surface-3">
         {imageUrl ? (
           <Image
-            src={imageUrl}
+            // A 48px thumbnail; external covers capped near 2× (#446).
+            {...coverImageProps(imageUrl, 128)}
             // The title sits right beside it, so the thumbnail is decorative.
             alt=""
             aria-hidden
             fill
             sizes="48px"
             className="object-cover"
-            unoptimized={!isArchivedImageUrl(imageUrl)}
           />
         ) : (
           <NoPhoto category={category} iconClassName="h-6 w-6" />

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine, recipeTimeStats } from '@/lib/recipe-meta'
-import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { coverImageProps } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
 import { SourceBadge } from '@/app/components/source-badge'
@@ -94,13 +94,13 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
       {recipe.image_url && (
         <div className="relative mb-5 aspect-[4/3] w-full overflow-hidden rounded-tile bg-surface-3 lg:mb-0 lg:aspect-[16/10]">
           <Image
-            src={recipe.image_url}
+            // The LCP image; external covers capped (#446) — big enough for a phone at 2×–3×.
+            {...coverImageProps(recipe.image_url, 1280)}
             alt={recipe.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 768px, 600px"
             className="object-cover"
             priority
-            unoptimized={!isArchivedImageUrl(recipe.image_url)}
           />
           {/* Source on the photo, bottom-left (E01-S31 §3). */}
           <div className="absolute bottom-0 left-px z-10 max-w-[calc(100%-1px)]">{sourceBadge}</div>

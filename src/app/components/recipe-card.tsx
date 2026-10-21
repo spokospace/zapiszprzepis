@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
-import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { coverImageProps } from '@/lib/recipe-image-archive'
 import { recipePath } from '@/lib/routes'
 import type { ListKey } from '@/lib/recipe-list-context'
 import { FavoriteButton } from './favorite-button'
@@ -88,7 +88,9 @@ export function RecipeCard({
       <div className={`relative w-full shrink-0 overflow-hidden rounded-tile bg-surface-3 ${PHOTO_HEIGHT[photo]}`}>
         {imageUrl ? (
           <Image
-            src={imageUrl}
+            // A card shows at most ~355px wide (TILE_SIZES_1_TO_3), so an external cover is
+            // capped near 2× that instead of shipping the blog's full-size original (#446).
+            {...coverImageProps(imageUrl, 768)}
             // The title sits right under it and names the card's link, so the image is decorative:
             // empty alt plus aria-hidden keeps it out of the a11y tree and makes the intent explicit.
             alt=""
@@ -96,7 +98,6 @@ export function RecipeCard({
             fill
             className="object-cover transition-opacity group-hover:opacity-[.92]"
             sizes={sizes}
-            unoptimized={!isArchivedImageUrl(imageUrl)}
           />
         ) : (
           <NoPhoto category={category} iconClassName="h-12 w-12" />

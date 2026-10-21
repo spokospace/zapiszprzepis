@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
-import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { coverImageProps } from '@/lib/recipe-image-archive'
 import { recipePath } from '@/lib/routes'
 import { PageContainer } from '../page-container'
 import { SourceBadge } from '../source-badge'
@@ -44,12 +44,12 @@ export function RecipeOfTheDay({
           <div className="relative h-[220px] overflow-hidden bg-surface-3 md:h-[360px] md:rounded-tile">
             {imageUrl && (
               <Image
-                src={imageUrl}
+                // External cover capped (#446): 560px on desktop, full-width on a phone at ~2×.
+                {...coverImageProps(imageUrl, 1024)}
                 alt=""
                 fill
                 className="object-cover transition-opacity group-hover:opacity-[.92]"
                 sizes="(min-width: 768px) 560px, 100vw"
-                unoptimized={!isArchivedImageUrl(imageUrl)}
               />
             )}
             <div className="absolute bottom-1.5 left-px z-10 max-w-[calc(100%-1px)]">

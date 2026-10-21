@@ -12,6 +12,8 @@ import {
   GALLERY_LIMIT,
   isArchivedImageUrl,
   proxiedImageUrl,
+  cappedExternalImageUrl,
+  coverImageProps,
   insecureHttpUrl,
 } from '@/lib/recipe-image-archive'
 
@@ -749,6 +751,30 @@ describe('isArchivedImageUrl', () => {
     ['https://www.najprzepis.pl/upload/66477920_8933c3cf37e485_full.jpg', false],
   ] as const)('%s → %s', (url, expected) => {
     expect(isArchivedImageUrl(url)).toBe(expected)
+  })
+})
+
+describe('cappedExternalImageUrl', () => {
+  it('asks wsrv.nl for a width-capped WebP of the encoded source', () => {
+    expect(cappedExternalImageUrl('https://example.com/a b.jpg', 768)).toBe(
+      'https://wsrv.nl/?url=https%3A%2F%2Fexample.com%2Fa%20b.jpg&w=768&output=webp&q=75',
+    )
+  })
+})
+
+describe('coverImageProps', () => {
+  const ARCHIVED = 'https://xyz.supabase.co/storage/v1/object/public/recipe-images/user/60.jpg'
+  const EXTERNAL = 'https://www.najprzepis.pl/upload/66477920_8933c3cf37e485_full.jpg'
+
+  it('passes an archived cover through next/image unchanged (optimized)', () => {
+    expect(coverImageProps(ARCHIVED, 768)).toEqual({ src: ARCHIVED, unoptimized: false })
+  })
+
+  it('caps an external cover through wsrv.nl and marks it unoptimized', () => {
+    expect(coverImageProps(EXTERNAL, 768)).toEqual({
+      src: cappedExternalImageUrl(EXTERNAL, 768),
+      unoptimized: true,
+    })
   })
 })
 
