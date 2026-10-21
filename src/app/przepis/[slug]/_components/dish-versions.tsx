@@ -71,18 +71,19 @@ function VersionCard({
       favorite={{ recipeId: v.id, favorited: favoriteIds?.has(v.id) ?? false, isAuthenticated: favoriteIds !== null }}
     >
       {meta && <p className="text-[16px] text-ink-soft">{meta}</p>}
-      {/* Handoff 16: under a thin rule, the labels bold but not coloured (colour must not carry
-          meaning, WCAG 1.4.1); each line is cut to two rows with „…”, the full list is in the recipe. */}
+      {/* Handoff 16: under a thin rule, each line cut to two rows with „…”, the full list is in the
+          recipe. The label words carry the meaning, so colour only reinforces it (WCAG 1.4.1):
+          green for what this version adds, red for what it drops (both ≥ 4.5:1 on the card). */}
       {(diff.plus.length > 0 || diff.minus.length > 0) && (
         <div className="mt-1 flex flex-col gap-0.5 border-t border-border-card pt-2 text-[16px] leading-[1.4] text-ink">
           {diff.plus.length > 0 && (
             <p className="line-clamp-2 break-words">
-              <b>Ma dodatkowo:</b> {diff.plus.join(', ')}
+              <b className="text-[#166534]">Ma dodatkowo:</b> {diff.plus.join(', ')}
             </p>
           )}
           {diff.minus.length > 0 && (
             <p className="line-clamp-2 break-words">
-              <b>Nie ma:</b> {diff.minus.join(', ')}
+              <b className="text-[#991b1b]">Nie ma:</b> {diff.minus.join(', ')}
             </p>
           )}
         </div>
