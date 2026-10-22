@@ -1,0 +1,19 @@
+User-Agent: *
+Allow: /
+Disallow: /api/
+Disallow: /recipes
+Disallow: /ulubione
+Disallow: /powiadomienia
+Disallow: /settings
+Disallow: /dodaj
+Disallow: /witaj
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /auth/
+Disallow: /share
+Disallow: /szukaj?
+
+Host: https://zapiszprzepis.pl
+Sitemap: https://zapiszprzepis.pl/sitemap.xml
