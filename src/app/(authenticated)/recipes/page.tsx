@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { createSupabaseServerClient, getSignedInUser } from '@/lib/supabase/server'
 import { RecipesContent } from './recipes-content'
 import {
   MY_RECIPE_CARD_COLUMNS,
@@ -45,7 +45,7 @@ export default async function RecipesPage({
   if (searchQuery) redirect(searchPath(searchQuery, 'moje'))
 
   // The cached session lookup the layout already made (#229): no second Auth call.
-  const user = await getCurrentUser()
+  const user = await getSignedInUser()
   if (!user) {
     redirect('/login')
   }

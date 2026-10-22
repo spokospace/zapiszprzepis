@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { createSupabaseServerClient, getSignedInUser } from '@/lib/supabase/server'
 import { getFullAccess } from '@/lib/full-access'
 import { ADD_RECIPE_PATH, parseAddRecipeError } from '@/lib/routes'
 import { loginPath } from '@/lib/login-redirect'
@@ -22,7 +22,7 @@ export default async function AddRecipePage({ searchParams }: { searchParams: Se
   const supabase = await createSupabaseServerClient()
   // The access RPC fails closed for a guest, so it can run alongside the user lookup.
   const [user, hasFullAccess, { add_error }] = await Promise.all([
-    getCurrentUser(),
+    getSignedInUser(),
     getFullAccess(supabase),
     searchParams,
   ])

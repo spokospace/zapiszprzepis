@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Bell, ChevronRight, LogOut } from 'lucide-react'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { requireUser, type createSupabaseServerClient } from '@/lib/supabase/server'
 import { SUPABASE_URL } from '@/lib/env'
 import { avatarColorIndex, avatarUrl } from '@/lib/avatar'
 import { NOTIFICATIONS_PATH, profilePath } from '@/lib/routes'
@@ -24,11 +23,7 @@ type ProfileRow = {
 // Screen 2a „Mój profil” (E01-S13; the menu entry stays „Ustawienia”). Deliberately shows neither gender (chosen once, not
 // editable — S12) nor the username (immutable — S18).
 export default async function SettingsPage() {
-  const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { supabase, user } = await requireUser()
 
   const [profile, priv, own] = await Promise.all([
     readProfile(supabase, user.id),

@@ -14,7 +14,7 @@ import { loginPath, resolveLoginNext } from '@/lib/login-redirect'
 import { GENDER_KNOWN_COOKIE, shouldCheckGender, welcomePath } from '@/lib/first-login'
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
-  const { response, user, supabase } = await updateSession(request)
+  const { response, user, authTransient, supabase } = await updateSession(request)
   const { pathname, search, searchParams, origin } = request.nextUrl
 
   // /auth/callback and /auth/confirm always pass through — they open the
@@ -118,6 +118,15 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // the public_recipes view), not by this allowlist.
   // "/recipes" itself is "Moje przepisy" — owner-only — so it stays gated below.
   if (isPublicRoute(pathname)) {
+    return response
+  }
+
+  // A session check that could not decide (Supabase unreachable, 5xx, 429) is not a
+  // guest: let the request through and leave it to the screen's own check
+  // (getSignedInUser / requireUser), which shows a retry instead of logging out.
+  // A screen behind login must use one of those, not getCurrentUser(), which would
+  // render it as for a guest.
+  if (!user && authTransient) {
     return response
   }
 

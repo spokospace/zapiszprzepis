@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { createSupabaseServerClient, getSignedInUser } from '@/lib/supabase/server'
 import { loginPath } from '@/lib/login-redirect'
 import { PageContainer } from '@/app/components/page-container'
 import { RecipeCard, TILE_SIZES_1_TO_3 } from '@/app/components/recipe-card'
@@ -26,7 +26,7 @@ type FavoriteCard = {
  * the "Ulubione" search scope is E01-S05, the menu counters E01-S09.
  */
 export default async function FavoritesPage() {
-  const user = await getCurrentUser()
+  const user = await getSignedInUser()
   if (!user) redirect(loginPath('/ulubione'))
 
   const supabase = await createSupabaseServerClient()

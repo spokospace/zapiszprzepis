@@ -4,6 +4,10 @@
   "name": "zapiszprzepis",
   "compatibility_date": "2025-05-05",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Workers Logs (dashboard → zapiszprzepis → Observability): keeps console output
+  // and each request's outcome, so "[auth] getUser failed" lines and requests that
+  // hit the CPU limit (error 1102) can be read after the fact, not only live.
+  "observability": { "enabled": true },
   // Both handled by custom-worker.ts -> scheduled(), dispatched on which fired:
   //   30 3 — dump the recipe tables to R2 (the free Supabase plan has no backups)
   //   0  4 — keep-alive ping, so the project is not paused after a week idle

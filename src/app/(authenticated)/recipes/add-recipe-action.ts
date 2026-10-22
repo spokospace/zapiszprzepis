@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { checkUser } from '@/lib/supabase/user-check'
 import { inngest } from '@/inngest/client'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
@@ -22,8 +23,10 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   }
 
   const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, transient } = await checkUser(supabase, 'addRecipeFromUrl')
 
+  // A session check that could not decide is a retryable failure, not a logout.
+  if (!user && transient) redirect(addRecipeErrorPath('server'))
   if (!user) redirect('/login')
 
   const dedup = await findExistingRecipeForUrl(supabase, user.id, url)

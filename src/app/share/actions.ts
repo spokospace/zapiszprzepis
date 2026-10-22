@@ -2,6 +2,7 @@
 
 import { inngest } from '@/inngest/client'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { checkUser, SessionCheckError } from '@/lib/supabase/user-check'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
@@ -22,10 +23,11 @@ export async function triggerRecipeExtraction(
 ): Promise<TriggerExtractionResult> {
   const supabase = await createSupabaseServerClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user, transient } = await checkUser(supabase, 'triggerRecipeExtraction')
 
+  // Not 'Not authenticated': /share answers that with /login. An undecided check
+  // falls through to its retryable "server" error next to the add form instead.
+  if (!user && transient) throw new SessionCheckError()
   if (!user) {
     throw new Error('Not authenticated')
   }
