@@ -6,7 +6,7 @@
   "scope": "/",
   "display": "standalone",
   "theme_color": "#c2410c",
-  "background_color": "#ffffff",
+  "background_color": "#c2410c",
   "orientation": "portrait-primary",
   "share_target": {
     "action": "/share",
