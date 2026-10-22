@@ -47,6 +47,8 @@ const SCREENS: Record<string, Screen> = {
   profile: { path: profile },
   login: { path: '/login' },
   terms: { path: '/regulamin' },
+  // The "Szukaj w:" scope pills only render for a signed-in user (#478).
+  'search results (signed in)': { path: '/szukaj?q=ciasto', as: 'full' },
   'home (signed in)': { path: '/', as: 'full' },
   'my recipes': { path: '/recipes', as: 'full' },
   favourites: { path: '/ulubione', as: 'full' },

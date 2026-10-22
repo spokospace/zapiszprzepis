@@ -17,11 +17,13 @@ export function SearchScopeSwitch({ q, scope }: { q: string; scope: SearchScope 
       <p id="search-scope-label" className="mb-1.5 text-[16px] font-bold text-ink">
         Szukaj w:
       </p>
-      <ul className="grid grid-cols-3 gap-1.5">
+      {/* Equal thirds while every word fits; at a large font a pill never goes below its word
+          ("Wszystkich"), so the row wraps instead of cutting it mid-word (#478). */}
+      <ul className="flex flex-wrap gap-1.5">
         {SEARCH_SCOPES.map((value) => {
           const active = value === scope
           return (
-            <li key={value}>
+            <li key={value} className="min-w-fit flex-1 basis-0">
               <Link
                 href={searchPath(q, value)}
                 aria-current={active ? 'page' : undefined}
