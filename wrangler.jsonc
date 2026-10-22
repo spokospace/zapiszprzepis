@@ -4,6 +4,13 @@
   "name": "zapiszprzepis",
   "compatibility_date": "2025-05-05",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Smart Placement (#464): a recipe page makes a dozen Supabase round trips per
+  // render, so running the Worker near the database beats running it at the edge
+  // near the visitor — each round trip gets cheaper and next/prev loads faster.
+  // Cloudflare relocates the Worker from observed subrequest latency; removing
+  // this block reverts to edge placement. Measure TTFB before/after and drop it
+  // again if it does not help this project's Supabase region.
+  "placement": { "mode": "smart" },
   // Both handled by custom-worker.ts -> scheduled(), dispatched on which fired:
   //   30 3 — dump the recipe tables to R2 (the free Supabase plan has no backups)
   //   0  4 — keep-alive ping, so the project is not paused after a week idle
