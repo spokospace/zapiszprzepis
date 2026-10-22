@@ -4,8 +4,9 @@ import { PWARegister } from "./components/pwa-register";
 import { SiteFooter } from "./components/site-footer";
 
 export const metadata: Metadata = {
-  title: "Zapisz Przepis",
-  description: "Archiwum przepisów udostępnianych z mediów społecznościowych.",
+  title: "Zapisz Przepis — przepisy z internetu i mediów społecznościowych",
+  description:
+    "Zapisuj przepisy z internetu i mediów społecznościowych w jednym miejscu. Wklej link, a danie trafi do Twojej kolekcji — przeglądaj, wyszukuj i zbieraj ulubione.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
