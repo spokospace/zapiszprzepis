@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { checkUser } from '@/lib/supabase/user-check'
 import { validateDisplayName } from '@/lib/display-name'
 import { validateFirstName } from '@/lib/first-name'
 import { AVATAR_BUCKET, avatarObjectPath, isAvatarColorIndex, validateAvatarUpload } from '@/lib/avatar'
@@ -50,9 +51,9 @@ export async function saveProfileSettings(
   }
 
   const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user, transient } = await checkUser(supabase, 'saveProfileSettings')
+  // A session check that could not decide: the visitor is still signed in, so retry.
+  if (!user && transient) return fail(SAVE_FAILED)
   if (!user) return fail('Zaloguj się, aby zapisać zmiany.')
 
   // The old path is only needed when the picture changes (name-only saves skip the read).

@@ -7,6 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { applyFavoriteIntent } from './favorites'
 import { LEGAL_PATHS } from './routes'
+import { checkUser } from './supabase/user-check'
 
 export const WELCOME_PATH = '/witaj'
 export const GENDERS = ['female', 'male'] as const
@@ -36,9 +37,8 @@ export function firstLoginTarget(gender: string | null, next: string): string {
  * applies a guest heart's favorite intent carried in `next` (E01-S06).
  */
 export async function postLoginPath(supabase: SupabaseClient, requestedNext: string): Promise<string> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // An undecided check fails open like the rest of this step: continue to `next`.
+  const { user } = await checkUser(supabase, 'postLoginPath')
   if (!user) return requestedNext
 
   const next = await applyFavoriteIntent(supabase, user.id, requestedNext)

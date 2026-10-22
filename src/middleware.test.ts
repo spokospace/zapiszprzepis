@@ -159,3 +159,27 @@ describe('middleware — one-time gender choice for accounts from before screen 
     expect(supabase.from).not.toHaveBeenCalled()
   })
 })
+
+describe('middleware — a session check that could not decide is not a guest', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('lets a screen behind login through, for its own check to retry', async () => {
+    vi.mocked(updateSession).mockResolvedValueOnce({
+      response: NextResponse.next(),
+      user: null,
+      authTransient: true,
+    } as never)
+    const res = await middleware(get('/powiadomienia'))
+    expect(res.headers.get('location')).toBeNull()
+  })
+
+  it('still sends a real guest to /login', async () => {
+    vi.mocked(updateSession).mockResolvedValueOnce({
+      response: NextResponse.next(),
+      user: null,
+      authTransient: false,
+    } as never)
+    const res = await middleware(get('/powiadomienia'))
+    expect(res.headers.get('location')).toBe('http://localhost/login?next=%2Fpowiadomienia')
+  })
+})

@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 
 vi.mock('@/lib/supabase/server', () => ({
   createSupabaseServerClient: vi.fn(),
-  getCurrentUser: vi.fn(),
+  getSignedInUser: vi.fn(),
 }))
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
 vi.mock('@/app/components/recipe-list-snapshot', () => ({ RecipeListSnapshot: () => null }))
@@ -13,7 +13,7 @@ vi.mock('@/app/components/recipe-card', () => ({
   RecipeCard: ({ slug }: { slug: string }) => createElement('a', { href: `/przepis/${slug}` }, slug),
 }))
 
-import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { createSupabaseServerClient, getSignedInUser } from '@/lib/supabase/server'
 import FavoritesPage from './page'
 
 function card(n: number) {
@@ -65,7 +65,7 @@ function mockFavorites(rows: Row[]) {
     },
   }
   vi.mocked(createSupabaseServerClient).mockResolvedValue(client as never)
-  vi.mocked(getCurrentUser).mockResolvedValue({ id: 'u1' } as never)
+  vi.mocked(getSignedInUser).mockResolvedValue({ id: 'u1' } as never)
   return calls
 }
 

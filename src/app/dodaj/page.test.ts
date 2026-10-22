@@ -9,7 +9,7 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 vi.mock('@/lib/supabase/server', () => ({
-  getCurrentUser: vi.fn(),
+  getSignedInUser: vi.fn(),
   createSupabaseServerClient: vi.fn(async () => ({})),
 }))
 vi.mock('@/lib/full-access', () => ({ getFullAccess: vi.fn() }))
@@ -26,7 +26,7 @@ vi.mock('./add-recipe-panel', () => ({
     }),
 }))
 
-import { getCurrentUser } from '@/lib/supabase/server'
+import { getSignedInUser } from '@/lib/supabase/server'
 import { getFullAccess } from '@/lib/full-access'
 import AddRecipePage, { metadata } from './page'
 
@@ -37,7 +37,7 @@ async function render(add_error?: string) {
 describe('/dodaj page (E01-S10)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(getCurrentUser).mockResolvedValue({ id: 'u1' } as never)
+    vi.mocked(getSignedInUser).mockResolvedValue({ id: 'u1' } as never)
   })
 
   it('shows the add panel to a user with full access, with the error from the URL', async () => {
@@ -63,7 +63,7 @@ describe('/dodaj page (E01-S10)', () => {
   })
 
   it('sends a guest to login and back to /dodaj', async () => {
-    vi.mocked(getCurrentUser).mockResolvedValue(null)
+    vi.mocked(getSignedInUser).mockResolvedValue(null)
     vi.mocked(getFullAccess).mockResolvedValue(false)
     await expect(render()).rejects.toThrow('REDIRECT /login?next=%2Fdodaj')
   })

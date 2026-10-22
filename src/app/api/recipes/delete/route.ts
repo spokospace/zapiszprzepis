@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { checkUser } from '@/lib/supabase/user-check'
 import { extractStoragePath, removeGallery } from '@/lib/recipe-image-archive'
 import { isRecipeSharedError, RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { recipePath } from '@/lib/routes'
@@ -8,10 +9,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createSupabaseServerClient()
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { user, transient } = await checkUser(supabase, 'deleteRecipe')
 
+    // The session could not be checked: retryable, and not a reason to sign out.
+    if (!user && transient) {
+      return NextResponse.json({ error: 'Session check unavailable' }, { status: 503 })
+    }
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }

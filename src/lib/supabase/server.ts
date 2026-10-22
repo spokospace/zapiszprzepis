@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
+import { checkUser, SessionCheckError } from './user-check'
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies()
@@ -39,17 +40,32 @@ export async function createSupabaseServerClient() {
 }
 
 /**
- * The signed-in user, or null for a guest (E01-S02 public routes). Wrapped in
- * React `cache()` so a layout and its page share ONE Auth round trip per render
- * instead of each calling getUser().
+ * The session check for this render. Wrapped in React `cache()` so a layout and
+ * its page share ONE Auth round trip per render instead of each calling getUser().
  */
-export const getCurrentUser = cache(async () => {
+const checkCurrentUser = cache(async () => {
   const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user
+  return { supabase, ...(await checkUser(supabase, 'server')) }
 })
+
+/**
+ * The signed-in user, or null for a guest (E01-S02 public routes). A check that
+ * could not decide renders the public page as for a guest; it is logged.
+ */
+export async function getCurrentUser() {
+  return (await checkCurrentUser()).user
+}
+
+/**
+ * For a screen behind login: the user, or null for a real guest (the caller sends
+ * them to /login). A check that could not decide throws SessionCheckError, so the
+ * visitor gets the error page with a retry instead of being logged out.
+ */
+export async function getSignedInUser() {
+  const { user, transient } = await checkCurrentUser()
+  if (!user && transient) throw new SessionCheckError()
+  return user
+}
 
 /**
  * Auth guard for Server Actions / Server Components downstream of the proxy:
@@ -57,10 +73,8 @@ export const getCurrentUser = cache(async () => {
  * so callers needing only identity can ignore `supabase` and vice versa.
  */
 export async function requireUser() {
-  const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { supabase, user, transient } = await checkCurrentUser()
+  if (!user && transient) throw new SessionCheckError()
   if (!user) {
     redirect('/login')
   }
