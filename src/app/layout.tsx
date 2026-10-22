@@ -29,6 +29,11 @@ export const metadata: Metadata = {
 // on-screen keyboard shrinks the layout, so /szukaj's quick-search bar (E01-S26)
 // stays visible above it.
 export const viewport: Viewport = {
+  // Emit a runtime <meta name="theme-color"> so Chromium browsers tint the system
+  // bars from the live page, not only the manifest (read at install time). Matches
+  // the manifest theme_color (#c2410c, bg-action); white reintroduces the invisible
+  // Android nav-button bug fixed in #456. See #475.
+  themeColor: "#c2410c",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
