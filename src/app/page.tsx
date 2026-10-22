@@ -24,8 +24,22 @@ import { dailyRecipeIndex } from '@/lib/recipe-of-the-day'
 import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
 import { ADD_RECIPE_PATH } from '@/lib/routes'
 import type { ListKey } from '@/lib/recipe-list-context'
+import type { Metadata } from 'next'
+import { getSiteUrl } from '@/lib/site-url'
+import { homeMetadata } from '@/lib/home-meta'
 
 type SearchParams = Promise<{ fav_added?: string; tab?: string }>
+
+/**
+ * Open Graph + Twitter card for the homepage, so a shared `/` link renders a
+ * rich preview like every other route (#472). The absolute og:image is built
+ * from the request origin via `getSiteUrl()` because the root layout sets no
+ * `metadataBase`; title/description reuse the root metadata (home-meta.ts).
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const siteUrl = await getSiteUrl()
+  return homeMetadata(siteUrl)
+}
 
 /** Cards per home row: 4 fills the desktop row (E01-S31 §2, §5). */
 const RECENT_LIMIT = 4

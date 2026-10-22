@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { HOME_DESCRIPTION, HOME_TITLE } from "@/lib/home-meta";
 import { PWARegister } from "./components/pwa-register";
 import { SiteFooter } from "./components/site-footer";
 
 export const metadata: Metadata = {
-  title: "Zapisz Przepis — Twój zbiór przepisów z internetu",
-  description:
-    "Twoje ulubione przepisy z internetu, zebrane w jednym miejscu. Wklej link, a przepis od razu trafi do Twojej kolekcji — gotowy, gdy przyjdzie ochota na gotowanie.",
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
