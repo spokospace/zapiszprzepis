@@ -7,7 +7,7 @@ import { attemptFailure } from '../src/lib/smoke-attempts'
 // 2026-10-22 — serves HTML naming files that 404: no CSS, ChunkLoadError on
 // every page. A green Workers Build does not catch it.
 // Each page is loaded ATTEMPTS times and must answer 200 every time: the same
-// day Smart Placement (#465) made the Worker answer 503 to ~40% of requests,
+// day the Worker answered 503 (error 1102, CPU limit) to up to ~40% of requests,
 // which one request per page let through. Run after every deploy and every
 // secret change:
 //
@@ -77,7 +77,7 @@ async function main(): Promise<void> {
   }
 
   // One request per file is enough: Workers Static Assets serves /_next/static
-  // without running the Worker (during the #465 503s every file still loaded).
+  // without running the Worker (during the 2026-10-22 503s every file still loaded).
   const results = await Promise.all([...assets].map(async (path) => ({ path, ...(await get(`${BASE}${path}`)) })))
   for (const { path, status, type } of results) {
     // The Worker answers a missing file with its HTML 404 page; a 200 HTML
