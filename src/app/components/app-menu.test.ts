@@ -39,6 +39,8 @@ describe('AppMenu category tiles (C5)', () => {
     for (const link of links) {
       // break-words breaks only as a last resort; wrap-anywhere split words mid-character.
       expect(link).toContain('break-words')
+      // At a large system font a name that must wrap breaks at a syllable (lang="pl"), not after any letter.
+      expect(link).toContain('hyphens-auto')
       expect(link).not.toContain('wrap-anywhere')
     }
     // "Syropy i napary": the one-letter "i" is bound to "napary" with a non-breaking space.

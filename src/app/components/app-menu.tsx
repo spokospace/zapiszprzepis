@@ -262,8 +262,10 @@ export function AppMenu({
               </h3>
               {/* No mid-word break: one column below 360 px (like the home CategoryGrid),
                   two from there up; 16 px + tight spacing keep the longest name ("Ciasteczka")
-                  on one line even in the 330 px panel. break-words is the last-resort net
-                  (WCAG 1.4.10); bindOrphans (see its doc) handles Polish one-letter words. */}
+                  on one line even in the 330 px panel. At a large system font a long name
+                  still has to wrap: hyphens-auto (html lang="pl") breaks it at a syllable
+                  with a hyphen instead of after any letter; break-words is the last-resort
+                  net (WCAG 1.4.10); bindOrphans (see its doc) handles Polish one-letter words. */}
               <ul className="grid grid-cols-1 border-t border-border-card-2 min-[360px]:grid-cols-2">
                 {RECIPE_CATEGORIES.map(({ value, label }) => {
                   const href = categoryPath(value)
@@ -279,7 +281,7 @@ export function AppMenu({
                         // icon and a 17 px bold name; no background or radius. The current
                         // category adds a fill, never colour alone.
                         className={[
-                          'flex h-full min-h-[56px] items-center gap-2 border-b border-border-card-2 px-5 py-2 text-[17px] font-bold break-words no-underline! hover:bg-surface-2',
+                          'flex h-full min-h-[56px] items-center gap-2 border-b border-border-card-2 px-5 py-2 text-[17px] font-bold break-words hyphens-auto no-underline! hover:bg-surface-2',
                           active ? 'bg-surface-3 text-action-text' : 'text-ink',
                         ].join(' ')}
                       >
