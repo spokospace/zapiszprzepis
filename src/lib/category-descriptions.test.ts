@@ -12,7 +12,8 @@ vi.mock('@/lib/supabase/server', () => ({
   createSupabaseServerClient: async () => ({ from }),
 }))
 
-const { getCategoryDescription, fallbackCategoryDescription } = await import('./category-descriptions')
+const { getCategoryDescription, fallbackCategoryDescription, getCategoryTitle, getCategoryMeta, fallbackCategoryTitle } =
+  await import('./category-descriptions')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -56,5 +57,51 @@ describe('fallbackCategoryDescription', () => {
 
   it('carries the diacritic label, not the raw enum slug', () => {
     expect(fallbackCategoryDescription('salatki')).toBe('Przepisy z kategorii Sałatki w aplikacji Zapisz Przepis.')
+  })
+})
+
+// Distinct categories from the description cases above so React cache() never
+// carries one result into another (the loaders share one cached read).
+describe('getCategoryTitle', () => {
+  it('returns the stored title base on a hit', async () => {
+    maybeSingle.mockResolvedValue({ data: { meta_title: 'Obiady jak u mamy' }, error: null })
+    expect(await getCategoryTitle('obiady')).toBe('Obiady jak u mamy')
+  })
+
+  it('falls back to the curated title when the category has no stored title', async () => {
+    maybeSingle.mockResolvedValue({ data: { meta_description: 'x' }, error: null })
+    expect(await getCategoryTitle('sniadania')).toBe(fallbackCategoryTitle('sniadania'))
+  })
+
+  it('falls back to the curated title on a read error — never propagates', async () => {
+    maybeSingle.mockRejectedValue(new Error('network down'))
+    expect(await getCategoryTitle('pieczywo')).toBe(fallbackCategoryTitle('pieczywo'))
+  })
+})
+
+describe('getCategoryMeta', () => {
+  it('returns both the stored title and description in one read', async () => {
+    maybeSingle.mockResolvedValue({
+      data: { meta_title: 'Przekąski na imprezę', meta_description: 'Małe co nieco.' },
+      error: null,
+    })
+    expect(await getCategoryMeta('przekaski')).toEqual({ title: 'Przekąski na imprezę', description: 'Małe co nieco.' })
+    expect(from).toHaveBeenCalledWith('category_descriptions')
+  })
+})
+
+describe('fallbackCategoryTitle', () => {
+  it('is non-empty and ≤ 70 chars for every category', () => {
+    for (const { value } of RECIPE_CATEGORIES) {
+      const title = fallbackCategoryTitle(value)
+      expect(title.length).toBeGreaterThan(0)
+      expect(title.length).toBeLessThanOrEqual(70)
+    }
+  })
+
+  it('is a tailored phrase, not the bare label', () => {
+    for (const { value, label } of RECIPE_CATEGORIES) {
+      expect(fallbackCategoryTitle(value)).not.toBe(label)
+    }
   })
 })
