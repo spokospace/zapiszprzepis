@@ -1,6 +1,6 @@
 import { expect, test, type Cookie, type Page } from '@playwright/test'
 import { existsSync, readFileSync } from 'fs'
-import { phone, scaleFonts, sidewaysScroll } from './phone'
+import { phone, scaleFonts, sidewaysScroll, strandedChars } from './phone'
 import { qaSessionFile, type QaAccount } from './qa-session'
 
 /**
@@ -76,6 +76,7 @@ for (const [name, screen] of Object.entries(SCREENS)) {
         await page.waitForLoadState('networkidle')
         await scaleFonts(page, FONT)
         expect(await sidewaysScroll(page), 'as rendered').toBeNull()
+        expect(await strandedChars(page), 'a lone letter or arrow on its own line (#478)').toBeNull()
 
         const menu = page.locator('button[aria-controls="app-menu"]')
         if (!(await menu.isVisible())) return

@@ -104,6 +104,19 @@ body {
   overflow-wrap: break-word;
 }
 
+/*
+ * `wrap-label`: for a short label in a narrow flex/grid box (a pill, a chip, a caption).
+ * `overflow-wrap: anywhere` lets the box shrink below its longest word (WCAG 1.4.10), but
+ * alone it splits that word at any letter ("Wszystkic|h") once a large system font widens
+ * it. `hyphens: auto` (<html lang="pl">) breaks at a syllable first ("Wszyst-kich"); the
+ * anywhere break stays as the last resort. Use this instead of a bare `wrap-anywhere` on
+ * a label (#478; #389 fixed the same break on the home grid only).
+ */
+@utility wrap-label {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
 /* A fieldset's default min-width is min-content and a legend shrink-wraps its text,
    so a long word would widen either past a 320 px screen (WCAG 1.4.10). */
 fieldset {

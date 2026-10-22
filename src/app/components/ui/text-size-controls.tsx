@@ -15,9 +15,11 @@ interface TextSizeControlsProps {
  */
 export function TextSizeControls({ level, onChange }: TextSizeControlsProps) {
   return (
-    // C3: a #f3f4f6 panel, the label on the left and the buttons on the right.
-    <div className="flex w-full items-center justify-between gap-3 rounded-tile bg-surface-3 py-2 pr-2 pl-4">
-      <span id="text-size-label" className="min-w-0 text-[16px] font-bold wrap-anywhere text-ink">
+    // C3: a #f3f4f6 panel, the label on the left and the buttons on the right. flex-wrap: at a
+    // large system font the label would shrink to a letter or two beside the shrink-0 buttons,
+    // so the buttons drop to their own row instead (#478).
+    <div className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-tile bg-surface-3 py-2 pr-2 pl-4">
+      <span id="text-size-label" className="min-w-0 text-[16px] font-bold wrap-label text-ink">
         Wielkość tekstu
       </span>
       <div role="group" aria-labelledby="text-size-label" className="flex shrink-0 gap-2">

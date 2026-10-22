@@ -33,7 +33,7 @@ describe('TagFilter "Pokaż wszystkie (N)" (screen 6)', () => {
 
   it('lets its label break a long word instead of widening the page at 320 px / A++ (WCAG 1.4.10)', () => {
     const toggle = render(VISIBLE_CHIPS + 1).match(/<button[^>]*aria-expanded="false"[^>]*>/)?.[0] ?? ''
-    expect(toggle).toContain('wrap-anywhere')
+    expect(toggle).toContain('wrap-label')
     // Still a 48 px, underlined text action.
     expect(toggle).toContain('min-h-[48px]')
     expect(toggle).toContain('underline')

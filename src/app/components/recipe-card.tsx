@@ -57,7 +57,7 @@ export const LIST_SIZES = '(min-width: 64rem) 16.1rem, (min-width: 48rem) 33vw, 
  * squished ones, and wider screens add columns on their own.
  */
 export const LIST_CARDS_CLASS =
-  'flex flex-col gap-6 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] md:gap-x-6 md:gap-y-8'
+  'flex flex-col gap-10 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] md:gap-x-6 md:gap-y-8'
 
 const PHOTO_HEIGHT = {
   list: 'h-[210px] md:h-[180px]',
@@ -120,7 +120,7 @@ export function RecipeCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 pt-3">
+      <div className="flex flex-1 flex-col gap-1 pt-2">
         {/* Two lines at most, words wrapped whole (handoff §1). */}
         <h3 className="line-clamp-2 text-[21px] leading-[1.25] font-bold break-words text-ink group-hover:text-action-text">
           <Link href={recipePath(slug, { from })} className="no-underline! after:absolute after:inset-0">

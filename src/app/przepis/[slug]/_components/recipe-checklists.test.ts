@@ -70,7 +70,7 @@ describe('RecipeChecklists step photos', () => {
 
 describe('RecipeChecklists "Wielkość tekstu" (C3)', () => {
   it('labels the control in primary ink', () => {
-    expect(render(null)).toContain('<span id="text-size-label" class="min-w-0 text-[16px] font-bold wrap-anywhere text-ink">Wielkość tekstu</span>')
+    expect(render(null)).toContain('<span id="text-size-label" class="min-w-0 text-[16px] font-bold wrap-label text-ink">Wielkość tekstu</span>')
   })
 })
 

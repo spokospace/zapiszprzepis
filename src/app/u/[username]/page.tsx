@@ -231,7 +231,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
                             {active ? '✓ ' : ''}
                             {c.label}
                           </span>
-                          <span className="text-[16px] font-normal opacity-80">{c.count}</span>
+                          <span className="shrink-0 text-[16px] font-normal opacity-80">{c.count}</span>
                         </Link>
                       </li>
                     )

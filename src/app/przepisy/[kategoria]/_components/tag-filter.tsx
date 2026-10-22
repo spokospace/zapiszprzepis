@@ -144,9 +144,9 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
               aria-controls={listId}
               onClick={() => setExpanded((v) => !v)}
               // Screen 6: a plain underlined text action under the chips, not another chip-like box.
-              // wrap-anywhere, like chipClasses: the label's anonymous flex item would not shrink
+              // wrap-label, like chipClasses: the label's anonymous flex item would not shrink
               // below its longest word otherwise and widen the page at 320 px / A++ (WCAG 1.4.10).
-              className="inline-flex min-h-[48px] items-center px-1 text-[17px] font-bold wrap-anywhere text-ink underline underline-offset-4 hover:text-action-hover"
+              className="inline-flex min-h-[48px] items-center px-1 text-[17px] font-bold wrap-label text-ink underline underline-offset-4 hover:text-action-hover"
             >
               {expanded ? 'Pokaż mniej' : `Pokaż wszystkie (${chips.length})`}
             </button>
