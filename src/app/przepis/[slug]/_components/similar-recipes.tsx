@@ -113,9 +113,9 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
               <li key={tag}>
                 <Link
                   href={categoryPath(recipe.category, { tags: [tag] })}
-                  // wrap-anywhere, like chipClasses: the label's anonymous flex item would not
+                  // wrap-label (wrap-anywhere + hyphens), like chipClasses: the label's anonymous flex item would not
                   // shrink below its longest word otherwise (WCAG 1.4.10).
-                  className="inline-flex min-h-[52px] items-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold wrap-anywhere text-action-text no-underline! hover:bg-surface-accent"
+                  className="inline-flex min-h-[52px] items-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold wrap-label text-action-text no-underline! hover:bg-surface-accent"
                 >
                   <Tag aria-hidden="true" className="h-5 w-5 shrink-0" />
                   {tagLabel(tag)}
@@ -163,7 +163,9 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
           className="mt-4 flex min-h-[56px] w-full items-center justify-center rounded-pill border-2 border-ink bg-white px-4 text-center text-[19px] font-bold text-action-text no-underline! hover:border-action-text"
         >
           Wszystkie {label.toLocaleLowerCase('pl')}
-          {total != null && ` (${total})`} →
+          {total != null && ` (${total})`}
+          {/* NBSP: the arrow stays on its text's last line at a large font (#478). */}
+          {'\u00a0'}→
         </Link>
       )}
     </div>

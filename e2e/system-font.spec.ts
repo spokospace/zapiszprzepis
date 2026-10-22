@@ -1,6 +1,6 @@
 import { expect, test, type Cookie, type Page } from '@playwright/test'
 import { existsSync, readFileSync } from 'fs'
-import { phone, scaleFonts, sidewaysScroll } from './phone'
+import { phone, scaleFonts, sidewaysScroll, strandedChars } from './phone'
 import { qaSessionFile, type QaAccount } from './qa-session'
 
 /**
@@ -47,6 +47,8 @@ const SCREENS: Record<string, Screen> = {
   profile: { path: profile },
   login: { path: '/login' },
   terms: { path: '/regulamin' },
+  // The "Szukaj w:" scope pills only render for a signed-in user (#478).
+  'search results (signed in)': { path: '/szukaj?q=ciasto', as: 'full' },
   'home (signed in)': { path: '/', as: 'full' },
   'my recipes': { path: '/recipes', as: 'full' },
   favourites: { path: '/ulubione', as: 'full' },
@@ -76,6 +78,7 @@ for (const [name, screen] of Object.entries(SCREENS)) {
         await page.waitForLoadState('networkidle')
         await scaleFonts(page, FONT)
         expect(await sidewaysScroll(page), 'as rendered').toBeNull()
+        expect(await strandedChars(page), 'a lone letter or arrow on its own line (#478)').toBeNull()
 
         const menu = page.locator('button[aria-controls="app-menu"]')
         if (!(await menu.isVisible())) return

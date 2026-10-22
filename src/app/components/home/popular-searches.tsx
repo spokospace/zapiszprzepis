@@ -23,7 +23,7 @@ export function PopularSearches() {
           <li key={term} className={i === HERO_TERMS - 1 ? 'max-sm:hidden' : undefined}>
             <Link
               href={searchPath(term)}
-              className="inline-flex h-[52px] items-center rounded-pill border-2 border-border-dark bg-white px-5 text-[18px] font-bold wrap-anywhere text-ink no-underline! hover:bg-surface-3"
+              className="inline-flex h-[52px] items-center rounded-pill border-2 border-border-dark bg-white px-5 text-[18px] font-bold wrap-label text-ink no-underline! hover:bg-surface-3"
             >
               {term}
             </Link>

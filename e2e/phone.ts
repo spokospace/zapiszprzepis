@@ -43,6 +43,57 @@ export async function sidewaysScroll(page: Page): Promise<string | null> {
   }, device)
 }
 
+/**
+ * Text that strands a single character (#478): a word split across lines with a
+ * one-letter piece ("Wszystkic|h"; a hyphenated "Wszyst-|kich" leaves a syllable on
+ * both sides), or a lone "→" on its own line. Checked per text node on the short labels
+ * that use `wrap-label` and on links ending in an arrow. Returns null when there are none.
+ */
+export async function strandedChars(page: Page): Promise<string | null> {
+  return page.evaluate(() => {
+    const found: string[] = []
+    const targets = [...document.querySelectorAll<HTMLElement>('.wrap-label, a')].filter(
+      (el) => el.classList.contains('wrap-label') || /→\s*$/.test(el.textContent ?? ''),
+    )
+    for (const el of targets) {
+      if (el.getClientRects().length === 0) continue
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+      for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+        const range = document.createRange()
+        const lines: string[] = []
+        const words: number[][] = [] // per word, the length of each piece a line break leaves
+        let top = NaN
+        let inWord = false
+        for (let i = 0; i < node.data.length; i++) {
+          const ch = node.data[i]
+          if (/\s/.test(ch)) {
+            inWord = false
+            continue
+          }
+          range.setStart(node, i)
+          range.setEnd(node, i + 1)
+          const rect = range.getClientRects()[0]
+          if (!rect) continue
+          const newLine = isNaN(top) || Math.abs(rect.top - top) > rect.height / 2
+          if (newLine) {
+            top = rect.top
+            lines.push('')
+          }
+          lines[lines.length - 1] += ch
+          if (!inWord) words.push([1])
+          else if (newLine) words[words.length - 1].push(1)
+          else words[words.length - 1][words[words.length - 1].length - 1]++
+          inWord = true
+        }
+        const cutWord = words.some((w) => w.length > 1 && w.includes(1))
+        const loneArrow = lines.length > 1 && lines[lines.length - 1] === '→'
+        if (cutWord || loneArrow) found.push(`<${el.tagName.toLowerCase()}> ${lines.join(' ⏎ ')}`)
+      }
+    }
+    return found.length ? found.slice(0, 5).join(' | ') : null
+  })
+}
+
 /** The phone profile: touch, a mobile layout viewport, Pixel-class density. */
 export const phone = (width: number, height = 800) => ({
   viewport: { width, height },
