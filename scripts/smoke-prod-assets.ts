@@ -91,7 +91,8 @@ async function main(): Promise<void> {
     for (const f of failures) console.error(`  ${f}`)
     console.error(
       'Fix: a missing static file → Cloudflare → Workers & Pages → zapiszprzepis → Builds → Retry the latest master build.\n' +
-        'Pages failing on some attempts (5xx) → revert the last change that reached master. Then run this again.',
+        'Pages failing on some attempts (503) → open one in a browser: "error code: 1102" is the Worker exceeding ' +
+        'its CPU limit, which a redeploy does not fix. Then run this again.',
     )
     process.exit(1)
   }
