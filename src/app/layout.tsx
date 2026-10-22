@@ -6,7 +6,7 @@ import { SiteFooter } from "./components/site-footer";
 export const metadata: Metadata = {
   title: "Zapisz Przepis — Twój zbiór przepisów z internetu",
   description:
-    "Zbieraj przepisy z internetu w jednym miejscu — wklej link, a danie zapisze się samo. Przeglądaj, wyszukuj i wracaj do ulubionych, kiedy tylko chcesz.",
+    "Twoje ulubione przepisy z internetu, zebrane w jednym miejscu. Wklej link, a przepis od razu trafi do Twojej kolekcji — gotowy, gdy przyjdzie ochota na gotowanie.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
