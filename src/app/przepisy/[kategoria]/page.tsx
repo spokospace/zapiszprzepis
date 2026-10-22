@@ -9,6 +9,7 @@ import { categoryNoun, parsePageParam, parseTagParam, tagFacetsFromCounts, tagSu
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
+import { categoryOgImagePath } from '@/lib/category-og'
 import { PageContainer } from '@/app/components/page-container'
 import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { ListLink } from '@/app/components/list-link'
@@ -34,16 +35,22 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const siteUrl = await getSiteUrl()
   const canonical = `${siteUrl}${categoryPath(category)}`
   const { title, description } = await getCategoryMeta(category)
-  // The PWA icon is the only site-level image; a per-category card is a follow-up.
-  const ogImage = `${siteUrl}/icons/icon-512x512.png`
+  // A per-category 1200×630 social card (public/og/categories/<value>.jpg).
+  const ogImage = `${siteUrl}${categoryOgImagePath(category)}`
   return {
     title: `${title} · Zapisz Przepis`,
     description,
     // Tag/page variants must not compete with the bare category URL.
     // The .md alternate (#363) advertises the AI-citable Markdown listing.
     alternates: { canonical, types: { 'text/markdown': `${canonical}.md` } },
-    openGraph: { title, description, type: 'website', images: [ogImage] },
-    twitter: { card: 'summary', title, description },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: canonical,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: `${title} · Zapisz Przepis` }],
+    },
+    twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
   }
 }
 
