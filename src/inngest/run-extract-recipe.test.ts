@@ -144,12 +144,16 @@ function makeFetchMock({
   firecrawlHtml = '<p>Przepis na naleśniki.</p>'.repeat(20),
   openaiContent = VALID_RECIPE_JSON,
   firecrawlStatusCode,
+  oembedOk = true,
 }: {
   firecrawlMarkdown?: string
   firecrawlHtml?: string
   openaiContent?: string
   /** The scraped page's own HTTP status, as Firecrawl reports it. */
   firecrawlStatusCode?: number
+  /** Whether YouTube oEmbed answers 200 — i.e. the video is public and
+   *  embeddable (false simulates a private / removed / embedding-disabled one). */
+  oembedOk?: boolean
 } = {}) {
   return vi.fn().mockImplementation((url: string) => {
     if (url.includes('firecrawl.dev')) {
@@ -159,6 +163,13 @@ function makeFetchMock({
           data: { markdown: firecrawlMarkdown, html: firecrawlHtml, metadata: { statusCode: firecrawlStatusCode } },
         }),
       })
+    }
+    if (url.startsWith('https://www.youtube.com/oembed')) {
+      return Promise.resolve(
+        oembedOk
+          ? { ok: true, status: 200, json: async () => ({ author_name: 'PALCE LIZAĆ' }) }
+          : { ok: false, status: 403, json: async () => ({}) },
+      )
     }
     if (url.includes('openai.com')) {
       return Promise.resolve({
@@ -928,6 +939,53 @@ describe('runExtractRecipe — the same YouTube video under another link', () =>
     await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeFetchMock(), supabase: mock.supabase as any })
 
     expect(mock.updateArgs('recipes')[0]).not.toHaveProperty('youtube_id')
+  })
+})
+
+describe('runExtractRecipe — a video that will not embed', () => {
+  const VIDEO = 'dQw4w9WgXcQ'
+  const EMBED_HTML = `<iframe src="https://www.youtube.com/embed/${VIDEO}"></iframe>`
+
+  it('publishes a blog recipe but drops the id when its embedded video is private', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 5 }, error: null })
+    // The blog page embeds a video that oEmbed refuses (403 = private).
+    const fetch = makeFetchMock({
+      firecrawlMarkdown: 'Przepis na naleśniki. '.repeat(30),
+      firecrawlHtml: `${EMBED_HTML}<p>Przepis na naleśniki.</p>`.repeat(5),
+      oembedOk: false,
+    })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(result.status).toBe('completed')
+    // The recipe is saved (it is a real blog recipe) — only the broken embed is dropped.
+    expect(mock.insertArgs('recipes').youtube_id).toBeNull()
+  })
+
+  it('stores the same embed when the video is public', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 5 }, error: null })
+    const fetch = makeFetchMock({
+      firecrawlMarkdown: 'Przepis na naleśniki. '.repeat(30),
+      firecrawlHtml: `${EMBED_HTML}<p>Przepis na naleśniki.</p>`.repeat(5),
+      oembedOk: true,
+    })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ youtube_id: VIDEO })
+  })
+
+  it('fails a private shared YouTube link with a clear message and never inserts', async () => {
+    const mock = makeSupabaseMock()
+    const event = { ...BASE_EVENT, sharedUrl: `https://www.youtube.com/watch?v=${VIDEO}`, sourceType: 'youtube' as const }
+    // Private video: oEmbed 403, no description, and the player (transcript) is
+    // unreachable — nothing to extract, nothing to embed.
+    const fetch = makeFetchMock({ firecrawlMarkdown: '', firecrawlHtml: '', oembedOk: false })
+
+    await expect(runExtractRecipe(event, { fetch, supabase: mock.supabase as any })).rejects.toThrow('prywatny')
+    expect(mock.didInsert('recipes')).toBe(false)
   })
 })
 
