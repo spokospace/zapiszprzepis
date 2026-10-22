@@ -10,7 +10,7 @@ import {
   pickGalleryImages,
 } from '@/lib/recipe-image-archive'
 import { splitLlmSteps, buildStepImageSources } from '@/lib/step-image-extract'
-import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeAuthor, fetchYoutubeTranscript } from '@/lib/youtube'
+import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeOembed, fetchYoutubeTranscript } from '@/lib/youtube'
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
 import { publicFacebookAuthor } from '@/lib/facebook-authors'
@@ -86,6 +86,10 @@ const LLM_UNREADABLE =
   'Nie udało się odczytać przepisu z odpowiedzi modelu — spróbuj ponownie'
 const UNREADABLE_PAGE =
   'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)'
+// Shown when a shared YouTube link yielded no recipe AND the video won't embed
+// — almost always because it is private (oEmbed 403); reader-facing, so Polish.
+const YOUTUBE_UNAVAILABLE =
+  'Tego filmu z YouTube nie można dodać — jest prywatny, został usunięty albo ma wyłączone osadzanie'
 
 export interface ExtractRecipeEvent {
   shareId: number
@@ -396,6 +400,15 @@ export async function runExtractRecipe(
     // page embeds a player (found in the Blogger feed html / the embed scan).
     const youtubeId = youtubeIdFromUrl(sharedUrl) ?? findEmbeddedYoutubeId(embedHtml || html)
 
+    // Only a video YouTube confirms as embeddable may be stored and rendered.
+    // A blog can embed a video that has since gone private / been removed / had
+    // embedding disabled, and a shared link can itself be a private video;
+    // either way the detail page's <iframe> would show a "Video unavailable"
+    // box. oEmbed answers 200 only for a playable, embeddable video and carries
+    // the channel name, so one probe (run alongside the LLM) serves both the
+    // gate and the author. `embeddableYoutubeId` is resolved from it below.
+    const youtubeOembedPromise = youtubeId != null ? fetchYoutubeOembed(youtubeId, { fetch }) : Promise.resolve(null)
+
     // The same film saved under another link — the video itself, or a blog
     // post that embeds it (see findRecipeByYoutubeId). Before the junk
     // gate too: a page whose only content is the embedded player is still that film.
@@ -451,8 +464,8 @@ export async function runExtractRecipe(
     // K." — or the YouTube channel, fetched while the LLM extracts. A blog is
     // named by its domain, so it needs none.
     const sourceAuthorPromise: Promise<string | null> =
-      sourceType === 'youtube' && youtubeId != null
-        ? fetchYoutubeAuthor(youtubeId, { fetch })
+      sourceType === 'youtube'
+        ? youtubeOembedPromise.then((oembed) => oembed?.authorName ?? null)
         : Promise.resolve(facebookPost?.author ? publicFacebookAuthor(facebookPost.author, sourceUrl) : null)
 
     // One LLM pass over the content. `transcript`, when given, is the video's
@@ -620,9 +633,19 @@ Rules:
       }
     }
 
-    // A YouTube link with an empty description and no captions: nothing was
-    // ever sent to the LLM, so word it like any other unreadable page.
-    if (recipeJSON == null) throw new Error(UNREADABLE_PAGE)
+    // Whether the video (if any) actually embeds. Needed below to decide what
+    // to store; resolved here (the probe ran alongside the LLM, so this awaits
+    // nothing) to also word a private video's failure precisely.
+    const youtubeOembed = await youtubeOembedPromise
+    const embeddableYoutubeId = youtubeId != null && youtubeOembed != null ? youtubeId : null
+
+    // A YouTube link with an empty description and no captions never sent
+    // anything to the LLM. When its video also won't embed, that is almost
+    // always because it is private — say so; otherwise word it like any other
+    // unreadable page.
+    if (recipeJSON == null) {
+      throw new Error(sourceType === 'youtube' && embeddableYoutubeId == null ? YOUTUBE_UNAVAILABLE : UNREADABLE_PAGE)
+    }
 
     if (!recipeJSON.title || typeof recipeJSON.title !== 'string') {
       throw new Error(
@@ -771,9 +794,10 @@ Rules:
           tags,
           ingredient_fingerprint: ingredientFp,
           source_type: sourceType,
-          // Keep the video and the author a previous run found when this one
-          // saw none (an embed the page no longer renders, a header it lost).
-          ...(youtubeId != null ? { youtube_id: youtubeId } : {}),
+          // Found an embed this run: store it only when it still embeds, which
+          // clears a video that has since gone private; found none (the page
+          // lost the embed) keeps the old id. The author is kept the same way.
+          ...(youtubeId != null ? { youtube_id: embeddableYoutubeId } : {}),
           ...(sourceAuthor != null ? { source_author: sourceAuthor } : {}),
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
@@ -859,7 +883,7 @@ Rules:
           source_url: sourceUrl,
           source_fingerprint: sourceFingerprint,
           source_author: sourceAuthor,
-          youtube_id: youtubeId,
+          youtube_id: embeddableYoutubeId,
           category: recipeJSON.category,
           prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
           cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
@@ -943,8 +967,8 @@ Rules:
           if (existing.servings == null && servings != null) {
             gapFill.servings = servings
           }
-          if (existing.youtube_id == null && youtubeId != null) {
-            gapFill.youtube_id = youtubeId
+          if (existing.youtube_id == null && embeddableYoutubeId != null) {
+            gapFill.youtube_id = embeddableYoutubeId
           }
           if (existing.source_author == null && sourceAuthor != null) {
             gapFill.source_author = sourceAuthor

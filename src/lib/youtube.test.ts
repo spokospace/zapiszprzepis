@@ -7,30 +7,36 @@ import {
   pickCaptionTrack,
   timedTextToPlain,
   fetchYoutubeTranscript,
-  fetchYoutubeAuthor,
+  fetchYoutubeOembed,
 } from '@/lib/youtube'
 
-describe('fetchYoutubeAuthor', () => {
+describe('fetchYoutubeOembed', () => {
   const respond = (init: { ok: boolean; body?: unknown }) =>
     vi.fn(async () => ({ ok: init.ok, json: async () => init.body }) as Response) as unknown as typeof globalThis.fetch
 
-  it("returns the channel name from oEmbed's author_name", async () => {
+  it('returns the channel name for an embeddable (200) video', async () => {
     const fetch = respond({ ok: true, body: { author_name: ' PALCE LIZAĆ ', title: 'Pieczarki' } })
-    await expect(fetchYoutubeAuthor('JOI3NVTVwdQ', { fetch })).resolves.toBe('PALCE LIZAĆ')
+    await expect(fetchYoutubeOembed('JOI3NVTVwdQ', { fetch })).resolves.toEqual({ authorName: 'PALCE LIZAĆ' })
     expect(String(vi.mocked(fetch).mock.calls[0][0])).toBe(
       'https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DJOI3NVTVwdQ&format=json',
     )
   })
 
-  it('returns null for a private or removed video', async () => {
-    await expect(fetchYoutubeAuthor('JOI3NVTVwdQ', { fetch: respond({ ok: false }) })).resolves.toBeNull()
+  it('still resolves embeddable with a null author when oEmbed omits author_name', async () => {
+    await expect(fetchYoutubeOembed('JOI3NVTVwdQ', { fetch: respond({ ok: true, body: {} }) })).resolves.toEqual({
+      authorName: null,
+    })
   })
 
-  it('returns null instead of throwing when the request fails', async () => {
+  it('returns null (NOT embeddable) for a private / removed / embedding-disabled video', async () => {
+    await expect(fetchYoutubeOembed('JOI3NVTVwdQ', { fetch: respond({ ok: false }) })).resolves.toBeNull()
+  })
+
+  it('returns null (treated as not embeddable) when the request fails — never throws', async () => {
     const fetch = vi.fn(async () => {
       throw new Error('network down')
     }) as unknown as typeof globalThis.fetch
-    await expect(fetchYoutubeAuthor('JOI3NVTVwdQ', { fetch })).resolves.toBeNull()
+    await expect(fetchYoutubeOembed('JOI3NVTVwdQ', { fetch })).resolves.toBeNull()
   })
 })
 

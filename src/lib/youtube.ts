@@ -222,15 +222,24 @@ export async function fetchYoutubeTranscript(
   }
 }
 
+export interface YoutubeOembed {
+  /** The channel name (oEmbed `author_name`), or null when it is absent. */
+  authorName: string | null
+}
+
 /**
- * The channel name of a video, from YouTube's oEmbed endpoint — one small
- * JSON request with no bot wall, unlike the player. Returns null when the
- * request fails or the video is private or removed; never throws.
+ * Fetch a video's oEmbed metadata — one small JSON request with no bot wall,
+ * unlike the player. A non-null result is also the proof the video is
+ * EMBEDDABLE: YouTube's oEmbed answers 200 only for a public video that will
+ * play in an iframe, and non-200 for a private (403), removed (404) or
+ * embedding-disabled (401) one. Returns null in all those cases — and on a
+ * network failure too, so an unproven video is treated as "do not embed"
+ * rather than risk a broken player. Never throws.
  */
-export async function fetchYoutubeAuthor(
+export async function fetchYoutubeOembed(
   videoId: string,
   { fetch }: FetchYoutubeTranscriptDeps = { fetch: globalThis.fetch },
-): Promise<string | null> {
+): Promise<YoutubeOembed | null> {
   try {
     const watchUrl = `https://www.youtube.com/watch?v=${videoId}`
     const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`, {
@@ -238,7 +247,7 @@ export async function fetchYoutubeAuthor(
     })
     if (!response.ok) return null
     const { author_name: author } = (await response.json()) as { author_name?: unknown }
-    return typeof author === 'string' && author.trim() ? author.trim() : null
+    return { authorName: typeof author === 'string' && author.trim() ? author.trim() : null }
   } catch (error) {
     console.warn('[youtube] oEmbed fetch failed:', error)
     return null
