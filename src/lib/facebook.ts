@@ -421,33 +421,38 @@ export function extractPostAuthor(html: string): string | null {
 }
 
 // A photo of the post links to its viewer as photo.php?fbid=<photo>&set=<set>:
-// `gm.<post>` for a photo posted straight to the group, or `a.<album>` when the
+// `gm.<id>` for a photo posted straight to the group, or `a.<album>` when the
 // author added it to one of their albums (which the set=gm reader missed, so an
-// album-shared post ended up with no cover). Photos in members' comments sit in
-// other sets.
+// album-shared post ended up with no cover). The `gm.<id>` is the post id for a
+// single-photo post, but a multi-photo post gives each photo its own
+// `gm.<photo-story>` that is not the post id — so the set id alone can't tell a
+// post's photos from a related post's or a comment's. Photos in members'
+// comments sit in other sets.
 const POST_PHOTO_LINK = /fbid=(\d+)(?:&|&amp;|\\u0026)set=(gm|a)\.(\d+)/g
 // The crawler-media links the permalink query preloads — the post's own media
 // (its photos, and the author's avatar, which carries no photo viewer link).
-// They pin an album photo to this post, since the album id alone cannot: the
-// permalink page also lists related posts' album photos.
+// They pin a photo to this post when its own set id cannot: the permalink page
+// also lists related posts' and comments' photos.
 const PRELOADED_MEDIA = /crawler\/media\/\?media_id=(\d+)"[^>]*?PermalinkQueryRelayPreloader/g
 
 /** A photo of a group post: its id and the `set=` the plugin needs to render it. */
 export type GroupPostPhoto = { fbid: string; set: string }
 
 /**
- * A group post's own photos, in post order, each once. A `set=gm.<post>` photo
- * is the post's when the set is this post's id; a `set=a.<album>` photo is the
- * post's when the permalink query preloaded it — the only signal that tells it
- * from a related post's album photo on the same page. When neither kind is
- * found (a private group, the login wall) the list is empty.
+ * A group post's own photos, in post order, each once. A photo is the post's
+ * when the permalink query preloaded it — the signal that tells it from a
+ * related post's or a comment's photo on the same page, whatever its `set=`
+ * (`gm.<photo-story>` for a multi-photo post, `a.<album>` for an album-shared
+ * one). A `set=gm.<post>` photo is also taken on its set id alone, covering the
+ * single-photo post whose one photo the preloaded media may not list. When
+ * nothing matches (a private group, the login wall) the list is empty.
  */
 export function extractGroupPostPhotos(html: string, postId: string): GroupPostPhoto[] {
   const preloaded = new Set(Array.from(html.matchAll(PRELOADED_MEDIA), (m) => m[1]))
   const seen = new Set<string>()
   const photos: GroupPostPhoto[] = []
   for (const [, fbid, kind, setId] of html.matchAll(POST_PHOTO_LINK)) {
-    const ownedByPost = kind === 'gm' ? setId === postId : preloaded.has(fbid)
+    const ownedByPost = preloaded.has(fbid) || (kind === 'gm' && setId === postId)
     if (!ownedByPost || seen.has(fbid)) continue
     seen.add(fbid)
     photos.push({ fbid, set: `${kind}.${setId}` })
