@@ -6,8 +6,23 @@
 
 import { isPrivateUrl } from './recipe-image-archive'
 import { fetchPublicHtml } from './public-fetch'
+import { decodeEntities } from './html-entities'
 
 const JINA_READER = 'https://r.jina.ai/'
+
+// og:image as <meta property="og:image" content="…"> or the reverse attribute
+// order. Jina's JSON names it only for some sites — a Nuxt SSR blog like
+// aniagotuje.pl comes back without it — so it is recovered from the raw HTML
+// the reader fetches alongside, the page's own tag, which coverImage needs when
+// the in-page scan finds only thumbnails and the JSON-LD only an avatar.
+const OG_IMAGE_RE =
+  /<meta[^>]+?\bproperty=["']og:image["'][^>]*?\bcontent=["']([^"']+)["']|<meta[^>]+?\bcontent=["']([^"']+)["'][^>]*?\bproperty=["']og:image["']/i
+
+function ogImageFromHtml(html: string): string | undefined {
+  const match = OG_IMAGE_RE.exec(html)
+  const href = match?.[1] ?? match?.[2]
+  return href ? decodeEntities(href) : undefined
+}
 
 /** The same shape as Firecrawl's scrape `data`, so callers take either. */
 export interface ReaderPage {
@@ -59,5 +74,8 @@ export async function readerScrape(url: string, deps: Deps): Promise<ReaderPage>
     }),
     fetchPublicHtml(url, deps),
   ])
-  return { ...read, html: html ?? '' }
+  const htmlStr = html ?? ''
+  // Jina's metadata names og:image only sometimes; fall back to the raw HTML's
+  // own tag so a page whose only good cover is its og:image still gets one.
+  return { ...read, html: htmlStr, metadata: { ...read.metadata, ogImage: read.metadata.ogImage ?? ogImageFromHtml(htmlStr) } }
 }

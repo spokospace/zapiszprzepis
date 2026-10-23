@@ -137,4 +137,43 @@ describe('readerScrape', () => {
     await expect(readerScrape('http://127.0.0.1/admin', { fetch })).rejects.toThrow('Jina Reader: private address')
     expect(fetch).not.toHaveBeenCalled()
   })
+
+  it("recovers og:image from the raw HTML when Jina's metadata omits it", async () => {
+    // A Nuxt SSR blog (aniagotuje.pl): Jina returns no og:image, so a page
+    // whose only good cover is its og:image used to come through with none —
+    // the raw HTML the reader fetches alongside carries the page's own tag.
+    const fetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(
+        url.startsWith('https://r.jina.ai/')
+          ? jinaResponse({ content: 'Składniki', httpStatus: 200 })
+          : htmlResponse('<html><head><meta data-n-head="ssr" property="og:image" content="https://cdn.example/dish-1500x1500.jpg"></head></html>'),
+      ),
+    )
+
+    expect((await readerScrape(PAGE, { fetch })).metadata.ogImage).toBe('https://cdn.example/dish-1500x1500.jpg')
+  })
+
+  it("prefers Jina's own og:image over the HTML tag", async () => {
+    const fetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(
+        url.startsWith('https://r.jina.ai/')
+          ? jinaResponse({ content: 'x', metadata: { 'og:image': 'https://jina.example/pick.jpg' } })
+          : htmlResponse('<meta property="og:image" content="https://html.example/other.jpg">'),
+      ),
+    )
+
+    expect((await readerScrape(PAGE, { fetch })).metadata.ogImage).toBe('https://jina.example/pick.jpg')
+  })
+
+  it('reads a content-first og:image tag and decodes its entities', async () => {
+    const fetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(
+        url.startsWith('https://r.jina.ai/')
+          ? jinaResponse({ content: 'x' })
+          : htmlResponse('<meta content="https://cdn.example/a.jpg?w=1&amp;h=2" property="og:image">'),
+      ),
+    )
+
+    expect((await readerScrape(PAGE, { fetch })).metadata.ogImage).toBe('https://cdn.example/a.jpg?w=1&h=2')
+  })
 })
