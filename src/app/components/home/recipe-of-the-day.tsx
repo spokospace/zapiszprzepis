@@ -40,7 +40,10 @@ export function RecipeOfTheDay({
         <Link
           href={recipePath(slug)}
           aria-label={`Przepis dnia: ${title}`}
-          className="group -mx-4 grid gap-5 no-underline! focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus sm:-mx-6 md:mx-0 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:items-center md:gap-10"
+          // grid-cols-1 below md: without an explicit track the single column is `auto`,
+          // sized to max-content, so a long run-together title word can't shrink it and
+          // overflows the phone (WCAG 1.4.10); minmax(0,1fr) lets `break-words` wrap it.
+          className="group -mx-4 grid grid-cols-1 gap-5 no-underline! focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus sm:-mx-6 md:mx-0 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:items-center md:gap-10"
         >
           <div className="relative h-[220px] overflow-hidden bg-surface-3 md:h-[360px] md:rounded-tile">
             {cover && (
@@ -60,7 +63,8 @@ export function RecipeOfTheDay({
             <p className="text-[16px] font-bold tracking-[.08em] text-action-text uppercase">Przepis dnia</p>
             <h2 className="text-[28px] leading-[1.08] font-extrabold break-words text-ink md:text-[40px]">{title}</h2>
             {description && <p className="line-clamp-3 text-[19px] text-ink-soft md:text-[20px]">{description}</p>}
-            <span className="mt-2 text-[19px] font-bold text-action-text underline underline-offset-4">Zobacz przepis →</span>
+            {/* NBSP before the arrow so „→” never strands on its own line at a large font (#478). */}
+            <span className="mt-2 text-[19px] font-bold text-action-text underline underline-offset-4">Zobacz przepis{' '}→</span>
           </div>
         </Link>
       </div>

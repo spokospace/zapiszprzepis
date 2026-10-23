@@ -191,15 +191,16 @@ function Hero({ id, title, subtitle, children }: { id: string; title: string; su
   return (
     <section aria-labelledby={id} className="bg-white">
       <PageContainer className="flex flex-col items-start gap-3.5 pt-7 pb-6 md:items-center md:gap-[18px] md:pt-16 md:pb-[52px] md:text-center">
-        {/* max-w-full: under items-start the heading is as wide as its longest word;
-            at a large system font that word outgrew a phone and widened the page (#448). */}
+        {/* max-w-full: under items-start a flex child is as wide as its longest word;
+            at a large system font (or a long run-together word) that word outgrew a phone
+            and widened the page (#448). The subtitle needs the same cap as the heading. */}
         <h1
           id={id}
           className="max-w-full text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]"
         >
           {title}
         </h1>
-        <p className="text-[19px] leading-normal text-ink-soft md:text-[20px] md:leading-[1.45]">{subtitle}</p>
+        <p className="max-w-full text-[19px] leading-normal text-ink-soft md:text-[20px] md:leading-[1.45]">{subtitle}</p>
         <div className="w-full max-w-[780px] text-left md:mt-3.5">{children}</div>
       </PageContainer>
     </section>
@@ -394,7 +395,9 @@ function MemberHome({
             className="flex min-h-16 items-center gap-3.5 rounded-tile border border-ink bg-white p-4 text-[20px] font-bold text-ink no-underline! hover:border-border-card-2 hover:bg-surface-2"
           >
             <Plus aria-hidden="true" className="h-7 w-7 shrink-0 text-action-text" />
-            Dodaj pierwszy przepis
+            {/* min-w-0 + break-words: the label shrinks and wraps instead of widening the
+                flex row past the phone at a large font (WCAG 1.4.10). */}
+            <span className="min-w-0 break-words">Dodaj pierwszy przepis</span>
           </Link>
         )}
       </PageContainer>
