@@ -1,13 +1,15 @@
-import { ingredientKey, ingredientNames, ingredientsSubsume } from './recipe-dedup'
+import { ingredientKey, ingredientNames, ingredientsNearMatch, ingredientsSubsume, sameAuthor } from './recipe-dedup'
 import { groupDuplicates, type CollapseGroup } from './recipe-collapse'
 
 /** A recipe as the content-duplicate scan reads it: enough to judge "same
- *  recipe" (title + ingredients) and to rank which copy to keep. */
+ *  recipe" (title + ingredients, plus the author that gates the near-match
+ *  tier) and to rank which copy to keep. */
 export type ContentRow = {
   id: number
   user_id: string
   title: string
   ingredients: { name: string }[]
+  source_author: string | null
   created_at: string
 }
 
@@ -66,7 +68,16 @@ export function buildContentDuplicateGroups(rows: ContentRow[], preferredOwnerId
     for (const bucket of byTitle.values()) {
       for (let i = 0; i < bucket.length; i++) {
         for (let j = i + 1; j < bucket.length; j++) {
-          if (ingredientsSubsume(bucket[i].ingredients, bucket[j].ingredients)) link(bucket[i].id, bucket[j].id)
+          const a = bucket[i], b = bucket[j]
+          // Subsume links one copy contained in the other; the near-match tier
+          // links two sets that differ by a name or two, but only when the same
+          // author posted both (the #639/#894 reposted-shortbread pair).
+          if (
+            ingredientsSubsume(a.ingredients, b.ingredients) ||
+            (sameAuthor(a.source_author, b.source_author) && ingredientsNearMatch(a.ingredients, b.ingredients))
+          ) {
+            link(a.id, b.id)
+          }
         }
       }
     }

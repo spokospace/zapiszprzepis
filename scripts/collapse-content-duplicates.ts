@@ -33,7 +33,7 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ dat
 
 const loadRecipes = (supabase: SupabaseClient) =>
   fetchAll<Recipe>((from, to) =>
-    supabase.from('recipes').select('id, user_id, title, slug, category, ingredients, created_at').order('id').range(from, to),
+    supabase.from('recipes').select('id, user_id, title, slug, category, ingredients, source_author, created_at').order('id').range(from, to),
   )
 
 /** The nicest slug in a group: a base slug (no `-2`, `-3` … suffix) beats a

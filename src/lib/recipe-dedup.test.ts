@@ -6,9 +6,59 @@ import {
   findSameRecipe,
   ingredientFingerprint,
   ingredientKey,
+  ingredientsNearMatch,
   ingredientsSubsume,
+  sameAuthor,
   sameIngredients,
 } from './recipe-dedup'
+
+describe('sameAuthor — the shared gate for the near-match tier', () => {
+  it('matches two equal non-null authors', () => {
+    expect(sameAuthor('Kulinarna Wiola', 'Kulinarna Wiola')).toBe(true)
+  })
+
+  it('never matches when either side is null or undefined (blogs, failed probe)', () => {
+    expect(sameAuthor(null, null)).toBe(false)
+    expect(sameAuthor('Kulinarna Wiola', null)).toBe(false)
+    expect(sameAuthor(undefined, 'Kulinarna Wiola')).toBe(false)
+  })
+
+  it('compares raw, so it never merges two different authors', () => {
+    expect(sameAuthor('Kulinarna Wiola', 'Inny Autor')).toBe(false)
+  })
+})
+
+describe('ingredientsNearMatch — a repost with a name or two swapped', () => {
+  const cream = [{ name: 'masło' }, { name: 'mąka pszenna' }, { name: 'cukier puder' }, { name: 'aromat śmietankowy' }]
+  const vanilla = [{ name: 'masło' }, { name: 'mąka pszenna' }, { name: 'cukier puder' }, { name: 'aromat waniliowy' }]
+
+  it('matches the #639/#894 pair: 3 of a 5-name union shared (Jaccard 0.6)', () => {
+    expect(ingredientsNearMatch(cream, vanilla)).toBe(true)
+    expect(ingredientsNearMatch(vanilla, cream)).toBe(true)
+  })
+
+  it('ignores order and casing like the other set helpers', () => {
+    expect(ingredientsNearMatch(cream, [...vanilla].reverse().map((i) => ({ name: i.name.toUpperCase() })))).toBe(true)
+  })
+
+  it('rejects too thin a shared core (fewer than three names in common)', () => {
+    const a = [{ name: 'masło' }, { name: 'mąka' }, { name: 'cukier' }]
+    const b = [{ name: 'masło' }, { name: 'mąka' }, { name: 'ser' }, { name: 'jajka' }]
+    expect(ingredientsNearMatch(a, b)).toBe(false)
+  })
+
+  it('rejects two sets that overlap below 60% of their union', () => {
+    // 3 shared of an 8-name union = 0.375.
+    const a = [{ name: 'masło' }, { name: 'mąka' }, { name: 'cukier' }, { name: 'jajka' }, { name: 'ser' }]
+    const b = [{ name: 'masło' }, { name: 'mąka' }, { name: 'cukier' }, { name: 'szynka' }, { name: 'pieprz' }, { name: 'sól' }]
+    expect(ingredientsNearMatch(a, b)).toBe(false)
+  })
+
+  it('is false when either list is empty', () => {
+    expect(ingredientsNearMatch([], cream)).toBe(false)
+    expect(ingredientsNearMatch(cream, [])).toBe(false)
+  })
+})
 
 // A set of five distinct names — the smallest that fingerprints (MIN_FINGERPRINT_NAMES).
 const FIVE = [{ name: 'chleb' }, { name: 'jajka' }, { name: 'szynka' }, { name: 'ser' }, { name: 'masło' }]
@@ -114,6 +164,61 @@ describe('findSameRecipe — same ingredient set, whatever the title', () => {
     const rows: Row[] = [{ id: 1, user_id: 'u1', slug: 'jajecznica', title: 'Jajecznica', category: 'sniadania', ingredient_fingerprint: null }]
 
     expect(await findSameRecipe(client(rows), null, { title: 'Omlet', ingredients: small }, 'u1')).toBeNull()
+  })
+})
+
+describe('findSameRecipe — a same-author repost with near-identical ingredients', () => {
+  const cream = [{ name: 'masło' }, { name: 'mąka pszenna' }, { name: 'cukier puder' }, { name: 'aromat śmietankowy' }]
+  const vanilla = [{ name: 'masło' }, { name: 'mąka pszenna' }, { name: 'cukier puder' }, { name: 'aromat waniliowy' }]
+  type Row = {
+    id: number
+    user_id: string
+    slug: string
+    title: string
+    category: string
+    ingredients: { name: string }[]
+    source_author: string | null
+  }
+  // Only four ingredients, so no fingerprint is computed and the fingerprint
+  // lookup never runs; the title path (ilike + author-gated near-match) is all
+  // that decides here.
+  function client(rows: Row[]) {
+    return {
+      from: () => {
+        const eqs: Record<string, string> = {}
+        let title: string | null = null
+        const chain = {
+          select: () => chain,
+          eq: (column: string, value: string) => ((eqs[column] = value), chain),
+          ilike: (_c: string, value: string) => ((title = value), chain),
+          limit: async (n: number) => ({
+            data: rows
+              .filter((r) => eqs.user_id == null || r.user_id === eqs.user_id)
+              .filter((r) => title == null || r.title.toLowerCase() === title.toLowerCase())
+              .slice(0, n),
+          }),
+        }
+        return chain
+      },
+    } as never
+  }
+  const stored = (author: string | null): Row[] => [
+    { id: 639, user_id: 'u1', slug: 'kruche-ciasteczka', title: 'Kruche ciasteczka', category: 'ciasteczka', ingredients: cream, source_author: author },
+  ]
+
+  it('links the repost to the saved copy when the author matches', async () => {
+    const incoming = { title: 'Kruche ciasteczka', ingredients: vanilla, author: 'Kulinarna Wiola' }
+    expect(await findSameRecipe(client(stored('Kulinarna Wiola')), null, incoming, 'u1')).toMatchObject({ id: 639 })
+  })
+
+  it('does not link when the stored copy names a different author', async () => {
+    const incoming = { title: 'Kruche ciasteczka', ingredients: vanilla, author: 'Kulinarna Wiola' }
+    expect(await findSameRecipe(client(stored('Inny Autor')), null, incoming, 'u1')).toBeNull()
+  })
+
+  it('does not link when the incoming recipe names no author (a blog)', async () => {
+    const incoming = { title: 'Kruche ciasteczka', ingredients: vanilla, author: null }
+    expect(await findSameRecipe(client(stored('Kulinarna Wiola')), null, incoming, 'u1')).toBeNull()
   })
 })
 
