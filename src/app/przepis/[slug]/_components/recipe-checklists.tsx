@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Check } from 'lucide-react'
-import { TextSizeControls } from '@/app/components/ui/text-size-controls'
-import { useTextScale } from '@/app/components/ui/use-text-scale'
 import { useSessionStorage } from '@/app/components/ui/use-session-storage'
 import { checklistStorageKey, parseChecklist, toggleChecked } from '@/lib/recipe-checklist'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
@@ -89,8 +87,10 @@ function IngredientRow({
  * Składniki + Przygotowanie for the recipe page (E01-S07, S07b): ingredient ticks are
  * kept per tab in sessionStorage; steps are plain text under "Krok N" (handoff C3,
  * item 9 — ticking is for ingredients; owner decision 2026-10-20: the total, „z M”,
- * only in cooking mode, where one step shows at a time); "Wielkość tekstu" scales both lists.
- * "Tryb gotowania" (E01-S08) follows "Wielkość tekstu", as in the design handoff (C3, item 7).
+ * only in cooking mode, where one step shows at a time). Składniki and Przygotowanie
+ * keep scaling with the per-device text size (`.text-scalable`, applied app-wide by
+ * TextScaleApplier); the A / A+ / A++ control now lives on /wyswietlanie (FR #485).
+ * "Tryb gotowania" (E01-S08) opens above the two lists (design handoff C3, item 7).
  * From lg (E01-S17, A9) a `1fr 1.6fr` grid: the ingredients in a panel | the steps
  * plus `children`. Below lg it is one column, in the same order.
  */
@@ -103,7 +103,6 @@ export function RecipeChecklists({
   servings,
   children,
 }: RecipeChecklistsProps) {
-  const { level, setLevel } = useTextScale()
   const [raw, setRaw] = useSessionStorage(checklistStorageKey(recipeId))
   const state = useMemo(() => parseChecklist(raw), [raw])
 
@@ -156,9 +155,11 @@ export function RecipeChecklists({
 
   return (
     <div className="lg:grid lg:grid-cols-[1fr_1.6fr] lg:items-start lg:gap-x-12">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 lg:col-span-2">
-        <TextSizeControls level={level} onChange={setLevel} />
-        {state.ingredients.length > 0 && (
+      {/* With „Wielkość tekstu" moved to /wyswietlanie (FR #485), this row holds only
+          the optional „Wyczyść zaznaczenia" reset, right-aligned; it is dropped entirely
+          when nothing is ticked so it leaves no empty gap above „Tryb gotowania". */}
+      {state.ingredients.length > 0 && (
+        <div className="mb-6 flex justify-end lg:col-span-2">
           <button
             type="button"
             onClick={() => setRaw(null)}
@@ -166,8 +167,8 @@ export function RecipeChecklists({
           >
             Wyczyść zaznaczenia
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {steps.length > 0 && (
         <div className="mb-8 lg:col-span-2">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
 /** Content text-size levels (handoff: A / A+ / A++ → 1 / 1.15 / 1.3). */
 export type TextScaleLevel = 'A' | 'A+' | 'A++'
@@ -35,12 +35,18 @@ function subscribe(onChange: () => void): () => void {
 }
 
 /**
- * Per-device content text-size, persisted in localStorage (E01-S07 recipe screen).
- * Backed by useSyncExternalStore: the server snapshot is always 'A' (so SSR and the
- * first client render match), then the stored value takes over. Returns the level, its
- * numeric scale and a setter. The scale is published as `--text-scale` on <html>, so
- * every `.text-scalable` / `.text-scalable-body` element on the page follows it, server
- * components included (the recipe header's description sits outside the checklists).
+ * Per-device content text-size, persisted in localStorage (E01-S07 recipe screen;
+ * the control lives on /wyswietlanie). Backed by useSyncExternalStore: the server
+ * snapshot is always 'A' (so SSR and the first client render match), then the stored
+ * value takes over. Returns the level, its numeric scale and a setter; setLevel
+ * persists and notifies every subscriber in this tab, and the `storage` event carries
+ * a change to other tabs.
+ *
+ * Applying the scale — writing `--text-scale` on <html>, which every `.text-scalable`
+ * / `.text-scalable-body` element follows — is NOT done here. A single always-mounted
+ * TextScaleApplier (src/app/components/text-scale-applier.tsx, in the root layout) owns
+ * that DOM write, so the saved level applies app-wide, not only while one screen that
+ * happens to read this hook is mounted.
  */
 export function useTextScale() {
   const level = useSyncExternalStore(
@@ -59,14 +65,6 @@ export function useTextScale() {
   }, [])
 
   const scale = TEXT_SCALE_VALUES[level]
-
-  useEffect(() => {
-    const root = document.documentElement
-    root.style.setProperty('--text-scale', String(scale))
-    return () => {
-      root.style.removeProperty('--text-scale')
-    }
-  }, [scale])
 
   return { level, scale, setLevel }
 }

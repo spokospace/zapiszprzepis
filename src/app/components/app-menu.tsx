@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, BookOpen, Heart, House, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
+import { ALargeSmall, Bell, BookOpen, Heart, House, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
 import { signOut } from '@/app/(actions)/sign-out'
 import { buttonClasses } from '@/app/components/ui/button'
 import { categoryDisplayLabel, CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
@@ -131,7 +131,7 @@ export function AppMenu({
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const pathname = usePathname()
-  const { mine, showAccountFooter } = buildMenuModel({ isAuthenticated, summary })
+  const { mine, showAccountFooter, displayPrefs } = buildMenuModel({ isAuthenticated, summary })
 
   function close() {
     dialogRef.current?.close()
@@ -215,6 +215,19 @@ export function AppMenu({
               {/* min-w-0 + break-words: the label shrinks and wraps instead of widening the
                   drawer row past the phone at a large font (WCAG 1.4.10), like the category rows. */}
               <span className="min-w-0 break-words">Strona główna</span>
+            </Link>
+            {/* „Wielkość tekstu" (FR #485): shown to everyone, near the top — with the
+                control gone from the recipe page this is the single entry point. */}
+            <Link
+              href={displayPrefs.href}
+              onClick={close}
+              aria-current={pathname === displayPrefs.href ? 'page' : undefined}
+              className={`flex min-h-14 items-center gap-3 border-b-2 border-border-card px-5 text-[19px] font-bold no-underline! hover:bg-surface-2 ${
+                pathname === displayPrefs.href ? 'bg-surface-3 text-action-text' : 'text-ink'
+              }`}
+            >
+              <ALargeSmall aria-hidden="true" className="h-6 w-6 shrink-0" />
+              {displayPrefs.label}
             </Link>
             <div className="pt-4" />
             {mine ? (

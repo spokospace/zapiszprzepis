@@ -1,8 +1,15 @@
 import type { MenuSummary } from '@/lib/menu-summary'
-import { ADD_RECIPE_PATH } from '@/lib/routes'
+import { ADD_RECIPE_PATH, DISPLAY_PREFS_PATH } from '@/lib/routes'
 
 /** The add page (E01-S10). */
 export const ADD_RECIPE_HREF = ADD_RECIPE_PATH
+
+/**
+ * „Wielkość tekstu" → the public display-preferences page (/wyswietlanie, FR #485).
+ * Shown in the drawer in every access state (guest and signed-in): with the control
+ * gone from the recipe page it is the single entry point, so it is placed prominently.
+ */
+export const DISPLAY_PREFS_ENTRY = { href: DISPLAY_PREFS_PATH, label: 'Wielkość tekstu' } as const
 
 /** The 3c code gate (E01-S11): /dodaj shows it to users without full access (E01-S10). */
 export const ACCESS_GATE_HREF = ADD_RECIPE_PATH
@@ -24,6 +31,8 @@ export type MenuModel = {
   mine: MineEntry[] | null
   /** "Ustawienia | Wyloguj" — signed-in only. */
   showAccountFooter: boolean
+  /** "Wielkość tekstu" → display preferences; shown to everyone. */
+  displayPrefs: { href: string; label: string }
 }
 
 /**
@@ -39,7 +48,7 @@ export function buildMenuModel({
   isAuthenticated: boolean
   summary?: MenuSummary | null
 }): MenuModel {
-  if (!isAuthenticated) return { mine: null, showAccountFooter: false }
+  if (!isAuthenticated) return { mine: null, showAccountFooter: false, displayPrefs: DISPLAY_PREFS_ENTRY }
 
   const fullAccess = summary?.hasFullAccess ?? true
   const mine: MineEntry[] = []
@@ -62,7 +71,7 @@ export function buildMenuModel({
       locked: !fullAccess,
     },
   )
-  return { mine, showAccountFooter: true }
+  return { mine, showAccountFooter: true, displayPrefs: DISPLAY_PREFS_ENTRY }
 }
 
 /** "1 nowe powiadomienie", "3 nowe powiadomienia", "5 nowych powiadomień". */

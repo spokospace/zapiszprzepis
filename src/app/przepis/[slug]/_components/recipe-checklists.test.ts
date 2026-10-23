@@ -68,9 +68,20 @@ describe('RecipeChecklists step photos', () => {
   })
 })
 
-describe('RecipeChecklists "Wielkość tekstu" (C3)', () => {
-  it('labels the control in primary ink', () => {
-    expect(render(null)).toContain('<span id="text-size-label" class="min-w-0 text-[16px] font-bold wrap-label text-ink">Wielkość tekstu</span>')
+// FR #485: the „Wielkość tekstu" control moved to /wyswietlanie. The recipe page no
+// longer renders it, but the ingredient and step text still scales — the `.text-scalable`
+// classes stay and TextScaleApplier (root layout) applies the saved level app-wide.
+describe('RecipeChecklists text size (FR #485)', () => {
+  it('no longer renders the inline „Wielkość tekstu" control', () => {
+    const html = render(null)
+    expect(html).not.toContain('text-size-label')
+    expect(html).not.toContain('Wielkość tekstu')
+  })
+
+  it('keeps the ingredient and step text scalable', () => {
+    const html = render(null)
+    expect(html).toContain('<span class="text-scalable min-w-0 flex-1 break-words leading-snug text-ink">dynia</span>')
+    expect(html).toContain('<p class="text-scalable leading-[1.6] text-ink">Dynię pokroić.</p>')
   })
 })
 
