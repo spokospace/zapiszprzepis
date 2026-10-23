@@ -9,6 +9,7 @@ import {
   coverImage,
   jsonLdImage,
   archiveGallery,
+  removeGallery,
   GALLERY_LIMIT,
   isArchivedImageUrl,
   proxiedImageUrl,
@@ -88,6 +89,26 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
     const result = await archiveGallery(supabase, 'user-1', 7, [], null)
 
     expect(result).toEqual([])
+    expect(files.size).toBe(0)
+  })
+
+  it('never removes the step photos stored in the same folder', async () => {
+    // A refresh re-archives the gallery and the step photos in parallel; the
+    // gallery cleanup used to delete step-<n> files, leaving step_images dead.
+    vi.spyOn(Date, 'now').mockReturnValue(36 * 36) // run id "100"
+    const { supabase, files } = makeStorage(['0.jpg', 'step-0.jpg', 'step-1.jpg'])
+    stubFetch(['https://cdn.example/b.jpg'])
+
+    await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], COVER)
+
+    expect([...files].sort()).toEqual(['user-1/7/100-1.jpg', 'user-1/7/step-0.jpg', 'user-1/7/step-1.jpg'])
+  })
+
+  it('removes the step photos too when the whole recipe is deleted', async () => {
+    const { supabase, files } = makeStorage(['0.jpg', 'step-0.jpg'])
+
+    await removeGallery(supabase, 'user-1', 7)
+
     expect(files.size).toBe(0)
   })
 })
