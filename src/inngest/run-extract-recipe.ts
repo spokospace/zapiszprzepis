@@ -509,7 +509,7 @@ Rules:
 - Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
 - ${STEP_FORM_RULE}
 - ${STEP_CONTENT_RULE}
-- Each step is an object {"text": "...", "image": "..." | null}. "text" is the instruction (same rules as above). "image": a photo that illustrates THIS step. Use ONLY an image URL that appears verbatim in the provided Page HTML (an <img> src/data-src inside or right next to this step, or a schema.org HowToStep image) — copy it EXACTLY, do not shorten, guess, or build one. NEVER use the dish's main/cover photo, a logo, an avatar, an ad or a related-recipe thumbnail. When a step has no clearly matching in-content photo, set "image" to null. Most steps will be null; that is expected.
+- Each step is an object {"text": "...", "image": "..." | null}. "text" is the instruction (same rules as above). "image": a photo that illustrates THIS step. Use ONLY an image URL that appears verbatim in the provided Page HTML (an <img> src/data-src inside or right next to this step, or a schema.org HowToStep image) or in the Page markdown (an image ![…](url) inside or right after this step's text) — copy it EXACTLY, do not shorten, guess, or build one. NEVER use the dish's main/cover photo, a logo, an avatar, an ad or a related-recipe thumbnail. When a step has no clearly matching in-content photo, set "image" to null. Most steps will be null; that is expected.
 - Return null for any non-time field the source does not specify. Do not guess.
 - Times stated in the source, or computed from durations it states (a sum of step times, a stated "razem 1,5 godz"), are source data: set "timesEstimated" to false.
 - When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
@@ -694,7 +694,9 @@ Rules:
       steps: recipeJSON.steps,
       llmImages: recipeJSON.stepImages ?? [],
       howToImages: jsonLdHowToStepImages(html, sourceUrl ?? undefined),
-      html: `${html}\n${embedHtml}`,
+      // The markdown too: the LLM may take a step's photo from there (a reader
+      // page pairs each `![…](url)` with its step, inside the slice it reads).
+      html: `${html}\n${embedHtml}\n${markdown}`,
       pageUrl: sourceUrl ?? undefined,
       coverUrl: ogImage,
     })

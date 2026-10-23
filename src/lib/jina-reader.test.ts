@@ -177,6 +177,46 @@ describe('readerScrape', () => {
     expect((await readerScrape(PAGE, { fetch })).metadata.ogImage).toBe('https://cdn.example/a.jpg?w=1&h=2')
   })
 
+  it("falls back to Jina's rendered HTML when the site refuses the direct fetch", async () => {
+    // aniagotuje.pl answers Jina but not the Worker: no gallery or step photo
+    // could come through until the HTML did too.
+    const fetch = vi.fn().mockImplementation((url: string, init?: { headers?: Record<string, string> }) => {
+      if (!url.startsWith('https://r.jina.ai/')) return Promise.resolve(htmlResponse('', 403))
+      return Promise.resolve(
+        init?.headers?.['X-Return-Format'] === 'html'
+          ? jinaResponse({ html: '<article><img src="https://cdn.example/step1.jpg"></article>' })
+          : jinaResponse({ content: 'Składniki' }),
+      )
+    })
+
+    const page = await readerScrape(PAGE, { fetch })
+    expect(page.html).toContain('https://cdn.example/step1.jpg')
+    expect(page.markdown).toBe('Składniki')
+  })
+
+  it('treats a bot-check interstitial as no page and asks Jina for the HTML', async () => {
+    const fetch = vi.fn().mockImplementation((url: string, init?: { headers?: Record<string, string> }) => {
+      if (!url.startsWith('https://r.jina.ai/'))
+        return Promise.resolve(htmlResponse('<html><head><title>Just a moment...</title></head></html>'))
+      return Promise.resolve(
+        init?.headers?.['X-Return-Format'] === 'html'
+          ? jinaResponse({ html: '<article>Przepis</article>' })
+          : jinaResponse({ content: 'Składniki' }),
+      )
+    })
+
+    expect((await readerScrape(PAGE, { fetch })).html).toBe('<article>Przepis</article>')
+  })
+
+  it('does not ask Jina for the HTML when the direct fetch works', async () => {
+    const fetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(url.startsWith('https://r.jina.ai/') ? jinaResponse({ content: 'x' }) : htmlResponse('<p>Przepis</p>')),
+    )
+
+    await readerScrape(PAGE, { fetch })
+    expect(fetch.mock.calls.filter((c) => String(c[0]).startsWith('https://r.jina.ai/'))).toHaveLength(1)
+  })
+
   it('hands on content-only HTML so the article is not buried under <head>', async () => {
     // A Nuxt/SSR blog: a huge inlined <head> pushed the article (its per-step
     // <img>) past the slice the LLM and photo scans read; readableHtml lifts it.
