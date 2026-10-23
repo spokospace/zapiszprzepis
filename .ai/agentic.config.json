@@ -4,7 +4,7 @@
   "tracker": "github",
   "browser": { "provider": "playwright" },
   "validation": {
-    "commands": ["pnpm typecheck", "pnpm lint", "pnpm test"]
+    "commands": ["pnpm typecheck", "pnpm lint", "pnpm test", "pnpm test:reflow"]
   },
   "labels": {
     "enabled": true,
