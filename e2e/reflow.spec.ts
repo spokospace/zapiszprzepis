@@ -83,10 +83,12 @@ async function firstRecipeSlug(page: Page): Promise<string> {
   return new URL(href!, 'http://x').pathname.replace('/przepis/', '')
 }
 
-/** Recipe cards (grid and row variants): title, description and source lines. */
+/** Recipe cards (grid and row variants): the title link and the source badge. */
 async function injectCards(page: Page) {
   await inject(page, 'main article h3 a, main article a h3', LONG_TITLE)
-  await inject(page, 'main article p', `${LONG_WORD}.pl`, 6)
+  // The source is a badge clipped on the photo now (E01-S31 §3), not a <p> line: a long
+  // run-together title must wrap, a long source name must clip inside the badge.
+  await inject(page, 'main article span.truncate', `${LONG_WORD}.pl`, 6)
 }
 
 test('category list reflows at 320 px, A++', async ({ page }) => {
@@ -110,8 +112,10 @@ test('search with no results reflows at 320 px, A++', async ({ page }) => {
 
 test('recipe page reflows at 320 px, A++', async ({ page }) => {
   const slug = await firstRecipeSlug(page)
-  // The header's „← {lista}” (C3, E01-S28) and prev/next read this tab's snapshot of
-  // the list the visitor came from; an unbroken list name must not widen the header.
+  // Two worst-case list names, both unbroken, must not widen the recipe page. The prev/next
+  // nav reads this tab's snapshot of the list (E01-S07); the header's „← {lista}” (C3,
+  // E01-S28) reads the recorded return point, which wins over the snapshot (handoff 13 §3)
+  // and which firstRecipeSlug's own visit to /przepisy/ciasta would otherwise set to „Ciasta”.
   const snapshot = {
     label: LONG_WORD,
     href: '/przepisy/x',
@@ -121,7 +125,14 @@ test('recipe page reflows at 320 px, A++', async ({ page }) => {
       { slug: 'reflow-next', title: LONG_TITLE },
     ],
   }
-  await page.addInitScript((value) => window.sessionStorage.setItem('zp-list:kategoria', value), JSON.stringify(snapshot))
+  const returnPoint = { href: '/przepisy/x', label: LONG_WORD }
+  await page.addInitScript(
+    ([snap, point]) => {
+      window.sessionStorage.setItem('zp-list:kategoria', snap)
+      window.sessionStorage.setItem('returnPoint', point)
+    },
+    [JSON.stringify(snapshot), JSON.stringify(returnPoint)] as const,
+  )
   await open(page, `/przepis/${slug}?from=kategoria`)
   await expect(page.getByRole('link', { name: `Wróć: ${LONG_WORD}` })).toBeVisible()
 

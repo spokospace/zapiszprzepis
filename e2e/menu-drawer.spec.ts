@@ -105,8 +105,12 @@ test.describe('phone, 412 px (Pixel 9)', () => {
     await open(page)
     await scaleFonts(page, 1.3)
     await menuButton(page).click()
+    // Wait for the panel to finish sliding in (x = 0) before clicking a link deep inside
+    // it, so under parallel load a click can't land mid-animation on the backdrop (and
+    // just close the drawer). The category page is DB-backed, so allow the nav extra time.
+    await expect.poll(async () => (await page.locator('dialog#app-menu > div').boundingBox())?.x).toBe(0)
     await page.locator('dialog#app-menu a[href="/przepisy/ciasta"]').click()
-    await expect(page).toHaveURL(/\/przepisy\/ciasta$/)
+    await expect(page).toHaveURL(/\/przepisy\/ciasta$/, { timeout: 15000 })
     await expect(drawer(page)).toHaveJSProperty('open', false)
     expect(await sidewaysScroll(page), 'sideways after navigating').toBeNull()
   })
