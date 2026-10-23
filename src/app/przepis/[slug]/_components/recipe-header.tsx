@@ -93,21 +93,21 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
     // and a centred photo would float in white space.
     <header className={`mb-8 ${cover ? 'lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-10' : ''}`}>
       {cover && (
-        // Below lg the cover is full-bleed (E01-S07b): it breaks out of the page
-        // container's side padding (-mx-4 sm:-mx-6, matching PageContainer's px) and
-        // cancels <main>'s top padding (-mt-6 sm:-mt-8), so it sits flush to the screen
-        // edges and to the top under the app header, square-cornered. From lg it returns
-        // to the padded A9 grid: rounded 16:10 inside its column. `w-full` is dropped so
-        // the block's auto width expands with the negative margins to the viewport edges;
-        // the container never binds max-width below lg, so edge-to-edge is exact (no
-        // overflow — guarded by test:reflow).
+        // Below lg the cover is full-bleed: its negative margins cancel the horizontal
+        // padding of PageContainer (px-4 sm:px-6) and the top padding of <main>
+        // (py-6 sm:py-8), so it sits flush to the screen edges and the top. Keep those
+        // margins in sync with that padding by hand — test:reflow only catches an
+        // over-wide breakout (horizontal scroll), not a gap left by a mismatch. `w-full`
+        // is dropped so the block's auto width expands to the viewport (re-adding it would
+        // shift, not widen). From lg it resets to the padded A9 grid (rounded 16:10).
         <div className="relative mb-5 -mx-4 -mt-6 aspect-[4/3] overflow-hidden rounded-none bg-surface-3 sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0 lg:aspect-[16/10] lg:rounded-tile">
           <Image
             // The LCP image, served from Supabase Storage through next/image.
             src={cover}
             alt={recipe.title}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 768px, 600px"
+            // Full-bleed = 100vw below lg (1024); from lg the ~600px A9 grid column.
+            sizes="(max-width: 1023px) 100vw, 600px"
             className="object-cover"
             priority
           />
