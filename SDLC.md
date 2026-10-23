@@ -124,8 +124,14 @@ Every PR passes the full validation gate before review sign-off, in this order:
 - `pnpm typecheck`
 - `pnpm lint`
 - `pnpm test`
+- `pnpm test:reflow`
 
 Any non-zero exit fails the gate and blocks the PR. The implementing skills run the gate before opening a PR, and `om-check-and-commit` runs it before pushing a hand-worked branch. The command list lives in `.ai/agentic.config.json`; when it changes, update it there and in this section together.
+
+`pnpm test:reflow` is the WCAG 1.4.10 Reflow + Polish orphan/stranded-word guard (the `reflow` and `phone` Playwright projects — no-horizontal-scroll at 320 px and at a large Android system font, the core protection for the older target group). It is last because it is the slowest (~1 min) and the only step that needs a running app, and it guards exactly the kind of regression that slipped in unnoticed while the suite was not gated. Prerequisites, since it boots the app against the production Supabase DB (read-only):
+
+- `.env.local` must be present. In a worktree, copy it from the main checkout first (it is gitignored); without it the app cannot reach Supabase and the guest screens fail. Signed-in screens use `/api/dev/login` dev-QA accounts and skip on their own when that route is off (see `docs/dev-qa-login.md`).
+- It starts its own `next dev` and **reuses** any server already listening on `E2E_PORT` (default `3001`). In a worktree, set `E2E_PORT` to an unused port (e.g. `E2E_PORT=3021 pnpm test:reflow`) so it does not test another checkout's server.
 
 ## Amending this process
 
