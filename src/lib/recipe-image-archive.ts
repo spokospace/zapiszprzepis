@@ -754,15 +754,22 @@ function galleryFolder(userId: string, recipeId: number): string {
   return `${userId}/${recipeId}`
 }
 
+// Per-step photos share the gallery folder as `step-<n>.<ext>`.
+const STEP_IMAGE_PREFIX = 'step-'
+
 /**
  * Deletes the files in a recipe's gallery folder, except the storage paths in
- * `keep`. Never throws.
+ * `keep`. `keepStepImages` spares the per-step photos stored in the same folder:
+ * a gallery refresh must not take them with it (it did, so every recipe whose
+ * gallery was re-archived lost its step photos while step_images still pointed
+ * at them). Deleting the recipe removes everything. Never throws.
  */
 export async function removeGallery(
   supabase: SupabaseClient,
   userId: string,
   recipeId: number,
   keep: ReadonlySet<string> = new Set(),
+  { keepStepImages = false }: { keepStepImages?: boolean } = {},
 ): Promise<void> {
   const folder = galleryFolder(userId, recipeId)
   const bucket = supabase.storage.from('recipe-images')
@@ -771,7 +778,10 @@ export async function removeGallery(
     console.warn(`[removeGallery] list failed: ${error.message}`)
     return
   }
-  const stale = (data ?? []).map((file) => `${folder}/${file.name}`).filter((path) => !keep.has(path))
+  const stale = (data ?? [])
+    .filter((file) => !(keepStepImages && file.name.startsWith(STEP_IMAGE_PREFIX)))
+    .map((file) => `${folder}/${file.name}`)
+    .filter((path) => !keep.has(path))
   if (stale.length === 0) return
   const { error: removeError } = await bucket.remove(stale)
   if (removeError) console.warn(`[removeGallery] remove failed: ${removeError.message}`)
@@ -810,7 +820,8 @@ export async function archiveGallery(
   if (sources.length > 0 && kept.size === 0) return null
 
   // A refresh may find fewer photos than last time; stale files must not linger.
-  await removeGallery(supabase, userId, recipeId, kept)
+  // The step photos beside them are archived in parallel and are not ours to drop.
+  await removeGallery(supabase, userId, recipeId, kept, { keepStepImages: true })
   return gallery
 }
 
@@ -831,7 +842,7 @@ export async function archiveStepImages(
   const folder = galleryFolder(userId, recipeId)
   const archived = await Promise.all(
     sources.map((source, i) =>
-      source ? archiveImageAt(supabase, `${folder}/step-${i}`, source) : Promise.resolve(null),
+      source ? archiveImageAt(supabase, `${folder}/${STEP_IMAGE_PREFIX}${i}`, source) : Promise.resolve(null),
     ),
   )
   return archived.map((url) => url ?? '')
