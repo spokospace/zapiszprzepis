@@ -25,12 +25,14 @@ const SECONDARY_BUTTON = `${buttonClasses('outline', 'md')} lg:min-h-[58px] lg:t
 export function RecipeActions({ recipeId, isFavorite, isAuthenticated, title, shareUrl }: RecipeActionsProps) {
   return (
     // The heart's wrapper is a flex column so it stretches to full width; from sm
-    // the heart and "Udostępnij" share the row, each taking half.
-    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-stretch">
-      <div className="flex flex-col sm:flex-1">
+    // the heart and "Udostępnij" share the row, each taking half. From lg both
+    // shrink to their content and sit left (#494) — a stretched pair reads as
+    // oversized in the desktop text column.
+    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-stretch lg:justify-start">
+      <div className="flex flex-col sm:flex-1 lg:flex-none lg:items-start">
         <FavoriteButton recipeId={recipeId} initialFavorited={isFavorite} isAuthenticated={isAuthenticated} />
       </div>
-      <ShareButton title={title} url={shareUrl} className={`${SECONDARY_BUTTON} sm:flex-1`} />
+      <ShareButton title={title} url={shareUrl} className={`${SECONDARY_BUTTON} sm:flex-1 lg:flex-none`} />
     </div>
   )
 }
