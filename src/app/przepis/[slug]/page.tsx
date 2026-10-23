@@ -9,6 +9,7 @@ import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
 import { buildRecipeJsonLd, serializeJsonLd } from '@/lib/recipe-json-ld'
+import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
@@ -36,7 +37,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!recipe) return { title: 'Przepis', description: 'Szczegóły przepisu' }
 
   const description = recipe.meta_description ?? buildFallbackMetaDescription(recipe)
-  const images = recipe.image_url ? [recipe.image_url] : undefined
+  // og:image/twitter only from an archived Storage cover — never a legacy external
+  // link (the image_url invariant), so no third-party URL lands in the page's meta.
+  const cover = coverImageSrc(recipe.image_url)
+  const images = cover ? [cover] : undefined
   const canonical = `${await getSiteUrl()}${recipePath(recipe.slug)}`
   return {
     title: recipe.title,

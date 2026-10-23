@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
-import { coverImageProps } from '@/lib/recipe-image-archive'
+import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { recipePath } from '@/lib/routes'
 import { PageContainer } from '../page-container'
 import { SourceBadge } from '../source-badge'
@@ -33,6 +33,7 @@ export function RecipeOfTheDay({
   sourceAuthor,
 }: RecipeOfTheDayProps) {
   const source = formatSource(sourceType, sourceUrl, sourceAuthor)
+  const cover = coverImageSrc(imageUrl)
   return (
     <PageContainer>
       <div className="border-t border-ink pt-8 pb-10 md:pb-12">
@@ -42,10 +43,9 @@ export function RecipeOfTheDay({
           className="group -mx-4 grid gap-5 no-underline! focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus sm:-mx-6 md:mx-0 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:items-center md:gap-10"
         >
           <div className="relative h-[220px] overflow-hidden bg-surface-3 md:h-[360px] md:rounded-tile">
-            {imageUrl && (
+            {cover && (
               <Image
-                // External cover capped (#446): 560px on desktop, full-width on a phone at ~2×.
-                {...coverImageProps(imageUrl, 1024)}
+                src={cover}
                 alt=""
                 fill
                 className="object-cover transition-opacity group-hover:opacity-[.92]"

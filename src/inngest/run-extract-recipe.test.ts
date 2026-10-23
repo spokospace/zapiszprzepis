@@ -243,7 +243,9 @@ describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () =>
 
     const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
     expect(JSON.parse(String(extraction?.[1]?.body)).messages[1].content).toContain(`# Naleśniki\n\n${JINA_MARKDOWN.trim()}`)
-    expect(mock.insertArgs('recipes')?.image_url).toBe('https://example.com/nalesniki.jpg')
+    // Archive-first invariant: the row is inserted with a null cover, never the
+    // external og:image — the archive step fills it with a Supabase URL after.
+    expect(mock.insertArgs('recipes')?.image_url).toBeNull()
     // The main scrape, its retry and the embed scan share one Jina read.
     expect(fetch.mock.calls.filter((c) => String(c[0]).startsWith('https://r.jina.ai/'))).toHaveLength(1)
   })
@@ -1412,7 +1414,7 @@ describe('runExtractRecipe — recipe gallery', () => {
   })
 })
 
-describe('runExtractRecipe — Facebook thumbnail persistence', () => {
+describe('runExtractRecipe — cover persistence (archive-first invariant)', () => {
   const FB_THUMB = 'https://scontent.xx.fbcdn.net/thumb.jpg'
 
   function insertedImageUrl(mock: ReturnType<typeof makeSupabaseMock>) {
@@ -1466,7 +1468,7 @@ describe('runExtractRecipe — Facebook thumbnail persistence', () => {
     expect(mock.didUpdate('recipes', { image_url: 'https://supabase.example/storage/v1/object/public/recipe-images/u/7.jpg' })).toBe(true)
   })
 
-  it('keeps a stable blog og:image as the fallback when archiving fails', async () => {
+  it('never persists a blog og:image either — the invariant keeps image_url Supabase-or-null', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 7 }, error: null })
     const fetch = vi.fn().mockImplementation((url: string) => {
@@ -1487,7 +1489,10 @@ describe('runExtractRecipe — Facebook thumbnail persistence', () => {
 
     await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
 
-    expect(insertedImageUrl(mock)).toBe('https://blog.example/cover.jpg')
+    // Archiving fails here (no archive mock), so image_url stays null rather than
+    // falling back to the external og:image — no external URL reaches the page.
+    expect(insertedImageUrl(mock)).toBeNull()
+    expect(mock.didUpdate('recipes', { image_url: 'https://blog.example/cover.jpg' })).toBe(false)
   })
 })
 

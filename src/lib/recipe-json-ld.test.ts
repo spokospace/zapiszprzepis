@@ -8,7 +8,7 @@ const base: RecipeForJsonLd = {
   title: 'Sernik krakowski',
   description: 'Klasyczny sernik z kratką.',
   meta_description: 'Najlepszy sernik krakowski z kratką — przepis krok po kroku.',
-  image_url: 'https://cdn.zapiszprzepis.pl/covers/sernik.jpg',
+  image_url: 'https://wvrlgddgdddwmgzbvtij.supabase.co/storage/v1/object/public/recipe-images/u/7/sernik.jpg',
   ingredients: [
     { name: 'twaróg', amount: '1', unit: 'kg' },
     { name: 'cukier', amount: '20', unit: 'dag' },
@@ -115,11 +115,11 @@ describe('buildRecipeJsonLd', () => {
     expect(ld.dateModified).toBe(base.created_at)
   })
 
-  it('emits the cover as an image array, absolute as-is and relative resolved against the site', () => {
-    expect(buildRecipeJsonLd(base, SITE).image).toEqual(['https://cdn.zapiszprzepis.pl/covers/sernik.jpg'])
-    expect(buildRecipeJsonLd({ ...base, image_url: '/covers/x.jpg' }, SITE).image).toEqual([
-      'https://zapiszprzepis.pl/covers/x.jpg',
-    ])
+  it('emits only an archived Storage cover as the image, never a legacy external link', () => {
+    expect(buildRecipeJsonLd(base, SITE).image).toEqual([base.image_url])
+    // A non-archived external cover is not emitted (the image_url invariant keeps
+    // third-party hosts out of the markup); null likewise yields no image.
+    expect(buildRecipeJsonLd({ ...base, image_url: 'https://cdn.example.com/x.jpg' }, SITE).image).toBeUndefined()
     expect(buildRecipeJsonLd({ ...base, image_url: null }, SITE).image).toBeUndefined()
   })
 

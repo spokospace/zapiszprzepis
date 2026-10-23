@@ -69,36 +69,37 @@ function isPrivateIPv6(address: string): boolean {
 
 // Some hosts refuse requests coming from Cloudflare's address space (seen
 // with najprzepis.pl: the Worker gets no image while any other client does).
-// wsrv.nl fetches the image from its own servers and hands it back, so it
-// is the second try whenever the direct download fails. The proxy only sees
-// public URLs — isPrivateUrl runs before either attempt.
+// wsrv.nl fetches the image from its own servers, so it is the last try when
+// the direct download fails. This is the ONLY use of the proxy left — it runs
+// server-side at archive time and the bytes land in Supabase Storage, so no
+// wsrv.nl URL ever reaches a rendered page. The proxy only sees public URLs
+// (isPrivateUrl runs before any fetch).
 const IMAGE_PROXY = 'https://wsrv.nl/?url='
 
+/**
+ * The wsrv.nl URL used to DOWNLOAD an image for archiving when the host refuses
+ * the Worker directly. It asks for a WebP rendition capped at 1600px on the long
+ * side: WebP keeps the stored copy under the 5 MB archive cap where a full-size
+ * JPEG/PNG would blow it (the gap that used to leave covers un-archived and
+ * served through the proxy at render time), and normalises the response MIME to
+ * one archiveImage accepts. 1600px is ample — the cover is never rendered wider
+ * than ~1280px.
+ */
 export function proxiedImageUrl(externalUrl: string): string {
-  return `${IMAGE_PROXY}${encodeURIComponent(externalUrl)}`
+  return `${IMAGE_PROXY}${encodeURIComponent(externalUrl)}&w=1600&output=webp&q=82`
 }
 
 /**
- * A render-time URL for an EXTERNAL (non-archived) cover: the same wsrv.nl proxy,
- * asking for a width-capped WebP instead of the blog's full-size original.
- * `maxWidth` is the largest CSS width the image is shown at, times the device
- * pixel ratio.
+ * The <Image> src for a recipe cover, or null when there is none to show (the
+ * caller renders the NoPhoto placeholder instead). `image_url` is always a
+ * Supabase Storage URL or null — the pipeline never persists an external link —
+ * so an archived cover passes straight through next/image's optimizer. A
+ * non-archived value is only a legacy row still awaiting the archive backfill:
+ * it is shown as NoPhoto, never hotlinked, so no third-party proxy appears in
+ * the page source.
  */
-export function cappedExternalImageUrl(externalUrl: string, maxWidth: number): string {
-  return `${IMAGE_PROXY}${encodeURIComponent(externalUrl)}&w=${maxWidth}&output=webp&q=75`
-}
-
-/**
- * `src` + `unoptimized` for a recipe cover <Image>. An archived cover (Supabase
- * Storage) goes through next/image's optimizer unchanged; an external one is
- * swapped for a width-capped WebP from wsrv.nl and marked unoptimized, so it
- * never passes through our own `/_next/image` (the #131 invariant holds) and the
- * browser fetches a bounded image, not the blog's full-size original. Decides
- * once, so the caller does not test the URL twice.
- */
-export function coverImageProps(imageUrl: string, maxWidth: number): { src: string; unoptimized: boolean } {
-  if (isArchivedImageUrl(imageUrl)) return { src: imageUrl, unoptimized: false }
-  return { src: cappedExternalImageUrl(imageUrl, maxWidth), unoptimized: true }
+export function coverImageSrc(imageUrl: string | null | undefined): string | null {
+  return imageUrl != null && isArchivedImageUrl(imageUrl) ? imageUrl : null
 }
 
 // Polish shared hosting (home.pl, nazwa.pl) often serves a domain over https
