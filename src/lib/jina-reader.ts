@@ -24,6 +24,26 @@ function ogImageFromHtml(html: string): string | undefined {
   return href ? decodeEntities(href) : undefined
 }
 
+/**
+ * The page HTML cut down to its content, the way Firecrawl's onlyMainContent
+ * html already is. The raw page the reader fetches is the whole document — a
+ * Nuxt/SSR blog (aniagotuje.pl) inlines ~90 KB of CSS, JS and preload links in
+ * <head> alone, which pushes the article (and its per-step <img> and gallery
+ * photos) well past the first slice the LLM and the photo scans actually read,
+ * so step photos and the gallery come up empty on the fallback path. Drop the
+ * non-content tags — scripts (but keep ld+json, which the deterministic readers
+ * parse), styles, SVG icons, <link>/<noscript>/<template> and comments —
+ * leaving the article near the front. Never touches content elements, so a page
+ * with no such chrome is returned effectively unchanged.
+ */
+export function readableHtml(html: string): string {
+  return html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<script\b(?![^>]*\btype=["']application\/ld\+json["'])[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<(style|svg|noscript|template)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<link\b[^>]*>/gi, '')
+}
+
 /** The same shape as Firecrawl's scrape `data`, so callers take either. */
 export interface ReaderPage {
   markdown: string
@@ -74,8 +94,11 @@ export async function readerScrape(url: string, deps: Deps): Promise<ReaderPage>
     }),
     fetchPublicHtml(url, deps),
   ])
-  const htmlStr = html ?? ''
+  const rawHtml = html ?? ''
   // Jina's metadata names og:image only sometimes; fall back to the raw HTML's
   // own tag so a page whose only good cover is its og:image still gets one.
-  return { ...read, html: htmlStr, metadata: { ...read.metadata, ogImage: read.metadata.ogImage ?? ogImageFromHtml(htmlStr) } }
+  const ogImage = read.metadata.ogImage ?? ogImageFromHtml(rawHtml)
+  // Hand on the content-only HTML (see readableHtml) so the LLM's per-step image
+  // picks and the gallery/cover scans reach the article, not ~90 KB of <head>.
+  return { ...read, html: readableHtml(rawHtml), metadata: { ...read.metadata, ogImage } }
 }

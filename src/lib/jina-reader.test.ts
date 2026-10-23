@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { readerScrape } from '@/lib/jina-reader'
+import { readerScrape, readableHtml } from '@/lib/jina-reader'
 import { fetchPublicHtml } from '@/lib/public-fetch'
 
 const PAGE = 'https://blog.example/2018/01/22/spaghetti'
@@ -175,5 +175,49 @@ describe('readerScrape', () => {
     )
 
     expect((await readerScrape(PAGE, { fetch })).metadata.ogImage).toBe('https://cdn.example/a.jpg?w=1&h=2')
+  })
+
+  it('hands on content-only HTML so the article is not buried under <head>', async () => {
+    // A Nuxt/SSR blog: a huge inlined <head> pushed the article (its per-step
+    // <img>) past the slice the LLM and photo scans read; readableHtml lifts it.
+    const bigHead = `<head><style>${'x'.repeat(5000)}</style><script>${'y'.repeat(5000)}</script></head>`
+    const raw = `${bigHead}<body><article><img src="https://cdn.example/step1.jpg"></article></body>`
+    const fetch = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(url.startsWith('https://r.jina.ai/') ? jinaResponse({ content: 'Składniki' }) : htmlResponse(raw)),
+    )
+
+    const html = (await readerScrape(PAGE, { fetch })).html
+    expect(html).toContain('https://cdn.example/step1.jpg')
+    expect(html).not.toContain('<style')
+    expect(html.indexOf('step1.jpg')).toBeLessThan(200)
+  })
+})
+
+describe('readableHtml', () => {
+  it('drops scripts, styles, svg, link and comments but keeps ld+json and content images', () => {
+    const html =
+      '<head>' +
+      '<link rel="preload" href="/x.css">' +
+      '<style>.a{color:red}</style>' +
+      '<script>window.__NUXT__=1</script>' +
+      '<script type="application/ld+json">{"@type":"Recipe"}</script>' +
+      '</head>' +
+      '<body><!-- c --><svg><path/></svg>' +
+      '<article><img src="/dish.jpg"><div class="step"><img src="/step1.jpg"></div></article></body>'
+    const out = readableHtml(html)
+
+    expect(out).not.toContain('<style')
+    expect(out).not.toContain('window.__NUXT__')
+    expect(out).not.toContain('<svg')
+    expect(out).not.toContain('<link')
+    expect(out).not.toContain('<!--')
+    expect(out).toContain('application/ld+json')
+    expect(out).toContain('/dish.jpg')
+    expect(out).toContain('/step1.jpg')
+  })
+
+  it('leaves a page without such chrome unchanged', () => {
+    const html = '<article><img src="/a.jpg"></article>'
+    expect(readableHtml(html)).toBe(html)
   })
 })
