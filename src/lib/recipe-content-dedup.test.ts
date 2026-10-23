@@ -8,6 +8,7 @@ function row(partial: Partial<ContentRow> & { id: number }): ContentRow {
     user_id: 'user-1',
     title: 'Miodownik z kaszą manną',
     ingredients: ing('mąka', 'jajka', 'cukier'),
+    source_author: null,
     created_at: '2026-10-16T23:00:00Z',
     ...partial,
   }
@@ -70,6 +71,40 @@ describe('buildContentDuplicateGroups', () => {
       row({ id: 12, user_id: 'user-3', ingredients: same, created_at: '2026-03-01T00:00:00Z' }),
     ]
     expect(buildContentDuplicateGroups(rows, 'main')).toEqual([{ canonicalId: 11, loserIds: [10, 12] }])
+  })
+
+  it('folds a same-author repost whose ingredients differ by one name (#639/#894)', () => {
+    // The real pair: "Kulinarna Wiola" reposted her shortbread with the aroma
+    // swapped. Same title, 3 of 4 ingredients shared, neither set a subset of
+    // the other — only the near-match tier, gated on the author, links them.
+    const cream = ing('masło', 'mąka pszenna', 'cukier puder', 'aromat śmietankowy')
+    const vanilla = ing('masło', 'mąka pszenna', 'cukier puder', 'aromat waniliowy')
+    const rows = [
+      row({ id: 639, title: 'Kruche ciasteczka', ingredients: cream, source_author: 'Kulinarna Wiola', created_at: '2026-10-16T22:30:48Z' }),
+      row({ id: 894, title: 'Kruche ciasteczka', ingredients: vanilla, source_author: 'Kulinarna Wiola', created_at: '2026-10-17T23:18:34Z' }),
+    ]
+    // Completeness ties (4 names each), so the older #639 is kept.
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([{ canonicalId: 639, loserIds: [894] }])
+  })
+
+  it('leaves the same near-match apart when the authors differ', () => {
+    const cream = ing('masło', 'mąka pszenna', 'cukier puder', 'aromat śmietankowy')
+    const vanilla = ing('masło', 'mąka pszenna', 'cukier puder', 'aromat waniliowy')
+    const rows = [
+      row({ id: 1, title: 'Kruche ciasteczka', ingredients: cream, source_author: 'Kulinarna Wiola' }),
+      row({ id: 2, title: 'Kruche ciasteczka', ingredients: vanilla, source_author: 'Inny Autor' }),
+    ]
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([])
+  })
+
+  it('leaves a near-match apart when neither copy names an author (blogs)', () => {
+    const cream = ing('masło', 'mąka pszenna', 'cukier puder', 'aromat śmietankowy')
+    const vanilla = ing('masło', 'mąka pszenna', 'cukier puder', 'aromat waniliowy')
+    const rows = [
+      row({ id: 1, title: 'Kruche ciasteczka', ingredients: cream, source_author: null }),
+      row({ id: 2, title: 'Kruche ciasteczka', ingredients: vanilla, source_author: null }),
+    ]
+    expect(buildContentDuplicateGroups(rows, null)).toEqual([])
   })
 
   it('merges a chain transitively through the fullest copy', () => {

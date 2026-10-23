@@ -183,6 +183,47 @@ export function ingredientsSubsume(a: { name: string }[], b: { name: string }[])
   return [...small].every((n) => big.has(n))
 }
 
+// The shared core two near-identical lists must have, and the share of their
+// union that must overlap, for ingredientsNearMatch below. The #639/#894
+// "Kruche ciasteczka" pair sits right at these floors: 3 names in common
+// (masło, mąka pszenna, cukier puder) out of a 5-name union — a Jaccard of 0.6.
+const MIN_NEAR_SHARED = 3
+const NEAR_MATCH_MIN_JACCARD = 0.6
+
+/**
+ * One recipe reposted with a small edit: ingredient sets that neither equal
+ * nor subsume one another, differing by a name or two — a Facebook page that
+ * republished its shortbread with the flavouring swapped (the real #639/#894
+ * pair: "Aromat śmietankowy" vs "Aromat waniliowy", the other three identical).
+ * ingredientsSubsume misses it because each 4-name set has one name the other
+ * lacks, so neither is a subset. The bar is deliberately high — a solid shared
+ * core (MIN_NEAR_SHARED names) AND most of the union in common
+ * (NEAR_MATCH_MIN_JACCARD) — and the call sites only trust it alongside an
+ * identical title AND the same author, so two different authors' same-named
+ * dishes that happen to share three staples are never merged on it.
+ */
+export function ingredientsNearMatch(a: { name: string }[], b: { name: string }[]): boolean {
+  const [x, y] = [ingredientNames(a), ingredientNames(b)]
+  if (x.size === 0 || y.size === 0) return false
+  let shared = 0
+  for (const n of x) if (y.has(n)) shared++
+  if (shared < MIN_NEAR_SHARED) return false
+  const union = x.size + y.size - shared
+  return shared / union >= NEAR_MATCH_MIN_JACCARD
+}
+
+/**
+ * Whether two recipes are credited to the same author — the gate the near-match
+ * tier (ingredientsNearMatch) is only trusted behind. Compared raw: the intake
+ * value is the exact string persisted as the row's source_author (the extractor
+ * stores what it read), so the online check and the offline collapse stay
+ * byte-for-byte consistent — the one shared source of truth for the gate. A null
+ * author (a blog, or a failed author probe) never matches.
+ */
+export function sameAuthor(a: string | null | undefined, b: string | null | undefined): boolean {
+  return a != null && a === b
+}
+
 /**
  * The recipe that `recipe` repeats — same title, any casing, and ingredients
  * that subsume one another (one extraction a subset of the other) — or null;
@@ -194,7 +235,7 @@ export function ingredientsSubsume(a: { name: string }[], b: { name: string }[])
 export async function findSameRecipe(
   supabase: SupabaseClient,
   userId: string | null,
-  recipe: { title: string; ingredients: { name: string }[] },
+  recipe: { title: string; ingredients: { name: string }[]; author?: string | null },
   preferUserId?: string,
 ): Promise<SavedRecipe | null> {
   // The same ingredient set, whatever the title: two shares of one dish added
@@ -209,10 +250,19 @@ export async function findSameRecipe(
 
   // ilike, not eq, for the casing; its wildcards in the title are escaped.
   const title = recipe.title.trim().replace(/[\\%_]/g, (c) => '\\' + c)
+  // A near-identical ingredient set (not a subset either way) counts as the same
+  // recipe only for a post by the same author — the #639/#894 reposted-shortbread
+  // case. source_author is null for blogs (named by domain), so there the subsume
+  // rule alone stands, as before.
   const sameIn = async (ownerId: string | null) => {
-    const query = supabase.from('recipes').select('id, slug, title, category, user_id, ingredients')
+    const query = supabase.from('recipes').select('id, slug, title, category, user_id, ingredients, source_author')
     const { data } = await (ownerId ? query.eq('user_id', ownerId) : query).ilike('title', title).limit(50)
-    return (data ?? []).filter((r) => Array.isArray(r.ingredients) && ingredientsSubsume(r.ingredients, recipe.ingredients))
+    return (data ?? []).filter(
+      (r) =>
+        Array.isArray(r.ingredients) &&
+        (ingredientsSubsume(r.ingredients, recipe.ingredients) ||
+          (sameAuthor(r.source_author, recipe.author) && ingredientsNearMatch(r.ingredients, recipe.ingredients))),
+    )
   }
 
   // The preferred user's own copy is looked up on its own first: one page of a

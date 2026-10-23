@@ -670,7 +670,11 @@ Rules:
     // than keep a "-2" copy; checked before the labelling call, which it makes
     // unnecessary.
     if (!forceRefresh) {
-      const same = await findSameRecipe(supabase, null, recipeJSON, userId)
+      // The author gates the near-identical-ingredients tier of findSameRecipe
+      // (the #639/#894 reposted-shortbread case); resolved here from the probe
+      // that already ran alongside the LLM, so this awaits nothing new.
+      const author = await sourceAuthorPromise
+      const same = await findSameRecipe(supabase, null, { ...recipeJSON, author }, userId)
       if (same) {
         console.log('[extract-recipe] same recipe already saved from another post:', same.slug)
         return await linkToSaved(same)
