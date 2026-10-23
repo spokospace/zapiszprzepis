@@ -19,6 +19,11 @@ vi.mock('@/lib/recipe-image-archive', async (importActual) => {
         gallery: gallery.map((_, i) => `https://storage.example/u/${recipeId}/${i}.jpg`),
       }),
     ),
+    // Same contract as the real one, without the download: one Storage URL per
+    // step that has a source, '' otherwise, [] when no step has one.
+    archiveStepImages: vi.fn(async (supabase: unknown, userId: string, recipeId: number, sources: (string | null)[]) =>
+      sources.some(Boolean) ? sources.map((s, i) => (s ? `https://storage.example/u/${recipeId}/step-${i}.jpg` : '')) : [],
+    ),
   }
 })
 
@@ -1400,6 +1405,36 @@ describe('runExtractRecipe — recipe gallery', () => {
     // Called with no photos and clearStale, so the old files are cleared from Storage.
     expect(archiveRecipeImages).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, undefined, [], { clearStale: true })
     expect(recipeUpdates(mock)).toEqual([{ image_urls: [] }])
+  })
+
+  it('stores per-step photos on a refresh, as on insert', async () => {
+    // "Odśwież przepis" used to archive the cover and gallery only, so an
+    // existing recipe could never gain step photos from a better extraction.
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const openaiContent = JSON.stringify({
+      ...JSON.parse(VALID_RECIPE_JSON),
+      steps: [
+        { text: 'Wymieszaj składniki', image: 'https://blog.example/a/krok-1080x1440.jpg' },
+        { text: 'Smaż na patelni', image: null },
+      ],
+    })
+    const fetch = makeFetchMock({ firecrawlHtml: '<p>Przepis na ciasto.</p>'.repeat(20) + STEP_PHOTOS, openaiContent })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch, supabase: mock.supabase as any })
+
+    expect(recipeUpdates(mock)).toEqual([
+      expect.objectContaining({ step_images: ['https://storage.example/u/7/step-0.jpg', ''] }),
+    ])
+  })
+
+  it('keeps the stored step photos on a refresh that finds none', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeFetchMock(), supabase: mock.supabase as any })
+
+    expect(recipeUpdates(mock)[0]).not.toHaveProperty('step_images')
   })
 
   it('keeps the stored gallery on a refresh when no photo archives', async () => {

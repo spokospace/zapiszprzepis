@@ -820,17 +820,22 @@ Rules:
       // A refresh replaces the gallery outright, emptying it when the source
       // no longer has several photos — but keeps it when none of the new
       // photos could be archived (gallery is null).
-      const archived = await archiveRecipeImages(supabase, userId, refreshed.id, ogImage, gallery, {
-        clearStale: true,
-      })
+      // Per-step photos are archived here too, as on insert and gap-fill — a
+      // refresh is how an existing recipe gets them after a better extraction.
+      const [archived, stepImages] = await Promise.all([
+        archiveRecipeImages(supabase, userId, refreshed.id, ogImage, gallery, { clearStale: true }),
+        archiveStepImages(supabase, userId, refreshed.id, stepImageSources),
+      ])
       // Never downgrade the cover: a re-archive that fails leaves image_url
       // untouched, keeping whatever (Supabase URL or null) the recipe already had.
+      // Step photos follow the same rule: written only when this run found some.
       const nextImageUrl = archived.cover
       await supabase
         .from('recipes')
         .update({
           ...(nextImageUrl != null ? { image_url: nextImageUrl } : {}),
           ...(archived.gallery != null ? { image_urls: archived.gallery } : {}),
+          ...(stepImages.some(Boolean) ? { step_images: stepImages } : {}),
         })
         .eq('id', refreshed.id)
 
