@@ -293,6 +293,28 @@ describe('extractGroupPostPhotos', () => {
       { fbid: '1429281574083754', set: 'a.421684474843474' },
     ])
   })
+
+  it('reads a multi-photo post whose set=gm ids are not the post id, pinned by the preloaded media', () => {
+    // A real multi-photo group post (rogaliki-krucho-drozdzowe-z-nadzieniem):
+    // Facebook gives each photo its own set=gm.<photo-story>, none of them the
+    // post id, so the set-id-only test dropped every photo and the recipe got
+    // no cover. The permalink query's preloaded media lists the post's photos.
+    const preload = (id: string) =>
+      String.raw`<link rel="preload" href="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=${id}" data-preloader="adp_GroupsCometLoggedOutPermalinkQueryRelayPreloader_{N}" />`
+    const photo = (fbid: string, set: string) =>
+      String.raw`<a href="https://www.facebook.com/photo.php?fbid=${fbid}&set=${set}&type=3">photo</a>`
+    const html =
+      preload('2074503556065992') +
+      preload('2074503592732655') +
+      photo('2074503556065992', 'gm.3357960297858120') +
+      photo('2074503592732655', 'gm.3357960301191453') +
+      // A related post's gm photo, not preloaded for this permalink, is ignored.
+      photo('9999', 'gm.3357960999999999')
+    expect(extractGroupPostPhotos(html, '3357960304524786')).toEqual([
+      { fbid: '2074503556065992', set: 'gm.3357960297858120' },
+      { fbid: '2074503592732655', set: 'gm.3357960301191453' },
+    ])
+  })
 })
 
 describe('extractPluginPhoto', () => {
