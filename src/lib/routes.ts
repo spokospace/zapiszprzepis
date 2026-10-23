@@ -88,9 +88,19 @@ export function isPublicRoute(pathname: string): boolean {
     PRZEPISY_CATEGORY_RE.test(pathname) ||
     PROFILE_PAGE_RE.test(pathname) ||
     pathname === SEARCH_PATH ||
+    pathname === DISPLAY_PREFS_PATH ||
     LEGAL_PATHS.includes(pathname)
   )
 }
+
+/**
+ * Display preferences (text size) — public on purpose: it's an accessibility
+ * affordance (the A / A+ / A++ control) a guest, above all a first-time older
+ * visitor, must be able to reach without getting through the sign-in screen first.
+ * Linked from the MENU drawer in every access state; without this entry middleware
+ * would bounce a guest to /login. Per-device only (localStorage `zp-text-scale`).
+ */
+export const DISPLAY_PREFS_PATH = '/wyswietlanie'
 
 /** Terms of service — public; linked from the login screen (3a, footer redesign in E01-S12b). */
 export const TERMS_PATH = '/regulamin'

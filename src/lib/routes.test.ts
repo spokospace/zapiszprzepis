@@ -15,6 +15,7 @@ import {
   TERMS_PATH,
   PRIVACY_POLICY_PATH,
   DATA_DELETION_PATH,
+  DISPLAY_PREFS_PATH,
 } from './routes'
 
 describe('recipePath', () => {
@@ -130,6 +131,12 @@ describe('isPublicRoute', () => {
     expect(isPublicRoute('/regulamin/x')).toBe(false)
     expect(isPublicRoute('/polityka-prywatnosci/')).toBe(false)
     expect(isPublicRoute('/usuwanie-danych/konto')).toBe(false)
+  })
+
+  it('allows the display-preferences page without a session, so a guest reaches it (FR #485)', () => {
+    expect(DISPLAY_PREFS_PATH).toBe('/wyswietlanie')
+    expect(isPublicRoute(DISPLAY_PREFS_PATH)).toBe(true)
+    expect(isPublicRoute('/wyswietlanie/x')).toBe(false)
   })
 })
 

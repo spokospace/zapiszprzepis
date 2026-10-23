@@ -3,6 +3,7 @@ import "./globals.css";
 import { HOME_DESCRIPTION, HOME_TITLE } from "@/lib/home-meta";
 import { PWARegister } from "./components/pwa-register";
 import { SiteFooter } from "./components/site-footer";
+import { TextScaleApplier } from "./components/text-scale-applier";
 
 export const metadata: Metadata = {
   title: HOME_TITLE,
@@ -53,6 +54,9 @@ export default function RootLayout({
         {children}
         <SiteFooter />
         <PWARegister />
+        {/* Applies the saved text-size level (zp-text-scale) app-wide by owning the
+            `--text-scale` write; the control itself lives on /wyswietlanie. */}
+        <TextScaleApplier />
       </body>
     </html>
   );

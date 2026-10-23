@@ -204,6 +204,7 @@ const SCREENS: Screen[] = [
   { name: 'add recipe (code gate)', path: '/dodaj', as: 'free' },
   { name: 'notifications', path: '/powiadomienia', as: 'full' },
   { name: 'settings', path: '/settings', as: 'full' },
+  { name: 'display preferences', path: '/wyswietlanie' },
   { name: 'login', path: '/login' },
   { name: 'menu (guest)', path: '/', overlay: openMenu },
   { name: 'menu (signed in)', path: '/', as: 'full', overlay: openMenu },

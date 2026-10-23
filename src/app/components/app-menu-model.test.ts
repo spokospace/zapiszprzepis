@@ -1,14 +1,30 @@
 import { describe, it, expect } from 'vitest'
-import { ACCESS_GATE_HREF, ADD_RECIPE_HREF, buildMenuModel, newNotificationsNoun, recipesNoun } from './app-menu-model'
+import {
+  ACCESS_GATE_HREF,
+  ADD_RECIPE_HREF,
+  DISPLAY_PREFS_ENTRY,
+  buildMenuModel,
+  newNotificationsNoun,
+  recipesNoun,
+} from './app-menu-model'
 
 const keys = (model: ReturnType<typeof buildMenuModel>) => model.mine?.map((e) => e.key)
 
 describe('buildMenuModel', () => {
-  it('gives a guest no "Moje" block and no account footer', () => {
+  it('gives a guest no "Moje" block and no account footer, but still the display-prefs row', () => {
     expect(buildMenuModel({ isAuthenticated: false, summary: null })).toEqual({
       mine: null,
       showAccountFooter: false,
+      displayPrefs: DISPLAY_PREFS_ENTRY,
     })
+  })
+
+  it('shows "Wielkość tekstu" → /wyswietlanie in every access state (FR #485)', () => {
+    expect(DISPLAY_PREFS_ENTRY).toEqual({ href: '/wyswietlanie', label: 'Wielkość tekstu' })
+    const guest = buildMenuModel({ isAuthenticated: false, summary: null })
+    const signedIn = buildMenuModel({ isAuthenticated: true })
+    expect(guest.displayPrefs).toEqual(DISPLAY_PREFS_ENTRY)
+    expect(signedIn.displayPrefs).toEqual(DISPLAY_PREFS_ENTRY)
   })
 
   it('shows Moje przepisy, Ulubione and an unlocked Dodaj with counters for full access', () => {
