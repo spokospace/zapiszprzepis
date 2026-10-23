@@ -21,7 +21,7 @@ function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
 
 describe('RecipeActions (E01-S31 §3)', () => {
   it('stacks below sm so the heart is full width, then a row from sm', () => {
-    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 sm:flex-row[^"]*"><div class="flex flex-col sm:flex-1">/)
+    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 sm:flex-row[^"]*"><div class="flex flex-col sm:flex-1[^"]*">/)
   })
 
   it('shows "Udostępnij" beside the heart, each half the row from sm', () => {

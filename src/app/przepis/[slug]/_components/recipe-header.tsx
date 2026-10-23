@@ -8,6 +8,7 @@ import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
 import { SourceBadge } from '@/app/components/source-badge'
+import { NoPhoto } from '@/app/components/no-photo'
 
 export interface RecipeHeaderData {
   title: string
@@ -88,11 +89,13 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
   const sourceBadge = <SourceBadge kind={source.kind} text={source.text} href={recipe.source_url} variant="recipe" />
 
   return (
-    // Desktop (E01-S17, A9): a 16:10 photo | the text column (1.2fr 1fr) when there is a photo.
-    // Top-aligned: with the actions in the text column it is usually the taller one,
-    // and a centred photo would float in white space.
-    <header className={`mb-8 ${cover ? 'lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-10' : ''}`}>
-      {cover && (
+    // Desktop (E01-S17, A9): a 16:10 photo | the text column (1.2fr 1fr). The grid
+    // applies whether or not there is a cover (#495): a cover-less recipe gets a
+    // category-icon placeholder in the photo column so its header keeps the two-column
+    // balance instead of stretching full-width. Top-aligned: with the actions in the
+    // text column it is usually the taller one, and a centred photo would float in white space.
+    <header className="mb-8 lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-10">
+      {cover ? (
         // Below lg the cover is full-bleed: its negative margins cancel the horizontal
         // padding of PageContainer (px-4 sm:px-6) and the top padding of <main>
         // (py-6 sm:py-8), so it sits flush to the screen edges and the top. Keep those
@@ -113,6 +116,15 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
           />
           {/* Source on the photo, bottom-left (E01-S31 §3). */}
           <div className="absolute bottom-0 left-px z-10 max-w-[calc(100%-1px)]">{sourceBadge}</div>
+        </div>
+      ) : (
+        // No cover: from lg a category-icon placeholder fills the photo column so the
+        // two-column header does not collapse to a full-width run (#495). It is a
+        // decorative placeholder, not a photo, so the source badge stays inline in the
+        // text column (E01-S31 §3), not on it. Hidden below lg — there the badge is inline
+        // and no photo block shows, exactly as before.
+        <div className="hidden aspect-[16/10] overflow-hidden rounded-tile bg-surface-3 lg:block">
+          <NoPhoto category={recipe.category} iconClassName="h-16 w-16" />
         </div>
       )}
 
@@ -135,7 +147,8 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
           )}
         </p>
 
-        {/* With no photo there is no corner for the badge, so it sits here instead (E01-S31 §3). */}
+        {/* With no photo there is no corner for the badge, so it sits here instead
+            (E01-S31 §3) — at every width, since the lg placeholder carries no badge. */}
         {!cover && <div className="mb-3">{sourceBadge}</div>}
 
         {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the

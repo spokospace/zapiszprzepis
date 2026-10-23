@@ -159,8 +159,10 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
       {showAll && (
         <Link
           href={categoryPath(recipe.category)}
-          // A5 / screen 6: a full-width 56 px accent button.
-          className="mt-4 flex min-h-[56px] w-full items-center justify-center rounded-pill border-2 border-ink bg-white px-4 text-center text-[19px] font-bold text-action-text no-underline! hover:border-action-text"
+          // A5 / screen 6: a full-width 56 px accent button on a phone; from lg it
+          // shrinks to its content and sits left (#494) — a full-bleed pill reads as
+          // oversized across the wide desktop column.
+          className="mt-4 flex min-h-[56px] w-full items-center justify-center rounded-pill border-2 border-ink bg-white px-4 text-center text-[19px] font-bold text-action-text no-underline! hover:border-action-text lg:inline-flex lg:w-auto lg:px-6"
         >
           Wszystkie {label.toLocaleLowerCase('pl')}
           {total != null && ` (${total})`}
