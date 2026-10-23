@@ -4,6 +4,7 @@ import { buildFallbackMetaDescription, tagLabel } from '@/lib/recipe-tags'
 import { categoryLabel, type RecipeCategory } from '@/lib/recipe-categories'
 import { servingsCount } from '@/lib/servings'
 import { recipePath } from '@/lib/routes'
+import { coverImageSrc } from '@/lib/recipe-image-archive'
 
 /**
  * The guest-safe recipe fields the schema.org/Recipe JSON-LD needs — a subset of
@@ -72,7 +73,10 @@ export function buildRecipeJsonLd(recipe: RecipeForJsonLd, siteUrl: string): Rec
 
   const author = recipe.source_author?.trim()
   const keywords = (recipe.tags ?? []).map(tagLabel).filter(Boolean).join(', ')
-  const image = recipe.image_url ? absoluteImage(recipe.image_url, siteUrl) : null
+  // Only an archived Storage cover, never a legacy external link (the image_url
+  // invariant) — the markup must not point crawlers at a third-party host.
+  const cover = coverImageSrc(recipe.image_url)
+  const image = cover ? absoluteImage(cover, siteUrl) : null
 
   return {
     '@context': 'https://schema.org',

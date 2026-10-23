@@ -385,14 +385,11 @@ export async function runExtractRecipe(
       embedHtml = scrapedEmbedHtml
     }
 
-    // What to persist in image_url when archiving fails. A blog's og:image is
-    // a stable URL, so keeping it beats a placeholder. A Facebook thumbnail is
-    // a signed CDN link that expires within days (`oe=` is a unix expiry), so
-    // it must never be stored as-is — the placeholder beats a link that rots.
-    // Being the post thumbnail is what marks it: every other branch takes its
-    // image from a blog page.
-    const durableImageUrl =
-      ogImage != null && ogImage === facebookPost?.image ? null : ogImage ?? null
+    // image_url is only ever a Supabase Storage URL or null (the archive-first
+    // invariant): an external link is never persisted — not even a blog's stable
+    // og:image — so no third-party URL can reach a rendered page. A cover that
+    // fails to archive leaves image_url null and the page shows the NoPhoto
+    // placeholder; the og:image is still handed to the archiver below.
     const gallery = buildGallery(ogImage, photos)
 
     // S-04: capture a YouTube video id for the detail-page embed. Either the
@@ -822,10 +819,9 @@ Rules:
       const archived = await archiveRecipeImages(supabase, userId, refreshed.id, ogImage, gallery, {
         clearStale: true,
       })
-      // Never downgrade the cover: a failed re-archive of a Facebook thumbnail
-      // has no durable fallback, and writing null would drop the image the
-      // recipe already had archived.
-      const nextImageUrl = archived.cover ?? durableImageUrl
+      // Never downgrade the cover: a re-archive that fails leaves image_url
+      // untouched, keeping whatever (Supabase URL or null) the recipe already had.
+      const nextImageUrl = archived.cover
       await supabase
         .from('recipes')
         .update({
@@ -875,7 +871,9 @@ Rules:
           description,
           meta_description: metaDescription,
           tags,
-          image_url: durableImageUrl,
+          // Archive-first invariant: insert null, then the archive step below
+          // fills image_url with a Supabase URL (or leaves it null on failure).
+          image_url: null,
           ingredients: recipeJSON.ingredients,
           steps: recipeJSON.steps,
           ingredient_fingerprint: ingredientFp,
@@ -899,7 +897,7 @@ Rules:
       if (data) {
         recipe = data
         // Archive the external og:image, gallery and per-step photos into Supabase
-        // Storage. On failure image_url keeps whatever durableImageUrl put there.
+        // Storage. On failure image_url stays null (NoPhoto placeholder).
         const [archived, stepImages] = await Promise.all([
           archiveRecipeImages(supabase, userId, data.id, ogImage, gallery),
           archiveStepImages(supabase, userId, data.id, stepImageSources),
@@ -988,10 +986,10 @@ Rules:
             gapFill.ingredient_fingerprint = ingredientFp
           }
           // Archive flow: when archiveImage returns a Storage URL, always
-          // overwrite image_url — even if it's already populated with an
-          // external link. That's how scripts/archive-recipe-images.ts
-          // backfills existing recipes to be archive-first. External URL
-          // is only kept when there was no prior value AND archive failed.
+          // overwrite image_url — even a legacy external link. That's how the
+          // backfill (scripts/backfill-archive-covers.ts, scripts/archive-recipe-images.ts)
+          // moves existing recipes onto Supabase Storage. A failed archive
+          // leaves the existing value alone (never writes a new external link).
           // The gallery follows the same rule: archived photos replace whatever
           // is there, which is how the backfill gives old recipes a gallery.
           const [archived, stepImages] = await Promise.all([
@@ -1000,8 +998,6 @@ Rules:
           ])
           if (archived.cover != null) {
             gapFill.image_url = archived.cover
-          } else if (ogImage != null && existing.image_url == null && durableImageUrl != null) {
-            gapFill.image_url = durableImageUrl
           }
           if (archived.gallery?.length) gapFill.image_urls = archived.gallery
           // Per-step photos follow the gallery rule: a refresh/backfill replaces

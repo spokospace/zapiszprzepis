@@ -12,8 +12,7 @@ import {
   GALLERY_LIMIT,
   isArchivedImageUrl,
   proxiedImageUrl,
-  cappedExternalImageUrl,
-  coverImageProps,
+  coverImageSrc,
   insecureHttpUrl,
 } from '@/lib/recipe-image-archive'
 
@@ -738,9 +737,9 @@ describe('archiveImage — full-size preference over a WordPress resize', () => 
 })
 
 describe('proxiedImageUrl', () => {
-  it('encodes the source URL as the wsrv.nl url parameter', () => {
+  it('encodes the source URL and asks wsrv.nl for a capped WebP rendition', () => {
     expect(proxiedImageUrl('https://example.com/a b.jpg?x=1&y=2')).toBe(
-      'https://wsrv.nl/?url=https%3A%2F%2Fexample.com%2Fa%20b.jpg%3Fx%3D1%26y%3D2',
+      'https://wsrv.nl/?url=https%3A%2F%2Fexample.com%2Fa%20b.jpg%3Fx%3D1%26y%3D2&w=1600&output=webp&q=82',
     )
   })
 })
@@ -754,27 +753,20 @@ describe('isArchivedImageUrl', () => {
   })
 })
 
-describe('cappedExternalImageUrl', () => {
-  it('asks wsrv.nl for a width-capped WebP of the encoded source', () => {
-    expect(cappedExternalImageUrl('https://example.com/a b.jpg', 768)).toBe(
-      'https://wsrv.nl/?url=https%3A%2F%2Fexample.com%2Fa%20b.jpg&w=768&output=webp&q=75',
-    )
-  })
-})
-
-describe('coverImageProps', () => {
+describe('coverImageSrc', () => {
   const ARCHIVED = 'https://xyz.supabase.co/storage/v1/object/public/recipe-images/user/60.jpg'
   const EXTERNAL = 'https://www.najprzepis.pl/upload/66477920_8933c3cf37e485_full.jpg'
 
-  it('passes an archived cover through next/image unchanged (optimized)', () => {
-    expect(coverImageProps(ARCHIVED, 768)).toEqual({ src: ARCHIVED, unoptimized: false })
+  it('returns an archived Supabase cover as the src', () => {
+    expect(coverImageSrc(ARCHIVED)).toBe(ARCHIVED)
   })
 
-  it('caps an external cover through wsrv.nl and marks it unoptimized', () => {
-    expect(coverImageProps(EXTERNAL, 768)).toEqual({
-      src: cappedExternalImageUrl(EXTERNAL, 768),
-      unoptimized: true,
-    })
+  it('returns null for a legacy external cover (shown as NoPhoto, never hotlinked)', () => {
+    expect(coverImageSrc(EXTERNAL)).toBeNull()
+  })
+
+  it.each([null, undefined, ''])('returns null for %p', (value) => {
+    expect(coverImageSrc(value)).toBeNull()
   })
 })
 

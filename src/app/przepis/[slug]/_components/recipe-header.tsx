@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine, recipeTimeStats } from '@/lib/recipe-meta'
-import { coverImageProps } from '@/lib/recipe-image-archive'
+import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
 import { SourceBadge } from '@/app/components/source-badge'
@@ -82,6 +82,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
   const times = recipeTimeStats(recipe)
   const source = formatSource(recipe.source_type, recipe.source_url, recipe.source_author)
+  const cover = coverImageSrc(recipe.image_url)
   // The source leads to the original (E01-S31 §3): a link-badge on the photo, or,
   // for a page-less recipe (no URL), a plain border-less badge.
   const sourceBadge = <SourceBadge kind={source.kind} text={source.text} href={recipe.source_url} variant="recipe" />
@@ -90,12 +91,12 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
     // Desktop (E01-S17, A9): a 16:10 photo | the text column (1.2fr 1fr) when there is a photo.
     // Top-aligned: with the actions in the text column it is usually the taller one,
     // and a centred photo would float in white space.
-    <header className={`mb-8 ${recipe.image_url ? 'lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-10' : ''}`}>
-      {recipe.image_url && (
+    <header className={`mb-8 ${cover ? 'lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-10' : ''}`}>
+      {cover && (
         <div className="relative mb-5 aspect-[4/3] w-full overflow-hidden rounded-tile bg-surface-3 lg:mb-0 lg:aspect-[16/10]">
           <Image
-            // The LCP image; external covers capped (#446) — big enough for a phone at 2×–3×.
-            {...coverImageProps(recipe.image_url, 1280)}
+            // The LCP image, served from Supabase Storage through next/image.
+            src={cover}
             alt={recipe.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 768px, 600px"
@@ -127,7 +128,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
         </p>
 
         {/* With no photo there is no corner for the badge, so it sits here instead (E01-S31 §3). */}
-        {!recipe.image_url && <div className="mb-3">{sourceBadge}</div>}
+        {!cover && <div className="mb-3">{sourceBadge}</div>}
 
         {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the
             raw gender, which stays owner-only (E01-S12); neutral "Dodane przez" when
