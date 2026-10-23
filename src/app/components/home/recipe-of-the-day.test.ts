@@ -34,7 +34,8 @@ describe('RecipeOfTheDay (handoff 14)', () => {
     expect(html).toMatch(/uppercase">Przepis dnia</)
     expect(html).toContain('md:text-[40px]')
     expect(html).toContain('Kremowy, bez pieczenia')
-    expect(html).toMatch(/underline[^"]*">Zobacz przepis →</)
+    // NBSP before the arrow so „→” never strands on its own line at a large font (#478).
+    expect(html).toMatch(/underline[^"]*">Zobacz przepis →</)
   })
 
   it('does not put the text on the photo', () => {

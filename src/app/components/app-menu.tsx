@@ -212,7 +212,9 @@ export function AppMenu({
               }`}
             >
               <House aria-hidden="true" className="h-6 w-6 shrink-0" />
-              Strona główna
+              {/* min-w-0 + break-words: the label shrinks and wraps instead of widening the
+                  drawer row past the phone at a large font (WCAG 1.4.10), like the category rows. */}
+              <span className="min-w-0 break-words">Strona główna</span>
             </Link>
             <div className="pt-4" />
             {mine ? (
