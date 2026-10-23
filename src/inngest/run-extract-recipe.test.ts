@@ -1428,6 +1428,31 @@ describe('runExtractRecipe — recipe gallery', () => {
     ])
   })
 
+  it('takes a step photo the LLM found in the markdown, not only the HTML', async () => {
+    // A reader page (Jina) pairs each step with its ![…](url) in the markdown,
+    // while the step photos sit past the slice of HTML the LLM reads.
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const STEP_MD = 'https://blog.example/a/krok-md-1080x1080.jpg'
+    const openaiContent = JSON.stringify({
+      ...JSON.parse(VALID_RECIPE_JSON),
+      steps: [
+        { text: 'Wymieszaj składniki', image: STEP_MD },
+        { text: 'Smaż na patelni', image: null },
+      ],
+    })
+    const fetch = makeFetchMock({
+      firecrawlMarkdown: 'Przepis na naleśniki. '.repeat(30) + `\n\nKrok 1: wymieszaj\n\n![krok](${STEP_MD})`,
+      openaiContent,
+    })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch, supabase: mock.supabase as any })
+
+    expect(recipeUpdates(mock)).toEqual([
+      expect.objectContaining({ step_images: ['https://storage.example/u/7/step-0.jpg', ''] }),
+    ])
+  })
+
   it('keeps the stored step photos on a refresh that finds none', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 7 }, error: null })

@@ -82,6 +82,33 @@ async function readMarkdown(url: string, { fetch }: Deps): Promise<Omit<ReaderPa
   }
 }
 
+// A bot-check interstitial (Cloudflare's "Just a moment…") instead of the page.
+const BLOCKED_PAGE_RE = /challenge-platform|cf-chl-|<title>\s*(?:Just a moment|Attention Required)/i
+
+/**
+ * The page's HTML as Jina renders it, from Jina's own servers. Some sites refuse
+ * the Worker's Cloudflare addresses (aniagotuje.pl: text and cover came through
+ * Jina, but no gallery or step photo ever did), so the direct fetch yields
+ * nothing; Jina still reaches them. Empty on any failure — only photos ride on it.
+ */
+async function readHtml(url: string, { fetch }: Deps): Promise<string> {
+  try {
+    const key = process.env.JINA_API_KEY
+    const response = await fetch(`${JINA_READER}${url}`, {
+      headers: {
+        Accept: 'application/json',
+        'X-Return-Format': 'html',
+        ...(key ? { Authorization: `Bearer ${key}` } : {}),
+      },
+      signal: AbortSignal.timeout(45_000),
+    })
+    if (!response.ok) return ''
+    return str((await response.json())?.data?.html)
+  } catch {
+    return ''
+  }
+}
+
 /**
  * The page through Jina Reader plus its raw HTML. Throws "Jina Reader: …" with
  * the reason when Jina has no content for it, so the caller can store why.
@@ -94,7 +121,9 @@ export async function readerScrape(url: string, deps: Deps): Promise<ReaderPage>
     }),
     fetchPublicHtml(url, deps),
   ])
-  const rawHtml = html ?? ''
+  // The page's own HTML, fetched directly; when the site refuses the Worker
+  // (no page, or a bot check), the copy Jina rendered instead.
+  const rawHtml = html?.trim() && !BLOCKED_PAGE_RE.test(html) ? html : await readHtml(url, deps)
   // Jina's metadata names og:image only sometimes; fall back to the raw HTML's
   // own tag so a page whose only good cover is its og:image still gets one.
   const ogImage = read.metadata.ogImage ?? ogImageFromHtml(rawHtml)
