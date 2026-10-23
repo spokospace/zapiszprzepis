@@ -93,7 +93,15 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
     // and a centred photo would float in white space.
     <header className={`mb-8 ${cover ? 'lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-10' : ''}`}>
       {cover && (
-        <div className="relative mb-5 aspect-[4/3] w-full overflow-hidden rounded-tile bg-surface-3 lg:mb-0 lg:aspect-[16/10]">
+        // Below lg the cover is full-bleed (E01-S07b): it breaks out of the page
+        // container's side padding (-mx-4 sm:-mx-6, matching PageContainer's px) and
+        // cancels <main>'s top padding (-mt-6 sm:-mt-8), so it sits flush to the screen
+        // edges and to the top under the app header, square-cornered. From lg it returns
+        // to the padded A9 grid: rounded 16:10 inside its column. `w-full` is dropped so
+        // the block's auto width expands with the negative margins to the viewport edges;
+        // the container never binds max-width below lg, so edge-to-edge is exact (no
+        // overflow — guarded by test:reflow).
+        <div className="relative mb-5 -mx-4 -mt-6 aspect-[4/3] overflow-hidden rounded-none bg-surface-3 sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0 lg:aspect-[16/10] lg:rounded-tile">
           <Image
             // The LCP image, served from Supabase Storage through next/image.
             src={cover}
