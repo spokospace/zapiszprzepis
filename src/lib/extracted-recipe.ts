@@ -7,6 +7,8 @@ export interface ExtractedIngredient {
   name: string
   amount: string
   unit: string
+  /** Household/approximate measure from the source (e.g. "3/4 kostki"), "" when none (#505). */
+  alt: string
   section: string
 }
 
@@ -21,7 +23,7 @@ function toText(value: unknown): string {
 
 /**
  * The ingredients the recipe can be saved with: objects with a non-empty string
- * `name`, with `amount` / `unit` / `section` as strings. Anything else is dropped,
+ * `name`, with `amount` / `unit` / `alt` / `section` as strings. Anything else is dropped,
  * so a list with no usable entry comes back empty and the usability gate rejects
  * the recipe with its own reason.
  */
@@ -32,7 +34,7 @@ export function toIngredients(value: unknown): ExtractedIngredient[] {
     if (typeof item !== 'object' || item === null || Array.isArray(item)) continue
     const raw = item as Record<string, unknown>
     if (typeof raw.name !== 'string' || raw.name.trim().length === 0) continue
-    ingredients.push({ name: raw.name, amount: toText(raw.amount), unit: toText(raw.unit), section: toText(raw.section) })
+    ingredients.push({ name: raw.name, amount: toText(raw.amount), unit: toText(raw.unit), alt: toText(raw.alt), section: toText(raw.section) })
   }
   return ingredients
 }

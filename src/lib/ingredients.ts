@@ -6,10 +6,15 @@
 // a non-array). These helpers are the single tolerant boundary that turns
 // whatever is stored into something the view can render without crashing.
 
+import { deriveVolumeMeasure } from './volume-measure'
+
 export type Ingredient = {
   name?: string
   amount?: string
   unit?: string
+  /** Optional household/approximate measure from the source (e.g. "ok. 1,5 szklanki",
+   *  "3/4 kostki"), kept alongside the precise metric `amount`/`unit` (#505). */
+  alt?: string
   section?: string
 }
 
@@ -36,14 +41,33 @@ export function parseIngredients(raw: unknown): Ingredient[] {
 /**
  * One ingredient on a single line — amount, unit and name joined in that order,
  * empty parts dropped: `{amount:'2', unit:'szklanki', name:'mąki'}` → "2 szklanki
- * mąki". Shared by the Markdown rendering and the JSON-LD `recipeIngredient`, so
- * both read the ingredient exactly the same way.
+ * mąki". Shared by the Markdown rendering and the JSON-LD `recipeIngredient`.
+ *
+ * `opts.alt` appends the household measure in parentheses ("… (ok. 1,5 szklanki)")
+ * when there is one — the Markdown export opts in for parity with the page; the
+ * JSON-LD `recipeIngredient` leaves it off so the quantity stays clean for search
+ * engines (#505).
  */
-export function ingredientLine(ing: Ingredient): string {
-  return [ing.amount, ing.unit, ing.name]
+export function ingredientLine(ing: Ingredient, opts?: { alt?: boolean }): string {
+  const line = [ing.amount, ing.unit, ing.name]
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(' ')
+  const measure = opts?.alt ? householdMeasure(ing) : null
+  return line && measure ? `${line} (${measure})` : line
+}
+
+/**
+ * The household measure to show beside an ingredient's metric amount: the
+ * source-stated one (`alt`) when present, otherwise one derived from a volume
+ * amount via fixed ratios (`deriveVolumeMeasure`). Null when neither applies —
+ * in particular, a weight amount is never turned into szklanki (density varies
+ * per ingredient; see `volume-measure.ts`). The source measure always wins (#505).
+ */
+export function householdMeasure(ing: Ingredient): string | null {
+  const stated = ing.alt?.trim()
+  if (stated) return stated
+  return deriveVolumeMeasure(ing.amount, ing.unit)
 }
 
 /**

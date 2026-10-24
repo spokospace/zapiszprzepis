@@ -60,7 +60,7 @@ export function recipeToMarkdown(recipe: RecipeForMarkdown, siteUrl: string): st
     out.push('', '## Składniki')
     for (const group of groups) {
       if (group.section) out.push('', `### ${group.section}`)
-      out.push('', ...group.items.map((ing) => `- ${ingredientLine(ing)}`))
+      out.push('', ...group.items.map((ing) => `- ${ingredientLine(ing, { alt: true })}`))
     }
   }
 

@@ -3,9 +3,16 @@ import { toIngredients, toMinutes } from './extracted-recipe'
 
 describe('toIngredients (#381)', () => {
   it('keeps well-formed ingredients as they are', () => {
-    expect(toIngredients([{ name: 'Mąka', amount: '200', unit: 'g', section: 'Ciasto' }])).toEqual([
-      { name: 'Mąka', amount: '200', unit: 'g', section: 'Ciasto' },
+    expect(toIngredients([{ name: 'Mąka', amount: '200', unit: 'g', alt: 'ok. 1,5 szklanki', section: 'Ciasto' }])).toEqual([
+      { name: 'Mąka', amount: '200', unit: 'g', alt: 'ok. 1,5 szklanki', section: 'Ciasto' },
     ])
+  })
+
+  it('keeps a given alt, defaults a missing one to "", and coerces a number like amount (#505)', () => {
+    expect(toIngredients([{ name: 'Masło', amount: '150', unit: 'g', alt: '3/4 kostki' }])[0].alt).toBe('3/4 kostki')
+    expect(toIngredients([{ name: 'Jajka', amount: '4' }])[0].alt).toBe('')
+    expect(toIngredients([{ name: 'Cukier', alt: 2 }])[0].alt).toBe('2') // number → its digits
+    expect(toIngredients([{ name: 'Sól', alt: { x: 1 } }])[0].alt).toBe('') // non-stringifiable → ""
   })
 
   it('drops entries without a non-empty string name', () => {
@@ -15,7 +22,7 @@ describe('toIngredients (#381)', () => {
 
   it('turns a numeric amount into text and anything else into an empty string', () => {
     expect(toIngredients([{ name: 'Mąka', amount: 200, unit: null, section: { x: 1 } }])).toEqual([
-      { name: 'Mąka', amount: '200', unit: '', section: '' },
+      { name: 'Mąka', amount: '200', unit: '', alt: '', section: '' },
     ])
   })
 
