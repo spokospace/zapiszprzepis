@@ -120,6 +120,20 @@ describe('RecipeChecklists alternative measure (#505)', () => {
     expect(html).toContain('<b class="text-scalable max-w-[45%] text-right text-ink">4</b>')
     expect((html.match(/text-\[16px\]/g) ?? []).length).toBe(1)
   })
+
+  it('derives a household second line for a volume ingredient with no stated measure', () => {
+    const html = renderToStaticMarkup(
+      createElement(RecipeChecklists, {
+        recipeId: 1,
+        title: 'Napój',
+        ingredientGroups: [{ section: null, items: [{ name: 'oleju', amount: '180', unit: 'ml' }] }],
+        steps: ['Wymieszać.'],
+        servings: null,
+      }),
+    )
+    expect(html).toContain('<b class="text-scalable text-ink">180 ml</b>')
+    expect(html).toContain('<span class="text-[16px]"><span class="text-scalable text-ink-soft">ok. 3/4 szklanki</span></span>')
+  })
 })
 
 // Owner decision 2026-10-20: „Krok 1” over each step, in an ordered list (screen readers

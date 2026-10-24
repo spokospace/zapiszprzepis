@@ -8,7 +8,7 @@ import { checklistStorageKey, parseChecklist, toggleChecked } from '@/lib/recipe
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { servingsLabel } from '@/lib/servings'
 import { ImageLightbox } from '@/app/components/image-lightbox'
-import type { Ingredient } from '@/lib/ingredients'
+import { householdMeasure, type Ingredient } from '@/lib/ingredients'
 import { CookingMode } from './cooking-mode'
 
 /** „Pokaż” / „Ukryj” — the two states of the step-photos toggle (ZMIANY §3). */
@@ -220,7 +220,7 @@ export function RecipeChecklists({
                       onToggle={() => toggle(index)}
                       name={ingredient.name}
                       amount={ingredient.amount ? [ingredient.amount, ingredient.unit].filter(Boolean).join(' ') : null}
-                      alt={ingredient.alt?.trim() || null}
+                      alt={householdMeasure(ingredient)}
                     />
                   </li>
                 )
