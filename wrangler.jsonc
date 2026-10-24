@@ -48,9 +48,9 @@
     "NEXT_PUBLIC_SITE_URL": "https://zapiszprzepis.pl",
     // OAuth sign-in buttons on /login (E01-S12): parseOAuthProviders reads this
     // comma-separated list; a listed name shows its button and lets the server
-    // action use it. Facebook is held back until the Meta app is published Live
-    // (business verification in review) — otherwise non-tester accounts hit a
-    // Facebook error. Add "facebook" back once the Meta app is Live.
-    "AUTH_OAUTH_PROVIDERS": "google"
+    // action use it. Facebook is enabled now that the Meta app is published Live
+    // (business verification passed). Both providers must stay configured in the
+    // Supabase dashboard (Authentication → Providers) with their redirect URLs.
+    "AUTH_OAUTH_PROVIDERS": "google,facebook"
   }
 }
