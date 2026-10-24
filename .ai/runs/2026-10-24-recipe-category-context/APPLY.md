@@ -68,8 +68,11 @@ Oczekiwane: jeden wiersz, `args = p_id bigint`, `anon_exec=true`, `auth_exec=tru
 
 ## Status
 
-Niezastosowane na produkcji. Rehearsal przeszedł (`mid/first/last/missing/grants [ok]`, 2026-10-24) i cofnął się.
-Czeka na właściciela: zastosuj (kroki 2–4), potem zmerguj app-PR.
+Zastosowane na produkcji 2026-10-24: apply `[]`, zarejestrowane (`20261024120000`), zweryfikowane
+(`args = p_id bigint`, `provolatile = s`, `anon_exec=true`, `auth_exec=true`, `public_exec=false`).
+Rehearsal wcześniej przeszedł (`mid/first/last/missing/grants [ok]`) i cofnął się; po apply
+wywołanie na żywo dla przepisu w kategorii `ciasta` zwróciło poprawny wiersz
+(`total=230, idx=3`, prev/next `{slug,title}`). App-PR jest teraz gotowy do mergu (funkcja już w DB).
 
 ## Rollback
 
