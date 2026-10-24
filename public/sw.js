@@ -87,23 +87,27 @@ async function fetchAndStore(event, cacheName) {
   return response
 }
 
+// The caches only ever hold plain GET responses (RSC flight data is never
+// stored), so a Vary header added upstream must not turn a stored page into a miss.
+const MATCH_OPTIONS = { ignoreVary: true }
+
 async function cacheFirst(event) {
-  return (await caches.match(event.request)) ?? fetchAndStore(event, STATIC_CACHE_NAME)
+  return (await caches.match(event.request, MATCH_OPTIONS)) ?? fetchAndStore(event, STATIC_CACHE_NAME)
 }
 
 async function networkFirst(event) {
   try {
     return await fetchAndStore(event, STATIC_CACHE_NAME)
   } catch (err) {
-    const cached = await caches.match(event.request)
+    const cached = await caches.match(event.request, MATCH_OPTIONS)
     if (cached) return cached
     throw err
   }
 }
 
 async function offlineFallback(request) {
-  return (await caches.match(request)) ??
-    (await caches.match('/')) ??
+  return (await caches.match(request, MATCH_OPTIONS)) ??
+    (await caches.match('/', MATCH_OPTIONS)) ??
     new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
 }
 

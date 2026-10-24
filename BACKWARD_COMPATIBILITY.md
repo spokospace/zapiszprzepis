@@ -26,7 +26,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 **Breaking:** changing the share-target action, method, encoding or field names (installed PWAs keep the old manifest until they refresh); changing caching so stale HTML or POST responses are served.
 
-**Required path:** `/share` keeps accepting the old fields; any `sw.js` change bumps the precache version so old caches are purged on activate.
+**Required path:** `/share` keeps accepting the old fields; every deploy registers `/sw.js?v=<build>`, so the new worker gets fresh cache names and purges every older cache on activate — a `sw.js` change needs no manual version bump, but must keep that versioning intact.
 
 ## 4. Inngest events
 
