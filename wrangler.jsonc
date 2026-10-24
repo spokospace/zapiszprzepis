@@ -4,6 +4,12 @@
   "name": "zapiszprzepis",
   "compatibility_date": "2025-05-05",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Smart Placement (#464 item 1): a recipe render makes ~a dozen round trips to Supabase
+  // while the Worker runs at the edge, far from the DB. "smart" lets Cloudflare place the
+  // Worker close to the DB so each round trip is cheaper — it helps every DB-chatty route,
+  // not just the recipe page. Provisional: keep it only if the before/after TTFB measurement
+  // in #464 shows a win for this Supabase region; revert the key if it does not help.
+  "placement": { "mode": "smart" },
   // Workers Logs (dashboard → zapiszprzepis → Observability): keeps console output
   // and each request's outcome, so "[auth] getUser failed" lines and requests that
   // hit the CPU limit (error 1102) can be read after the fact, not only live.
