@@ -16,5 +16,5 @@
 
 ### Phase 1: Record per-field decisions
 
-- [ ] 1.1 Document every non-emitted suggested field in the `buildRecipeJsonLd` doc comment
-- [ ] 1.2 Add tests asserting `recipeCuisine`, `video`, and per-step `image`/`video` are never emitted (keep the existing never-invents rating/nutrition test)
+- [x] 1.1 Document every non-emitted suggested field in the `buildRecipeJsonLd` doc comment — e4e45f8
+- [x] 1.2 Add tests asserting `recipeCuisine`, `video`, and per-step `image`/`video` are never emitted (keep the existing never-invents rating/nutrition test) — e4e45f8
