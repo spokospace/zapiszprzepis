@@ -1377,6 +1377,7 @@ describe('runExtractRecipe — recipe gallery', () => {
       7,
       'https://blog.example/a/ciasto-1080x1440.jpg',
       ['https://blog.example/a/ciasto-1080x1440.jpg', 'https://blog.example/a/krok-1080x1440.jpg'],
+      { clearStale: false },
     )
     expect(recipeUpdates(mock)).toEqual([
       { image_urls: ['https://storage.example/u/7/0.jpg', 'https://storage.example/u/7/1.jpg'] },
@@ -1392,7 +1393,9 @@ describe('runExtractRecipe — recipe gallery', () => {
 
     await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
 
-    expect(archiveRecipeImages).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, 'https://blog.example/a/ciasto.jpg', [])
+    expect(archiveRecipeImages).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, 'https://blog.example/a/ciasto.jpg', [], {
+      clearStale: false,
+    })
     expect(recipeUpdates(mock)).toEqual([])
   })
 
@@ -1423,9 +1426,7 @@ describe('runExtractRecipe — recipe gallery', () => {
 
     await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch, supabase: mock.supabase as any })
 
-    expect(recipeUpdates(mock)).toEqual([
-      expect.objectContaining({ step_images: ['https://storage.example/u/7/step-0.jpg', ''] }),
-    ])
+    expect(mock.updateArgs('recipes')).toContainEqual({ step_images: ['https://storage.example/u/7/step-0.jpg', ''] })
   })
 
   it('takes a step photo the LLM found in the markdown, not only the HTML', async () => {
@@ -1448,9 +1449,7 @@ describe('runExtractRecipe — recipe gallery', () => {
 
     await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch, supabase: mock.supabase as any })
 
-    expect(recipeUpdates(mock)).toEqual([
-      expect.objectContaining({ step_images: ['https://storage.example/u/7/step-0.jpg', ''] }),
-    ])
+    expect(mock.updateArgs('recipes')).toContainEqual({ step_images: ['https://storage.example/u/7/step-0.jpg', ''] })
   })
 
   it('keeps the stored step photos on a refresh that finds none', async () => {
@@ -1459,7 +1458,27 @@ describe('runExtractRecipe — recipe gallery', () => {
 
     await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeFetchMock(), supabase: mock.supabase as any })
 
-    expect(recipeUpdates(mock)[0]).not.toHaveProperty('step_images')
+    expect(mock.updateArgs('recipes').some((a: Record<string, unknown>) => 'step_images' in a)).toBe(false)
+  })
+
+  it('hands the photos back instead of archiving them with deferImages', async () => {
+    // The Inngest function archives them in steps of their own.
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ firecrawlHtml: '<p>Przepis na ciasto.</p>'.repeat(20) + STEP_PHOTOS })
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any, deferImages: true })
+
+    expect(archiveRecipeImages).not.toHaveBeenCalled()
+    expect(result.images).toEqual({
+      recipeId: 7,
+      userId: 'user-1',
+      cover: 'https://blog.example/a/ciasto-1080x1440.jpg',
+      gallery: ['https://blog.example/a/ciasto-1080x1440.jpg', 'https://blog.example/a/krok-1080x1440.jpg'],
+      stepSources: [null, null],
+      replace: false,
+    })
+    expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
   })
 
   it('keeps the stored gallery on a refresh when no photo archives', async () => {

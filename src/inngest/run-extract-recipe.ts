@@ -106,6 +106,72 @@ export interface ExtractRecipeEvent {
 export interface RunExtractRecipeDeps {
   fetch: typeof globalThis.fetch
   supabase: SupabaseClient
+  /**
+   * Hand the photo archiving back as `images` instead of doing it inline. The
+   * Inngest function runs it in steps of its own: archiving a photo-heavy page
+   * in the same Worker invocation as the extraction ran out of budget after the
+   * uploads, so the files landed in Storage but the row never got their URLs —
+   * and every retry redid the whole extraction.
+   */
+  deferImages?: boolean
+}
+
+/** The photos a saved recipe still needs archived into Storage and linked. */
+export interface RecipeImageJob {
+  recipeId: number
+  userId: string
+  cover?: string
+  gallery: string[]
+  stepSources: (string | null)[]
+  /** A refresh replaces the gallery outright, emptying it when the source has none left. */
+  replace: boolean
+}
+
+export interface ExtractRecipeResult {
+  recipeId: number
+  title: string
+  category: string
+  status: string
+  /** Set only with `deferImages`, when the run saved a recipe that has photos to archive. */
+  images?: RecipeImageJob
+}
+
+async function updateRecipe(
+  supabase: SupabaseClient,
+  recipeId: number,
+  update: Database['public']['Tables']['recipes']['Update'],
+): Promise<void> {
+  if (Object.keys(update).length === 0) return
+  const { error } = await supabase.from('recipes').update(update).eq('id', recipeId)
+  // Thrown, not swallowed: an unlinked upload is a cover the recipe silently lacks.
+  if (error) throw new Error(`Image update failed: ${error.message}`)
+}
+
+/**
+ * Archives the cover and the gallery and links them. Never downgrades the
+ * cover: a failed re-archive leaves image_url as it was. The gallery replaces
+ * the stored one when it archived — on a refresh even when empty (the source
+ * lost its photos); a null gallery (nothing archived) keeps the old one.
+ */
+export async function storeCoverAndGallery(supabase: SupabaseClient, job: RecipeImageJob): Promise<void> {
+  const archived = await archiveRecipeImages(supabase, job.userId, job.recipeId, job.cover, job.gallery, {
+    clearStale: job.replace,
+  })
+  const update: Database['public']['Tables']['recipes']['Update'] = {}
+  if (archived.cover != null) update.image_url = archived.cover
+  if (archived.gallery != null && (job.replace || archived.gallery.length > 0)) update.image_urls = archived.gallery
+  await updateRecipe(supabase, job.recipeId, update)
+}
+
+/** Archives the per-step photos and links them — only when this run found some. */
+export async function storeStepImages(supabase: SupabaseClient, job: RecipeImageJob): Promise<void> {
+  const stepImages = await archiveStepImages(supabase, job.userId, job.recipeId, job.stepSources)
+  if (stepImages.some(Boolean)) await updateRecipe(supabase, job.recipeId, { step_images: stepImages })
+}
+
+/** Both of the above, for callers that archive inline (scripts, tests). */
+export async function storeRecipeImages(supabase: SupabaseClient, job: RecipeImageJob): Promise<void> {
+  await Promise.all([storeCoverAndGallery(supabase, job), storeStepImages(supabase, job)])
 }
 
 /** "HTTP 429 Too Many Requests". Workers' fetch leaves statusText empty on
@@ -139,7 +205,7 @@ function timesAreEstimated(r: RecipeData): boolean {
 export async function runExtractRecipe(
   event: ExtractRecipeEvent,
   deps: RunExtractRecipeDeps,
-): Promise<{ recipeId: number; title: string; category: string; status: string }> {
+): Promise<ExtractRecipeResult> {
   const {
     shareId,
     sharedUrl,
@@ -149,7 +215,14 @@ export async function runExtractRecipe(
     sourceType = 'facebook_text',
     force: forceRefresh = false,
   } = event
-  const { fetch, supabase } = deps
+  const { fetch, supabase, deferImages = false } = deps
+
+  // The saved recipe's photos: archived here, or handed back with `deferImages`.
+  async function withImages<R extends ExtractRecipeResult>(result: R, job: RecipeImageJob): Promise<R> {
+    if (deferImages) return { ...result, images: job }
+    await storeRecipeImages(supabase, job)
+    return result
+  }
 
   async function firecrawlScrape(options: ReturnType<typeof buildFirecrawlOptions>) {
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
@@ -819,28 +892,6 @@ Rules:
         throw new Error(`Refresh update failed: ${refreshError?.message ?? 'recipe not found'}`)
       }
 
-      // A refresh replaces the gallery outright, emptying it when the source
-      // no longer has several photos — but keeps it when none of the new
-      // photos could be archived (gallery is null).
-      // Per-step photos are archived here too, as on insert and gap-fill — a
-      // refresh is how an existing recipe gets them after a better extraction.
-      const [archived, stepImages] = await Promise.all([
-        archiveRecipeImages(supabase, userId, refreshed.id, ogImage, gallery, { clearStale: true }),
-        archiveStepImages(supabase, userId, refreshed.id, stepImageSources),
-      ])
-      // Never downgrade the cover: a re-archive that fails leaves image_url
-      // untouched, keeping whatever (Supabase URL or null) the recipe already had.
-      // Step photos follow the same rule: written only when this run found some.
-      const nextImageUrl = archived.cover
-      await supabase
-        .from('recipes')
-        .update({
-          ...(nextImageUrl != null ? { image_url: nextImageUrl } : {}),
-          ...(archived.gallery != null ? { image_urls: archived.gallery } : {}),
-          ...(stepImages.some(Boolean) ? { step_images: stepImages } : {}),
-        })
-        .eq('id', refreshed.id)
-
       const { error: shareError } = await supabase
         .from('recipe_shares')
         .update({ recipe_id: refreshed.id, status: 'completed' })
@@ -848,7 +899,12 @@ Rules:
       // Thrown, so the catch below fails the share rather than leaving it pending (#382).
       if (shareError) throw new Error(`Share update failed: ${shareError.message}`)
 
-      return { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' }
+      // A refresh replaces the gallery outright and is how an existing recipe
+      // gains step photos from a better extraction (see storeCoverAndGallery).
+      return await withImages(
+        { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' },
+        { recipeId: refreshed.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: true },
+      )
     }
 
     const baseSlug = recipeSlug(title)
@@ -868,6 +924,9 @@ Rules:
     const MAX_ATTEMPTS = NUMBERED_SLUG_ATTEMPTS + 3
 
     let recipe: { id: number } | null = null
+    // Set when this run saved a row whose photos it found: a new recipe, or a
+    // gap-filled one (whose stored photos the archived ones replace).
+    let imageJob: RecipeImageJob | null = null
     let lastInsertError: { message: string } | null = null
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -907,19 +966,9 @@ Rules:
 
       if (data) {
         recipe = data
-        // Archive the external og:image, gallery and per-step photos into Supabase
-        // Storage. On failure image_url stays null (NoPhoto placeholder).
-        const [archived, stepImages] = await Promise.all([
-          archiveRecipeImages(supabase, userId, data.id, ogImage, gallery),
-          archiveStepImages(supabase, userId, data.id, stepImageSources),
-        ])
-        const update: Database['public']['Tables']['recipes']['Update'] = {}
-        if (archived.cover != null) update.image_url = archived.cover
-        if (archived.gallery?.length) update.image_urls = archived.gallery
-        if (stepImages.some(Boolean)) update.step_images = stepImages
-        if (Object.keys(update).length > 0) {
-          await supabase.from('recipes').update(update).eq('id', data.id)
-        }
+        // The og:image, gallery and per-step photos are archived once the row
+        // exists; until then image_url stays null (NoPhoto placeholder).
+        imageJob = { recipeId: data.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: false }
         break
       } else {
         lastInsertError = error
@@ -996,24 +1045,14 @@ Rules:
           if (existing.ingredient_fingerprint == null && ingredientFp != null) {
             gapFill.ingredient_fingerprint = ingredientFp
           }
-          // Archive flow: when archiveImage returns a Storage URL, always
-          // overwrite image_url — even a legacy external link. That's how the
-          // backfill (scripts/backfill-archive-covers.ts, scripts/archive-recipe-images.ts)
-          // moves existing recipes onto Supabase Storage. A failed archive
-          // leaves the existing value alone (never writes a new external link).
-          // The gallery follows the same rule: archived photos replace whatever
-          // is there, which is how the backfill gives old recipes a gallery.
-          const [archived, stepImages] = await Promise.all([
-            archiveRecipeImages(supabase, userId, existing.id, ogImage, gallery),
-            archiveStepImages(supabase, userId, existing.id, stepImageSources),
-          ])
-          if (archived.cover != null) {
-            gapFill.image_url = archived.cover
-          }
-          if (archived.gallery?.length) gapFill.image_urls = archived.gallery
-          // Per-step photos follow the gallery rule: a refresh/backfill replaces
-          // what is there, and only when the source yielded some.
-          if (stepImages.some(Boolean)) gapFill.step_images = stepImages
+          // Archive flow: an archived cover always overwrites image_url — even a
+          // legacy external link. That's how the backfill
+          // (scripts/backfill-archive-covers.ts, scripts/archive-recipe-images.ts)
+          // moves existing recipes onto Supabase Storage. A failed archive leaves
+          // the existing value alone (never writes a new external link). The
+          // gallery and step photos follow the same rule: archived photos replace
+          // whatever is there, which is how the backfill gives old recipes them.
+          imageJob = { recipeId: existing.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: false }
 
           // Fill the dish columns only when this row was never classified (never
           // overwrite a reviewed value), the same guard as a refresh.
@@ -1049,7 +1088,8 @@ Rules:
     // Thrown, so the catch below fails the share rather than leaving it pending (#382).
     if (shareError) throw new Error(`Share update failed: ${shareError.message}`)
 
-    return { recipeId: recipe.id, title, category: recipeJSON.category, status: 'completed' }
+    const result = { recipeId: recipe.id, title, category: recipeJSON.category, status: 'completed' }
+    return imageJob ? await withImages(result, imageJob) : result
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
 
