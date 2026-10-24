@@ -1,146 +1,145 @@
 /**
  * Zapisz Przepis Service Worker
  *
- * Phase 1: Minimal service worker for PWA criteria
- * Phase 2: Web Share Target request handling
- * Phase 3: Precaching and cache strategies (current)
+ * Hand-written: next-pwa does not run under Turbopack, so this file is the
+ * worker production serves. `src/lib/sw.test.ts` drives it through a fake
+ * runtime — keep it a plain script with top-level function declarations.
  *
- * Cache Strategy:
- * - Static assets (JS, CSS, fonts): cache-first (validate after 30d)
- * - API routes: network-first with 3600s timeout
- * - HTML pages: network-first, fallback to stale cache
- * - Web Share Target: always network
+ * Cache strategy:
+ * - `/_next/static/*` (content-hashed): cache-first
+ * - other same-origin files (icons, manifest): network-first, cache as fallback
+ * - public pages: network-first, cached for offline
+ * - every other page: network-only
+ * - offline fallback for pages: the cached page, else the cached home page,
+ *   else an "Offline" response
+ * - never intercepted: non-GET (Server Actions, Web Share Target, /api POSTs),
+ *   /api/*, RSC requests (client navigations), cross-origin requests
+ *
+ * Versioning: the page registers `/sw.js?v=<build>`, so every deploy installs a
+ * new worker with its own cache names and deletes the old caches on activate.
+ * The new worker waits until every app window is closed — it never takes over
+ * (and never reloads) open tabs. Sign-out clears every cache but the static one
+ * (`clearPrivateCaches` in `src/lib/pwa-utils.ts`).
  */
 
-const PRECACHE_NAME = 'zapiszprzepis-precache-v2'
-const RUNTIME_CACHE_NAME = 'zapiszprzepis-runtime'
-const API_CACHE_NAME = 'zapiszprzepis-api'
+const CACHE_PREFIX = 'zapiszprzepis-'
+const VERSION = new URL(self.location.href).searchParams.get('v') || 'dev'
+const STATIC_CACHE_NAME = `${CACHE_PREFIX}static-${VERSION}`
+const PAGES_CACHE_NAME = `${CACHE_PREFIX}pages-${VERSION}`
 
-// Workbox precache manifest (injected by next-pwa at build time)
-// eslint-disable-next-line no-undef
-const PRECACHE_MANIFEST = self.__PRECACHE_MANIFEST || []
+// Pages a guest can open. Everything else (signed-in screens, auth forms,
+// onboarding) is never cached, so a new private route stays private by default.
+const PUBLIC_PAGE_PATHS = [
+  '/',
+  '/szukaj',
+  '/wyswietlanie',
+  '/regulamin',
+  '/polityka-prywatnosci',
+  '/usuwanie-danych',
+]
+const PUBLIC_PAGE_PREFIXES = ['/przepis/', '/przepisy/', '/u/']
 
-self.addEventListener('install', (event) => {
-  console.log('[SW] Install event')
-  self.skipWaiting()
+function isPublicPage(pathname) {
+  return PUBLIC_PAGE_PATHS.includes(pathname) ||
+    PUBLIC_PAGE_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+}
 
-  // Cache precache manifest
-  event.waitUntil(
-    caches.open(PRECACHE_NAME).then((cache) => {
-      const urls = PRECACHE_MANIFEST.map((entry) => {
-        return typeof entry === 'string' ? entry : entry.url
-      })
-      return cache.addAll(urls).catch((err) => {
-        console.warn('[SW] Precache addAll failed (may be expected in dev):', err)
-      })
-    })
-  )
-})
+/**
+ * Picks how a request is handled:
+ * - 'network': not intercepted, the browser fetches it as if there were no SW
+ * - 'static': cache-first
+ * - 'file': network-first, cache as fallback
+ * - 'public-page': network-first, cached, offline fallback
+ * - 'private-page': network-only, offline fallback
+ */
+function routeFor(request) {
+  const url = new URL(request.url)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return 'network'
+  if (url.origin !== self.location.origin) return 'network'
+  if (request.method !== 'GET') return 'network'
+  if (url.pathname.startsWith('/api/')) return 'network'
+  if (request.headers.get('RSC') !== null || url.searchParams.has('_rsc')) return 'network'
+
+  if (url.pathname.startsWith('/_next/static/')) return 'static'
+  if (url.pathname.startsWith('/_next/')) return 'network'
+  if (/\.[a-z0-9]+$/i.test(url.pathname)) return 'file'
+
+  if (request.mode !== 'navigate') return 'network'
+  return isPublicPage(url.pathname) ? 'public-page' : 'private-page'
+}
+
+async function putInCache(cacheName, request, response) {
+  try {
+    const cache = await caches.open(cacheName)
+    await cache.put(request, response)
+  } catch (err) {
+    console.warn('[SW] Cache write failed:', err)
+  }
+}
+
+// Fetches from the network and, when cacheName is set, stores a clean 200 in
+// the background (event.waitUntil) so the page never waits on the cache write.
+async function fetchAndStore(event, cacheName) {
+  const response = await fetch(event.request)
+  if (cacheName && response.status === 200 && !response.redirected) {
+    event.waitUntil(putInCache(cacheName, event.request, response.clone()))
+  }
+  return response
+}
+
+// The caches only ever hold plain GET responses (RSC flight data is never
+// stored), so a Vary header added upstream must not turn a stored page into a miss.
+const MATCH_OPTIONS = { ignoreVary: true }
+
+async function cacheFirst(event) {
+  return (await caches.match(event.request, MATCH_OPTIONS)) ?? fetchAndStore(event, STATIC_CACHE_NAME)
+}
+
+async function networkFirst(event) {
+  try {
+    return await fetchAndStore(event, STATIC_CACHE_NAME)
+  } catch (err) {
+    const cached = await caches.match(event.request, MATCH_OPTIONS)
+    if (cached) return cached
+    throw err
+  }
+}
+
+async function offlineFallback(request) {
+  return (await caches.match(request, MATCH_OPTIONS)) ??
+    (await caches.match('/', MATCH_OPTIONS)) ??
+    new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+}
+
+async function page(event, cacheName) {
+  try {
+    return await fetchAndStore(event, cacheName)
+  } catch {
+    return offlineFallback(event.request)
+  }
+}
+
+function handle(event) {
+  switch (routeFor(event.request)) {
+    case 'static': return cacheFirst(event)
+    case 'file': return networkFirst(event)
+    case 'public-page': return page(event, PAGES_CACHE_NAME)
+    case 'private-page': return page(event, null)
+    default: return null
+  }
+}
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activate event')
-  event.waitUntil(clients.claim())
-
-  // Clean up old cache versions
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== PRECACHE_NAME &&
-              cacheName !== RUNTIME_CACHE_NAME &&
-              cacheName !== API_CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', cacheName)
-            return caches.delete(cacheName)
-          }
-        })
-      )
-    })
+    caches.keys().then((cacheNames) => Promise.all(
+      cacheNames
+        .filter((name) => name !== STATIC_CACHE_NAME && name !== PAGES_CACHE_NAME)
+        .map((name) => caches.delete(name))
+    ))
   )
 })
 
 self.addEventListener('fetch', (event) => {
-  const { method, url } = event.request
-  const urlObj = new URL(url)
-  const { protocol, pathname } = urlObj
-
-  // Skip non-http(s) requests — chrome-extension:// injected by browser
-  // extensions cannot be cached and must not be intercepted by the SW.
-  if (protocol !== 'http:' && protocol !== 'https:') return
-
-  // All POST requests except /api/ routes go directly to network:
-  // - Next.js Server Actions must not be cached or intercepted
-  // - Web Share Target (/share) always goes to network
-  // API POST routes fall through to the api handler below.
-  if (method === 'POST' && !pathname.startsWith('/api/')) {
-    return event.respondWith(fetch(event.request))
-  }
-
-  // API routes: network-first with timeout
-  if (pathname.startsWith('/api/')) {
-    return event.respondWith(
-      Promise.race([
-        fetch(event.request).then((response) => {
-          if (response.ok) {
-            caches.open(API_CACHE_NAME).then((cache) => {
-              cache.put(event.request, response.clone())
-            })
-          }
-          return response
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('API timeout')), 3000)
-        ),
-      ]).catch(() => {
-        return caches.match(event.request) ||
-               new Response('Offline', { status: 503 })
-      })
-    )
-  }
-
-  // Static assets (JS, CSS, fonts, images): cache-first
-  if (/\.(js|css|woff2?|png|svg|jpg|jpeg|gif|webp|ico)$/.test(pathname)) {
-    return event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached
-        return fetch(event.request).then((response) => {
-          if (!response.ok) return response
-
-          // Clone immediately — response body stream may be consumed by browser
-          const responseToCache = response.clone()
-          caches.open(PRECACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache)
-          })
-          return response
-        }).catch(() => {
-          return new Response('Offline', { status: 503 })
-        })
-      })
-    )
-  }
-
-  // HTML pages: network-first, fallback to stale cache
-  if (method === 'GET' && !pathname.startsWith('/_')) {
-    return event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (response.ok && response.status === 200) {
-            const responseToCache = response.clone()
-            caches.open(RUNTIME_CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache)
-            })
-          }
-          return response
-        })
-        .catch(() => {
-          return caches.match(event.request) ||
-                 caches.match('/') ||
-                 new Response('Offline', { status: 503 })
-        })
-    )
-  }
-
-  // Default: network only
-  return event.respondWith(fetch(event.request))
+  const response = handle(event)
+  if (response) event.respondWith(response)
 })
-
-console.log('[SW] Service Worker loaded (Phase 3: Caching enabled)')

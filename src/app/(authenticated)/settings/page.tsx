@@ -6,8 +6,8 @@ import { SUPABASE_URL } from '@/lib/env'
 import { avatarColorIndex, avatarUrl } from '@/lib/avatar'
 import { NOTIFICATIONS_PATH, profilePath } from '@/lib/routes'
 import { genderFormOf, youAddedLine } from '@/lib/gender-form'
-import { signOut } from '@/app/(actions)/sign-out'
 import { PageContainer } from '@/app/components/page-container'
+import { SignOutForm } from '@/app/components/sign-out-form'
 import { Button } from '@/app/components/ui/button'
 import { SettingsForm } from './settings-form'
 
@@ -67,12 +67,12 @@ export default async function SettingsPage() {
           <span className="min-w-0 flex-1 underline underline-offset-4">Powiadomienia</span>
           <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-ink-soft" />
         </Link>
-        <form action={signOut} className="mt-8 border-t-2 border-border-card pt-5">
+        <SignOutForm className="mt-8 border-t-2 border-border-card pt-5">
           <Button type="submit" variant="outline" size="lg" className="w-full">
             <LogOut aria-hidden="true" className="h-5 w-5 shrink-0" />
             Wyloguj
           </Button>
-        </form>
+        </SignOutForm>
       </PageContainer>
     </main>
   )

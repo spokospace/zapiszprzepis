@@ -8,6 +8,37 @@
 
 let updateAvailable = false
 
+// Keep in sync with the cache names in public/sw.js.
+const CACHE_PREFIX = 'zapiszprzepis-'
+const STATIC_CACHE_PREFIX = `${CACHE_PREFIX}static-`
+
+/**
+ * The worker URL carries the build version, so each deploy registers a new
+ * worker whose caches replace the previous build's (see public/sw.js).
+ */
+export function serviceWorkerUrl(version = process.env.NEXT_PUBLIC_SW_VERSION): string {
+  return version ? `/sw.js?v=${encodeURIComponent(version)}` : '/sw.js'
+}
+
+/**
+ * Deletes every cache the worker keeps except the content-hashed static files,
+ * so pages rendered for a signed-in user are gone once they sign out. Never
+ * throws: sign-out must go ahead even where Cache Storage is unavailable.
+ */
+export async function clearPrivateCaches(cacheStorage: CacheStorage | undefined = globalThis.caches): Promise<void> {
+  if (!cacheStorage) return
+  try {
+    const names = await cacheStorage.keys()
+    await Promise.all(
+      names
+        .filter((name) => name.startsWith(CACHE_PREFIX) && !name.startsWith(STATIC_CACHE_PREFIX))
+        .map((name) => cacheStorage.delete(name))
+    )
+  } catch (error) {
+    console.warn('[PWA] Clearing caches failed:', error)
+  }
+}
+
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | undefined> {
   if (!('serviceWorker' in navigator)) {
     console.warn('[PWA] Service Workers not supported')
@@ -15,7 +46,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
-    const registration = await navigator.serviceWorker.register('/sw.js', {
+    const registration = await navigator.serviceWorker.register(serviceWorkerUrl(), {
       scope: '/',
     })
     console.log('[PWA] Service Worker registered:', registration)

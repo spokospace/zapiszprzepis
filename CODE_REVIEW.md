@@ -58,7 +58,7 @@ Stack: Next.js 16 App Router (React 19) running on Cloudflare Workers via OpenNe
 
 ### PWA
 
-- Changes to `public/sw.js` caching must bump the precache name (`zapiszprzepis-precache-vN`), and must never cache server-action POSTs or authenticated HTML as cache-first.
+- `public/sw.js` versions its caches per build through the `?v=` on its registration URL (`serviceWorkerUrl` in `src/lib/pwa-utils.ts`) — keep it that way rather than hard-coding a version. It must never intercept non-GET requests (Server Actions, `/share`, `/api`) or RSC requests, and must never cache signed-in pages: only routes `isPublicRoute` allows are cached (`src/lib/sw.test.ts` keeps the two in sync).
 - `public/manifest.json` `share_target` must keep matching the `/share` POST handler's field names (`title`, `text`, `url`).
 
 ### Next.js 16 and React 19

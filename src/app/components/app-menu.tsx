@@ -4,13 +4,13 @@ import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ALargeSmall, Bell, BookOpen, Heart, House, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
-import { signOut } from '@/app/(actions)/sign-out'
 import { buttonClasses } from '@/app/components/ui/button'
 import { categoryDisplayLabel, CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { categoryPath, NOTIFICATIONS_PATH } from '@/lib/routes'
 import type { MenuSummary } from '@/lib/menu-summary'
 import type { NotificationBadge } from '@/lib/notification-badge'
 import { NotificationDot } from './notification-dot'
+import { SignOutForm } from './sign-out-form'
 import { buildMenuModel, newNotificationsNoun, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
 
 const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
@@ -323,7 +323,7 @@ export function AppMenu({
                 <Settings aria-hidden="true" className="h-6 w-6 shrink-0" />
                 <span className="min-w-0 break-words">Ustawienia</span>
               </Link>
-              <form action={signOut}>
+              <SignOutForm>
                 <button
                   type="submit"
                   className={`${FOOTER_ROW} w-full text-ink`}
@@ -331,7 +331,7 @@ export function AppMenu({
                   <LogOut aria-hidden="true" className="h-6 w-6 shrink-0" />
                   <span className="min-w-0 break-words">Wyloguj</span>
                 </button>
-              </form>
+              </SignOutForm>
             </div>
           )}
         </div>
