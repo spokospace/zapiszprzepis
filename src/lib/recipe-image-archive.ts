@@ -212,9 +212,13 @@ async function archiveImageAt(
     // Prefer the full-size original — a WordPress resize URL may 301
     // (kulinarnapolska.org) — but fall back to the URL as found when the
     // original is missing or too big to archive (the 5 MB cap), so a resize
-    // that would archive cleanly is never traded for a broken cover.
+    // that would archive cleanly is never traded for a broken cover. The
+    // original is a guess, so it gets one direct try: its 404 (aniagotuje's
+    // -v-1080x1080 has no bare file) means "no such file", which the http
+    // retry and the proxy cannot change — they cost two more fetches a photo.
     const fullUrl = fullSizeImageUrl(externalUrl)
-    const image = (fullUrl !== externalUrl ? await fetchImage(fullUrl) : null) ?? (await fetchImage(externalUrl))
+    const image =
+      (fullUrl !== externalUrl ? (await downloadImage(fullUrl)).image : null) ?? (await fetchImage(externalUrl))
     if (!image) return null
 
     const { bytes, contentType, ext } = image
