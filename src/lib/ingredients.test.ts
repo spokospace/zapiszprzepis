@@ -1,5 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { parseIngredients, groupBySection } from '@/lib/ingredients'
+import { parseIngredients, groupBySection, ingredientLine } from '@/lib/ingredients'
+
+describe('ingredientLine', () => {
+  it('joins amount, unit and name, dropping empty parts', () => {
+    expect(ingredientLine({ amount: '2', unit: 'szklanki', name: 'mąki' })).toBe('2 szklanki mąki')
+    expect(ingredientLine({ name: 'sól' })).toBe('sól')
+  })
+
+  it('leaves the household measure off by default (JSON-LD quantity stays clean)', () => {
+    expect(ingredientLine({ amount: '150', unit: 'g', name: 'masła', alt: '3/4 kostki' })).toBe('150 g masła')
+  })
+
+  it('appends the household measure in parentheses when opts.alt is set (#505)', () => {
+    expect(ingredientLine({ amount: '150', unit: 'g', name: 'masła', alt: '3/4 kostki' }, { alt: true })).toBe('150 g masła (3/4 kostki)')
+    // No alt stored → no parentheses even when opted in.
+    expect(ingredientLine({ amount: '4', name: 'jajka' }, { alt: true })).toBe('4 jajka')
+  })
+})
 
 // Risk 4 — ingredient mis-parse / jsonb shape drift. parseIngredients must never
 // throw (RSC crash); groupBySection reproduces the prior contiguous grouping.

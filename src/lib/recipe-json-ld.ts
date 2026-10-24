@@ -62,8 +62,10 @@ export function buildRecipeJsonLd(recipe: RecipeForJsonLd, siteUrl: string): Rec
   const url = `${siteUrl}${recipePath(recipe.slug)}`
   const description = recipe.meta_description ?? buildFallbackMetaDescription(recipe)
 
+  // Metric quantity only — no household "alt" measure: search engines expect a
+  // clean recipeIngredient quantity (#505).
   const ingredients = parseIngredients(recipe.ingredients)
-    .map(ingredientLine)
+    .map((ing) => ingredientLine(ing))
     .filter((line) => line.length > 0)
   const steps = parseSteps(recipe.steps)
 

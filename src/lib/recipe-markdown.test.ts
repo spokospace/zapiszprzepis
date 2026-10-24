@@ -9,7 +9,7 @@ const base: RecipeForMarkdown = {
   ingredients: [
     { name: 'twaróg', amount: '1', unit: 'kg', section: 'Masa serowa' },
     { name: 'cukier', amount: '20', unit: 'dag', section: 'Masa serowa' },
-    { name: 'mąka', amount: '2', unit: 'szklanki', section: 'Ciasto' },
+    { name: 'mąka', amount: '2', unit: 'szklanki', alt: 'ok. 250 g', section: 'Ciasto' },
   ],
   steps: ['Zmiel twaróg.', 'Dodaj cukier i jajka.', 'Piecz 60 minut.'],
   prep_time_minutes: 30,
@@ -32,9 +32,9 @@ describe('recipeToMarkdown', () => {
     expect(md).toContain('Klasyczny sernik z kratką.')
     expect(md).toContain('## Składniki')
     expect(md).toContain('### Masa serowa')
-    expect(md).toContain('- 1 kg twaróg')
+    expect(md).toContain('- 1 kg twaróg') // no alt → no parentheses
     expect(md).toContain('### Ciasto')
-    expect(md).toContain('- 2 szklanki mąka')
+    expect(md).toContain('- 2 szklanki mąka (ok. 250 g)') // household measure appended (#505)
     expect(md).toContain('## Przygotowanie')
     expect(md).toContain('1. Zmiel twaróg.')
     expect(md).toContain('3. Piecz 60 minut.')

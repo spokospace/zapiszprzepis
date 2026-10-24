@@ -1,0 +1,21 @@
+{
+  "format": "discovery-prototype-v1",
+  "skill": "om-mockup-prototype",
+  "slug": "recipe-ingredient-alt-measures",
+  "revision": 1,
+  "revisionPath": ".ai/prototypes/discovery/recipe-ingredient-alt-measures/revision-001",
+  "previousRevision": null,
+  "brief": "https://github.com/spokospace/zapiszprzepis/issues/505",
+  "flow": "Display an alternative household measure beside each ingredient's metric amount on the recipe page (desktop + mobile)",
+  "panelReport": null,
+  "verification": "passed",
+  "files": [
+    { "path": "index.html", "sha256": "da583318042a33fbfd69d2b76c4f71dad1a038434287f5585985790ee3d644e7" },
+    { "path": "README.md", "sha256": "a1253764edd14e2ffdd284df5468614785e70fa983703cb3f84d191c775d56cc" },
+    { "path": "evidence/01-desktop-secondline-recommended.jpg", "sha256": "1ceda3e8f8504f5956bef1aa0829b9c2f0c5b5dcd1e3e41cd5a10183bc3237dd" },
+    { "path": "evidence/02-krem-section-and-mobile.jpg", "sha256": "27686b6075fece3f4a412b0ec21f164918fda508a138b5702cc492d9d28d7f06" },
+    { "path": "evidence/03-desktop-inline-variant.jpg", "sha256": "a9dd6df5e0ba2f21a0c1abbb8584f97e5d549367044c7eadd6ea0ba5edf405fc" },
+    { "path": "evidence/04-checked-strikethrough.png", "sha256": "0a9e5d76cd20a9357d3ccb741de8c999e4ff388d99d5ae63e23edbd1ac01405d" },
+    { "path": "evidence/05-reflow-320px.png", "sha256": "781bb23a48beeca9a83422aa8c6f4d68fa550543baadf9af9d64d32b4c51b43c" }
+  ]
+}

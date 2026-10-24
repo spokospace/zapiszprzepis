@@ -52,13 +52,17 @@ function IngredientRow({
   onToggle,
   name,
   amount,
+  alt,
 }: {
   checked: boolean
   onToggle: () => void
   name: string | undefined
   amount: string | null
+  /** Household measure shown under the amount ("ok. 1,5 szklanki"), or null (#505). */
+  alt: string | null
 }) {
   const text = checked ? 'text-ink-muted line-through' : 'text-ink'
+  const altText = checked ? text : 'text-ink-soft'
   return (
     <label className="flex min-h-[56px] cursor-pointer items-center gap-3.5 border-b-[1.5px] border-border-card px-1 py-1.5">
       <span className="relative flex h-8 w-8 shrink-0">
@@ -76,9 +80,21 @@ function IngredientRow({
         />
       </span>
       <span className={`text-scalable min-w-0 flex-1 break-words leading-snug ${text}`}>{name}</span>
-      {/* Wraps (right-aligned) rather than nowrap: a long amount such as
-          "1 i 1/2 szklanki (ok. 375 ml)" at A++ would scroll the page sideways. */}
-      {amount && <b className={`text-scalable max-w-[45%] text-right ${text}`}>{amount}</b>}
+      {/* Both wrap (right-aligned) rather than nowrap: a long amount or measure at
+          A++ would scroll the page sideways. With an alt measure the metric amount
+          sits on top and the household measure below it, lighter and 16 px — the
+          owner's "second line" treatment (#505). */}
+      {alt ? (
+        <span className="flex max-w-[45%] flex-col items-end text-right">
+          {amount && <b className={`text-scalable ${text}`}>{amount}</b>}
+          {/* 16 px base so .text-scalable (which scales the parent em) grows from 16, not 19. */}
+          <span className="text-[16px]">
+            <span className={`text-scalable ${altText}`}>{alt}</span>
+          </span>
+        </span>
+      ) : (
+        amount && <b className={`text-scalable max-w-[45%] text-right ${text}`}>{amount}</b>
+      )}
     </label>
   )
 }
@@ -204,6 +220,7 @@ export function RecipeChecklists({
                       onToggle={() => toggle(index)}
                       name={ingredient.name}
                       amount={ingredient.amount ? [ingredient.amount, ingredient.unit].filter(Boolean).join(' ') : null}
+                      alt={ingredient.alt?.trim() || null}
                     />
                   </li>
                 )

@@ -85,6 +85,43 @@ describe('RecipeChecklists text size (FR #485)', () => {
   })
 })
 
+// #505: a household "alt" measure shows as a lighter 16 px second line under the amount;
+// an ingredient without one keeps a single line (no empty second line / stray markup).
+describe('RecipeChecklists alternative measure (#505)', () => {
+  function renderAlt() {
+    return renderToStaticMarkup(
+      createElement(RecipeChecklists, {
+        recipeId: 1,
+        title: 'Ciasto',
+        ingredientGroups: [
+          {
+            section: null,
+            items: [
+              { name: 'masło', amount: '150', unit: 'g', alt: '3/4 kostki' },
+              { name: 'jajka', amount: '4', unit: '' },
+            ],
+          },
+        ],
+        steps: ['Wymieszać.'],
+        servings: null,
+      }),
+    )
+  }
+
+  it('renders the alt measure as a 16 px ink-soft line under the amount', () => {
+    const html = renderAlt()
+    expect(html).toContain('<b class="text-scalable text-ink">150 g</b>')
+    expect(html).toContain('<span class="text-[16px]"><span class="text-scalable text-ink-soft">3/4 kostki</span></span>')
+  })
+
+  it('keeps an ingredient without an alt measure on a single plain amount line', () => {
+    const html = renderAlt()
+    // The no-alt row keeps the original <b> amount markup and adds no 16 px line.
+    expect(html).toContain('<b class="text-scalable max-w-[45%] text-right text-ink">4</b>')
+    expect((html.match(/text-\[16px\]/g) ?? []).length).toBe(1)
+  })
+})
+
 // Owner decision 2026-10-20: „Krok 1” over each step, in an ordered list (screen readers
 // announce the position); the total „z M” only in cooking mode.
 describe('RecipeChecklists steps', () => {

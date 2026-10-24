@@ -182,7 +182,7 @@ function httpStatus(response: Response): string {
 
 interface RecipeData {
   title: string
-  ingredients: Array<{ name: string; amount?: string; unit?: string; section?: string }>
+  ingredients: Array<{ name: string; amount?: string; unit?: string; alt?: string; section?: string }>
   steps: string[]
   /** One entry per step (index-aligned): the in-content image URL the LLM picked, or null. */
   stepImages?: (string | null)[]
@@ -557,7 +557,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
 {
   "title": "Recipe title in Polish",
   "ingredients": [
-      {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "section": "section heading or empty string"}
+      {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
   ],
   "steps": [{"text": "Step 1 description", "image": "image URL from the content that shows THIS step, or null"}],
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
@@ -570,7 +570,8 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
 Rules:
 - The page often includes navigation, related/popular posts widgets, comments and ads. Focus ONLY on the PRIMARY recipe — usually the post-body content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
 - Ingredient sections: many recipes split ingredients into named parts (e.g. "Podmłoda", "Ciasto właściwe", "Masa waniliowa", "Masa truskawkowa", "Spód", "Krem", "Dodatkowo"). When the source groups ingredients under such a heading, set "section" to that heading (in Polish, keep it short) for every ingredient in that group, preserving the source order so groups stay contiguous. If the ingredients are a single ungrouped list, use an empty string for "section" on every ingredient.
-- Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml).
+- Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml) and keep the precise metric value in "amount"/"unit".
+- Alternative measure ("alt"): when the source states an approximate HOUSEHOLD measure alongside the precise amount — szklanki, kostki, łyżki, łyżeczki, plasterki, garście — put that in "alt" as short Polish text ("ok. 1,5 szklanki", "3/4 kostki", "2 łyżki"). This includes the original US household measure before you convert it: keep the metric figure in "amount"/"unit" and record the original cups/sticks/spoons in "alt". Empty string when the source gives only one measure. Never invent an "alt" the source does not state.
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
 - Category: cookies, biscuits, gingerbread cookies, macarons and crescent rolls ("ciasteczka", "herbatniki", "pierniczki", "makaroniki", "rogaliki", "faworki") are "ciasteczka". Cakes, tortes, cheesecakes, gingerbread cakes, sponge cakes and apple pies ("ciasto", "tort", "sernik", "piernik", "biszkopt", "szarlotka", "mazurek", "babka", named layer cakes like "Marysieńka", no-bake layer cakes "bez pieczenia") are "ciasta". Reserve "desery" for non-cake sweets only: sweet muffins and cupcakes ("babeczki", "muffiny"), ice cream, doughnuts ("pączki"), choux ("ptysie"), tiramisu, creams/mousses, jellies ("galaretka"), sweet yeast buns ("drożdżówki", "jagodzianki", "ślimaczki").

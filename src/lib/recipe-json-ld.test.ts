@@ -10,7 +10,7 @@ const base: RecipeForJsonLd = {
   meta_description: 'Najlepszy sernik krakowski z kratką — przepis krok po kroku.',
   image_url: 'https://wvrlgddgdddwmgzbvtij.supabase.co/storage/v1/object/public/recipe-images/u/7/sernik.jpg',
   ingredients: [
-    { name: 'twaróg', amount: '1', unit: 'kg' },
+    { name: 'twaróg', amount: '1', unit: 'kg', alt: 'ok. 2 kostki' },
     { name: 'cukier', amount: '20', unit: 'dag' },
   ],
   steps: ['Zmiel twaróg.', 'Dodaj cukier i jajka.', 'Piecz 60 minut.'],
@@ -53,7 +53,8 @@ describe('buildRecipeJsonLd', () => {
     expect(buildRecipeJsonLd({ ...base, servings: 2 }, SITE).recipeYield).toBe('2 porcje')
   })
 
-  it('joins ingredients as amount + unit + name', () => {
+  it('joins ingredients as amount + unit + name, without the household alt measure (#505)', () => {
+    // twaróg carries alt "ok. 2 kostki" in the fixture; it must NOT reach recipeIngredient.
     expect(buildRecipeJsonLd(base, SITE).recipeIngredient).toEqual(['1 kg twaróg', '20 dag cukier'])
   })
 
