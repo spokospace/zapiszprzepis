@@ -143,6 +143,14 @@ function NavLink({
   return (
     <Link
       href={recipePath(item.slug, { from })}
+      // Full prefetch of the neighbour, not just loading.tsx (#464 item 3). The recipe
+      // page is a dynamic route with a loading boundary, so the default (prefetch unset)
+      // only prefetches the skeleton — the skeleton flashes but the recipe still loads on
+      // click. `prefetch` fetches the whole RSC payload (data included) when the button
+      // scrolls into view at the end of the recipe, and Next keeps it in the client router
+      // cache under the `static` staleTime (5 min), not `dynamic` (0 s), so the click
+      // reuses it and next/prev feels instant.
+      prefetch
       className={`${NAV} ${prev ? '' : 'justify-between'} ${solo ? `lg:w-[420px] ${prev ? 'lg:justify-self-start' : 'lg:justify-self-end'}` : ''} border-ink bg-white text-ink hover:bg-surface-3`}
     >
       {prev && arrow}
