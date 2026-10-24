@@ -7,6 +7,7 @@
 // whatever is stored into something the view can render without crashing.
 
 import { deriveVolumeMeasure } from './volume-measure'
+import { deriveWeightMeasure } from './weight-density'
 
 export type Ingredient = {
   name?: string
@@ -58,16 +59,18 @@ export function ingredientLine(ing: Ingredient, opts?: { alt?: boolean }): strin
 }
 
 /**
- * The household measure to show beside an ingredient's metric amount: the
- * source-stated one (`alt`) when present, otherwise one derived from a volume
- * amount via fixed ratios (`deriveVolumeMeasure`). Null when neither applies —
- * in particular, a weight amount is never turned into szklanki (density varies
- * per ingredient; see `volume-measure.ts`). The source measure always wins (#505).
+ * The household measure to show beside an ingredient's metric amount, in priority
+ * order: the source-stated one (`alt`) when present, else one derived from a
+ * volume amount via fixed ratios (`deriveVolumeMeasure`), else one derived from a
+ * weight amount for a curated staple via its density (`deriveWeightMeasure`).
+ * Null when none applies — a weight amount whose ingredient is not a known staple
+ * is never turned into szklanki (density varies too much; see `weight-density.ts`).
+ * The source measure always wins, and volume beats the weight table (#505, #510).
  */
 export function householdMeasure(ing: Ingredient): string | null {
   const stated = ing.alt?.trim()
   if (stated) return stated
-  return deriveVolumeMeasure(ing.amount, ing.unit)
+  return deriveVolumeMeasure(ing.amount, ing.unit) ?? deriveWeightMeasure(ing.amount, ing.unit, ing.name)
 }
 
 /**

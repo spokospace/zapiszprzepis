@@ -33,8 +33,23 @@ describe('householdMeasure', () => {
     expect(householdMeasure({ amount: '180', unit: 'ml' })).toBe('ok. 3/4 szklanki')
   })
 
-  it('is null for a weight amount or when nothing applies', () => {
+  it('derives from a weight staple when nothing is stated and no volume applies (#510)', () => {
+    expect(householdMeasure({ amount: '130', unit: 'g', name: 'mąki pszennej' })).toBe('ok. 1 szklanka')
+    expect(householdMeasure({ amount: '200', unit: 'g', name: 'masła' })).toBe('1 kostka')
+  })
+
+  it('keeps the weight table below the source-stated and volume measures (#510)', () => {
+    // A source-stated measure wins over a weight staple.
+    expect(householdMeasure({ amount: '130', unit: 'g', name: 'mąki', alt: '1 szklanka z czubem' })).toBe(
+      '1 szklanka z czubem',
+    )
+    // A volume amount is still derived; the weight table only runs when volume yields nothing.
+    expect(householdMeasure({ amount: '250', unit: 'ml', name: 'mąki' })).toBe('1 szklanka')
+  })
+
+  it('is null for a weight amount with no matching staple, or when nothing applies', () => {
     expect(householdMeasure({ amount: '300', unit: 'g', name: 'startej marchewki' })).toBeNull()
+    expect(householdMeasure({ amount: '50', unit: 'g', name: 'orzechów włoskich' })).toBeNull()
     expect(householdMeasure({ name: 'sól' })).toBeNull()
   })
 })
