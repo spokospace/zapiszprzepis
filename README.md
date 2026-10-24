@@ -171,11 +171,14 @@ Installable on Android (Chrome/Edge), Windows, and macOS. Offline-capable with W
 - Supported formats: `text/plain`, `text/uri-list`
 - POST `/share` → processes URL → recipe appears in list
 
-**Service Worker & Offline**:
-- Static assets (.js, .css, .woff2, images): cache-first, 30-day revalidate
-- API routes (`/api/*`): network-first, 3 s timeout, fallback to cache
-- HTML pages: network-first, fallback to stale cache or home (`/`)
-- Web Share Target: always network (no cache)
+**Service Worker & Offline** (`public/sw.js`, tests in `src/lib/sw.test.ts`):
+- Build assets (`/_next/static/*`, content-hashed): cache-first
+- Other files (icons, manifest): network-first, cache as offline fallback
+- Public pages (home, recipes, categories, search, profiles, legal): network-first, cached for offline
+- Signed-in pages, auth forms, RSC requests (client navigations), `/api/*`, and every non-GET request (Server Actions, Web Share Target): network only, never cached
+- Offline, a page falls back to its cached copy, then the cached home page (`/`), then an „Offline” response
+- Sign-out clears every cache except the build assets
+- Each deploy registers `/sw.js?v=<build>`: the new worker gets fresh caches and waits until every app window is closed, so open tabs are never reloaded
 
 ---
 
