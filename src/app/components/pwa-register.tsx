@@ -13,10 +13,10 @@ import { registerServiceWorker } from '@/lib/pwa-utils'
  */
 export function PWARegister() {
   useEffect(() => {
-    // In development next-pwa is disabled, so there is no fresh service worker
-    // to register — a lingering one from a prior prod build only serves stale
-    // Turbopack chunks ("module factory is not available"). Proactively
-    // unregister any existing worker instead of registering.
+    // In development there is no fresh service worker to register — a lingering
+    // one from a prior prod build only serves stale Turbopack chunks ("module
+    // factory is not available"). Proactively unregister any existing worker
+    // instead of registering.
     if (process.env.NODE_ENV !== 'production') {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
