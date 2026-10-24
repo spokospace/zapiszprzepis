@@ -34,6 +34,22 @@ Before intake, the work is shaped: `om-brainstorm` turns a single idea or questi
 
 After merge, this process stops. Deployment, smoke tests, monitoring, and rollback belong to the repository's release process, not to this document: the Maintainer — or a release manager, when the team names one — drafts the changelog with `om-auto-update-changelog` and reconciles the tracker with `om-close-fixed-issues`, and `om-pipeline-retro` reads finished runs to rank what second passes cost. Merge is where this document ends; delivering the change to users is a separate process the team owns.
 
+## Definition of Ready
+
+A ticket is *ready* when it can be built without guessing what the author meant. The Intake and Triage stages above gate on this: `om-auto-fix-issue` (feature route) and `om-auto-manage-issues` check a filed ticket against the **ticket-level tier** before any spec or code is written, and a ticket that fails it gets a `not ready` comment listing the gaps and stops the chain cleanly. Readiness has two tiers.
+
+**Ticket-level — the ticket itself must carry this before work starts:**
+
+- the problem, and who has it — stated, not inferred;
+- the expected outcome, and how it will be checked (a "done when");
+- what is out of scope — the non-goals;
+- no blocking open question left unanswered;
+- any assumption an autonomous run would otherwise make, already confirmed by a human.
+
+A maintainer's explicit waiver on the ticket ("ready as is") satisfies this tier. Never fill a missing item by guessing — a guessed problem statement is the failure this gate exists to prevent.
+
+**Spec-level — supplied by a covering spec, not the ticket:** acceptance criteria, business rules, the concrete paths, the data and permissions touched, dependencies, and (for a user-facing change) a prototype link. The ticket gate does **not** check these; when they are missing the feature route authors a spec (`om-auto-write-spec`) that provides them, so their absence never stops intake. A bug fix needs no spec — `om-root-cause` locates the change surface instead.
+
 ## Label state machine
 
 Pipeline labels are mutually exclusive: a PR carries at most one, and it names where the PR sits in the flow.
