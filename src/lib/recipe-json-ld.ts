@@ -48,12 +48,25 @@ function absoluteImage(imageUrl: string, siteUrl: string): string {
 /**
  * The schema.org/Recipe object for a recipe's detail page, ready to serialize
  * into a <script type="application/ld+json"> tag. Emits only fields we can fill
- * honestly from stored data:
+ * honestly from stored data.
+ *
+ * Google Search Console flags several non-critical "missing field" suggestions
+ * for Recipe markup; none blocks rich results, and we deliberately decline every
+ * one because the honest data does not exist (triaged in #493 — the recipe-json-ld
+ * tests lock these omissions so a later edit cannot silently start emitting them):
  *   - NO aggregateRating / review — there is no ratings system, and Google
  *     forbids fabricated ratings (they are what render the SERP stars).
- *   - NO nutrition — not stored.
- *   - NO video — a VideoObject needs an uploadDate we do not have, which would
- *     only raise a Search Console warning without adding to the Recipe result.
+ *   - NO nutrition — not stored; estimating it would be invented data.
+ *   - NO video — a VideoObject needs an uploadDate we do not store, even where a
+ *     youtube_id exists; it would only raise a Search Console warning without
+ *     adding to the Recipe result. (youtube_id is not even a builder input.)
+ *   - NO recipeCuisine — there is no stored cuisine. `category` is a dish-type
+ *     enum (obiady/zupy/desery...) and `tags` are free-form keywords; deriving or
+ *     defaulting a cuisine (e.g. "Polish") would be invented data. Revisit only if
+ *     a trustworthy cuisine field is ever stored.
+ *   - NO image / video per recipeInstructions step — step photos are login-gated
+ *     (visibleStepImages), and Googlebot is anonymous, so the markup must describe
+ *     only what a signed-out visitor sees.
  * prep/cook/total times are included even when estimated (`times_estimated`):
  * they are the approximations the page itself shows, and dropping them loses the
  * richest part of the snippet.

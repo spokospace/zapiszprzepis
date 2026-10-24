@@ -81,6 +81,27 @@ describe('buildRecipeJsonLd', () => {
     expect(ld.nutrition).toBeUndefined()
   })
 
+  it('never emits the declined Search Console suggestion fields (#493)', () => {
+    const ld = buildRecipeJsonLd(base, SITE)
+    // No cuisine is stored (category is dish-type, tags are free-form), so
+    // recipeCuisine is never emitted — deriving one would be invented data.
+    expect(ld.recipeCuisine).toBeUndefined()
+    // A VideoObject needs an uploadDate we do not store; no video field is emitted.
+    expect(ld.video).toBeUndefined()
+    // Even when the row carries a youtube_id (the page embeds it separately), the
+    // builder never turns it into a Recipe video field.
+    const withVideo: RecipeForJsonLd & { youtube_id: string } = { ...base, youtube_id: 'dQw4w9WgXcQ' }
+    expect(buildRecipeJsonLd(withVideo, SITE).video).toBeUndefined()
+    // Step photos are login-gated, so each HowToStep carries text only — the
+    // markup must describe only what a signed-out crawler sees.
+    const instructions = ld.recipeInstructions as Array<Record<string, unknown>>
+    expect(instructions.length).toBeGreaterThan(0)
+    for (const step of instructions) {
+      expect(step.image).toBeUndefined()
+      expect(step.video).toBeUndefined()
+    }
+  })
+
   it('keeps estimated times — they are what the page shows', () => {
     const ld = buildRecipeJsonLd({ ...base, total_time_minutes: 45 }, SITE)
     expect(ld.totalTime).toBe('PT45M')
