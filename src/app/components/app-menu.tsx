@@ -227,7 +227,7 @@ export function AppMenu({
               }`}
             >
               <ALargeSmall aria-hidden="true" className="h-6 w-6 shrink-0" />
-              {displayPrefs.label}
+              <span className="min-w-0 break-words">{displayPrefs.label}</span>
             </Link>
             <div className="pt-4" />
             {mine ? (
@@ -321,7 +321,7 @@ export function AppMenu({
                 className={`${FOOTER_ROW} ${pathname === '/settings' ? 'text-action-text bg-surface-3' : 'text-ink'}`}
               >
                 <Settings aria-hidden="true" className="h-6 w-6 shrink-0" />
-                Ustawienia
+                <span className="min-w-0 break-words">Ustawienia</span>
               </Link>
               <form action={signOut}>
                 <button
@@ -329,7 +329,7 @@ export function AppMenu({
                   className={`${FOOTER_ROW} w-full text-ink`}
                 >
                   <LogOut aria-hidden="true" className="h-6 w-6 shrink-0" />
-                  Wyloguj
+                  <span className="min-w-0 break-words">Wyloguj</span>
                 </button>
               </form>
             </div>
