@@ -196,16 +196,32 @@ html:has(dialog[open]:modal) {
     color: #000;
     text-decoration: none;
   }
-  /* The header cover prints as one small block: cancel the screen-only full-bleed
-     negative margins (and the responsive sizing) in one place, rather than as a stack
-     of print: utilities on the element that would silently drift from its screen
-     classes. The 4:3 base aspect ratio still applies on paper (lg: does not). */
+  /* The header prints two-column like the desktop layout — small cover on the left,
+     the title / subtitle / time / description beside it, not stacked under the photo.
+     On paper the viewport is below `lg`, so the page's own `lg:grid` never kicks in;
+     this restores the side-by-side header for print only. */
+  main header {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    align-items: start;
+    gap: 22px;
+  }
+  /* The cover fills its print column and drops the screen-only full-bleed negative
+     margins (and responsive sizing) in one place, rather than as a stack of print:
+     utilities on the element that would drift from its screen classes. The 4:3 base
+     aspect ratio still applies on paper (lg: does not). */
   .recipe-print-cover {
-    margin: 0 0 1rem;
-    width: 260px;
+    margin: 0;
+    width: 100%;
   }
   /* Keep an ingredient row or a step (both <li>) whole across a page break. */
   main li {
     break-inside: avoid;
+  }
+  /* The on-screen sizing is deliberately large and airy for readability; on paper
+     that wastes space and spills onto extra pages. Scale the whole sheet down for a
+     compact printout (uniformly — fonts, the cover and spacing together). */
+  main {
+    zoom: 0.8;
   }
 }

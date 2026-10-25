@@ -17,7 +17,6 @@ import { parseSteps, visibleStepImages } from '@/lib/steps'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
-import { RecipePrintFooter } from './_components/recipe-print-footer'
 import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar, RecipeListNav } from './_components/recipe-list-bar'
 import { LockedGallery } from './_components/locked-gallery'
@@ -195,15 +194,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               shareUrl={canonicalUrl}
             />
           }
-        />
-        {/* Source + address line, printout only (owner decision 2026-10-25): directly
-            under the header/photo, full width, left-aligned — the one line that makes a
-            printed sheet traceable to its origin and to the app. */}
-        <RecipePrintFooter
-          sourceType={typedRecipe.source_type}
-          sourceUrl={typedRecipe.source_url}
-          sourceAuthor={typedRecipe.source_author}
-          canonicalUrl={canonicalUrl}
         />
         {/* Video and gallery sit in the steps column from lg (E01-S17); below lg they
             follow the steps exactly as before. */}
