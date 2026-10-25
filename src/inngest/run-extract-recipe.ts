@@ -33,6 +33,7 @@ import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantN
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
 import { jsonLdServings, toServings } from '@/lib/servings'
 import { toIngredients, toMinutes } from '@/lib/extracted-recipe'
+import { detectSourceLanguage, EXTRACTION_MODEL, FOREIGN_EXTRACTION_MODEL, FOREIGN_SOURCE_RULES } from '@/lib/source-language'
 import { readerScrape, type ReaderPage } from '@/lib/jina-reader'
 import { fetchPublicHtml } from '@/lib/public-fetch'
 import type { Database } from '@/lib/supabase.types'
@@ -541,6 +542,9 @@ export async function runExtractRecipe(
     // One LLM pass over the content. `transcript`, when given, is the video's
     // captions — the second-pass source for a YouTube link (below).
     async function extractWithLlm(transcript?: string): Promise<RecipeData> {
+      // A foreign source gets the localization rules and a stronger model (#524);
+      // a Polish one keeps the prompt and model it always had.
+      const foreignSource = detectSourceLanguage(`${transcript ?? ''}\n${markdown || html}`) === 'foreign'
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -548,7 +552,7 @@ export async function runExtractRecipe(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: foreignSource ? FOREIGN_EXTRACTION_MODEL : EXTRACTION_MODEL,
           messages: [
             {
               role: 'system',
@@ -592,7 +596,7 @@ Rules:
 - When estimating, include passive periods (rising, proofing, marinating, chilling, setting, resting) in totalTimeMinutes. If the recipe clearly has a long passive step whose length you cannot tell, return null for totalTimeMinutes rather than a number that ignores it.
 - All three times null → "timesEstimated": false.
 - servings: only a number of servings the source states ("na 4 porcje", "dla 6 osób", "Serves 4", "4 portions"). A range ("4–6 porcji"), a yield in pieces, tins or litres ("24 sztuki", "1 tortownica"), or no statement at all → null. Never estimate it.
-- Best-effort if content incomplete.`,
+- Best-effort if content incomplete.${foreignSource ? FOREIGN_SOURCE_RULES : ''}`,
             },
             {
               role: 'user',

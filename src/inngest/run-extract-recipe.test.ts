@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { runExtractRecipe } from '@/inngest/run-extract-recipe'
 import { archiveImage, archiveRecipeImages } from '@/lib/recipe-image-archive'
 import { LABEL_MODEL } from '@/lib/recipe-labeling'
+import { FOREIGN_EXTRACTION_MODEL } from '@/lib/source-language'
 
 // archiveImage uses the global fetch, not the injected one, so it must be
 // stubbed or a test with an og:image goes out to the network. Default: the
@@ -311,6 +312,40 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
     expect(JSON.parse(String(extraction?.[1]?.body)).response_format).toEqual({ type: 'json_object' })
     expect(mock.insertArgs('recipes')?.title).toBe('Naleśniki')
+  })
+
+  it('keeps the cheap model and no localization block for a Polish source (#524)', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const body = JSON.parse(String(extraction?.[1]?.body))
+    expect(body.model).toBe('gpt-4o-mini')
+    expect(body.messages[0].content).not.toContain('The source is NOT in Polish')
+  })
+
+  it('localizes an English source with the stronger model (#524)', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({
+      openaiContent: VALID_RECIPE_JSON,
+      firecrawlMarkdown: 'Turkey burgers with guacamole. 1 pound ground turkey and 1 shallot, finely grated. Mix with the spices until combined. '.repeat(5),
+      firecrawlHtml: '<p>Turkey burgers with the best guacamole.</p>'.repeat(10),
+    })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const body = JSON.parse(String(extraction?.[1]?.body))
+    expect(body.model).toBe(FOREIGN_EXTRACTION_MODEL)
+    const system = body.messages[0].content as string
+    expect(system).toContain('The source is NOT in Polish')
+    expect(system).toContain('pounds and ounces to grams')
+    expect(system).toContain('"mięso mielone z indyka"')
+    expect(system).toContain('keep the brand with its own spelling')
   })
 
   it('asks for steps as impersonal infinitive instructions, not the author narration', async () => {

@@ -15,6 +15,46 @@ describe('toIngredients (#381)', () => {
     expect(toIngredients([{ name: 'Sól', alt: { x: 1 } }])[0].alt).toBe('') // non-stringifiable → ""
   })
 
+  it('keeps a Polish household measure in alt (#524)', () => {
+    for (const alt of [
+      'ok. 1,5 szklanki', '3/4 kostki', 'do 1/3 szklanki', '2 łyżki', 'pół szklanki', 'garść', 'szczypta', '2 ząbki',
+      // Worded quantities and sizes (review of #525): never a note.
+      'półtorej szklanki', 'półtora opakowania', 'dwie łyżki', 'jedna szklanka', 'płaska łyżka', 'czubata łyżeczka',
+      'duża garść', 'mała szczypta', 'opakowanie', 'puszka', 'około szklanki',
+      '1 tabliczka', '1/2 laski wanilii', '2 kieliszki', '1 gałka', '1 słoiczek', '1 porcja', '1 saszetka',
+      // How full the stated spoon is (stored production values).
+      'płaska', 'czubata',
+      // A Polish measure beside a foreign one stays.
+      '1 łyżka (ok. 1 oz)',
+    ])
+      expect(toIngredients([{ name: 'X', amount: '1', unit: 'g', alt }])[0]).toMatchObject({ name: 'X', alt })
+  })
+
+  it('drops pounds, ounces and English measures from alt when the metric amount is there (#524)', () => {
+    expect(toIngredients([{ name: 'mięso mielone z indyka', amount: '450', unit: 'g', alt: '1 funt' }])[0].alt).toBe('')
+    expect(toIngredients([{ name: 'makaron', amount: '225', unit: 'g', alt: '½ funta' }])[0].alt).toBe('')
+    expect(toIngredients([{ name: 'ser burrata', amount: '225', unit: 'g', alt: '8 uncji' }])[0].alt).toBe('')
+    expect(toIngredients([{ name: 'mąka', amount: '240', unit: 'ml', alt: '1 cup' }])[0].alt).toBe('')
+    // No metric amount to fall back on: the source's figure is all there is.
+    expect(toIngredients([{ name: 'ser', amount: '', unit: '', alt: '8 oz' }])[0].alt).toBe('8 oz')
+  })
+
+  it('drops an alt that only repeats the amount (#524)', () => {
+    expect(toIngredients([{ name: 'pomidorki koktajlowe', amount: '1', unit: 'garść', alt: '1 garść' }])[0].alt).toBe('')
+  })
+
+  it('moves a preparation note from alt into the name (#524)', () => {
+    expect(toIngredients([{ name: 'szalotka', amount: '1', alt: 'finely grated' }])[0]).toMatchObject({ name: 'szalotka finely grated', alt: '' })
+    expect(toIngredients([{ name: 'awokado', amount: '1', alt: 'pokrojone' }])[0]).toMatchObject({ name: 'awokado pokrojone', alt: '' })
+    expect(toIngredients([{ name: 'bułki', amount: '4-6', alt: 'do wyboru' }])[0]).toMatchObject({ name: 'bułki do wyboru', alt: '' })
+    // A unit stem in a cut is a note, not a measure.
+    expect(toIngredients([{ name: 'ser', amount: '100', unit: 'g', alt: 'pokrojony w kostkę' }])[0]).toMatchObject({ name: 'ser pokrojony w kostkę', alt: '' })
+    expect(toIngredients([{ name: 'ser', amount: '100', unit: 'g', alt: 'pokrojony w kostkę 2 cm' }])[0].alt).toBe('')
+    expect(toIngredients([{ name: 'cukinia', amount: '1', alt: 'pokrojona w plasterki' }])[0].alt).toBe('')
+    // Already in the name: not repeated.
+    expect(toIngredients([{ name: 'limonka wyciśnięta', amount: '1/2', alt: 'wyciśnięta' }])[0]).toMatchObject({ name: 'limonka wyciśnięta', alt: '' })
+  })
+
   it('drops entries without a non-empty string name', () => {
     const raw = [{ amount: '2' }, { name: '' }, { name: '   ' }, { name: 5 }, null, 'mąka', ['Mąka'], { name: 'Jajka' }]
     expect(toIngredients(raw).map((i) => i.name)).toEqual(['Jajka'])
