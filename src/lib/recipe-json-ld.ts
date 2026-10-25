@@ -67,6 +67,16 @@ function absoluteImage(imageUrl: string, siteUrl: string): string {
  *   - NO image / video per recipeInstructions step — step photos are login-gated
  *     (visibleStepImages), and Googlebot is anonymous, so the markup must describe
  *     only what a signed-out visitor sees.
+ * `keywords` IS emitted, but only from stored `tags` (a comma-separated list of
+ * their labels). A recipe that resolves to NO tags — its title matches no
+ * TITLE_TAG_PATTERNS, its times are not "szybkie", and the LLM picked nothing from
+ * the closed list — emits no `keywords`, and Search Console then raises a
+ * "Missing field keywords" suggestion for that page. We accept that omission (#530,
+ * test-locked below): the closed tag list is the only honest keyword source, most
+ * tagless recipes match nothing in it, and deriving a keyword from the title, from
+ * recipeCategory (already emitted — Google's Recipe guidance forbids repeating a
+ * category term as a keyword), or from ingredient names (that is recipeIngredient)
+ * would invent data or duplicate an existing field.
  * prep/cook/total times are included even when estimated (`times_estimated`):
  * they are the approximations the page itself shows, and dropping them loses the
  * richest part of the snippet.
