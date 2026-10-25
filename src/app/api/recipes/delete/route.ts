@@ -4,6 +4,7 @@ import { checkUser } from '@/lib/supabase/user-check'
 import { extractStoragePath, removeGallery } from '@/lib/recipe-image-archive'
 import { isRecipeSharedError, RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { recipePath } from '@/lib/routes'
+import { revalidateRecipeCaches } from '@/lib/recipe-cache'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -76,6 +77,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     await removeGallery(supabase, recipe.user_id, recipe.id)
+
+    // Drop the cached public list + this recipe's cached page at once (#445), so the
+    // delete shows immediately rather than lingering up to the TTL.
+    revalidateRecipeCaches(slug)
 
     return NextResponse.redirect(new URL('/recipes', request.url), { status: 303 })
   } catch (error) {

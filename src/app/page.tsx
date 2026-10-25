@@ -20,7 +20,7 @@ import { GuestCta } from '@/app/components/home/guest-cta'
 import { RecipeOfTheDay } from '@/app/components/home/recipe-of-the-day'
 import { FavoriteAddedNotice } from '@/app/components/favorite-button'
 import { parseRecipeId } from '@/lib/favorites'
-import { dailyRecipeIndex } from '@/lib/recipe-of-the-day'
+import { getRecentPublicRecipes, getRecipeOfTheDay } from '@/lib/recipe-cache'
 import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
 import { ADD_RECIPE_PATH } from '@/lib/routes'
 import type { ListKey } from '@/lib/recipe-list-context'
@@ -63,10 +63,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const [failedShares, menu, recentRecipes, greetingName, memberRows, recipeOfDay] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
     menuPromise,
-    user ? [] : getRecentPublicRecipes(supabase),
+    user ? [] : getRecentPublicRecipes(RECENT_LIMIT),
     user ? getGreetingName(supabase, user.id) : null,
     user ? menuPromise.then((m) => getMemberRows(supabase, user.id, m?.hasFullAccess ?? false)) : null,
-    getRecipeOfTheDay(supabase),
+    getRecipeOfTheDay(new Date()),
   ])
 
   const recipeOfDayCard = recipeOfDay ? (
@@ -100,45 +100,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       </main>
     </>
   )
-}
-
-/**
- * "Ostatnio dodane": the public feed across all users, read through the
- * guest-safe public_recipes view (recipes itself is owner-only).
- */
-async function getRecentPublicRecipes(supabase: ServerClient): Promise<MyRecipeCard[]> {
-  const { data } = await supabase
-    .from('public_recipes')
-    .select(MY_RECIPE_CARD_COLUMNS)
-    .order('created_at', { ascending: false })
-    .limit(RECENT_LIMIT)
-  return data ?? []
-}
-
-/** The pool „Przepis dnia” draws from: a bounded, stable set of photographed non-YouTube recipes. */
-const RECIPE_OF_DAY_POOL = 90
-
-/**
- * „Przepis dnia” (E01-S31 §5c): one recipe a day, the same for everyone. A bounded
- * pool of recent recipes that have a photo and are not YouTube, picked by the day of
- * the year (dailyRecipeIndex) — no „wylosuj inny”, no cron. Read through the guest-safe
- * public_recipes view so a guest sees it too.
- */
-async function getRecipeOfTheDay(supabase: ServerClient): Promise<MyRecipeCard | null> {
-  // Pick from a bounded pool of recent photographed non-YouTube recipes: read just
-  // the ids (cheap), choose by the day, then fetch only that one card's columns —
-  // not all 90 rows' descriptions on every home render.
-  const { data: pool } = await supabase
-    .from('public_recipes')
-    .select('id')
-    .not('image_url', 'is', null)
-    .neq('source_type', 'youtube')
-    .order('id', { ascending: false })
-    .limit(RECIPE_OF_DAY_POOL)
-  if (!pool || pool.length === 0) return null
-  const pick = pool[dailyRecipeIndex(new Date(), pool.length)]
-  const { data } = await supabase.from('public_recipes').select(MY_RECIPE_CARD_COLUMNS).eq('id', pick.id).maybeSingle()
-  return data ?? null
 }
 
 /**
