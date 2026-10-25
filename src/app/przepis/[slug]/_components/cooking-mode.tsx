@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Check, ChefHat, Sun, X } from 'lucide-react'
 import { clampStep, isLastStep, progressRatio, progressSegments, stepLabel } from '@/lib/cooking-mode'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { createScreenWakeLock, type ScreenWakeLock } from '@/lib/wake-lock'
+import { useStepPhotos } from './use-step-photos'
 
 /**
  * Keeps the screen on while `active` (E01-S08). Returns `false` once the browser
@@ -64,6 +65,9 @@ interface CookingModeProps {
  * Back gesture close the mode instead of leaving the recipe.
  */
 export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps) {
+  // „Ukryj zdjęcia kroków” (in the steps section) hides them here too, through the shared
+  // preference — the toggle and this button now sit far apart on the page.
+  const { showPhotos } = useStepPhotos()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -80,6 +84,8 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
   const current = clampStep(index, total)
   const last = isLastStep(current, total)
   const segments = progressSegments(current, total)
+  // „Ukryj” (showPhotos=false) drops the current step's photo.
+  const currentImage = showPhotos ? stepImages[current] : undefined
 
   /**
    * Every exit path (× Zakończ, Gotowe, Escape, Back) ends here. Idempotent, and
@@ -253,15 +259,15 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
             <div aria-live="polite" className="flex min-h-0 flex-col gap-5">
               <p className="text-[22px] font-bold text-accent-dark">{stepLabel(current, total)}</p>
               {/* Above the text when this step has a photo; it reserves no space otherwise (ZMIANY §4). */}
-              {stepImages[current] && (
+              {currentImage && (
                 <div className="relative h-[min(34vh,300px)] w-full max-w-[420px] shrink-0 overflow-hidden rounded-tile bg-black/20">
                   <Image
-                    src={stepImages[current]}
+                    src={currentImage}
                     alt={`Zdjęcie do kroku ${current + 1}`}
                     fill
                     sizes="420px"
                     className="object-cover"
-                    unoptimized={!isArchivedImageUrl(stepImages[current])}
+                    unoptimized={!isArchivedImageUrl(currentImage)}
                   />
                 </div>
               )}

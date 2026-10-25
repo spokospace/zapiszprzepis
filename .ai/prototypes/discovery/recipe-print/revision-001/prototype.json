@@ -1,0 +1,45 @@
+{
+  "slug": "recipe-print",
+  "revision": "revision-001",
+  "created": "2026-10-25",
+  "flow": "Wydruk przepisu",
+  "actor": "Osoba przeglądająca przepis (gość lub zalogowany)",
+  "start": "Strona przepisu",
+  "success": "Czysta kartka gotowa do druku; uruchomienie drukowania",
+  "previousRevision": null,
+  "sources": [
+    ".ai/specs/briefs/2026-10-25-recipe-print-button.md",
+    "context/foundation/prd.md",
+    "CLAUDE.md",
+    "Reference (owner-shared in conversation): WP Recipe Maker print-preview screenshot"
+  ],
+  "files": ["index.html", "styles.css", "app.js", "README.md", "prototype.json"],
+  "screens": ["screen-recipe", "screen-print"],
+  "assumptions": [
+    "[ASSUMPTION] The preview screen stands in for the browser's native print dialog (Route A opens it directly; there is no /druk route in production). It is a prototyping device, not a proposal.",
+    "[ASSUMPTION] The toolbar look is indicative only (WPRM-inspired), not a requirement.",
+    "[SYNTHETIC] All displayed data (Placki ziemniaczane and its ingredients, steps, source) is fictitious."
+  ],
+  "preservedDecisions": [
+    "Route A (print the live page), no dedicated /druk route",
+    "One universal sheet, no settings panel (no image/size toggle)",
+    "Content: title, short description, servings, times, ingredients + household measures, numbered steps; NO source line on print (owner decision 2026-10-25, supersedes the earlier source footer)",
+    "Print header two-column (cover left, title/servings/times beside it); print scaled down (compact)",
+    "No step photos; cover always on, small",
+    "Guest-accessible"
+  ],
+  "verification": {
+    "result": "passed",
+    "method": "Served locally over HTTP (static file server, offline); browser walk via Claude built-in browser",
+    "checks": [
+      "Recipe screen renders styled, offline (only local css/js)",
+      "Drukuj -> print-preview screen",
+      "Preview sheet shows cover, title, subtitle, times, a full-width left-aligned source+URL line directly under the header, then ingredients with household measure and numbered steps",
+      "Preview Drukuj -> simulated browser-print toast (aria-live)",
+      "Wrocdo przepisu -> recipe screen; focus moved to heading",
+      "Out-of-scope controls flash an honest 'poza zakresem' message",
+      "No console errors"
+    ],
+    "evidence": "Browser screenshots captured in session: recipe screen, print preview, simulated print toast."
+  }
+}

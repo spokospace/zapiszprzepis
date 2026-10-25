@@ -33,8 +33,6 @@ interface RecipeHeaderProps {
   recipe: RecipeHeaderData
   /** E01-S21: the "N inne przepisy na {danie}" bar, under the author line. */
   versionsBar?: ReactNode
-  /** The favourite (and from lg "Udostępnij" / "Oryginał") row, last in the text column (A9). */
-  actions?: ReactNode
 }
 
 /**
@@ -78,7 +76,7 @@ function Approx() {
  * breadcrumbs below lg (C3); from lg they are in the page's A9 row. The tags render at the bottom of the page, in
  * "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
   const times = recipeTimeStats(recipe)
@@ -186,7 +184,6 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
 
         {recipe.meta_description && <p className="mt-4 text-scalable-body leading-relaxed text-ink">{recipe.meta_description}</p>}
         {versionsBar && <div className="print:hidden">{versionsBar}</div>}
-        {actions}
       </div>
     </header>
   )

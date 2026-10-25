@@ -185,21 +185,24 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               <DishVersionsBar count={versionsTotal} dishAccusative={typedRecipe.dish_accusative ?? null} />
             ) : undefined
           }
-          actions={
-            <RecipeActions
-              recipeId={typedRecipe.id}
-              isFavorite={isFavorite}
-              isAuthenticated={Boolean(user)}
-              title={typedRecipe.title}
-              shareUrl={canonicalUrl}
-            />
-          }
+        />
+        {/* The action row spans the full content width below the header so the labelled
+            buttons — favourite, share, print and "Tryb gotowania" — fit one line from lg.
+            The cooking button and the steps list far below share the step-photos toggle
+            through the module-level useStepPhotos store, so „Ukryj” reaches both. */}
+        <RecipeActions
+          recipeId={typedRecipe.id}
+          isFavorite={isFavorite}
+          isAuthenticated={Boolean(user)}
+          title={typedRecipe.title}
+          shareUrl={canonicalUrl}
+          steps={steps}
+          stepImages={stepImages}
         />
         {/* Video and gallery sit in the steps column from lg (E01-S17); below lg they
             follow the steps exactly as before. */}
         <RecipeChecklists
           recipeId={typedRecipe.id}
-          title={typedRecipe.title}
           ingredientGroups={ingredientGroups}
           steps={steps}
           stepImages={stepImages}
