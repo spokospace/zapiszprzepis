@@ -226,6 +226,20 @@ html:has(dialog[open]:modal) {
   main h2 {
     break-after: avoid;
   }
+  /* Step numbers print in black, not the accent orange — a B&W printer and coloured
+     ink both come out cleaner. */
+  .recipe-print-grid .text-action-text {
+    color: #000;
+  }
+  /* Ingredients print as a plain bulleted list: the on-screen checkbox is for ticking
+     live, so on paper hide the box and mark each line with a simple bullet. */
+  .recipe-print-grid ul label > span:first-child {
+    display: none;
+  }
+  .recipe-print-grid ul label::before {
+    content: "•";
+    color: #000;
+  }
   /* The cover fills its print column and drops the screen-only full-bleed negative
      margins (and responsive sizing) in one place, rather than as a stack of print:
      utilities on the element that would drift from its screen classes. The 4:3 base
