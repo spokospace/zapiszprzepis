@@ -1,5 +1,44 @@
 import { describe, it, expect } from 'vitest'
-import { detectSourceLanguage } from './source-language'
+import { detectSourceLanguage, localizeForeignIngredients } from './source-language'
+
+describe('localizeForeignIngredients (#524 follow-up)', () => {
+  const SOURCE = '1/2 pound pasta\n⅔ cup grated manchego\n1/2 teaspoon dried basil\n2 tablespoons cilantro\n1 stick butter'
+  const alt = (a: string) => localizeForeignIngredients([{ name: 'x', alt: a }], SOURCE)[0].alt
+
+  it('drops a cup the source never stated (a weight the model converted)', () => {
+    expect(localizeForeignIngredients([{ name: 'makaron', alt: '1/2 szklanki' }], SOURCE)[0].alt).toBe('')
+  })
+
+  it('keeps cups, spoons and sticks the source states, in any fraction form', () => {
+    expect(alt('2/3 szklanki')).toBe('2/3 szklanki')
+    expect(alt('ok. 2/3 szklanki')).toBe('ok. 2/3 szklanki')
+    expect(alt('1/2 łyżeczki')).toBe('1/2 łyżeczki')
+    expect(alt('½ łyżeczki')).toBe('½ łyżeczki')
+    expect(alt('2 łyżki')).toBe('2 łyżki')
+    expect(alt('1 kostka')).toBe('1 kostka')
+  })
+
+  it('tells teaspoons from tablespoons', () => {
+    expect(alt('2 łyżeczki')).toBe('')
+    expect(alt('1/2 łyżki')).toBe('')
+  })
+
+  it('leaves measures with no US counterpart alone', () => {
+    expect(alt('garść')).toBe('garść')
+    expect(alt('2 ząbki')).toBe('2 ząbki')
+  })
+
+  it('leaves a source without US measures alone', () => {
+    expect(localizeForeignIngredients([{ name: 'Mehl', alt: '2 szklanki' }], '500 g Mehl, 2 Tassen Milch')[0].alt).toBe('2 szklanki')
+  })
+
+  it('strips a US lean grade from the name', () => {
+    expect(localizeForeignIngredients([{ name: 'mięso mielone z indyka (najlepiej 94% chude)', alt: '' }], SOURCE)[0].name).toBe(
+      'mięso mielone z indyka (najlepiej chude)',
+    )
+    expect(localizeForeignIngredients([{ name: 'mleko 3,2%', alt: '' }], SOURCE)[0].name).toBe('mleko 3,2%')
+  })
+})
 
 describe('detectSourceLanguage (#524)', () => {
   it('reads a Polish blog as Polish', () => {
