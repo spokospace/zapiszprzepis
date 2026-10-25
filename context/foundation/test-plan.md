@@ -157,6 +157,26 @@ Playwright project `reflow` (no password sign-in, no `setup` dependency): `e2e/r
     412 px with font ×2 (the WCAG 1.4.4 level), as rendered, with the menu open and
     after it closes. **New screen:** add it to `SCREENS`.
 
+### 6.5b Layout guard: vertical rhythm on the recipe page (#538)
+Playwright project `layout` (no sign-in, no `setup` dependency): `e2e/recipe-layout.spec.ts`.
+- **Why:** the unit tests assert each component's own class strings; nothing covered the
+  gaps *between* sibling blocks. #537 moved „Tryb gotowania” into the action row, the row
+  lost the bottom margin the button had provided, and it sat flush against
+  „Składniki/Przygotowanie” on production — green unit tests, broken layout (#538).
+- **What:** loads the first live recipe and measures, from the laid-out DOM, the gap above
+  the action row (to the header) and below it (to the ingredients/steps grid
+  `.recipe-print-grid`). Anchored on structure — the action row is the element before the
+  content grid, guarded by a „Udostępnij” button inside it — not on margin classes, so it
+  fails on the rendered collapse, not on a renamed utility. Floors only (≥ 16 px above,
+  ≥ 20 px below; the real margins are mt-6 = 24 and mb-8 = 32), to catch a collapse to ~0
+  without pinning the pixel. Runs at desktop (lg, the 4-column row) and phone (375 px).
+- **Selective VRT (CLAUDE.md):** the recipe page is the one critical screen covered here;
+  do **not** add vertical-gap or screenshot VRT to every page. For a new sibling-spacing
+  regression on another critical screen, add a focused gap measurement, never a full-image
+  baseline (brittle on CDN images).
+- **Read-only:** local dev hits the production DB, so the spec only reads.
+- **Run:** `pnpm test:reflow` (project `layout`, alongside `reflow` and `phone`).
+
 ### 6.6 Per-rollout-phase notes
 TBD — each rollout phase's final sub-phase appends its concrete location, naming,
 reference test, and run command here.
