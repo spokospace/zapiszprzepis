@@ -6,9 +6,11 @@ vi.mock('@/lib/recipe-image-archive', () => ({
   extractStoragePath: vi.fn(() => 'user-1/1/cover.jpg'),
   removeGallery: vi.fn(),
 }))
+vi.mock('@/lib/recipe-cache', () => ({ revalidateRecipeCaches: vi.fn() }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { removeGallery } from '@/lib/recipe-image-archive'
+import { revalidateRecipeCaches } from '@/lib/recipe-cache'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { POST } from './route'
 
@@ -64,6 +66,8 @@ describe('POST /api/recipes/delete — a recipe others keep as a favorite (E01-S
     expect(await response.json()).toEqual({ error: 'recipe_shared', message: RECIPE_SHARED_MESSAGE })
     expect(remove).not.toHaveBeenCalled()
     expect(removeGallery).not.toHaveBeenCalled()
+    // A refused delete leaves the caches alone — nothing changed.
+    expect(revalidateRecipeCaches).not.toHaveBeenCalled()
   })
 
   it("sends the recipe page's plain form back to the recipe with the inline message", async () => {
@@ -85,6 +89,8 @@ describe('POST /api/recipes/delete — a recipe others keep as a favorite (E01-S
     expect(response.headers.get('location')).toBe('http://localhost/recipes')
     expect(steps).toEqual(['row', 'storage'])
     expect(removeGallery).toHaveBeenCalledWith(expect.anything(), 'user-1', 1)
+    // The public list + this recipe's cached page are purged (#445).
+    expect(revalidateRecipeCaches).toHaveBeenCalledWith('tiramisu')
   })
 
   it('keeps any other database failure a 500, with storage untouched', async () => {

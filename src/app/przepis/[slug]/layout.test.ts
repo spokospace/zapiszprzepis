@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn(), getCurrentUser: vi.fn() }))
+vi.mock('@/lib/recipe-cache', () => ({ getPublicRecipe: vi.fn() }))
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND')
@@ -12,19 +13,20 @@ vi.mock('next/navigation', () => ({
 vi.mock('./merged-redirect', () => ({ findMergedRecipeSlug: vi.fn().mockResolvedValue(null) }))
 
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { getPublicRecipe, type PublicRecipe } from '@/lib/recipe-cache'
 import { notFound } from 'next/navigation'
 import { findMergedRecipeSlug } from './merged-redirect'
 import RecipeLayout from './layout'
 
-/** A guest's client whose public_recipes lookup answers `rows` (or `error`). */
-function mockRecipes(rows: object[], error: object | null = null) {
-  const query = {
-    select: () => query,
-    eq: () => query,
-    order: () => query,
-    limit: async () => ({ data: error ? null : rows, error }),
-  }
-  vi.mocked(createSupabaseServerClient).mockResolvedValue({ from: () => query } as any)
+/**
+ * A guest view: the cached public read answers `rows[0]` (or throws on `error`),
+ * and the cookie client is present but unused (the owner check is skipped for a
+ * guest). loadRecipe now reads the public row through `getPublicRecipe` (#445).
+ */
+function mockRecipes(rows: Partial<PublicRecipe>[], error: object | null = null) {
+  if (error) vi.mocked(getPublicRecipe).mockRejectedValue(new Error(String((error as { message?: string }).message)))
+  else vi.mocked(getPublicRecipe).mockResolvedValue((rows[0] ?? null) as PublicRecipe | null)
+  vi.mocked(createSupabaseServerClient).mockResolvedValue({ from: () => ({}) } as any)
   vi.mocked(getCurrentUser).mockResolvedValue(null)
 }
 
