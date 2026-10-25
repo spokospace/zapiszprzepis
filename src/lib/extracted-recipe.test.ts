@@ -16,7 +16,17 @@ describe('toIngredients (#381)', () => {
   })
 
   it('keeps a Polish household measure in alt (#524)', () => {
-    for (const alt of ['ok. 1,5 szklanki', '3/4 kostki', 'do 1/3 szklanki', '2 łyżki', 'pół szklanki', 'garść', 'szczypta', '2 ząbki'])
+    for (const alt of [
+      'ok. 1,5 szklanki', '3/4 kostki', 'do 1/3 szklanki', '2 łyżki', 'pół szklanki', 'garść', 'szczypta', '2 ząbki',
+      // Worded quantities and sizes (review of #525): never a note.
+      'półtorej szklanki', 'półtora opakowania', 'dwie łyżki', 'jedna szklanka', 'płaska łyżka', 'czubata łyżeczka',
+      'duża garść', 'mała szczypta', 'opakowanie', 'puszka', 'około szklanki',
+      '1 tabliczka', '1/2 laski wanilii', '2 kieliszki', '1 gałka', '1 słoiczek', '1 porcja', '1 saszetka',
+      // How full the stated spoon is (stored production values).
+      'płaska', 'czubata',
+      // A Polish measure beside a foreign one stays.
+      '1 łyżka (ok. 1 oz)',
+    ])
       expect(toIngredients([{ name: 'X', amount: '1', unit: 'g', alt }])[0]).toMatchObject({ name: 'X', alt })
   })
 
@@ -37,8 +47,10 @@ describe('toIngredients (#381)', () => {
     expect(toIngredients([{ name: 'szalotka', amount: '1', alt: 'finely grated' }])[0]).toMatchObject({ name: 'szalotka finely grated', alt: '' })
     expect(toIngredients([{ name: 'awokado', amount: '1', alt: 'pokrojone' }])[0]).toMatchObject({ name: 'awokado pokrojone', alt: '' })
     expect(toIngredients([{ name: 'bułki', amount: '4-6', alt: 'do wyboru' }])[0]).toMatchObject({ name: 'bułki do wyboru', alt: '' })
-    // A unit stem without a quantity is a note, not a measure.
+    // A unit stem in a cut is a note, not a measure.
     expect(toIngredients([{ name: 'ser', amount: '100', unit: 'g', alt: 'pokrojony w kostkę' }])[0]).toMatchObject({ name: 'ser pokrojony w kostkę', alt: '' })
+    expect(toIngredients([{ name: 'ser', amount: '100', unit: 'g', alt: 'pokrojony w kostkę 2 cm' }])[0].alt).toBe('')
+    expect(toIngredients([{ name: 'cukinia', amount: '1', alt: 'pokrojona w plasterki' }])[0].alt).toBe('')
     // Already in the name: not repeated.
     expect(toIngredients([{ name: 'limonka wyciśnięta', amount: '1/2', alt: 'wyciśnięta' }])[0]).toMatchObject({ name: 'limonka wyciśnięta', alt: '' })
   })

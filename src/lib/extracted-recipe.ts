@@ -21,14 +21,16 @@ function toText(value: unknown): string {
   return ''
 }
 
-// A Polish household unit: what `alt` is for ("3/4 kostki", "ok. 1,5 szklanki", "garść").
+// A Polish household unit: what `alt` is for ("3/4 kostki", "półtorej szklanki",
+// "płaska łyżka", "garść", "1 tabliczka"). Matched loosely, so a Polish source's
+// measure is never mistaken for a note, however it is worded.
 const HOUSEHOLD_UNIT =
-  /szklan|łyż|kost|garś|garst|plast|szczypt|opakowa|puszk|puszek|ząb|ząbk|pęcz|sztuk|kromk|kawał|kropl|odrobin|filiżan|kub|słoik|torebk|paczk|list|liść|gałąz|łodyg|główk/i
-// ...stated as a quantity: a number or fraction, a word one ("pół", "kilka"), or
-// a measure that is its own quantity ("garść", "szczypta"). Without one, a unit
-// stem is a note: "pokrojone w kostkę". (`\b` is ASCII-only, so no `\b` by ł/ó.)
-const QUANTITY =
-  /[\d½¼¾⅓⅔⅛]|(^|\s)(pół|ćwierć|kilka|parę)(\s|$)|^(ok\.|około)?\s*(garś|garst|szczypt|odrobin|łyż|szklan|kost|plast|kropl|pęcz|ząb)/i
+  /szklan|łyż|kost|garś|garst|plast|szczypt|opakowa|puszk|puszek|ząb|pęcz|sztuk|kromk|kawał|kropl|odrobin|filiżan|kub|słoik|słoicz|torebk|paczk|list|liść|gałąz|łodyg|główk|tabliczk|lask|kieliszk|gałk|bryłk|płat|porcj|saszet/i
+// How full the stated spoon is ("płaska" beside 1 łyżeczka): part of the measure.
+const SPOON_FILL = /^(płask|czubat|kopiat|kopiast|pełn|niepełn)\p{L}*$/iu
+// ...except as a cut: "pokrojone w kostkę", "w plasterkach", "na kawałki" is a
+// note. (`\b` is ASCII-only, so no `\b` next to ł/ó.)
+const CUT = /(^|\s)(w|na)\s+(kost|plast|kawał|pask|krąż|słupk|ćwiart)/i
 // A US weight or measure the model copied instead of a Polish one (#524): the
 // metric value is already in amount/unit, so it adds nothing a Polish cook uses.
 const FOREIGN_MEASURE =
@@ -37,7 +39,8 @@ const FOREIGN_MEASURE =
 /**
  * `alt` carries a household measure only (#505). The model also parks pounds and
  * ounces there, and preparation notes ("pokrojone", "finely grated"), which the
- * prompt says belong in the name (#524). A foreign measure is dropped when the
+ * prompt says belong in the name (#524). A Polish measure stays, even beside a
+ * foreign one ("1 łyżka (ok. 1 oz)"); a foreign measure alone is dropped when the
  * metric amount is there; a note moves into the name; a bare number stays.
  */
 function settleAlt(name: string, amount: string, unit: string, alt: string): { name: string; alt: string } {
@@ -46,8 +49,9 @@ function settleAlt(name: string, amount: string, unit: string, alt: string): { n
   const lower = measure.toLowerCase()
   // The amount itself again ("1 garść" beside 1 garść): nothing to add.
   if (lower === `${amount} ${unit}`.trim().toLowerCase()) return { name, alt: '' }
+  if (HOUSEHOLD_UNIT.test(measure) && !CUT.test(measure)) return { name, alt: measure }
+  if (SPOON_FILL.test(measure)) return { name, alt: measure }
   if (FOREIGN_MEASURE.test(measure)) return { name, alt: amount.trim() ? '' : measure }
-  if (HOUSEHOLD_UNIT.test(measure) && QUANTITY.test(measure)) return { name, alt: measure }
   const note = name.toLowerCase().includes(lower) ? name : `${name.trimEnd()} ${measure}`
   return { name: note, alt: '' }
 }
