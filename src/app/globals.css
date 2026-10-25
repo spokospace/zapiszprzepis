@@ -169,3 +169,93 @@ a {
 html:has(dialog[open]:modal) {
   overflow: hidden;
 }
+
+/*
+ * Print (E01, owner decision 2026-10-25): one clean recipe sheet. The screen-only
+ * chrome is hidden with `print:hidden` utilities on the page (header, footer, list
+ * bar, action buttons, cooking mode, toggles, video, gallery, prev/next, versions,
+ * similar, owner buttons); these are the page-level resets and the layout for the
+ * content that stays. Everything lives inside `@media print` so screen rendering and
+ * `pnpm test:reflow` (screen media) are untouched. Content keeps its own px sizes
+ * (19 px ingredients/steps, 24 px headings, 32 px title) — already paper-readable.
+ */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  /* The per-device A / A+ / A++ screen scaling does not belong on paper. */
+  :root {
+    --text-scale: 1;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  /* Links print as plain black text — no screen-blue, no underline-on-paper. */
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+  /* The header prints two-column like the desktop layout — small cover on the left,
+     the title / subtitle / time / description beside it, not stacked under the photo.
+     On paper the viewport is below `lg`, so the page's own `lg:grid` never kicks in;
+     this restores the side-by-side header for print only. */
+  main header {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    align-items: start;
+    gap: 22px;
+    break-inside: avoid;
+  }
+  /* Ingredients and instructions print side by side (ingredients narrower), like the
+     desktop layout and printed cookbooks — a full-width ingredient list wastes the page
+     and strands the amount at the far edge. */
+  .recipe-print-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    align-items: start;
+    column-gap: 2rem;
+  }
+  /* Tighter ingredient rows on paper: the 56px screen touch target wastes vertical space. */
+  .recipe-print-grid label {
+    min-height: 0;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  /* Keep a section heading with the content that follows it (no orphaned heading). */
+  main h2 {
+    break-after: avoid;
+  }
+  /* Step numbers print in black, not the accent orange — a B&W printer and coloured
+     ink both come out cleaner. */
+  .recipe-print-grid .text-action-text {
+    color: #000;
+  }
+  /* Ingredients print as a plain bulleted list: the on-screen checkbox is for ticking
+     live, so on paper hide the box and mark each line with a simple bullet. */
+  .recipe-print-grid ul label > span:first-child {
+    display: none;
+  }
+  .recipe-print-grid ul label::before {
+    content: "•";
+    color: #000;
+  }
+  /* The cover fills its print column and drops the screen-only full-bleed negative
+     margins (and responsive sizing) in one place, rather than as a stack of print:
+     utilities on the element that would drift from its screen classes. The 4:3 base
+     aspect ratio still applies on paper (lg: does not). */
+  .recipe-print-cover {
+    margin: 0;
+    width: 100%;
+  }
+  /* Keep an ingredient row or a step (both <li>) whole across a page break. */
+  main li {
+    break-inside: avoid;
+  }
+  /* The on-screen sizing is deliberately large and airy for readability; on paper
+     that wastes space and spills onto extra pages. Scale the whole sheet down for a
+     compact printout (uniformly — fonts, the cover and spacing together). */
+  main {
+    zoom: 0.8;
+  }
+}

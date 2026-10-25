@@ -103,7 +103,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
         // over-wide breakout (horizontal scroll), not a gap left by a mismatch. `w-full`
         // is dropped so the block's auto width expands to the viewport (re-adding it would
         // shift, not widen). From lg it resets to the padded A9 grid (rounded 16:10).
-        <div className="relative mb-5 -mx-4 -mt-6 aspect-[4/3] overflow-hidden rounded-none bg-surface-3 sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0 lg:aspect-[16/10] lg:rounded-tile">
+        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] overflow-hidden rounded-none bg-surface-3 sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0 lg:aspect-[16/10] lg:rounded-tile">
           <Image
             // The LCP image, served from Supabase Storage through next/image.
             src={cover}
@@ -114,8 +114,9 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
             className="object-cover"
             priority
           />
-          {/* Source on the photo, bottom-left (E01-S31 §3). */}
-          <div className="absolute bottom-0 left-px z-10 max-w-[calc(100%-1px)]">{sourceBadge}</div>
+          {/* Source on the photo, bottom-left (E01-S31 §3). Hidden on print — the
+              printout carries the source in its footer line instead. */}
+          <div className="absolute bottom-0 left-px z-10 max-w-[calc(100%-1px)] print:hidden">{sourceBadge}</div>
         </div>
       ) : (
         // No cover: from lg a category-icon placeholder fills the photo column so the
@@ -149,14 +150,14 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
 
         {/* With no photo there is no corner for the badge, so it sits here instead
             (E01-S31 §3) — at every width, since the lg placeholder carries no badge. */}
-        {!cover && <div className="mb-3">{sourceBadge}</div>}
+        {!cover && <div className="mb-3 print:hidden">{sourceBadge}</div>}
 
         {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the
             raw gender, which stays owner-only (E01-S12); neutral "Dodane przez" when
             unknown. A link to /u/{username} when the author has a username. */}
         {recipe.author_name && (
           // C3/A4: a small 16 px line, the name an underlined link in the accent colour.
-          <p className="text-[16px] text-ink-soft">
+          <p className="text-[16px] text-ink-soft print:hidden">
             {authorLinePrefix(parseGenderForm(recipe.author_gender_form))}{' '}
             {authorHref ? (
               <Link href={authorHref} className="text-action-text underline hover:text-action-hover">
@@ -184,7 +185,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
         )}
 
         {recipe.meta_description && <p className="mt-4 text-scalable-body leading-relaxed text-ink">{recipe.meta_description}</p>}
-        {versionsBar}
+        {versionsBar && <div className="print:hidden">{versionsBar}</div>}
         {actions}
       </div>
     </header>

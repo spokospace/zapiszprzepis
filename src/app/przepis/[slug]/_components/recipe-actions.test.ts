@@ -20,19 +20,33 @@ function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
 }
 
 describe('RecipeActions (E01-S31 §3)', () => {
-  it('stacks below sm so the heart is full width, then a row from sm', () => {
-    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 sm:flex-row[^"]*"><div class="flex flex-col sm:flex-1[^"]*">/)
+  it('stacks the heart over a Udostępnij/Drukuj pair; the heart sits left from sm', () => {
+    // Three content-width buttons do not fit the desktop text column on one line, so the
+    // heart keeps its own line and the secondary pair keeps theirs (no wrap/squeeze).
+    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 print:hidden"><div class="flex flex-col sm:items-start"/)
   })
 
-  it('shows "Udostępnij" beside the heart, each half the row from sm', () => {
+  it('shows "Udostępnij" as a secondary button beside "Drukuj"', () => {
     const html = render()
     const share = html.match(/<button type="button" class="[^"]*">.*?Udostępnij<\/button>/)?.[0] ?? ''
     expect(share).toContain('min-h-[48px]')
     expect(share).toContain('lg:min-h-[58px]')
-    expect(share).toContain('sm:flex-1')
+    // The pair row turns horizontal from sm.
+    expect(html).toContain('sm:flex-row')
   })
 
   it('has no "Oryginał" button — the original is on the photo badge now', () => {
     expect(render()).not.toContain('Oryginał')
+  })
+
+  it('offers "Drukuj" after "Udostępnij"', () => {
+    const html = render()
+    expect(html).toContain('Drukuj')
+    // Share first, then print; the button's own look is covered by print-button.test.ts.
+    expect(html.indexOf('Drukuj')).toBeGreaterThan(html.indexOf('Udostępnij'))
+  })
+
+  it('hides the whole action row on print — none of these controls belongs on paper', () => {
+    expect(render()).toMatch(/^<div class="mt-6 flex[^"]*print:hidden"/)
   })
 })
