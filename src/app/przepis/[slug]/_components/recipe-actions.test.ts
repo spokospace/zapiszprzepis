@@ -24,7 +24,7 @@ function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
 describe('RecipeActions (E01-S31 §3)', () => {
   it('is a 2→4 column grid with steps: heart spans the first row, four equal columns from lg', () => {
     // Full content width below the header; four labelled buttons (incl. Tryb gotowania) on one line from lg.
-    expect(render()).toMatch(/^<div class="mt-6 grid grid-cols-2 items-start[^"]*lg:grid-cols-4[^"]*"><div class="col-span-2 lg:col-span-1"/)
+    expect(render()).toMatch(/^<div class="mt-6 mb-8 grid grid-cols-2 items-start[^"]*lg:grid-cols-4[^"]*"><div class="col-span-2 lg:col-span-1"/)
   })
 
   it('drops the cooking button and uses three columns when the recipe has no steps', () => {
@@ -57,6 +57,15 @@ describe('RecipeActions (E01-S31 §3)', () => {
   })
 
   it('hides the whole action row on print — none of these controls belongs on paper', () => {
-    expect(render()).toMatch(/^<div class="mt-6 grid[^"]*print:hidden[^"]*"/)
+    expect(render()).toMatch(/^<div class="mt-6 mb-8 grid[^"]*print:hidden[^"]*"/)
+  })
+
+  // Regression (prod 2026-10-25): the row is a standalone block between the header and
+  // „Składniki/Przygotowanie”, so it must carry a bottom margin — without one it sat flush
+  // against the content below. The cooking button used to provide that gap from the steps
+  // section; after it moved into this row, the gap had to move here too.
+  it('keeps a bottom gap to the content below it (mb-8)', () => {
+    expect(render()).toMatch(/^<div class="mt-6 mb-8 grid/)
+    expect(render({ steps: [], stepImages: [] })).toMatch(/^<div class="mt-6 mb-8 grid/)
   })
 })
