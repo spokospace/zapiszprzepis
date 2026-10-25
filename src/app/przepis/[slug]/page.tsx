@@ -196,6 +196,15 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             />
           }
         />
+        {/* Source + address line, printout only (owner decision 2026-10-25): directly
+            under the header/photo, full width, left-aligned — the one line that makes a
+            printed sheet traceable to its origin and to the app. */}
+        <RecipePrintFooter
+          sourceType={typedRecipe.source_type}
+          sourceUrl={typedRecipe.source_url}
+          sourceAuthor={typedRecipe.source_author}
+          canonicalUrl={canonicalUrl}
+        />
         {/* Video and gallery sit in the steps column from lg (E01-S17); below lg they
             follow the steps exactly as before. */}
         <RecipeChecklists
@@ -237,15 +246,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             </div>
           )}
         </RecipeChecklists>
-
-        {/* Source + address footer, printout only (owner decision 2026-10-25): the one
-            line that makes a printed sheet traceable back to its origin and to the app. */}
-        <RecipePrintFooter
-          sourceType={typedRecipe.source_type}
-          sourceUrl={typedRecipe.source_url}
-          sourceAuthor={typedRecipe.source_author}
-          canonicalUrl={canonicalUrl}
-        />
 
         {/* The end of the recipe (handoff C3, items 12–13): Poprzedni / Następny, then
             the tags and similar recipes. The original is reached from the source badge
