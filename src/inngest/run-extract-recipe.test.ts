@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { runExtractRecipe } from '@/inngest/run-extract-recipe'
 import { archiveImage, archiveRecipeImages } from '@/lib/recipe-image-archive'
 import { LABEL_MODEL } from '@/lib/recipe-labeling'
-import { FOREIGN_EXTRACTION_MODEL } from '@/lib/source-language'
+import { EXTRACTION_MODEL, FOREIGN_EXTRACTION_MODEL } from '@/lib/source-language'
 
 // archiveImage uses the global fetch, not the injected one, so it must be
 // stubbed or a test with an og:image goes out to the network. Default: the
@@ -323,7 +323,7 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
 
     const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
     const body = JSON.parse(String(extraction?.[1]?.body))
-    expect(body.model).toBe('gpt-4o-mini')
+    expect(body.model).toBe(EXTRACTION_MODEL)
     expect(body.messages[0].content).not.toContain('The source is NOT in Polish')
   })
 
@@ -1910,7 +1910,7 @@ describe('runExtractRecipe — dish classification (E01-S21)', () => {
       if (url.includes('openai.com')) {
         const body = JSON.parse(String(init?.body))
         const sys = String(body.messages?.[0]?.content ?? '')
-        if (body.model === 'gpt-4o-mini') {
+        if (body.model === EXTRACTION_MODEL) {
           return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content: VALID_RECIPE_JSON } }] }) })
         }
         if (sys.includes('DISH grouping key')) {
