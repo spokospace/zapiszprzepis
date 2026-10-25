@@ -170,7 +170,7 @@ export function RecipeChecklists({
   )
 
   return (
-    <div className="lg:grid lg:grid-cols-[1fr_1.6fr] lg:items-start lg:gap-x-12">
+    <div className="recipe-print-grid lg:grid lg:grid-cols-[1fr_1.6fr] lg:items-start lg:gap-x-12">
       {/* With „Wielkość tekstu" moved to /wyswietlanie (FR #485), this row holds only
           the optional „Wyczyść zaznaczenia" reset, right-aligned; it is dropped entirely
           when nothing is ticked so it leaves no empty gap above „Tryb gotowania". */}

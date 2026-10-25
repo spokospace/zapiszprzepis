@@ -205,6 +205,26 @@ html:has(dialog[open]:modal) {
     grid-template-columns: 260px 1fr;
     align-items: start;
     gap: 22px;
+    break-inside: avoid;
+  }
+  /* Ingredients and instructions print side by side (ingredients narrower), like the
+     desktop layout and printed cookbooks — a full-width ingredient list wastes the page
+     and strands the amount at the far edge. */
+  .recipe-print-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    align-items: start;
+    column-gap: 2rem;
+  }
+  /* Tighter ingredient rows on paper: the 56px screen touch target wastes vertical space. */
+  .recipe-print-grid label {
+    min-height: 0;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+  }
+  /* Keep a section heading with the content that follows it (no orphaned heading). */
+  main h2 {
+    break-after: avoid;
   }
   /* The cover fills its print column and drops the screen-only full-bleed negative
      margins (and responsive sizing) in one place, rather than as a stack of print:
