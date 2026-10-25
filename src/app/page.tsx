@@ -63,10 +63,13 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const [failedShares, menu, recentRecipes, greetingName, memberRows, recipeOfDay] = await Promise.all([
     user ? getFailedShares(supabase, user.id) : NO_FAILED_SHARES,
     menuPromise,
-    user ? [] : getRecentPublicRecipes(RECENT_LIMIT),
+    // "Ostatnio dodane" and "Przepis dnia" are decorative aids: a read error must
+    // not take down the whole home, so each degrades to empty/none for this render.
+    // The throw inside the cached read still prevents a failure being cached (#445).
+    user ? [] : getRecentPublicRecipes(RECENT_LIMIT).catch(() => [] as MyRecipeCard[]),
     user ? getGreetingName(supabase, user.id) : null,
     user ? menuPromise.then((m) => getMemberRows(supabase, user.id, m?.hasFullAccess ?? false)) : null,
-    getRecipeOfTheDay(new Date()),
+    getRecipeOfTheDay(new Date()).catch(() => null),
   ])
 
   const recipeOfDayCard = recipeOfDay ? (
