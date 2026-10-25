@@ -37,7 +37,10 @@ export function RecipeActions({ recipeId, isFavorite, isAuthenticated, title, sh
   const hasSteps = steps.length > 0
   return (
     <div
-      className={`mt-6 grid grid-cols-2 items-start gap-3 lg:gap-4 print:hidden ${hasSteps ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
+      // mb-8: the row is a standalone block between the header and the ingredients/steps,
+      // so it carries its own bottom gap — otherwise it sits flush against „Składniki”
+      // (the cooking button used to live in the steps section and provided that gap).
+      className={`mt-6 mb-8 grid grid-cols-2 items-start gap-3 lg:gap-4 print:hidden ${hasSteps ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
     >
       {/* Heart: full row below lg, one equal column from lg. */}
       <div className="col-span-2 lg:col-span-1">
