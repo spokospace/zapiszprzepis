@@ -13,6 +13,8 @@ const PROPS: Parameters<typeof RecipeActions>[0] = {
   isAuthenticated: true,
   title: 'Zupa krem z dyni',
   shareUrl: 'https://zapiszprzepis.pl/przepis/zupa-krem-z-dyni',
+  steps: ['Zagotuj wodę.', 'Dodaj dynię.'],
+  stepImages: ['', ''],
 }
 
 function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
@@ -20,19 +22,27 @@ function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
 }
 
 describe('RecipeActions (E01-S31 §3)', () => {
-  it('stacks the heart over a Udostępnij/Drukuj pair; the heart sits left from sm', () => {
-    // Three content-width buttons do not fit the desktop text column on one line, so the
-    // heart keeps its own line and the secondary pair keeps theirs (no wrap/squeeze).
-    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 print:hidden"><div class="flex flex-col sm:items-start"/)
+  it('is a 2→4 column grid with steps: heart spans the first row, four equal columns from lg', () => {
+    // Full content width below the header; four labelled buttons (incl. Tryb gotowania) on one line from lg.
+    expect(render()).toMatch(/^<div class="mt-6 grid grid-cols-2 items-start[^"]*lg:grid-cols-4[^"]*"><div class="col-span-2 lg:col-span-1"/)
   })
 
-  it('shows "Udostępnij" as a secondary button beside "Drukuj"', () => {
+  it('drops the cooking button and uses three columns when the recipe has no steps', () => {
+    const html = render({ steps: [], stepImages: [] })
+    expect(html).toContain('lg:grid-cols-3')
+    expect(html).not.toContain('Tryb gotowania')
+  })
+
+  it('includes "Tryb gotowania" as an action when the recipe has steps', () => {
+    expect(render()).toContain('Tryb gotowania')
+  })
+
+  it('shows "Udostępnij" as a full-width secondary button (48px, 58px from lg)', () => {
     const html = render()
     const share = html.match(/<button type="button" class="[^"]*">.*?Udostępnij<\/button>/)?.[0] ?? ''
     expect(share).toContain('min-h-[48px]')
     expect(share).toContain('lg:min-h-[58px]')
-    // The pair row turns horizontal from sm.
-    expect(html).toContain('sm:flex-row')
+    expect(share).toContain('w-full')
   })
 
   it('has no "Oryginał" button — the original is on the photo badge now', () => {
@@ -47,6 +57,6 @@ describe('RecipeActions (E01-S31 §3)', () => {
   })
 
   it('hides the whole action row on print — none of these controls belongs on paper', () => {
-    expect(render()).toMatch(/^<div class="mt-6 flex[^"]*print:hidden"/)
+    expect(render()).toMatch(/^<div class="mt-6 grid[^"]*print:hidden[^"]*"/)
   })
 })

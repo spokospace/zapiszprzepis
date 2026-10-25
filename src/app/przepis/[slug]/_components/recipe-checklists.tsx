@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Check } from 'lucide-react'
 import { useSessionStorage } from '@/app/components/ui/use-session-storage'
@@ -9,15 +9,13 @@ import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { servingsLabel } from '@/lib/servings'
 import { ImageLightbox } from '@/app/components/image-lightbox'
 import { householdMeasure, type Ingredient } from '@/lib/ingredients'
-import { CookingMode } from './cooking-mode'
+import { useStepPhotos } from './use-step-photos'
 
 /** „Pokaż” / „Ukryj” — the two states of the step-photos toggle (ZMIANY §3). */
 const PHOTO_OPTIONS: [label: string, show: boolean][] = [
   ['Pokaż', true],
   ['Ukryj', false],
 ]
-/** Remembered globally (not per recipe), so the choice carries across recipes. */
-const STEP_PHOTOS_KEY = 'stepPhotos'
 /** Stable empty list so „Ukryj” hides photos without a fresh array every render. */
 const NO_STEP_IMAGES: string[] = []
 
@@ -28,8 +26,6 @@ interface IngredientGroup {
 
 interface RecipeChecklistsProps {
   recipeId: number
-  /** Recipe title, shown at the top of cooking mode. */
-  title: string
   ingredientGroups: IngredientGroup[]
   steps: string[]
   /** Archived image URL per step, index-aligned with `steps`; '' = that step has none (ZMIANY zdjęcia kroków). */
@@ -112,7 +108,6 @@ function IngredientRow({
  */
 export function RecipeChecklists({
   recipeId,
-  title,
   ingredientGroups,
   steps,
   stepImages = [],
@@ -122,29 +117,11 @@ export function RecipeChecklists({
   const [raw, setRaw] = useSessionStorage(checklistStorageKey(recipeId))
   const state = useMemo(() => parseChecklist(raw), [raw])
 
-  // „Zdjęcia kroków: Pokaż / Ukryj” (ZMIANY §3): only when some step has a photo.
-  // The choice is remembered globally; default „Pokaż”. localStorage is read after
-  // mount (a lazy initializer would mismatch the server HTML); a private window keeps
-  // the default.
+  // „Zdjęcia kroków: Pokaż / Ukryj” (ZMIANY §3): only when some step has a photo. The
+  // toggle state is shared (StepPhotosProvider) with „Tryb gotowania”, now in the action
+  // row far above the steps, so „Ukryj” still hides photos there too.
   const showToggle = stepImages.some(Boolean)
-  const [showPhotos, setShowPhotos] = useState(true)
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STEP_PHOTOS_KEY)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (stored !== null) setShowPhotos(stored === '1')
-    } catch {
-      // storage blocked — keep the default „Pokaż”
-    }
-  }, [])
-  function pickPhotos(show: boolean) {
-    setShowPhotos(show)
-    try {
-      window.localStorage.setItem(STEP_PHOTOS_KEY, show ? '1' : '0')
-    } catch {
-      // ignore
-    }
-  }
+  const { showPhotos, setShowPhotos } = useStepPhotos()
 
   // „Ukryj” drops the photos everywhere (the list, the viewer, cooking mode) in one
   // place. Tapping a photo opens the shared viewer captioned „Krok N”, so a photo
@@ -183,12 +160,6 @@ export function RecipeChecklists({
           >
             Wyczyść zaznaczenia
           </button>
-        </div>
-      )}
-
-      {steps.length > 0 && (
-        <div className="mb-8 lg:col-span-2 print:hidden">
-          <CookingMode title={title} steps={steps} stepImages={visibleStepImages} />
         </div>
       )}
 
@@ -250,7 +221,7 @@ export function RecipeChecklists({
                         key={label}
                         type="button"
                         aria-pressed={active}
-                        onClick={() => pickPhotos(show)}
+                        onClick={() => setShowPhotos(show)}
                         className={`min-h-12 min-w-[88px] px-3 text-[17px] font-bold ${
                           active ? 'bg-ink text-white' : 'bg-white text-ink hover:bg-surface-3'
                         }`}

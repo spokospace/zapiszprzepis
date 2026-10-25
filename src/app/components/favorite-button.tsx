@@ -33,8 +33,8 @@ const COPY = {
 const BASE = 'inline-flex items-center justify-center gap-2 font-bold wrap-anywhere transition-colors'
 const SIZE = {
   // no-underline!: a guest gets this as a link to /login, shaped like the button.
-  // C3, item 5: 58 px, 19 px bold.
-  full: `${BASE} min-h-[58px] w-full rounded-pill border-[2.5px] border-action px-5 text-[19px] no-underline! sm:w-auto`,
+  // C3, item 5: 58 px, 19 px bold. Always full-width — it fills its action-row grid cell.
+  full: `${BASE} min-h-[58px] w-full rounded-pill border-[2.5px] border-action px-5 text-[19px] no-underline!`,
   // No grey ring — a soft shadow sets the white circle off a light photo and the
   // heart itself carries the contrast (ZMIANY_prototyp §6).
   photo:

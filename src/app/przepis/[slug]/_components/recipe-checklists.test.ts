@@ -7,7 +7,6 @@ function render(servings: number | null, stepImages?: string[]) {
   return renderToStaticMarkup(
     createElement(RecipeChecklists, {
       recipeId: 1,
-      title: 'Zupa krem z dyni',
       ingredientGroups: [{ section: null, items: [{ name: 'dynia', amount: '1', unit: 'kg' }] }],
       steps: ['Dynię pokroić.', '2 ząbki czosnku posiekać.'],
       stepImages,
@@ -92,7 +91,6 @@ describe('RecipeChecklists alternative measure (#505)', () => {
     return renderToStaticMarkup(
       createElement(RecipeChecklists, {
         recipeId: 1,
-        title: 'Ciasto',
         ingredientGroups: [
           {
             section: null,
@@ -125,7 +123,6 @@ describe('RecipeChecklists alternative measure (#505)', () => {
     const html = renderToStaticMarkup(
       createElement(RecipeChecklists, {
         recipeId: 1,
-        title: 'Napój',
         ingredientGroups: [{ section: null, items: [{ name: 'oleju', amount: '180', unit: 'ml' }] }],
         steps: ['Wymieszać.'],
         servings: null,
@@ -137,7 +134,8 @@ describe('RecipeChecklists alternative measure (#505)', () => {
 })
 
 // Owner decision 2026-10-20: „Krok 1” over each step, in an ordered list (screen readers
-// announce the position); the total „z M” only in cooking mode.
+// announce the position); the total „z M” is only in cooking mode, which now lives in the
+// action row (RecipeActions), not here.
 describe('RecipeChecklists steps', () => {
   it('labels each step „Krok N” without the total, in an ordered list', () => {
     const list = render(null).match(/<ol class="space-y-5">.*?<\/ol>/)?.[0] ?? ''
@@ -146,8 +144,8 @@ describe('RecipeChecklists steps', () => {
     expect(list).not.toContain(' z 2')
   })
 
-  it('keeps „Krok N z M” in cooking mode, one step at a time', () => {
-    expect(render(null)).toContain('>Krok 1 z 2</p>')
+  it('no longer renders the cooking-mode button (moved to the action row)', () => {
+    expect(render(null)).not.toContain('Tryb gotowania')
   })
 })
 
