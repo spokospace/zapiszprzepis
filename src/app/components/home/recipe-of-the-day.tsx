@@ -61,7 +61,15 @@ export function RecipeOfTheDay({
           </div>
           <div className="flex flex-col gap-3 px-4 sm:px-6 md:px-0">
             <p className="text-[16px] font-bold tracking-[.08em] text-action-text uppercase">Przepis dnia</p>
-            <h2 className="text-[28px] leading-[1.08] font-extrabold break-words text-ink md:text-[40px]">{title}</h2>
+            {/* A hero title is big enough that at the Android system font ×2 a long PL
+                word ("…pomidorowa") no longer fits a 320 px line and breaks mid-word,
+                stranding a lone letter (#478). Hold it to 22 px on the smallest phones
+                so the longest word fits on one line; hyphens-auto (lang=pl) is the extra
+                guard on real Android, where the hyphenation dictionary exists (headless
+                Chromium lacks it, hence the size cap rather than hyphenation alone). */}
+            <h2 className="text-[22px] leading-[1.08] font-extrabold break-words hyphens-auto text-ink min-[400px]:text-[28px] md:text-[40px]">
+              {title}
+            </h2>
             {description && <p className="line-clamp-3 text-[19px] text-ink-soft md:text-[20px]">{description}</p>}
             {/* NBSP before the arrow so „→” never strands on its own line at a large font (#478). */}
             <span className="mt-2 text-[19px] font-bold text-action-text underline underline-offset-4">Zobacz przepis{' '}→</span>
