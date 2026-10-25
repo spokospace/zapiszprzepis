@@ -35,4 +35,15 @@ describe('RecipeActions (E01-S31 §3)', () => {
   it('has no "Oryginał" button — the original is on the photo badge now', () => {
     expect(render()).not.toContain('Oryginał')
   })
+
+  it('offers "Drukuj" after "Udostępnij"', () => {
+    const html = render()
+    expect(html).toContain('Drukuj')
+    // Share first, then print; the button's own look is covered by print-button.test.ts.
+    expect(html.indexOf('Drukuj')).toBeGreaterThan(html.indexOf('Udostępnij'))
+  })
+
+  it('hides the whole action row on print — none of these controls belongs on paper', () => {
+    expect(render()).toMatch(/^<div class="mt-6 flex[^"]*print:hidden"/)
+  })
 })

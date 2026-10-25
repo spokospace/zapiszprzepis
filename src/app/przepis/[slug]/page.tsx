@@ -17,6 +17,7 @@ import { parseSteps, visibleStepImages } from '@/lib/steps'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
+import { RecipePrintFooter } from './_components/recipe-print-footer'
 import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar, RecipeListNav } from './_components/recipe-list-bar'
 import { LockedGallery } from './_components/locked-gallery'
@@ -174,7 +175,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       <PageContainer>
         {/* A9: from lg one row, "← {lista} · N z M" left and the breadcrumbs right;
             below lg neither (C3): the header's „← {lista}” and the category line. */}
-        <div className="lg:mb-6 lg:flex lg:items-center lg:gap-6">
+        <div className="lg:mb-6 lg:flex lg:items-center lg:gap-6 print:hidden">
           <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
           <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block" />
         </div>
@@ -206,7 +207,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           servings={typedRecipe.servings}
         >
           {typedRecipe.youtube_id && (
-            <section className="mb-12">
+            <section className="mb-12 print:hidden">
               <h2 className="mb-4 text-[24px] font-bold text-ink">Wideo</h2>
               <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black">
                 <iframe
@@ -225,37 +226,53 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           {/* A gallery of one would only repeat the cover. galleryImages is empty for a
               guest: the gallery view is not granted to anon (decision Q3). */}
           {galleryImages.length > 1 && (
-            <RecipeGallery images={galleryImages} title={typedRecipe.title} />
+            <div className="print:hidden">
+              <RecipeGallery images={galleryImages} title={typedRecipe.title} />
+            </div>
           )}
           {/* A guest gets a locked teaser with the count only (E01-S07). */}
           {!user && galleryCount > 1 && (
-            <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
+            <div className="print:hidden">
+              <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
+            </div>
           )}
         </RecipeChecklists>
 
-        {/* The end of the recipe (handoff C3, items 12–13): Poprzedni / Następny, then
-            the tags and similar recipes. The original is reached from the source badge
-            on the photo now (E01-S31 §3), so there is no "Otwórz oryginał" button here. */}
-        <RecipeListNav slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
-
-        <DishVersions
-          versions={versions}
-          totalCount={versionsTotal}
-          dish={typedRecipe.dish ?? null}
-          favoriteIds={versionFavoriteIds}
-          order={versionsOrder}
-          current={currentRecipe}
+        {/* Source + address footer, printout only (owner decision 2026-10-25): the one
+            line that makes a printed sheet traceable back to its origin and to the app. */}
+        <RecipePrintFooter
+          sourceType={typedRecipe.source_type}
+          sourceUrl={typedRecipe.source_url}
+          sourceAuthor={typedRecipe.source_author}
+          canonicalUrl={canonicalUrl}
         />
 
-        <SimilarRecipes recipe={typedRecipe} userId={user?.id ?? null} />
+        {/* The end of the recipe (handoff C3, items 12–13): Poprzedni / Następny, then
+            the tags and similar recipes. The original is reached from the source badge
+            on the photo now (E01-S31 §3), so there is no "Otwórz oryginał" button here.
+            All of it is screen-only — a printout stops at the recipe itself. */}
+        <div className="print:hidden">
+          <RecipeListNav slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+
+          <DishVersions
+            versions={versions}
+            totalCount={versionsTotal}
+            dish={typedRecipe.dish ?? null}
+            favoriteIds={versionFavoriteIds}
+            order={versionsOrder}
+            current={currentRecipe}
+          />
+
+          <SimilarRecipes recipe={typedRecipe} userId={user?.id ?? null} />
+        </div>
 
         {isOwner && delete_error === 'shared' && (
-          <p role="alert" className="mb-4 border-t border-border-card pt-8 text-[17px] font-bold text-danger">
+          <p role="alert" className="mb-4 border-t border-border-card pt-8 text-[17px] font-bold text-danger print:hidden">
             {RECIPE_SHARED_MESSAGE}
           </p>
         )}
         {isOwner && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-card pt-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-card pt-8 print:hidden">
             <form action={refreshRecipe}>
               <input type="hidden" name="slug" value={typedRecipe.slug} />
               <button

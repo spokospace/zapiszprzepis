@@ -90,7 +90,7 @@ export function AppHeader({
   return (
     // Below lg /szukaj is a full screen with its own „✕ Zamknij” bar (E01-S26).
     <header
-      className={`sticky top-0 z-20 bg-white/95 backdrop-blur ${pathname === SEARCH_PATH ? 'max-lg:hidden' : ''}`}
+      className={`sticky top-0 z-20 bg-white/95 backdrop-blur print:hidden ${pathname === SEARCH_PATH ? 'max-lg:hidden' : ''}`}
     >
       <Suspense fallback={null}>
         <ReturnPointRecorder />

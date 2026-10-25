@@ -169,3 +169,43 @@ a {
 html:has(dialog[open]:modal) {
   overflow: hidden;
 }
+
+/*
+ * Print (E01, owner decision 2026-10-25): one clean recipe sheet. The screen-only
+ * chrome is hidden with `print:hidden` utilities on the page (header, footer, list
+ * bar, action buttons, cooking mode, toggles, video, gallery, prev/next, versions,
+ * similar, owner buttons); these are the page-level resets and the layout for the
+ * content that stays. Everything lives inside `@media print` so screen rendering and
+ * `pnpm test:reflow` (screen media) are untouched. Content keeps its own px sizes
+ * (19 px ingredients/steps, 24 px headings, 32 px title) — already paper-readable.
+ */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  /* The per-device A / A+ / A++ screen scaling does not belong on paper. */
+  :root {
+    --text-scale: 1;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  /* Links print as plain black text — no screen-blue, no underline-on-paper. */
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+  /* The header cover prints as one small block: cancel the screen-only full-bleed
+     negative margins (and the responsive sizing) in one place, rather than as a stack
+     of print: utilities on the element that would silently drift from its screen
+     classes. The 4:3 base aspect ratio still applies on paper (lg: does not). */
+  .recipe-print-cover {
+    margin: 0 0 1rem;
+    width: 260px;
+  }
+  /* Keep an ingredient row or a step (both <li>) whole across a page break. */
+  main li {
+    break-inside: avoid;
+  }
+}

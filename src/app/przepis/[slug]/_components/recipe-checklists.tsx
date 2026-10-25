@@ -175,7 +175,7 @@ export function RecipeChecklists({
           the optional „Wyczyść zaznaczenia" reset, right-aligned; it is dropped entirely
           when nothing is ticked so it leaves no empty gap above „Tryb gotowania". */}
       {state.ingredients.length > 0 && (
-        <div className="mb-6 flex justify-end lg:col-span-2">
+        <div className="mb-6 flex justify-end lg:col-span-2 print:hidden">
           <button
             type="button"
             onClick={() => setRaw(null)}
@@ -187,7 +187,7 @@ export function RecipeChecklists({
       )}
 
       {steps.length > 0 && (
-        <div className="mb-8 lg:col-span-2">
+        <div className="mb-8 lg:col-span-2 print:hidden">
           <CookingMode title={title} steps={steps} stepImages={visibleStepImages} />
         </div>
       )}
@@ -239,7 +239,7 @@ export function RecipeChecklists({
               Przygotowanie
             </h2>
             {showToggle && (
-              <div role="group" aria-label="Zdjęcia kroków" className="flex items-center gap-2.5">
+              <div role="group" aria-label="Zdjęcia kroków" className="flex items-center gap-2.5 print:hidden">
                 <span className="text-[17px] font-bold text-ink">Zdjęcia kroków</span>
                 {/* One shared 2 px frame; the two buttons are glued, selected = dark fill. */}
                 <div className="flex overflow-hidden rounded-xl border-2 border-border-dark">
@@ -276,7 +276,7 @@ export function RecipeChecklists({
                   {/* Source photo under the step text, same <li>; 4:3, no layout jump (ZMIANY §2).
                       A tap opens the full-screen viewer, like a gallery photo. */}
                   {visibleStepImages[i] && (
-                    <figure className="mt-1.5 max-w-full md:max-w-[520px]">
+                    <figure className="mt-1.5 max-w-full md:max-w-[520px] print:hidden">
                       <button
                         type="button"
                         onClick={() => setPhotoIndex(stepPhotos.findIndex((p) => p.step === i))}
