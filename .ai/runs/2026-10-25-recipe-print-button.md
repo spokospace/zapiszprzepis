@@ -52,17 +52,19 @@ Route A (print the live recipe page via `window.print()` + print CSS). In scope:
 
 ### Phase 1: Drukuj button
 
-- [ ] 1.1 Add print-button.tsx client component
-- [ ] 1.2 Wire Drukuj into recipe-actions + print:hidden on the row
-- [ ] 1.3 Tests for print button + updated recipe-actions test
+- [x] 1.1 Add print-button.tsx client component — 25395c5
+- [x] 1.2 Wire Drukuj into recipe-actions + print:hidden on the row — 25395c5
+- [x] 1.3 Tests for print button + updated recipe-actions test — 25395c5
 
 ### Phase 2: Print stylesheet + strip chrome
 
-- [ ] 2.1 Add @media print block to globals.css
-- [ ] 2.2 print:hidden on shared header/footer
-- [ ] 2.3 print:hidden on recipe-page chrome + cover print sizing
+- [x] 2.1 Add @media print block to globals.css — 25395c5
+- [x] 2.2 print:hidden on shared header/footer — 25395c5
+- [x] 2.3 print:hidden on recipe-page chrome + cover print sizing — 25395c5
 
 ### Phase 3: Print-only source + URL footer
 
-- [ ] 3.1 Add hidden print:block source/URL footer in page.tsx
-- [ ] 3.2 Test for the print footer
+- [x] 3.1 Add hidden print:block source/URL footer (RecipePrintFooter) in page.tsx — 25395c5
+- [x] 3.2 Test for the print footer — 25395c5
+
+Status: complete. Full gate green (typecheck, lint, test 1761, test:reflow 109). /simplify applied: centralized the cover print layout into a `.recipe-print-cover` rule, fixed the globals.css selector/comment drift, simplified a brittle test regex; skipped the shared-component (SourceBadge) centralization to keep the change off other pages.
