@@ -21,11 +21,42 @@ function toText(value: unknown): string {
   return ''
 }
 
+// A Polish household unit: what `alt` is for ("3/4 kostki", "ok. 1,5 szklanki", "garść").
+const HOUSEHOLD_UNIT =
+  /szklan|łyż|kost|garś|garst|plast|szczypt|opakowa|puszk|puszek|ząb|ząbk|pęcz|sztuk|kromk|kawał|kropl|odrobin|filiżan|kub|słoik|torebk|paczk|list|liść|gałąz|łodyg|główk/i
+// ...stated as a quantity: a number or fraction, a word one ("pół", "kilka"), or
+// a measure that is its own quantity ("garść", "szczypta"). Without one, a unit
+// stem is a note: "pokrojone w kostkę". (`\b` is ASCII-only, so no `\b` by ł/ó.)
+const QUANTITY =
+  /[\d½¼¾⅓⅔⅛]|(^|\s)(pół|ćwierć|kilka|parę)(\s|$)|^(ok\.|około)?\s*(garś|garst|szczypt|odrobin|łyż|szklan|kost|plast|kropl|pęcz|ząb)/i
+// A US weight or measure the model copied instead of a Polish one (#524): the
+// metric value is already in amount/unit, so it adds nothing a Polish cook uses.
+const FOREIGN_MEASURE =
+  /\b(funt|funta|funty|funtów|uncj\w*|lbs?|oz|ounces?|pounds?|cups?|tbsp|tsp|tablespoons?|teaspoons?|sticks?|pinch|dash|splash|handful)\b/i
+
+/**
+ * `alt` carries a household measure only (#505). The model also parks pounds and
+ * ounces there, and preparation notes ("pokrojone", "finely grated"), which the
+ * prompt says belong in the name (#524). A foreign measure is dropped when the
+ * metric amount is there; a note moves into the name; a bare number stays.
+ */
+function settleAlt(name: string, amount: string, unit: string, alt: string): { name: string; alt: string } {
+  const measure = alt.trim()
+  if (!measure || !/\p{L}/u.test(measure)) return { name, alt: measure }
+  const lower = measure.toLowerCase()
+  // The amount itself again ("1 garść" beside 1 garść): nothing to add.
+  if (lower === `${amount} ${unit}`.trim().toLowerCase()) return { name, alt: '' }
+  if (FOREIGN_MEASURE.test(measure)) return { name, alt: amount.trim() ? '' : measure }
+  if (HOUSEHOLD_UNIT.test(measure) && QUANTITY.test(measure)) return { name, alt: measure }
+  const note = name.toLowerCase().includes(lower) ? name : `${name.trimEnd()} ${measure}`
+  return { name: note, alt: '' }
+}
+
 /**
  * The ingredients the recipe can be saved with: objects with a non-empty string
  * `name`, with `amount` / `unit` / `alt` / `section` as strings. Anything else is dropped,
  * so a list with no usable entry comes back empty and the usability gate rejects
- * the recipe with its own reason.
+ * the recipe with its own reason. `alt` is settled by `settleAlt`.
  */
 export function toIngredients(value: unknown): ExtractedIngredient[] {
   if (!Array.isArray(value)) return []
@@ -34,7 +65,10 @@ export function toIngredients(value: unknown): ExtractedIngredient[] {
     if (typeof item !== 'object' || item === null || Array.isArray(item)) continue
     const raw = item as Record<string, unknown>
     if (typeof raw.name !== 'string' || raw.name.trim().length === 0) continue
-    ingredients.push({ name: raw.name, amount: toText(raw.amount), unit: toText(raw.unit), alt: toText(raw.alt), section: toText(raw.section) })
+    const amount = toText(raw.amount)
+    const unit = toText(raw.unit)
+    const { name, alt } = settleAlt(raw.name, amount, unit, toText(raw.alt))
+    ingredients.push({ name, amount, unit, alt, section: toText(raw.section) })
   }
   return ingredients
 }

@@ -13,7 +13,7 @@ export const LABEL_MODEL = 'gpt-4.1'
 
 // Shared so the save-time labelling pass and the standalone meta-description
 // generator (the migration generator) word the SEO sentence identically.
-export const META_DESCRIPTION_RULE = `a single natural Polish sentence for search results and link previews, at most ${META_DESCRIPTION_MAX} characters (ideally 120–155), that says what the dish is and names its main ingredients or what makes it good. Full sentence, normal capitalisation, no hashtags, no quotes, no emoji; it may repeat words from the title. Base it only on this recipe's ingredients and steps — never invent anything. When the recipe has no steps (the method is in a video), describe the dish from its main ingredients instead.`
+export const META_DESCRIPTION_RULE = `a single natural Polish sentence for search results and link previews, at most ${META_DESCRIPTION_MAX} characters (ideally 120–155), that says what the dish is and names its main ingredients or what makes it good. Full sentence, normal capitalisation, no hashtags, no quotes, no emoji; it may repeat words from the title. Base it only on this recipe's ingredients and steps — never invent anything. When the recipe has no steps (the method is in a video), describe the dish from its main ingredients instead. When the title names the dish after a brand or a foreign product a Polish reader may not know ("Domowe SpaghettiOs"), say in plain words what it is ("Domowa wersja amerykańskiej zupy pomidorowej z makaronem w kształcie kółek…").`
 
 export interface LabelInput {
   title: string
@@ -38,7 +38,7 @@ export interface LabelRecipeDeps {
 }
 
 export const LABELING_PROMPT = `You label a saved Polish recipe. Return ONLY JSON: {"title": "...", "description": "...", "metaDescription": "...", "tags": [...]}.
-- "title": the same title in Polish sentence case — a capital letter only at the start of each sentence and in proper names ("Bardzo Kruche Ciastka" → "Bardzo kruche ciastka", "Sernik Po Wiedeńsku" → "Sernik po wiedeńsku"; keep "Boże Narodzenie", "Pani Walewska", "Tiramisu", and a capital after "!", "?" or "."). Change only letter case — never add, drop or reword anything.
+- "title": the same title in Polish sentence case — a capital letter only at the start of each sentence and in proper names ("Bardzo Kruche Ciastka" → "Bardzo kruche ciastka", "Sernik Po Wiedeńsku" → "Sernik po wiedeńsku"; keep "Boże Narodzenie", "Pani Walewska", "Tiramisu", a brand's own spelling ("SpaghettiOs", "Oreo"), and a capital after "!", "?" or "."). Change only letter case — never add, drop or reword anything.
 - "description": 2–5 words in Polish, lowercase, naming what sets THIS recipe apart from other recipes with a similar title — a key ingredient or technique taken from ITS ingredients and steps (e.g. "na ugotowanych żółtkach", "bez jajek", "z masłem orzechowym"). Never invent an ingredient that is not in the recipe. Never repeat or rephrase words already in the title. If the user already has recipes with a similar title (listed at the end), pick a feature that differs from their notes.
 - "metaDescription": ALWAYS write one — ${META_DESCRIPTION_RULE}
 - "tags": 0–${MAX_TAGS - 1} values. Go through the list below and pick EVERY tag whose meaning the recipe clearly meets, judged from its ingredients and steps; pick none that it doesn't. Use [] when nothing fits. Allowed values (value: meaning):
