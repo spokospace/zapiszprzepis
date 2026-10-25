@@ -12,8 +12,32 @@ import { updateSession } from '@/lib/supabase/proxy'
 import { isPublicRoute, RECIPE_PAGE_RE, legacyRecipePathToCanonical, mdRewriteTarget } from '@/lib/routes'
 import { loginPath, resolveLoginNext } from '@/lib/login-redirect'
 import { GENDER_KNOWN_COOKIE, shouldCheckGender, welcomePath } from '@/lib/first-login'
+import { securityHeaders } from '@/lib/security-headers'
+
+// E02-S10 (audit D3): every response this middleware returns — page, redirect
+// or rewrite — carries the security headers (frame-ancestors/CSP against
+// clickjacking and XSS). Applied at the single exit point so no branch is
+// missed. The matcher below excludes _next/static, images and sw.js, so static
+// assets are not covered; the acceptance criteria target HTML responses.
+// Both inputs are constant for the life of the Worker isolate, so the header
+// list is built once on the first request and reused. Lazily, not at module
+// load: on Workers process.env is populated per request, and an import-time
+// read could capture an undefined Supabase URL and bake in the wrong CSP.
+let cachedSecurityHeaders: [string, string][] | undefined
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const response = await handle(request)
+  cachedSecurityHeaders ??= securityHeaders({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    isDev: process.env.NODE_ENV !== 'production',
+  })
+  for (const [name, value] of cachedSecurityHeaders) {
+    response.headers.set(name, value)
+  }
+  return response
+}
+
+async function handle(request: NextRequest): Promise<NextResponse> {
   const { response, user, authTransient, supabase } = await updateSession(request)
   const { pathname, search, searchParams, origin } = request.nextUrl
 

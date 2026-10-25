@@ -160,6 +160,43 @@ describe('middleware — one-time gender choice for accounts from before screen 
   })
 })
 
+describe('middleware — E02-S10 security headers on every response', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  const REQUIRED = {
+    'content-security-policy': "frame-ancestors 'none'",
+    'x-frame-options': 'DENY',
+    'referrer-policy': 'strict-origin-when-cross-origin',
+    'x-content-type-options': 'nosniff',
+    'strict-transport-security': 'max-age=63072000; includeSubDomains',
+  } as const
+
+  it('carries all five headers on a public route (guest)', async () => {
+    const res = await middleware(get('/'))
+    for (const [header, expected] of Object.entries(REQUIRED)) {
+      expect(res.headers.get(header), header).toContain(expected)
+    }
+  })
+
+  it('carries all five headers on a signed-in route', async () => {
+    vi.mocked(updateSession).mockResolvedValueOnce({
+      response: NextResponse.next(),
+      user: { id: 'u1' },
+      supabase: { from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: vi.fn(async () => ({ data: { gender: 'female' }, error: null })) }) }) })) },
+    } as never)
+    const res = await middleware(get('/powiadomienia'))
+    for (const [header, expected] of Object.entries(REQUIRED)) {
+      expect(res.headers.get(header), header).toContain(expected)
+    }
+  })
+
+  it('also sets the headers on a redirect response', async () => {
+    const res = await middleware(get('/recipes/tiramisu'))
+    expect(res.status).toBe(301)
+    expect(res.headers.get('x-frame-options')).toBe('DENY')
+  })
+})
+
 describe('middleware — a session check that could not decide is not a guest', () => {
   beforeEach(() => vi.clearAllMocks())
 
