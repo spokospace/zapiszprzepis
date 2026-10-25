@@ -33,7 +33,13 @@ import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantN
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
 import { jsonLdServings, toServings } from '@/lib/servings'
 import { toIngredients, toMinutes } from '@/lib/extracted-recipe'
-import { detectSourceLanguage, EXTRACTION_MODEL, FOREIGN_EXTRACTION_MODEL, FOREIGN_SOURCE_RULES } from '@/lib/source-language'
+import {
+  detectSourceLanguage,
+  EXTRACTION_MODEL,
+  FOREIGN_EXTRACTION_MODEL,
+  FOREIGN_SOURCE_RULES,
+  localizeForeignIngredients,
+} from '@/lib/source-language'
 import { readerScrape, type ReaderPage } from '@/lib/jina-reader'
 import { fetchPublicHtml } from '@/lib/public-fetch'
 import type { Database } from '@/lib/supabase.types'
@@ -655,9 +661,12 @@ Rules:
       // Ingredients without a string name are dropped (dedup trims `name`), and
       // a time the int columns cannot take ("15-20", 37.5) becomes null (#381).
       const { steps, images: stepImages } = splitLlmSteps(parsed.steps)
+      const ingredients = toIngredients(parsed.ingredients)
       return {
         ...parsed,
-        ingredients: toIngredients(parsed.ingredients),
+        ingredients: foreignSource
+          ? localizeForeignIngredients(ingredients, `${transcript ?? ''}\n${markdown || html}`)
+          : ingredients,
         steps,
         stepImages,
         category,

@@ -346,6 +346,11 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(system).toContain('pounds and ounces to grams')
     expect(system).toContain('"mięso mielone z indyka"')
     expect(system).toContain('keep the brand with its own spelling')
+    // Follow-up to #525: Polish shop names, no US lean grades, no calques, no alt from weights.
+    expect(system).toContain('"alphabet" → "literki"')
+    expect(system).toContain('drop lean percentages')
+    expect(system).toContain('never "Umieścić … w misce"')
+    expect(system).toContain('never turn a weight into szklanki')
   })
 
   it('asks for steps as impersonal infinitive instructions, not the author narration', async () => {
