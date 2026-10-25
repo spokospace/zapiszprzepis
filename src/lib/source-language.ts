@@ -5,8 +5,16 @@
 
 export type SourceLanguage = 'pl' | 'foreign'
 
-/** The extraction model for a Polish source. */
-export const EXTRACTION_MODEL = 'gpt-4o-mini'
+// The extraction model for a Polish source. gpt-5.4-mini replaced gpt-4o-mini
+// after the #526 offline eval (26 recipes, 5 models): it roughly halves the raw
+// `alt` rule violations (23 vs 48) the #525 guard was patching, all but
+// eliminates step-form violations (1 vs 83), and is the fastest (p95 ~6 s vs
+// ~13 s) — at a few dozen extractions a month its higher list price is still
+// cents. It runs at its DEFAULT reasoning effort ('none'), which is why the call
+// in run-extract-recipe.ts keeps `temperature: 0.3` + `response_format`
+// unchanged; the gpt-5 *mini/nano* tiers reject `temperature` and would need a
+// request change (see context/foundation/extraction-model-eval-2026-10.md).
+export const EXTRACTION_MODEL = 'gpt-5.4-mini'
 /** The model for a foreign source. Not LABEL_MODEL, so the labelling call is
  *  still told apart by its model. */
 export const FOREIGN_EXTRACTION_MODEL = 'gpt-4.1-mini'
