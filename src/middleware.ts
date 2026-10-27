@@ -168,9 +168,10 @@ export const config = {
   // the original `public` token never matched and /logo.svg, /og-image.png
   // etc. got redirected to /login on every request.
   matcher: [
-    // robots.txt / sitemap.xml / llms.txt are crawler endpoints served by their
-    // own routes; exclude them so an anonymous crawler isn't bounced to /login.
+    // robots.txt / sitemap.xml / llms.txt and the /.well-known/ ARD catalog
+    // (#546) are crawler endpoints served by their own routes; exclude them so
+    // an anonymous crawler isn't bounced to /login.
     // (The `.md` alternates are NOT excluded — they rely on middleware's rewrite.)
-    '/((?!_next/static|_next/image|robots\\.txt|sitemap\\.xml|llms\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
+    '/((?!_next/static|_next/image|robots\\.txt|sitemap\\.xml|llms\\.txt|\\.well-known/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
   ],
 }
