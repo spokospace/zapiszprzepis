@@ -52,13 +52,21 @@ function must(error: { message?: string } | null | undefined, label: string): vo
  * Handler or Server Action (where `revalidateTag` has the Next cache context).
  * `{ expire: 0 }` purges immediately (Next 16: the next request is a blocking
  * cache miss, not stale-while-revalidate) — the right choice outside a Server
- * Action, e.g. a delete, where stale content must not be served. A no-op against
- * OpenNext's default dummy tag cache — real invalidation needs the Phase-2 tag
- * cache (#445, spec §Phasing).
+ * Action, e.g. a delete, where stale content must not be served. Every cached
+ * read carries the list tag, so a call without a slug purges the recipe pages too.
+ *
+ * Best-effort: the write it follows has already succeeded, so a failure here is
+ * logged, not thrown — the TTL still bounds staleness. A no-op while OpenNext runs
+ * its default dummy incremental + tag caches; real hits and invalidation need the
+ * Phase-2 R2 + D1 caches (#445, `.ai/specs/2026-10-26-cache-guest-reads-phase2-plan.md`).
  */
 export function revalidateRecipeCaches(slug?: string): void {
-  revalidateTag(RECIPES_LIST_TAG, { expire: 0 })
-  if (slug) revalidateTag(recipeTag(slug), { expire: 0 })
+  try {
+    revalidateTag(RECIPES_LIST_TAG, { expire: 0 })
+    if (slug) revalidateTag(recipeTag(slug), { expire: 0 })
+  } catch (error) {
+    console.error('[recipe-cache] invalidation failed:', error instanceof Error ? error.message : String(error))
+  }
 }
 
 // ── Reads (take a client, so a fake client unit-tests them; no cookies/user) ──

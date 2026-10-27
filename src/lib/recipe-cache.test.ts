@@ -132,6 +132,16 @@ describe('revalidateRecipeCaches', () => {
     expect(revalidateTag).toHaveBeenCalledWith(RECIPES_LIST_TAG, { expire: 0 })
     expect(revalidateTag).toHaveBeenCalledWith(recipeTag('sernik-wiedenski'), { expire: 0 })
   })
+
+  it('logs instead of throwing when the invalidation fails — the write it follows already succeeded', () => {
+    vi.mocked(revalidateTag).mockImplementationOnce(() => {
+      throw new Error('no Next request context')
+    })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(() => revalidateRecipeCaches('sernik-wiedenski')).not.toThrow()
+    expect(consoleError).toHaveBeenCalledWith('[recipe-cache] invalidation failed:', 'no Next request context')
+    consoleError.mockRestore()
+  })
 })
 
 describe('reads — public_recipes only, no user-scoped columns (no cross-user leakage)', () => {
