@@ -119,6 +119,14 @@ describe('RecipeChecklists alternative measure (#505)', () => {
     expect((html.match(/text-\[16px\]/g) ?? []).length).toBe(1)
   })
 
+  it('keeps words apart in the row text that crawlers extract', () => {
+    // Google builds its ingredient snippet from the text, not the layout: adjacent
+    // spans with no whitespace between them came out as "masło150 g3/4 kostki".
+    const text = renderAlt().replace(/<[^>]+>/g, '')
+    expect(text).toContain('masło 150 g 3/4 kostki')
+    expect(text).toContain('jajka 4')
+  })
+
   it('derives a household second line for a volume ingredient with no stated measure', () => {
     const html = renderToStaticMarkup(
       createElement(RecipeChecklists, {
