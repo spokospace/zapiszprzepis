@@ -14,6 +14,12 @@ The code lands first and is a safe no-op under OpenNext's default caches; the
 Cloudflare cache infrastructure that produces real hits is a separate,
 owner-gated step.
 
+> **Status (2026-10-27).** Phase 1 shipped in #532; the Inngest invalidation it
+> missed (Q4) is #551. Phase 2 is owner-approved as **R2 + D1 only** — no queue,
+> the D1 tag cache wrapped in a soft-tag filter, the D1 table created by hand.
+> Analysis, local verification and rollout: `2026-10-26-cache-guest-reads-phase2-plan.md`;
+> operator steps: `2026-10-25-cache-guest-reads-phase2-runbook.md`.
+
 ## 📝 Problem Statement
 
 `src/app` has no `revalidate` / `'use cache'` anywhere — the only `next/cache`
@@ -87,7 +93,10 @@ flowchart TD
 - **Changed:** the three route files call the cached helpers for the
   user-independent part; the write paths call `revalidateRecipeCaches()`.
 - **Planned/owner-gated:** `open-next.config.ts` + `wrangler` bindings to give
-  OpenNext a real incremental cache (R2) + tag cache (D1) + queue. Until then the
+  OpenNext a real incremental cache (R2) + tag cache (D1, soft `_N_T_` tags
+  filtered out). No queue: `unstable_cache` revalidates stale entries in the
+  background through Next itself (`pendingRevalidates` + `waitUntil`); OpenNext's
+  queue only serves ISR pages, which this app has none of. Until then the
   helpers run against OpenNext's default *dummy* caches and simply always
   miss — behavior identical to today, which is why the code is safe to ship first.
 - **Consumers unaffected:** `/ulubione`, `/recipes`, `/dodaj`, notifications —
@@ -164,10 +173,10 @@ UI feature.
   per-user reads and RLS are unchanged — which is why the change is `risk-medium`,
   not high.
 - **OpenNext cache infra (Phase 2)** — provisioning an R2 bucket, a D1 tag-cache
-  DB, a queue, and `wrangler` bindings is a hard-to-reverse infrastructure
+  DB, and `wrangler` bindings is a hard-to-reverse infrastructure
   commitment on the owner's Cloudflare account, which the automation cannot reach
   (deploy is Workers-Builds-only; see `CLAUDE.md` + project memory). Owner bears
-  it; marked `⚠ NEEDS HUMAN CONFIRMATION`. Rollback: remove the bindings / revert
+  it; owner-confirmed 2026-10-27 (Q3). Rollback: remove the bindings / revert
   `open-next.config.ts`; the code falls back to the dummy cache (today's behavior).
 - **No GitHub-Actions assumption** — the change reaches production only via a
   Workers Builds build of `master`; `pnpm smoke:prod` after deploy per project rule.
@@ -180,11 +189,12 @@ UI feature.
   tests for stable-within-TTL, re-read after invalidation, and no cross-user
   leakage. Independently shippable: with OpenNext's dummy cache it behaves exactly
   like today.
-- **Phase 2 — Cloudflare cache infrastructure (owner-gated, `⚠ NEEDS HUMAN
-  CONFIRMATION`).** Provision R2 + D1 + queue, add `wrangler` bindings, enable
-  `r2IncrementalCache` + `d1NextTagCache` (+ queue) in `open-next.config.ts`,
-  confirm `opennextjs-cloudflare build`, deploy via Workers Builds, then post
-  before/after TTFB (same method as epic #225) and run `pnpm smoke:prod`.
+- **Phase 2 — Cloudflare cache infrastructure (owner-run, confirmed
+  2026-10-27).** Provision R2 + D1 and create the D1 `revalidations` table by
+  hand, add `wrangler` bindings, enable `withRegionalCache(r2IncrementalCache)` +
+  `withFilter(d1NextTagCache, softTagFilter)` in `open-next.config.ts`, deploy via
+  Workers Builds, then run `pnpm smoke:prod`, verify invalidation and post
+  before/after TTFB (same method as epic #225). Steps: the Phase 2 runbook.
 
 ## 📋 Implementation Plan
 
@@ -223,12 +233,15 @@ UI feature.
 
 ### Phase 2 — Cloudflare cache infrastructure (owner-gated)
 
-8. Provision R2 bucket + D1 database + queue (owner, Cloudflare dashboard/CLI);
-   add bindings to `wrangler` config.
-9. Enable `r2IncrementalCache` + `d1NextTagCache` (+ queue) in
-   `open-next.config.ts`; confirm `opennextjs-cloudflare build` locally.
-10. Deploy `master` via Workers Builds; run `pnpm smoke:prod`; post before/after
-    TTFB on #445 (method from epic #225).
+8. Provision the R2 bucket (with a lifecycle rule) + the D1 database, and create
+   the D1 `revalidations` table by hand (owner, `wrangler`); add the bindings to
+   `wrangler.jsonc`.
+9. Enable `withRegionalCache(r2IncrementalCache)` + `withFilter(d1NextTagCache,
+   softTagFilter)` in `open-next.config.ts`; confirm `pnpm preview` locally.
+10. Deploy `master` via Workers Builds; run `pnpm smoke:prod`; verify a refresh
+    invalidates; post before/after TTFB on #445 (method from epic #225).
+
+Exact commands, verification and rollback: `2026-10-25-cache-guest-reads-phase2-runbook.md`.
 
 ## 📝 Resolved assumptions (autonomous defaults)
 
@@ -236,8 +249,8 @@ UI feature.
 |---|----------|------------|-----------|--------------|
 | Q1 | Freshness budget / TTL for public lists & recipes? | **`revalidate: 120 s`** | **Owner-confirmed** on the issue before this spec (resolves the blocking open question). | resolved |
 | Q2 | `'use cache'`/`cacheComponents` vs `unstable_cache` on OpenNext Cloudflare? | **`unstable_cache`** | Targeted, no app-wide flag, OpenNext-supported; `cacheComponents` is experimental with app-wide blast radius. Reversible. | default (reversible) |
-| Q3 | How does the cache actually persist + honor tags on Cloudflare Workers? | Wire OpenNext **R2 incremental cache + D1 tag cache + queue**; until provisioned the code runs on the default dummy caches (no-op, = today). | OpenNext's default caches are no-ops; real hits need owner-provisioned Cloudflare resources + bindings the automation cannot create, and a Workers Builds deploy. | **⚠ NEEDS HUMAN CONFIRMATION** |
-| Q4 | Where to invalidate, given recipes are inserted by the async Inngest worker (not the add action)? | `revalidateTag` at synchronous points (delete route, favorite) **and** in the worker's completion step; the ≤120 s TTL bounds any gap. | Smallest reliable surface that avoids stale-beyond-TTL; owner accepted ≤120 s. | default (reversible) |
+| Q3 | How does the cache actually persist + honor tags on Cloudflare Workers? | Wire OpenNext **R2 incremental cache (regional cache in front) + D1 tag cache wrapped in `withFilter(softTagFilter)`**, no queue; until provisioned the code runs on the default dummy caches (no-op, = today). | OpenNext's default caches are no-ops; real hits need owner-provisioned Cloudflare resources + bindings the automation cannot create, and a Workers Builds deploy. The queue only serves ISR; without the soft-tag filter every `revalidatePath('/', 'layout')` would purge the whole data cache (verified locally, phase-2 plan §2.3). | ✅ owner-confirmed 2026-10-27 |
+| Q4 | Where to invalidate, given recipes are inserted by the async Inngest worker (not the add action)? | `revalidateTag` at synchronous points (delete route) **and** in the worker: a step after the extraction and one after the photos are archived. #532 shipped only the delete route; the worker steps are #551. | Smallest reliable surface that avoids stale-beyond-TTL; owner accepted ≤120 s. | default (reversible) |
 | Q5 | One spec, or split the three surfaces? | **One spec** — one capability, one mechanism (cookie-free client + tag scheme) shared across surfaces. | Surfaces are not independently deployable capabilities; splitting would duplicate the shared design. | default |
 
 > Scope-cohesion check: a single independently-deployable capability (cache
