@@ -37,6 +37,14 @@ const TILE = {
 const GUEST_EXTRA = RECIPE_CATEGORIES[HOME_CATEGORIES.length]
 
 /**
+ * Press feedback for touch screens: while a finger is down the tile sinks (scale
+ * 0.96) and greys (`surface-3`), replacing the browser's flat tap flash. Reduced
+ * motion keeps the colour change and drops the shrink.
+ */
+const PRESS =
+  '[-webkit-tap-highlight-color:transparent] transition-[scale,background-color] duration-100 ease-out active:scale-[0.96] active:bg-surface-3 motion-reduce:transition-none motion-reduce:active:scale-100'
+
+/**
  * "Kategorie" tiles (E01-S04): 3 columns for a guest (from 360px), 2 for a signed-in
  * user. The empty search screen titles them „Albo wybierz kategorię” (4a, E01-S26).
  */
@@ -63,7 +71,7 @@ export function CategoryGrid({
             <li key={value} className={value === GUEST_EXTRA.value ? 'hidden min-w-0 min-[360px]:block' : 'min-w-0'}>
               <Link
                 href={categoryPath(value)}
-                className={`flex items-center font-bold break-words no-underline! ${tile.link}`}
+                className={`flex items-center font-bold break-words no-underline! ${PRESS} ${tile.link}`}
               >
                 <Icon aria-hidden="true" strokeWidth={tile.stroke} className={`shrink-0 text-action-text ${tile.icon}`} />
                 {/* max-w-full: in the centred 3-column tile the name is as wide as its

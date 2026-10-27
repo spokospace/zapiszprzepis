@@ -39,6 +39,19 @@ describe('CategoryGrid (E01-S20)', () => {
     expect(html).not.toContain('wrap-anywhere')
     for (const { label } of HOME_CATEGORIES) expect(html).toContain(label)
   })
+
+  it('gives every tile press feedback that respects reduced motion', () => {
+    for (const columns of [2, 3] as const) {
+      const html = render(createElement(CategoryGrid, { columns }))
+      const links = html.match(/<a [^>]*>/g) ?? []
+      expect(links.length).toBeGreaterThan(0)
+      for (const a of links) {
+        expect(a).toContain('active:scale-[0.96]')
+        expect(a).toContain('active:bg-surface-3')
+        expect(a).toContain('motion-reduce:active:scale-100')
+      }
+    }
+  })
 })
 
 describe('GuestCta (E01-S20)', () => {
