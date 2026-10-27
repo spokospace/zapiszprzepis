@@ -17,6 +17,41 @@ export function parseAmount(raw: string | undefined): number | null {
   return /^\d+(\.\d+)?$/.test(s) ? Number(s) : null
 }
 
+/** Fraction glyphs a recipe source may use, as the "n/d" they stand for. */
+export const UNICODE_FRACTIONS: Record<string, string> = {
+  '½': '1/2',
+  '¼': '1/4',
+  '¾': '3/4',
+  '⅓': '1/3',
+  '⅔': '2/3',
+  '⅛': '1/8',
+}
+
+// "2 1/2", "2½" — a whole number followed by a fraction, not part of a longer
+// number ("12/2025", "1,5 1/2") on either side.
+const MIXED_FRACTION = new RegExp(
+  `(?<![\\d,./])(\\d+)(?:\\s+(\\d+)/(\\d+)|\\s*([${Object.keys(UNICODE_FRACTIONS).join('')}]))(?![\\d/])`,
+  'g',
+)
+
+/**
+ * Rewrite every mixed fraction in a household measure as a Polish decimal, for
+ * readability (#535): "2 1/2 szklanki" → "2,5 szklanki", "ok. 1 3/4 kostki" →
+ * "ok. 1,75 kostki". Everything else is kept as written — qualifiers ("ok.",
+ * "około", "do"), unit words, decimals and bare fractions ("3/4 kostki", which
+ * read fine as they are). A mixed fraction whose decimal would run past two
+ * places ("1 1/3") or that is not a proper fraction ("1 3/2") is left alone too.
+ */
+export function decimalMixedFractions(measure: string): string {
+  return measure.replace(MIXED_FRACTION, (match, whole: string, num?: string, den?: string, glyph?: string) => {
+    const [n, d] = (glyph ? UNICODE_FRACTIONS[glyph] : `${num}/${den}`).split('/').map(Number)
+    if (!(d > n && n > 0)) return match
+    const value = Number(whole) + n / d
+    const rounded = Math.round(value * 100) / 100
+    return Math.abs(rounded - value) > 1e-9 ? match : String(rounded).replace('.', ',')
+  })
+}
+
 /** The three Polish plural forms of a counted unit. */
 export type PluralForms = { one: string; few: string; many: string }
 

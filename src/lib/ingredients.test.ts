@@ -47,6 +47,15 @@ describe('householdMeasure', () => {
     expect(householdMeasure({ amount: '250', unit: 'ml', name: 'mąki' })).toBe('1 szklanka')
   })
 
+  it('shows a mixed fraction as a decimal, stated or derived (#535)', () => {
+    expect(householdMeasure({ amount: '500', unit: 'ml', alt: '2 1/2 szklanki' })).toBe('2,5 szklanki')
+    expect(householdMeasure({ amount: '375', unit: 'ml' })).toBe('1,5 szklanki')
+    expect(householdMeasure({ amount: '300', unit: 'g', name: 'masła' })).toBe('1,5 kostki')
+    expect(ingredientLine({ amount: '500', unit: 'ml', name: 'mleka', alt: '2 1/2 szklanki' }, { alt: true })).toBe(
+      '500 ml mleka (2,5 szklanki)',
+    )
+  })
+
   it('is null for a weight amount with no matching staple, or when nothing applies', () => {
     expect(householdMeasure({ amount: '300', unit: 'g', name: 'startej marchewki' })).toBeNull()
     expect(householdMeasure({ amount: '50', unit: 'g', name: 'orzechów włoskich' })).toBeNull()
