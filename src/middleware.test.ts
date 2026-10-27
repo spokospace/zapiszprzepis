@@ -21,6 +21,10 @@ describe('middleware config.matcher — crawler endpoints bypass the gate', () =
     expect(re.test('/sitemap.xml')).toBe(false)
     expect(re.test('/llms.txt')).toBe(false)
   })
+  it('does NOT match the /.well-known/ ARD catalog (#546), so a guest gets JSON, not /login', () => {
+    expect(re.test('/.well-known/ai-catalog.json')).toBe(false)
+    expect(re.test('/.well-known/ard.json')).toBe(false)
+  })
   it('still matches app pages that must pass through the gate', () => {
     expect(re.test('/przepisy/obiady')).toBe(true)
     expect(re.test('/ulubione')).toBe(true)
