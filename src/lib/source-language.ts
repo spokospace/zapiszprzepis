@@ -3,6 +3,8 @@
 // source path (Firecrawl, Jina, Blogger feed, Facebook caption, YouTube) has one,
 // and many Polish blogs ship an `en-US` theme `<html lang>`.
 
+import { UNICODE_FRACTIONS } from './measure-format'
+
 export type SourceLanguage = 'pl' | 'foreign'
 
 // The extraction model for a Polish source. gpt-5.4-mini replaced gpt-4o-mini
@@ -71,7 +73,6 @@ const US_MEASURE: { pl: RegExp; en: RegExp; key: string }[] = [
 ]
 // "2/3 cup", "1 tablespoon" in the source; never the "2" of "1/2" (lookbehind).
 const STATED_MEASURE = /(?<![\d/.])(\d+(?:[/.]\d+)?)\s*(teaspoons?|tsp|tablespoons?|tbsps?|tbs|cups?|sticks?)\b/g
-const UNICODE_FRACTIONS: Record<string, string> = { '½': '1/2', '¼': '1/4', '¾': '3/4', '⅓': '1/3', '⅔': '2/3', '⅛': '1/8' }
 const UNICODE_FRACTION = new RegExp(`[${Object.keys(UNICODE_FRACTIONS).join('')}]`, 'g')
 const fractions = (s: string) => s.replace(UNICODE_FRACTION, (f) => ` ${UNICODE_FRACTIONS[f]}`).replace(/\s+/g, ' ')
 // "ok. 1/2 szklanki" → ["1/2", "szklanki"]
