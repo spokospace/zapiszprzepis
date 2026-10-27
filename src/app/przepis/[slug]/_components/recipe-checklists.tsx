@@ -76,13 +76,16 @@ function IngredientRow({
         />
       </span>
       <span className={`text-scalable min-w-0 flex-1 break-words leading-snug ${text}`}>{name}</span>
+      {/* The spaces between the name, the amount and the alt measure are for text
+          extraction, not layout (a flex container drops whitespace-only text): without
+          them Google's ingredient snippet read "Mąka pszenna500 gok. 3 3/4 szklanki". */}{' '}
       {/* Both wrap (right-aligned) rather than nowrap: a long amount or measure at
           A++ would scroll the page sideways. With an alt measure the metric amount
           sits on top and the household measure below it, lighter and 16 px — the
           owner's "second line" treatment (#505). */}
       {alt ? (
         <span className="flex max-w-[45%] flex-col items-end text-right">
-          {amount && <b className={`text-scalable ${text}`}>{amount}</b>}
+          {amount && <b className={`text-scalable ${text}`}>{amount}</b>}{' '}
           {/* 16 px base so .text-scalable (which scales the parent em) grows from 16, not 19. */}
           <span className="text-[16px]">
             <span className={`text-scalable ${altText}`}>{alt}</span>
