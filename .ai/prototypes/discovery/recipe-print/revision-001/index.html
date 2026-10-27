@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prototyp: wydruk przepisu</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Prototype chrome: identifies this as a neutral wireframe, not the product. -->
+  <div class="proto-bar" role="note">
+    <strong>Prototyp discovery</strong> — wydruk przepisu · neutralny szkielet, dane fikcyjne
+    <button type="button" id="reset" class="proto-reset">↺ Reset</button>
+  </div>
+
+  <main class="stage">
+    <!-- ===================== EKRAN A: strona przepisu ===================== -->
+    <section id="screen-recipe" class="screen" aria-labelledby="recipe-title">
+      <!-- Nagłówek aplikacji — poza zakresem wydruku; w prototypie nieaktywny. -->
+      <header class="app-header">
+        <span class="wire-logo">Zapisz Przepis</span>
+        <nav class="app-nav" aria-label="Nawigacja (poza zakresem wydruku)">
+          <button type="button" class="wire-link" data-outofscope>Szukaj</button>
+          <button type="button" class="wire-link" data-outofscope>MENU</button>
+        </nav>
+      </header>
+
+      <div class="recipe">
+        <div class="recipe-cover" aria-hidden="true"><span>zdjęcie dania</span></div>
+        <div class="recipe-head">
+          <h1 id="recipe-title">Placki ziemniaczane</h1>
+          <p class="subtitle">chrupiące, z patelni</p>
+          <p class="who">Dodała <span class="wire-link-inline" data-outofscope>Kasia</span></p>
+          <dl class="times">
+            <div><dt>Przygotowanie</dt><dd>20 min</dd></div>
+            <div><dt>Smażenie</dt><dd>20 min</dd></div>
+            <div><dt>Łącznie</dt><dd>40 min</dd></div>
+          </dl>
+          <p class="lead">Proste placki ziemniaczane na rozgrzewający obiad — podawane z cukrem albo z gęstą śmietaną.</p>
+
+          <!-- Rząd akcji: to tu żyje „Drukuj”, obok „Udostępnij”. -->
+          <div class="actions">
+            <button type="button" class="btn btn-fav" data-outofscope>♥ Dodaj do ulubionych</button>
+            <button type="button" class="btn btn-outline" data-outofscope>⤳ Udostępnij</button>
+            <button type="button" class="btn btn-outline btn-print" id="open-print">🖨 Drukuj</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="recipe-body">
+        <section aria-labelledby="ing-h" class="ingredients">
+          <h2 id="ing-h">Składniki <span class="muted">na 4 porcje</span></h2>
+          <ul class="ing-list">
+            <li><span>ziemniaki</span><b>1 kg<small>ok. 8 szt.</small></b></li>
+            <li><span>cebula</span><b>1 szt.</b></li>
+            <li><span>jajko</span><b>1 szt.</b></li>
+            <li><span>mąka pszenna</span><b>3 łyżki</b></li>
+            <li><span>sól</span><b>1 łyżeczka</b></li>
+            <li><span>olej do smażenia</span><b>—</b></li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="steps-h" class="steps">
+          <h2 id="steps-h">Przygotowanie</h2>
+          <ol class="step-list">
+            <li><p class="step-n">Krok 1</p><p>Ziemniaki i cebulę obrać, zetrzeć na drobnej tarce.</p></li>
+            <li><p class="step-n">Krok 2</p><p>Odcisnąć nadmiar wody, dodać jajko, mąkę i sól, wymieszać.</p></li>
+            <li><p class="step-n">Krok 3</p><p>Smażyć na rozgrzanym oleju z obu stron na złoto.</p></li>
+            <li><p class="step-n">Krok 4</p><p>Osączyć na papierowym ręczniku. Podawać od razu.</p></li>
+          </ol>
+        </section>
+
+        <!-- Sekcje tylko-ekranowe: w produkcji istnieją, ale na wydruku są ukryte. -->
+        <div class="screen-only-note" role="note">
+          Dalej na stronie: „Tryb gotowania”, wideo, galeria, „inne przepisy na placki”,
+          „podobne przepisy” — <strong>świadomie pomijane na wydruku</strong> (poza zakresem prototypu).
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== EKRAN B: podgląd wydruku ===================== -->
+    <section id="screen-print" class="screen is-hidden" aria-labelledby="sheet-title" hidden>
+      <!-- Pasek narzędzi: na ekranie, NIE na papierze. W produkcji (wariant A) rolę
+           podglądu pełni natywne okno drukowania przeglądarki — tu to makieta. -->
+      <div class="print-toolbar">
+        <button type="button" class="btn btn-outline" id="back-to-recipe">← Wróć do przepisu</button>
+        <span class="toolbar-note">Podgląd wydruku — pasek narzędzi nie drukuje się</span>
+        <button type="button" class="btn btn-solid" id="do-print">🖨 Drukuj</button>
+      </div>
+
+      <!-- „Kartka” — to, co trafia na papier. -->
+      <article class="sheet" aria-labelledby="sheet-title">
+        <div class="sheet-top">
+          <div class="sheet-cover" aria-hidden="true"><span>zdjęcie</span></div>
+          <div class="sheet-headtext">
+            <h1 id="sheet-title">Placki ziemniaczane</h1>
+            <p class="sheet-sub">chrupiące, z patelni</p>
+            <dl class="sheet-times">
+              <div><dt>Przygotowanie</dt><dd>20 min</dd></div>
+              <div><dt>Smażenie</dt><dd>20 min</dd></div>
+              <div><dt>Łącznie</dt><dd>40 min</dd></div>
+            </dl>
+            <p class="sheet-lead">Proste placki ziemniaczane na rozgrzewający obiad — podawane z cukrem albo z gęstą śmietaną.</p>
+          </div>
+        </div>
+
+        <div class="sheet-cols">
+          <section aria-labelledby="sheet-ing-h">
+            <h2 id="sheet-ing-h">Składniki <span class="muted">na 4 porcje</span></h2>
+            <ul class="sheet-ing">
+              <li><span>ziemniaki</span><b>1 kg <small>ok. 8 szt.</small></b></li>
+              <li><span>cebula</span><b>1 szt.</b></li>
+              <li><span>jajko</span><b>1 szt.</b></li>
+              <li><span>mąka pszenna</span><b>3 łyżki</b></li>
+              <li><span>sól</span><b>1 łyżeczka</b></li>
+              <li><span>olej do smażenia</span><b>—</b></li>
+            </ul>
+          </section>
+          <section aria-labelledby="sheet-steps-h">
+            <h2 id="sheet-steps-h">Przygotowanie</h2>
+            <ol class="sheet-steps">
+              <li><b>Krok 1.</b> Ziemniaki i cebulę obrać, zetrzeć na drobnej tarce.</li>
+              <li><b>Krok 2.</b> Odcisnąć nadmiar wody, dodać jajko, mąkę i sól, wymieszać.</li>
+              <li><b>Krok 3.</b> Smażyć na rozgrzanym oleju z obu stron na złoto.</li>
+              <li><b>Krok 4.</b> Osączyć na papierowym ręczniku. Podawać od razu.</li>
+            </ol>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <!-- Symulowane okno drukowania / komunikaty poza zakresem. -->
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

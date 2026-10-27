@@ -1,0 +1,99 @@
+/* Prototyp przeprojektowania (rząd akcji + tryb gotowania). Style zbliżone do
+   aplikacji (pomarańcz #c2410c, ciemny #111827, pigułki), dane fikcyjne, offline. */
+:root{
+  --action:#c2410c; --action-text:#9a3412; --ink:#111827; --ink-soft:#374151;
+  --field:#4b5563; --surface3:#f3f4f6; --card:#e5e7eb; --orange-bright:#ea580c;
+  --focus:#1d4ed8;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#e9e9e9;color:var(--ink);line-height:1.5;
+     font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;font-size:17px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+button{font:inherit;cursor:pointer}
+h1{font-size:30px;margin:0 0 4px;line-height:1.12}
+h2{font-size:22px;margin:0 0 8px}
+
+.proto-bar{background:#222;color:#fff;font-size:14px;padding:8px 14px;
+           display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.proto-switch{display:inline-flex;border:1px solid #fff;border-radius:6px;overflow:hidden;margin-left:8px}
+.proto-switch button{background:#222;color:#fff;border:0;padding:6px 12px;min-height:34px;font-weight:700}
+.proto-switch button[aria-pressed="true"]{background:#fff;color:#222}
+.proto-reset{margin-left:auto;background:#fff;color:#222;border:0;border-radius:4px;padding:6px 12px;min-height:34px;font-weight:700}
+
+.stage{margin:18px auto;background:#fff;border:1px solid var(--card);border-radius:8px;padding:22px}
+.stage.is-desktop{max-width:1000px}
+.stage.is-mobile{max-width:380px;padding:16px}
+
+/* Header */
+.r-head{display:grid;gap:20px;align-items:start;margin-bottom:22px}
+.is-desktop .r-head{grid-template-columns:300px 1fr}
+.is-mobile .r-head{grid-template-columns:1fr}
+.r-cover{background:var(--surface3);border:1px solid var(--card);border-radius:6px;
+         aspect-ratio:4/3;display:grid;place-items:center;color:var(--ink-soft);font-size:14px}
+.r-sub{color:var(--ink-soft);margin:0 0 8px}
+.r-meta{color:var(--ink-soft);font-size:15px;margin:0 0 10px}
+.r-lead{margin:10px 0 0}
+
+/* Buttons */
+.btn{min-height:56px;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+     border-radius:999px;font-weight:700;font-size:18px;padding:0 18px;border:2px solid var(--ink);
+     background:#fff;color:var(--ink)}
+.btn-heart{border-color:var(--action);color:var(--action-text)}
+.btn-heart.on{background:var(--action);color:#fff;border-color:var(--action)}
+.btn-heart .ic{fill:none;stroke:currentColor;stroke-width:2}
+.btn-heart.on .ic{fill:currentColor}
+.btn-outline .ic{fill:none;stroke:currentColor;stroke-width:2}
+.btn-dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-dark .ic{fill:none;stroke:currentColor;stroke-width:2}
+.ic{width:22px;height:22px;flex:0 0 auto}
+.ic-lg{width:24px;height:24px}
+
+/* Actions row. Desktop: three equal labelled buttons in one line. Mobile: the heart
+   (primary) stays full width, then Udostępnij + Drukuj sit side by side as a smaller
+   secondary pair — fewer, quieter elements before the recipe. */
+.actions{display:flex;gap:12px;margin-bottom:22px}
+.is-desktop .actions .btn{flex:1}
+.is-mobile .actions{flex-wrap:wrap;gap:10px}
+.is-mobile .actions .btn-heart{width:100%;flex:none}
+.is-mobile .actions .btn-outline{flex:1;min-height:48px;font-size:16px}
+.is-mobile .actions .btn-outline .ic{width:20px;height:20px}
+
+/* NEW cooking button: compact auto, left (desktop); full width (mobile). */
+.cook-wrap{margin-bottom:18px;display:flex}
+.is-desktop .cook-btn{width:auto;align-self:flex-start;min-height:58px;font-size:19px}
+.is-mobile .cook-btn{width:100%;min-height:58px;font-size:19px}
+
+/* Columns */
+.cols{display:grid;gap:22px}
+.is-desktop .cols{grid-template-columns:1fr 1.6fr;align-items:start}
+.is-mobile .cols{grid-template-columns:1fr}
+.ing{background:var(--surface3);border:1px solid var(--card);border-radius:6px;padding:14px}
+.is-mobile .ing{background:transparent;border:0;padding:0}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.muted{color:var(--ink-soft);font-size:15px}
+.ing-list{list-style:none;margin:0;padding:0}
+.ing-list li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--card);padding:9px 2px}
+.ing-list li b{white-space:nowrap}
+.step-list{list-style:none;margin:0;padding:0}
+.step-list li{margin-bottom:14px}
+.step-n{font-weight:700;color:var(--action-text);margin:0 0 2px;font-size:15px}
+.step-list p:last-child{margin:0}
+
+/* Cooking overlay (simplified) */
+.cook-overlay{position:fixed;inset:0;background:var(--ink);color:#fff;display:flex;flex-direction:column;z-index:50}
+.cook-overlay[hidden]{display:none}
+.co-top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px}
+.co-title{font-weight:700;color:var(--card)}
+.co-close{background:transparent;border:0;color:#fff;font-weight:700;min-height:48px;font-size:18px}
+.co-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;padding:20px 24px;max-width:760px;margin:0 auto;width:100%}
+.co-step{color:var(--orange-bright);font-size:20px;font-weight:700;margin:0}
+.co-text{font-size:28px;font-weight:600;line-height:1.45;margin:0}
+.co-nav{display:grid;grid-template-columns:1fr 1.4fr;gap:12px;padding:16px;max-width:760px;margin:0 auto;width:100%}
+.btn-outline-dark{min-height:68px;border:2px solid var(--field);background:transparent;color:#fff;border-radius:999px;font-weight:700;font-size:19px}
+.btn-next{min-height:68px;border:0;background:var(--orange-bright);color:var(--ink);border-radius:999px;font-weight:700;font-size:20px}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);
+       color:#fff;padding:12px 18px;border-radius:8px;max-width:460px;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:60}
+.toast[hidden]{display:none}

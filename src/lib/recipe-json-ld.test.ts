@@ -102,6 +102,15 @@ describe('buildRecipeJsonLd', () => {
     }
   })
 
+  it('emits no keywords for a tagless recipe — accepted Search Console omission (#530)', () => {
+    // keywords comes only from the closed tag list (the sole honest source); a
+    // recipe that resolves to no tags emits no keywords rather than inventing one
+    // from the title / recipeCategory / ingredients. Both the empty-array and the
+    // null tag states are tagless.
+    expect(buildRecipeJsonLd({ ...base, tags: [] }, SITE).keywords).toBeUndefined()
+    expect(buildRecipeJsonLd({ ...base, tags: null }, SITE).keywords).toBeUndefined()
+  })
+
   it('keeps estimated times — they are what the page shows', () => {
     const ld = buildRecipeJsonLd({ ...base, total_time_minutes: 45 }, SITE)
     expect(ld.totalTime).toBe('PT45M')

@@ -17,7 +17,7 @@ const LINKS = [
  */
 export function SiteFooter() {
   return (
-    <footer className="mt-auto hidden border-t-2 border-border-card bg-surface-2 lg:block">
+    <footer className="mt-auto hidden border-t-2 border-border-card bg-surface-2 lg:block print:hidden">
       <PageContainer className="flex items-center justify-between gap-6 py-5">
         <div className="flex flex-col gap-0.5">
           <LogoWordmark className="text-[19px]" />

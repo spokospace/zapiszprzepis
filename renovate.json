@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Warsaw",
+  "labels": ["dependencies"],
+  "lockFileMaintenance": { "enabled": true },
+  "packageRules": [
+    {
+      "description": "Validate the Next.js + React toolchain together on one PR (same grouping as #370).",
+      "matchPackageNames": [
+        "next",
+        "eslint-config-next",
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom"
+      ],
+      "groupName": "Next.js + React"
+    },
+    {
+      "description": "Group the Cloudflare / OpenNext build toolchain.",
+      "matchPackageNames": ["@opennextjs/cloudflare", "wrangler"],
+      "groupName": "Cloudflare toolchain"
+    }
+  ]
+}

@@ -41,3 +41,11 @@ export function dailyRecipeIndex(date: Date, count: number): number {
   const seed = dayOfYear(year, month, day) * 7 + year
   return ((seed % count) + count) % count
 }
+
+/**
+ * The Europe/Warsaw civil day as `YYYY-MM-DD` — the cache key for „Przepis dnia”
+ * (#445), so the cached pick rolls over at Polish midnight like the pick itself.
+ */
+export function warsawDayKey(date: Date): string {
+  return warsawParts.format(date)
+}

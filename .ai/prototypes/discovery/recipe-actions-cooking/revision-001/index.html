@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prototyp: rząd akcji + tryb gotowania (przeprojektowane)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="proto-bar" role="note">
+    <strong>Prototyp discovery</strong> — rząd akcji + „Tryb gotowania" (nowy układ) · dane fikcyjne
+    <span class="proto-switch" role="group" aria-label="Podgląd">
+      <button type="button" id="view-desktop" aria-pressed="true">Desktop</button>
+      <button type="button" id="view-mobile" aria-pressed="false">Telefon</button>
+    </span>
+    <button type="button" id="reset" class="proto-reset">↺ Reset</button>
+  </div>
+
+  <main class="stage is-desktop" id="stage">
+    <section class="recipe">
+      <!-- Nagłówek: zdjęcie po lewej, tekst po prawej (desktop); w kolumnie (telefon). -->
+      <header class="r-head">
+        <div class="r-cover" aria-hidden="true"><span>zdjęcie dania</span></div>
+        <div class="r-text">
+          <h1>Zupa buraczkowa</h1>
+          <p class="r-sub">z sokiem z cytryny</p>
+          <p class="r-meta">Zupy · 55 min</p>
+          <p class="r-lead">Zupa buraczkowa na bulionie z dodatkiem ziemniaków, pietruszki, śmietanki i soku z cytryny — aromatyczna, lekko kwaśna propozycja obiadowa.</p>
+        </div>
+      </header>
+
+      <!-- NOWY rząd akcji: trzy równe, podpisane przyciski w jednej linii (desktop),
+           w kolumnie (telefon). Serce = główna akcja (pomarańcz). -->
+      <div class="actions" aria-label="Akcje przepisu">
+        <button type="button" id="fav" class="btn btn-heart">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.5-9.5-8.5C.5 9 2 5.5 5.5 5.5c2 0 3.2 1.2 3.9 2.2C10 6.7 11.2 5.5 13.2 5.5c3.5 0 5 3.5 3 7C18 16.5 12 21 12 21z"/></svg>
+          <span id="fav-label">Dodaj do ulubionych</span>
+        </button>
+        <button type="button" id="share" class="btn btn-outline">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+          Udostępnij
+        </button>
+        <button type="button" id="print" class="btn btn-outline">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z"/></svg>
+          Drukuj
+        </button>
+      </div>
+
+      <!-- NOWY tryb gotowania: zwięzły przycisk auto, do lewej, nad kolumnami (desktop);
+           pełna szerokość (telefon). -->
+      <div class="cook-wrap">
+        <button type="button" id="cook" class="btn btn-dark cook-btn">
+          <svg class="ic ic-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 13.5V21h12v-7.5M4 9a4 4 0 018 0 4 4 0 018 0c0 2.5-2 4.5-4 4.5H8c-2 0-4-2-4-4.5z"/></svg>
+          Tryb gotowania
+        </button>
+      </div>
+
+      <div class="cols">
+        <section class="ing" aria-labelledby="ing-h">
+          <div class="sec-head"><h2 id="ing-h">Składniki</h2><span class="muted">na 6 porcji</span></div>
+          <ul class="ing-list">
+            <li><span>bulion warzywny lub drobiowy</span><b>1 litr</b></li>
+            <li><span>buraczki</span><b>4 sztuki</b></li>
+            <li><span>ziemniaki</span><b>3 sztuki</b></li>
+            <li><span>korzeń pietruszki</span><b>1 mały</b></li>
+            <li><span>śmietanka 18%</span><b>200 ml</b></li>
+            <li><span>sok z cytryny</span><b>2 łyżki</b></li>
+          </ul>
+        </section>
+        <section class="steps" aria-labelledby="steps-h">
+          <h2 id="steps-h">Przygotowanie</h2>
+          <ol class="step-list">
+            <li><p class="step-n">Krok 1</p><p>Roztopić łyżkę masła w garnku.</p></li>
+            <li><p class="step-n">Krok 2</p><p>Obrać cebulę i pokroić, podsmażać aż się zeszkli.</p></li>
+            <li><p class="step-n">Krok 3</p><p>Wlać bulion, dodać buraczki i ziemniaki, gotować do miękkości.</p></li>
+            <li><p class="step-n">Krok 4</p><p>Dodać śmietankę i sok z cytryny, doprawić do smaku.</p></li>
+          </ol>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <!-- Symulowany ekran trybu gotowania (uproszczony). -->
+  <div class="cook-overlay" id="cook-overlay" hidden role="dialog" aria-label="Tryb gotowania" aria-modal="true">
+    <div class="co-top">
+      <span class="co-title">Zupa buraczkowa</span>
+      <button type="button" id="cook-close" class="co-close">✕ Zakończ</button>
+    </div>
+    <div class="co-body">
+      <p class="co-step" id="co-step">Krok 1 z 4</p>
+      <p class="co-text" id="co-text">Roztopić łyżkę masła w garnku.</p>
+    </div>
+    <div class="co-nav">
+      <button type="button" id="co-prev" class="btn btn-outline-dark">← Wstecz</button>
+      <button type="button" id="co-next" class="btn btn-next">Dalej →</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

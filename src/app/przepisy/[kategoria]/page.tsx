@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
+import { getCategoryFacets, getCategoryListing, getCategoryTotal } from '@/lib/recipe-cache'
 import { getUserFavoriteIds } from '@/lib/favorites'
 import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { getCategoryMeta } from '@/lib/category-descriptions'
@@ -71,62 +72,55 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const page = Math.min(parsePageParam(query.strona), MAX_PAGE)
   const shown = page * PAGE_SIZE
 
-  const supabase = await createSupabaseServerClient()
-  let cards = supabase
-    .from('public_recipes')
-    .select(
-      'id, slug, title, image_url, category, source_type, source_url, source_author, tags, total_time_minutes, prep_time_minutes, cook_time_minutes',
-      { count: 'exact' },
-    )
-    .eq('category', category)
-  if (selected.length > 0) cards = cards.contains('tags', selected)
   // The viewer's favorites are read in parallel with the list, not after it (#435).
+  const supabase = await createSupabaseServerClient()
   const userPromise = getCurrentUser()
   const favoritesPromise = userPromise.then((u) => (u ? getUserFavoriteIds(supabase, u.id) : new Set<number>()))
+
+  // The user-independent reads — the list cards + exact total, the per-tag facet
+  // counters (#444), and a filtered view's whole-category head count — are cached
+  // per category/tag/page with a short TTL (#445); the viewer and their favorites
+  // stay per request. The counters are an aid, not the content: a failed facet or
+  // count read degrades to no chips / an unknown total, the list still renders.
+  const facetsPromise = getCategoryFacets({ category, selected }).catch((e) => {
+    console.error('[przepisy] Tag facets failed:', e)
+    return [] as TagCount[]
+  })
   // The "… w kategorii" total equals the cards `count` when nothing is filtered, so
   // only a filtered view needs its own unfiltered head count (#444); no rows transferred.
   const categoryCountPromise =
     selected.length > 0
-      ? supabase.from('public_recipes').select('id', { count: 'exact', head: true }).eq('category', category)
+      ? getCategoryTotal({ category }).catch((e) => {
+          console.error('[przepisy] Category count failed:', e)
+          return null
+        })
       : null
-  const [user, facets, categoryCount, { data: recipes, count, error }, favoriteIds] = await Promise.all([
+  const [user, facets, categoryCount, listing, favoriteIds] = await Promise.all([
     userPromise,
-    // Per-tag counters, aggregated in Postgres (#444) instead of reading every row's tags.
-    supabase.rpc('category_tag_facets', { p_category: category, p_selected: selected }),
+    facetsPromise,
     categoryCountPromise,
-    // "Pokaż kolejne" re-renders the list from the top, one page longer.
-    cards
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: false })
-      .range(0, shown - 1),
+    // "Pokaż kolejne" re-renders the list from the top, one page longer. A failed
+    // read throws here, so the route error boundary shows it (not an empty state).
+    getCategoryListing({ category, tags: selected, limit: shown }),
     favoritesPromise,
   ])
-
-  if (error) {
-    // Let the route error boundary say so instead of a misleading empty state.
-    throw new Error(`[przepisy] Query failed: ${error.message}`)
-  }
-  // The counters are an aid, not the content: without them the list still works.
-  if (facets.error) console.error('[przepisy] Tag facets failed:', facets.error)
-  if (categoryCount?.error) console.error('[przepisy] Category count failed:', categoryCount.error)
+  const { recipes, count } = listing
 
   const label = categoryLabel(category)
   const Icon = CATEGORY_ICONS[category]
   const total = count ?? 0
   const filtered = selected.length > 0
   // The whole category size: the unfiltered cards count, or a filtered view's own head count (null if it failed).
-  const categoryTotal = filtered ? (categoryCount?.error ? null : (categoryCount?.count ?? 0)) : total
+  const categoryTotal = filtered ? categoryCount : total
   const clearHref = categoryPath(category)
   const pageHref = (p: number) => categoryPath(category, { tags: selected, page: p })
 
-  const chips: TagChip[] = facets.error
-    ? []
-    : tagFacetsFromCounts((facets.data ?? []) as TagCount[], selected).map((f) => ({
-        ...f,
-        href: categoryPath(category, {
-          tags: f.selected ? selected.filter((t) => t !== f.value) : [...selected, f.value],
-        }),
-      }))
+  const chips: TagChip[] = tagFacetsFromCounts(facets, selected).map((f) => ({
+    ...f,
+    href: categoryPath(category, {
+      tags: f.selected ? selected.filter((t) => t !== f.value) : [...selected, f.value],
+    }),
+  }))
 
   const list = recipes ?? []
   const remaining = total - list.length

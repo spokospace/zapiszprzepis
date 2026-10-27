@@ -13,6 +13,8 @@ const PROPS: Parameters<typeof RecipeActions>[0] = {
   isAuthenticated: true,
   title: 'Zupa krem z dyni',
   shareUrl: 'https://zapiszprzepis.pl/przepis/zupa-krem-z-dyni',
+  steps: ['Zagotuj wodę.', 'Dodaj dynię.'],
+  stepImages: ['', ''],
 }
 
 function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
@@ -20,19 +22,50 @@ function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
 }
 
 describe('RecipeActions (E01-S31 §3)', () => {
-  it('stacks below sm so the heart is full width, then a row from sm', () => {
-    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 sm:flex-row[^"]*"><div class="flex flex-col sm:flex-1[^"]*">/)
+  it('is a 2→4 column grid with steps: heart spans the first row, four equal columns from lg', () => {
+    // Full content width below the header; four labelled buttons (incl. Tryb gotowania) on one line from lg.
+    expect(render()).toMatch(/^<div class="mt-6 mb-8 grid grid-cols-2 items-start[^"]*lg:grid-cols-4[^"]*"><div class="col-span-2 lg:col-span-1"/)
   })
 
-  it('shows "Udostępnij" beside the heart, each half the row from sm', () => {
+  it('drops the cooking button and uses three columns when the recipe has no steps', () => {
+    const html = render({ steps: [], stepImages: [] })
+    expect(html).toContain('lg:grid-cols-3')
+    expect(html).not.toContain('Tryb gotowania')
+  })
+
+  it('includes "Tryb gotowania" as an action when the recipe has steps', () => {
+    expect(render()).toContain('Tryb gotowania')
+  })
+
+  it('shows "Udostępnij" as a full-width secondary button (48px, 58px from lg)', () => {
     const html = render()
     const share = html.match(/<button type="button" class="[^"]*">.*?Udostępnij<\/button>/)?.[0] ?? ''
     expect(share).toContain('min-h-[48px]')
     expect(share).toContain('lg:min-h-[58px]')
-    expect(share).toContain('sm:flex-1')
+    expect(share).toContain('w-full')
   })
 
   it('has no "Oryginał" button — the original is on the photo badge now', () => {
     expect(render()).not.toContain('Oryginał')
+  })
+
+  it('offers "Drukuj" after "Udostępnij"', () => {
+    const html = render()
+    expect(html).toContain('Drukuj')
+    // Share first, then print; the button's own look is covered by print-button.test.ts.
+    expect(html.indexOf('Drukuj')).toBeGreaterThan(html.indexOf('Udostępnij'))
+  })
+
+  it('hides the whole action row on print — none of these controls belongs on paper', () => {
+    expect(render()).toMatch(/^<div class="mt-6 mb-8 grid[^"]*print:hidden[^"]*"/)
+  })
+
+  // Regression (prod 2026-10-25): the row is a standalone block between the header and
+  // „Składniki/Przygotowanie”, so it must carry a bottom margin — without one it sat flush
+  // against the content below. The cooking button used to provide that gap from the steps
+  // section; after it moved into this row, the gap had to move here too.
+  it('keeps a bottom gap to the content below it (mb-8)', () => {
+    expect(render()).toMatch(/^<div class="mt-6 mb-8 grid/)
+    expect(render({ steps: [], stepImages: [] })).toMatch(/^<div class="mt-6 mb-8 grid/)
   })
 })

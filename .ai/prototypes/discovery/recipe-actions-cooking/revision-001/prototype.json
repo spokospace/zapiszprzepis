@@ -1,0 +1,38 @@
+{
+  "slug": "recipe-actions-cooking",
+  "revision": "revision-001",
+  "created": "2026-10-25",
+  "flow": "Rząd akcji + Tryb gotowania (nowy układ) na stronie przepisu",
+  "actor": "Osoba przeglądająca przepis (gość lub zalogowany)",
+  "start": "Strona przepisu",
+  "success": "Jasny, prosty wybór akcji lub wejście w tryb gotowania",
+  "previousRevision": null,
+  "sources": [
+    "Conversation this session (owner: two redesign requests)",
+    "CLAUDE.md (E01 rules: icons always labelled, WCAG 2.2 AA, 48/56px targets, tokens, older audience)",
+    "Merged PR #527 (current actions row)",
+    "src/app/przepis/[slug]/_components/recipe-actions.tsx, cooking-mode.tsx, recipe-checklists.tsx"
+  ],
+  "files": ["index.html", "styles.css", "app.js", "README.md", "prototype.json"],
+  "screens": ["recipe (desktop + mobile)", "cooking-mode overlay"],
+  "confirmedDecisions": [
+    "Cooking mode on desktop: compact auto-width button, left-aligned above the columns (not full width); mobile unchanged (full width) — owner-chosen this session"
+  ],
+  "assumptions": [
+    "[ASSUMPTION] Actions as three equal, labelled buttons in one full-width line (desktop), stacked (mobile) — my suggestion for 'simple and intuitive', pending owner approval; it would override the #494 content-width note (rule change needs owner sign-off).",
+    "[ASSUMPTION] Button icons are indicative; the app uses lucide icons WITH a visible label (icons-always-labelled rule).",
+    "[SYNTHETIC] All data (Zupa buraczkowa, ingredients, steps) is fictitious."
+  ],
+  "verification": {
+    "result": "passed",
+    "method": "Served locally over HTTP; browser walk via Claude built-in browser",
+    "checks": [
+      "Desktop: three equal labelled action buttons in one line; compact left-aligned cooking button",
+      "Mobile: heart full-width, Udostępnij + Drukuj as a smaller side-by-side pair (less noise); cooking button full-width",
+      "Cooking-mode overlay opens (Krok 1/4), Wstecz disabled on step 1, closes back to the page",
+      "Favourite toggles on (orange fill, 'W ulubionych · usuń') with a toast",
+      "View toggle (Desktop/Telefon) and reset work; no console errors"
+    ],
+    "evidence": "Browser screenshots captured in session: desktop layout, mobile layout, cooking overlay, favourite-on state."
+  }
+}

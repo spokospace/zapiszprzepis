@@ -8,6 +8,7 @@ const port = process.env.E2E_PORT ?? '3001'
 const baseURL = `http://localhost:${port}`
 const REFLOW = /reflow\.spec\.ts/
 const PHONE = /(menu-drawer|system-font)\.spec\.ts/
+const LAYOUT = /recipe-layout\.spec\.ts/
 const IMAGE_ALLOWLIST = /image-optimizer-allowlist\.spec\.ts/
 
 export default defineConfig({
@@ -28,7 +29,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: [REFLOW, PHONE, IMAGE_ALLOWLIST],
+      testIgnore: [REFLOW, PHONE, LAYOUT, IMAGE_ALLOWLIST],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json',
@@ -59,6 +60,14 @@ export default defineConfig({
       testMatch: PHONE,
       use: { ...devices['Desktop Chrome'] },
       dependencies: ['reflow-setup'],
+    },
+    // Vertical-rhythm guard (#538 regression): the assembled recipe page's gaps between
+    // sibling blocks. Guest-only (the bug reproduces logged out), so no sign-in dependency;
+    // each spec sets its own desktop/phone viewport.
+    {
+      name: 'layout',
+      testMatch: LAYOUT,
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
   webServer: {

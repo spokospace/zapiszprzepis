@@ -609,7 +609,7 @@ Rules:
               // Cap each field — Firecrawl with onlyMainContent: false on a
               // classic blog template can return tens of KB once the
               // sidebar, archive, popular-posts widget and labels are kept.
-              // gpt-4o-mini extracts the recipe from the first few KB; the
+              // the model extracts the recipe from the first few KB; the
               // tail is sidebar noise and inflates latency past the timeout.
               // The transcript goes first: it is the recipe when it is there
               // at all, and it must not be pushed out by a long description.

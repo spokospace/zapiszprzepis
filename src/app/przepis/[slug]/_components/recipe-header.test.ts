@@ -60,16 +60,6 @@ describe('RecipeHeader desktop column (A9)', () => {
     expect(render({ total_time_minutes: null })).not.toContain('<dl')
   })
 
-  it('puts the actions last in the text column', () => {
-    const html = renderToStaticMarkup(
-      createElement(RecipeHeader, {
-        recipe: { ...BASE, description: 'Krem z dyni.' },
-        actions: createElement('div', { id: 'actions' }),
-      }),
-    )
-    expect(html).toMatch(/<div id="actions"><\/div><\/div><\/header>$/)
-  })
-
   it('renders the description right under the title, before the source and times', () => {
     const html = render({ description: 'ze smalcem' })
     expect(html).toMatch(/<\/h1><p class="mb-3 text-scalable-body text-ink-soft">ze smalcem<\/p>/)
