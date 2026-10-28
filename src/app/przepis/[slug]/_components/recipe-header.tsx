@@ -149,7 +149,7 @@ export function RecipeHeader({ recipe, versionsBar, actions, listBar }: RecipeHe
       )}
 
       <div>
-        {listBar && <div className="hidden print:hidden lg:mb-5 lg:block">{listBar}</div>}
+        {listBar && <div className="hidden print:hidden lg:mb-3 lg:block">{listBar}</div>}
         <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
         {/* The recipe's own short description sits right under the title, not after the
             times row (owner request) — a subtitle qualifying the dish ("ze smalcem"). */}

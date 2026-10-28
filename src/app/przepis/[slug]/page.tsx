@@ -182,7 +182,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             // A9: from lg, the list position and the breadcrumbs share one row above the title.
             <div className="lg:flex lg:items-center lg:gap-6">
               <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
-              <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block" />
+              <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block lg:self-start" />
             </div>
           }
           versionsBar={
