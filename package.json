@@ -29,6 +29,8 @@
     "update:recipe-blog-domains": "node --import tsx scripts/update-recipe-blog-domains.ts",
     "smoke:prod": "node --import tsx scripts/smoke-prod-assets.ts",
     "render:banner": "node docs/banner/render.mjs",
+    "docs:dev": "pnpm --dir docs install --frozen-lockfile && pnpm --dir docs dev",
+    "docs:build": "pnpm --dir docs install --frozen-lockfile && pnpm --dir docs build",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",

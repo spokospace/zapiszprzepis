@@ -18,6 +18,10 @@ const eslintConfig = defineConfig([
     ".open-next/**",
     // Design handoff bundles (#266): third-party prototype runtime, reference only, never shipped.
     ".ai/design/**",
+    // Starlight docs site (docs/README.md): its own package, deps and build, not the app.
+    // The banner renderer next to it (docs/banner/) is still linted.
+    "docs/{src,dist,.astro}/**",
+    "docs/astro.config.mjs",
   ]),
   {
     // Test doubles stub partial shapes of third-party objects (Inngest steps,
