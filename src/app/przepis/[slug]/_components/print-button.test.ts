@@ -17,10 +17,10 @@ describe('PrintButton (A9 "Wydrukuj przepis")', () => {
     expect(html).toContain('<svg')
   })
 
-  it('is the compact framed action card, like "Udostępnij przepis"', () => {
+  it('is a quiet text button, 48 px high, with no frame (handoff 2026-10-28)', () => {
     const html = render()
-    expect(html).toContain('border-2')
-    expect(html).toContain('rounded-xl')
-    expect(html).toContain('min-h-[64px]')
+    expect(html).toContain('min-h-[48px]')
+    expect(html).toContain('text-action-text')
+    expect(html).not.toContain('border-2')
   })
 })

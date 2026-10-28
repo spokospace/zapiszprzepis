@@ -76,7 +76,8 @@ describe('RecipeHeader layout (design 2026-10-28)', () => {
 
   it('keeps the cover 4:3 at every width and bleeds it left from lg', () => {
     const html = render({ image_url: COVER })
-    expect(html).toMatch(/class="recipe-print-cover [^"]*aspect-\[4\/3\][^"]*lg:bleed-left-page xl:row-span-2"/)
+    expect(html).toMatch(/class="recipe-print-cover [^"]*lg:bleed-left-page xl:row-span-2"/)
+    expect(html).toContain('class="relative aspect-[4/3]"')
     expect(html).not.toContain('16/10')
   })
 
