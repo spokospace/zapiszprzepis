@@ -113,6 +113,27 @@ export function stepProgress(total: number, ticked: number[]): { done: number; n
   return { done: total - open.length, next: open[0] ?? -1 }
 }
 
+type Checklist = ReturnType<typeof parseChecklist>
+
+/** The progress line over the steps. A one-step recipe gets its own words: "1 z 1 kroków" is not Polish. */
+export function stepProgressLabel(done: number, total: number): string {
+  if (total === 1) return done === 1 ? 'Krok zrobiony' : 'Jeden krok do zrobienia'
+  return `${done} z ${total} kroków zrobione`
+}
+
+/** The stored checklist after ticking or unticking step `index`. */
+export function toggledStepRaw(state: Checklist, index: number): string {
+  return JSON.stringify(toggleChecked(state, 'steps', index))
+}
+
+/**
+ * The stored checklist after "Wyczyść zaznaczenia". The button sits in the ingredients
+ * card, so it clears the ingredient ticks only; with no step ticks left the key goes.
+ */
+export function ingredientsResetRaw(state: Checklist): string | null {
+  return state.steps.length === 0 ? null : JSON.stringify({ ...state, ingredients: [] })
+}
+
 /**
  * Składniki + Przygotowanie for the recipe page (E01-S07, S07b): ingredient and step
  * ticks are kept per tab in sessionStorage and never sent to the server. Each step has a
@@ -157,7 +178,7 @@ export function RecipeChecklists({
   const [photoIndex, setPhotoIndex] = useState<number | null>(null)
 
   const toggle = (index: number) => setRaw(JSON.stringify(toggleChecked(state, 'ingredients', index)))
-  const toggleStep = (index: number) => setRaw(JSON.stringify(toggleChecked(state, 'steps', index)))
+  const toggleStep = (index: number) => setRaw(toggledStepRaw(state, index))
   const { done: doneSteps, next: nextStep } = stepProgress(steps.length, state.steps)
 
   // Ingredients are numbered flat across sections: each group's first index.
@@ -189,9 +210,9 @@ export function RecipeChecklists({
               tree while nothing is ticked. */}
           <button
             type="button"
-            onClick={() => setRaw(null)}
+            onClick={() => setRaw(ingredientsResetRaw(state))}
             className={`min-h-[48px] min-w-0 px-1 text-right text-[17px] font-bold text-action-text underline hover:text-action-hover print:hidden${
-              state.ingredients.length + state.steps.length === 0 ? ' invisible' : ''
+              state.ingredients.length === 0 ? ' invisible' : ''
             }`}
           >
             Wyczyść zaznaczenia
@@ -263,7 +284,7 @@ export function RecipeChecklists({
                   decorative and hidden from assistive tech. */}
               <div className="mb-5 print:hidden">
                 <p className="mb-2 text-[16px] text-ink-soft">
-                  {doneSteps} z {steps.length} kroków zrobione
+                  {stepProgressLabel(doneSteps, steps.length)}
                 </p>
                 <div aria-hidden="true" className="h-1.5 overflow-hidden rounded-pill bg-surface-3">
                   <div className="h-full bg-success" style={{ width: `${(doneSteps / steps.length) * 100}%` }} />

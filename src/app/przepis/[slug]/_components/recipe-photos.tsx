@@ -14,6 +14,16 @@ interface RecipePhotosProps {
   badge: ReactNode
 }
 
+/** The photos in thumbnail order: the cover first, then the gallery, each URL once. */
+export function photoList(cover: string, images: string[]): string[] {
+  return [...new Set([cover, ...images])]
+}
+
+/** The main photo's alt: the recipe title for the cover, numbered for a gallery photo. */
+export function photoAlt(title: string, selected: number, total: number): string {
+  return selected === 0 ? title : `${title} — zdjęcie ${selected + 1} z ${total}`
+}
+
 /**
  * The recipe's photos (handoff 2026-10-28): a 4:3 main photo with the source badge, and a
  * row of thumbnails under it — the cover first, then the gallery. A tap on a thumbnail
@@ -22,7 +32,7 @@ interface RecipePhotosProps {
  * below the steps stands in for it.
  */
 export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps) {
-  const all = [cover, ...images.filter((src) => src !== cover)]
+  const all = photoList(cover, images)
   const [selected, setSelected] = useState(0)
   const current = all[selected] ?? cover
 
@@ -36,7 +46,7 @@ export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps)
           <Image
             // The LCP image is the cover; a swapped-in gallery photo is never the LCP.
             src={current}
-            alt={title}
+            alt={photoAlt(title, selected, all.length)}
             fill
             // Full-bleed = 100vw below lg (1024); from lg the column plus the bleed,
             // ~37–40vw up to 1535 px and ~44vw on very wide screens.
