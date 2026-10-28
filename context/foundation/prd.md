@@ -129,7 +129,9 @@ Użytkownik napotyka tę regułę raz na każde udostępnienie. Po kliknięciu �
 
 Uwierzytelnianie bez haseł: jednorazowy link aktywacyjny wysyłany e-mailem. Setup mamy wykonuje autor aplikacji raz: wpisuje jej adres e-mail, klika link na jej telefonie, sesja jest długo-żyjąca i nie wygasa w trakcie normalnego użytkowania. Mama nigdy nie widzi ekranu logowania ani formularza rejestracji.
 
-Każdy użytkownik ma **swoją osobną, prywatną skrzynkę przepisów**. Brak ról (administrator / członek / gość), brak współdzielenia, brak grup rodzinnych. Płaski model: jeden e-mail → jedno konto → jedna kolekcja przepisów widoczna tylko dla niej. Współdzielenie rodzinne („ZapiszPrzepis Family") wyraźnie poza zakresem MVP — wraca jako V2.
+Każdy użytkownik ma **swoją osobną, prywatną skrzynkę przepisów**. Dla zwykłych użytkowników brak ról (administrator / członek / gość), brak współdzielenia, brak grup rodzinnych. Płaski model: jeden e-mail → jedno konto → jedna kolekcja przepisów widoczna tylko dla niej. Współdzielenie rodzinne („ZapiszPrzepis Family") wyraźnie poza zakresem MVP — wraca jako V2.
+
+**Wyjątek: zespół obsługi (zmiana z 2026-10-28).** Obok zwykłych kont istnieją role pracowników panelu administracyjnego (`/admin`): `admin` i `moderator`, nadawane i odbierane przez administratora, każda osoba ma własne konto. Role nie dają dostępu do cudzych prywatnych skrzynek jako użytkownik; panel działa przez funkcje bazy danych z kontrolą uprawnień i zapisem w dzienniku zmian. Zwykły użytkownik nadal nie widzi ról, nie ma ich w swoim profilu i nie może ich sobie nadać. Decyzja i zakres: `.ai/specs/2026-10-28-admin-panel-roles-moderation-mcp.md`.
 
 Nieuwierzytelniony użytkownik, który trafi na URL aplikacji, widzi tylko ekran „Wpisz e-mail, by otrzymać link" — żadnej treści przepisów, żadnego katalogu publicznego.
 
@@ -137,7 +139,7 @@ Nieuwierzytelniony użytkownik, który trafi na URL aplikacji, widzi tylko ekran
 
 - **Współdzielenie przepisów między użytkownikami (ZapiszPrzepis Family)** — każdy użytkownik ma własny zbiór; brak zaproszeń, brak wspólnych folderów. Wraca w V2.
 - **Wsparcie dla Instagram i TikTok** — w MVP tylko Facebook (posty + Reels/Video), YouTube i strony WWW. Instagram + TikTok mają trudniejszy share intent i wymagają osobnej pracy nad scraperem; V2.
-- **Ręczna edycja przepisu po ekstrakcji** — brak ekranów „popraw składniki", „dodaj swój krok". Mama ufa AI, lub przepis zostaje jak jest. Pilnuje guardrail „zero data entry".
+- **Ręczna edycja przepisu po ekstrakcji** — brak ekranów „popraw składniki", „dodaj swój krok". Mama ufa AI, lub przepis zostaje jak jest. Pilnuje guardrail „zero data entry". Od 2026-10-28 wyjątek dotyczy wyłącznie zespołu obsługi: moderator lub administrator może poprawić przepis w panelu (planowane w fazach 2–3 specyfikacji panelu). Użytkownik końcowy nadal niczego nie wpisuje i nie poprawia.
 - **Funkcje wokół gotowania**: „co ugotować z tego co mam", lista zakupów, planowanie tygodnia, voice search — wszystkie wymienione w pomyśle V2. Inna apka, nie MVP.
 - **Powiadomienia jako gwarantowany kanał informowania o gotowym przepisie** — FR-011 jest nice-to-have, nie must. Mama wraca do aplikacji ręcznie.
 - **Placeholder „Zapisuję…" w liście przepisów** — FR-010 jest nice-to-have. Po share aplikacja pokazuje jeden krótki ekran potwierdzenia; lista przepisów jest aktualizowana przy następnym otwarciu.

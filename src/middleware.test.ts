@@ -214,6 +214,18 @@ describe('middleware — a session check that could not decide is not a guest', 
     expect(res.headers.get('location')).toBeNull()
   })
 
+  // The admin panel is session-gated by default; its role check lives in the layout
+  // and the pages. A new public-route entry that swallowed /admin would expose it.
+  it.each(['/admin', '/admin/uzytkownicy', '/admin/dziennik'])('sends a guest from %s to /login', async (path) => {
+    vi.mocked(updateSession).mockResolvedValueOnce({
+      response: NextResponse.next(),
+      user: null,
+      authTransient: false,
+    } as never)
+    const res = await middleware(get(path))
+    expect(res.headers.get('location')).toBe(`http://localhost/login?next=${encodeURIComponent(path)}`)
+  })
+
   it('still sends a real guest to /login', async () => {
     vi.mocked(updateSession).mockResolvedValueOnce({
       response: NextResponse.next(),
