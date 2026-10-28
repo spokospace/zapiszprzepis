@@ -23,13 +23,13 @@ Recipe moderation, content editing, MCP, tokens. No new runtime dependency.
 
 ### Phase 1: Foundation and screens
 
-- [ ] 1.1 Measure the Worker bundle
-- [ ] 1.2 Migration: roles and permissions
-- [ ] 1.3 Migration: audit log
-- [ ] 1.4 App: staff context and the /admin shell
-- [ ] 1.5 Users resource
-- [ ] 1.6 Import queue
-- [ ] 1.7 Access codes and entitlements
-- [ ] 1.8 Roles screen
-- [ ] 1.9 Audit screen
-- [ ] 1.10 PRD and docs
+- [x] 1.1 Measure the Worker bundle
+- [x] 1.2 Migration: roles and permissions
+- [x] 1.3 Migration: audit log
+- [x] 1.4 App: staff context and the /admin shell
+- [x] 1.5 Users resource
+- [x] 1.6 Import queue
+- [x] 1.7 Access codes and entitlements
+- [x] 1.8 Roles screen
+- [x] 1.9 Audit screen
+- [x] 1.10 PRD and docs

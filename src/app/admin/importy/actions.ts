@@ -22,10 +22,17 @@ export async function retryImport(formData: FormData): Promise<void> {
   const shareId = Number(formData.get('shareId'))
   if (!Number.isInteger(shareId) || shareId <= 0) redirect(flashPath(LIST, { error: 'invalid_input' }))
 
-  const { data, error } = await staff.supabase.rpc('admin_retry_import', { p_share: shareId })
-  if (error) redirect(flashPath(LIST, { error: staffErrorCode(error) }))
+  let reply: Awaited<ReturnType<typeof staff.supabase.rpc>>
+  try {
+    reply = await staff.supabase.rpc('admin_retry_import', { p_share: shareId })
+  } catch (err) {
+    // A thrown call is an "unknown" flash, not a 500 page.
+    console.error('[staff] admin_retry_import threw:', err)
+    redirect(flashPath(LIST, { error: 'unknown' }))
+  }
+  if (reply.error) redirect(flashPath(LIST, { error: staffErrorCode(reply.error) }))
 
-  const payload = parseRetryPayload(data)
+  const payload = parseRetryPayload(reply.data)
   if (!payload) redirect(flashPath(LIST, { error: 'unknown' }))
 
   try {

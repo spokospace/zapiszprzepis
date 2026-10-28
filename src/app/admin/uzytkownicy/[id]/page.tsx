@@ -27,11 +27,16 @@ export default async function UserPage({
 }) {
   const staff = await requirePermission('users.read')
   const { id } = await params
-  const user = await getUser(staff.supabase, id)
+  // The role catalog does not depend on the account, so both reads go out together.
+  const wantsRoles = staff.permissions.has('roles.manage') && id !== staff.user.id
+  const [user, staffList] = await Promise.all([
+    getUser(staff.supabase, id),
+    wantsRoles ? listStaff(staff.supabase) : null,
+  ])
   if (!user) notFound()
 
-  const canManageRoles = staff.permissions.has('roles.manage') && user.id !== staff.user.id
-  const roleCatalog = canManageRoles ? ((await listStaff(staff.supabase))?.roles ?? []) : []
+  const canManageRoles = wantsRoles
+  const roleCatalog = staffList?.roles ?? []
   const canBlock = staff.permissions.has('users.block')
   const canDelete = staff.permissions.has('users.delete')
   // The database refuses these too; the panel just does not offer what cannot work.
