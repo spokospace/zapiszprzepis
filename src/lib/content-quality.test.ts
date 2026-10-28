@@ -135,3 +135,17 @@ describe('looksUnextractable — trusted content', () => {
     expect(looksUnextractable(caption, { trusted: true })).toBe(false)
   })
 })
+
+describe('looksUnextractable — bot-check pages', () => {
+  it("rejects Cloudflare's security verification page as Jina returned it", () => {
+    const botCheck =
+      '![Image 1: Icon for www.howsweeteats.com](https://www.howsweeteats.com/favicon.ico)\n\n## www.howsweeteats.com\n\n## Performing security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.'
+    expect(botCheck.length).toBeGreaterThan(150)
+    expect(looksUnextractable(botCheck)).toBe(true)
+  })
+
+  it('keeps a real article that merely quotes such a phrase', () => {
+    const article = `Performing security verification is not part of this recipe. ${'Mąka, jajka, mleko. '.repeat(120)}`
+    expect(looksUnextractable(article)).toBe(false)
+  })
+})

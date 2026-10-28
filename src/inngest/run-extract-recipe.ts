@@ -26,6 +26,7 @@ import { insertFavorite } from '@/lib/favorites'
 import { fingerprintText } from '@/lib/source-fingerprint'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
+import { articleHtml } from '@/lib/article-html'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
 import { STEP_CONTENT_RULE, STEP_FORM_RULE } from '@/lib/step-form'
@@ -505,8 +506,8 @@ export async function runExtractRecipe(
     // The output-side isExtractedRecipeUsable gate below still rejects
     // anything that isn't actually a recipe.
     const quality = { trusted: trustedContent }
-    const inputIsJunk =
-      looksUnextractable(markdown, quality) && looksUnextractable(html, quality)
+    const markdownIsJunk = looksUnextractable(markdown, quality)
+    const inputIsJunk = markdownIsJunk && looksUnextractable(html, quality)
     // A YouTube link has one more source to try — the spoken video, via its
     // captions — so an empty description is not the end there (see below).
     const canTryTranscript = sourceType === 'youtube' && youtubeId != null
@@ -536,6 +537,13 @@ export async function runExtractRecipe(
       }
     }
 
+    // What the LLM reads: junk markdown beside a real page (a bot check where
+    // Jina's render should be) is left out, and the HTML is cut to its article
+    // so the recipe fits the prompt's cap.
+    const llmMarkdown = markdownIsJunk ? '' : markdown
+    const llmHtml = articleHtml(html)
+    const sourceText = (transcript?: string) => `${transcript ?? ''}\n${llmMarkdown || llmHtml}`
+
     // Who published the recipe, for the source label ("Kulinarna Wiola ·
     // Facebook"): the Facebook poster — a private person only as "Elżbieta
     // K." — or the YouTube channel, fetched while the LLM extracts. A blog is
@@ -550,7 +558,7 @@ export async function runExtractRecipe(
     async function extractWithLlm(transcript?: string): Promise<RecipeData> {
       // A foreign source gets the localization rules and a stronger model (#524);
       // a Polish one keeps the prompt and model it always had.
-      const foreignSource = detectSourceLanguage(`${transcript ?? ''}\n${markdown || html}`) === 'foreign'
+      const foreignSource = detectSourceLanguage(sourceText(transcript)) === 'foreign'
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -602,7 +610,7 @@ Rules:
 - When estimating, include passive periods (rising, proofing, marinating, chilling, setting, resting) in totalTimeMinutes. If the recipe clearly has a long passive step whose length you cannot tell, return null for totalTimeMinutes rather than a number that ignores it.
 - All three times null → "timesEstimated": false.
 - servings: only a number of servings the source states ("na 4 porcje", "dla 6 osób", "Serves 4", "4 portions"). A range ("4–6 porcji"), a yield in pieces, tins or litres ("24 sztuki", "1 tortownica"), or no statement at all → null. Never estimate it.
-- Best-effort if content incomplete.${foreignSource ? FOREIGN_SOURCE_RULES : ''}`,
+- Never complete a recipe from your own knowledge of the dish. When the content holds only part of it — a page description or teaser cut off with "…" or "[…]", an ingredient list with no method, a title alone — return only the ingredients and steps it states, and an empty "steps" array when the method is missing. A partial recipe is rejected and retried; an invented one is saved as if it were the author's.${foreignSource ? FOREIGN_SOURCE_RULES : ''}`,
             },
             {
               role: 'user',
@@ -618,7 +626,7 @@ Rules:
                 (transcript
                   ? `Video transcript (auto-generated captions, spoken recipe — may contain speech-recognition errors in ingredient names):\n${transcript.slice(0, 20_000)}\n\n`
                   : '') +
-                `Page markdown:\n${markdown.slice(0, 20_000)}\n\nPage HTML:\n${html.slice(0, 20_000)}`,
+                `Page markdown:\n${llmMarkdown.slice(0, 20_000)}\n\nPage HTML:\n${llmHtml.slice(0, 20_000)}`,
             },
           ],
           temperature: 0.3,
@@ -665,7 +673,7 @@ Rules:
       return {
         ...parsed,
         ingredients: foreignSource
-          ? localizeForeignIngredients(ingredients, `${transcript ?? ''}\n${markdown || html}`)
+          ? localizeForeignIngredients(ingredients, sourceText(transcript))
           : ingredients,
         steps,
         stepImages,
