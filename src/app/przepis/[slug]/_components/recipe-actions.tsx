@@ -29,7 +29,9 @@ export function RecipeActions({ recipeId, isFavorite, isAuthenticated, title, sh
   return (
     // No bottom margin: the header's own mb-8 is the gap to „Składniki” (#538).
     <div className="mt-6 flex flex-col gap-3 print:hidden">
-      <div className="flex items-stretch gap-3">
+      {/* Stacked on a phone: at a third of 390 px the heart's label would break letter by
+          letter. Side by side from 480 px, both buttons the height of the taller one. */}
+      <div className="flex flex-col gap-3 min-[480px]:flex-row">
         {hasSteps && (
           <div className="min-w-0 flex-[2]">
             <CookingMode title={title} steps={steps} stepImages={stepImages} />
