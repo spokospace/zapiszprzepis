@@ -31,7 +31,7 @@ export async function confirmEmailLink(formData: FormData): Promise<void> {
     redirect(`/login?error=${mapAuthError(error.code)}`)
   }
 
-  // A sign-in link detours once through /witaj when no gender is chosen yet
-  // (E01-S12); a password-recovery link goes straight to setting the password.
+  // A sign-in link goes through the common login exit (favorite intent); a
+  // password-recovery link goes straight to setting the password.
   redirect(type === 'email' ? await postLoginPath(supabase, next) : next)
 }

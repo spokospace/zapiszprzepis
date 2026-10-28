@@ -78,15 +78,6 @@ describe('GET /api/dev/login', () => {
     expect(res.headers.get('location')).toBe('http://localhost:3000/ulubione')
   })
 
-  // The QA accounts have no gender on purpose; the one-time 3b detour must not
-  // stop every QA session at /witaj.
-  it('marks the QA account’s gender as known, so the 3b detour is skipped', async () => {
-    enable()
-    linkFor()
-    const res = await get('?as=free&next=/ulubione')
-    expect(res.headers.get('set-cookie')).toContain('zp-gender=qa-user-id')
-  })
-
   it('drops an off-site next', async () => {
     enable()
     linkFor()

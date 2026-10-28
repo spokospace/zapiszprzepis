@@ -4,7 +4,6 @@ import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { safeNext } from '@/lib/safe-redirect'
 import { devLoginEmail } from '@/lib/dev-login'
-import { GENDER_KNOWN_COOKIE } from '@/lib/first-login'
 
 /**
  * Dev-only QA sign-in: GET /api/dev/login?as=full|free&next=/path
@@ -50,10 +49,5 @@ export async function GET(request: NextRequest): Promise<Response> {
     return NextResponse.json({ error: verifyError.message }, { status: 500 })
   }
 
-  const response = NextResponse.redirect(new URL(safeNext(searchParams.get('next'), origin), origin))
-  // The QA accounts deliberately have no gender and must not be changed
-  // (docs/dev-qa-login.md), so the one-time 3b detour for such accounts is
-  // skipped for them, as if the choice were known — this route is dev-only.
-  response.cookies.set(GENDER_KNOWN_COOKIE, data.user.id, { path: '/', httpOnly: true, sameSite: 'lax' })
-  return response
+  return NextResponse.redirect(new URL(safeNext(searchParams.get('next'), origin), origin))
 }

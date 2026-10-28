@@ -11,7 +11,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 import { isPublicRoute, RECIPE_PAGE_RE, legacyRecipePathToCanonical, mdRewriteTarget } from '@/lib/routes'
 import { loginPath, resolveLoginNext } from '@/lib/login-redirect'
-import { GENDER_KNOWN_COOKIE, shouldCheckGender, welcomePath } from '@/lib/first-login'
 import { securityHeaders } from '@/lib/security-headers'
 
 // E02-S10 (audit D3): every response this middleware returns — page, redirect
@@ -24,6 +23,9 @@ import { securityHeaders } from '@/lib/security-headers'
 // load: on Workers process.env is populated per request, and an import-time
 // read could capture an undefined Supabase URL and bake in the wrong CSP.
 let cachedSecurityHeaders: [string, string][] | undefined
+
+/** Set by the removed first-login gender check (E01-S12); only ever expired now (#376). */
+const LEGACY_GENDER_COOKIE = 'zp-gender'
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const response = await handle(request)
@@ -38,7 +40,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 async function handle(request: NextRequest): Promise<NextResponse> {
-  const { response, user, authTransient, supabase } = await updateSession(request)
+  const { response, user, authTransient } = await updateSession(request)
   const { pathname, search, searchParams, origin } = request.nextUrl
 
   // /auth/callback and /auth/confirm always pass through — they open the
@@ -103,39 +105,10 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     return rewrite
   }
 
-  // A signed-in account that never chose a gender (from before screen 3b) is sent
-  // once to /witaj, so its recipes can say „Dodała/Dodał” (C3). Fails open: a read
-  // error never blocks the page; a known gender is remembered in a cookie.
-  if (
-    user &&
-    shouldCheckGender({
-      method: request.method,
-      pathname,
-      prefetch: request.headers.has('next-router-prefetch') || request.headers.get('purpose') === 'prefetch',
-      userId: user.id,
-      knownCookie: request.cookies.get(GENDER_KNOWN_COOKIE)?.value,
-    })
-  ) {
-    const { data, error } = await supabase
-      .from('profiles_private')
-      .select('gender')
-      .eq('id', user.id)
-      .maybeSingle<{ gender: string | null }>()
-    if (!error && !data?.gender) {
-      const redirect = NextResponse.redirect(new URL(welcomePath(pathname + search), request.url))
-      // Keep a refreshed session: updateSession may have rotated the auth cookies.
-      response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie))
-      return redirect
-    }
-    if (!error) {
-      response.cookies.set(GENDER_KNOWN_COOKIE, user.id, {
-        path: '/',
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: request.nextUrl.protocol === 'https:',
-        maxAge: 60 * 60 * 24 * 365,
-      })
-    }
+  // #376: gender is optional, so nobody is detoured to /witaj any more. Expire the
+  // cookie that used to remember the check (it held the user id) wherever it lingers.
+  if (request.cookies.has(LEGACY_GENDER_COOKIE)) {
+    response.cookies.set(LEGACY_GENDER_COOKIE, '', { path: '/', maxAge: 0 })
   }
 
   // E01-S02 public routes: a guest may read the home and a single recipe. Data

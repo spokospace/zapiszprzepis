@@ -130,6 +130,6 @@ export async function signInWithPassword(formData: FormData): Promise<void> {
     redirect(backToLogin({ error: 'unknown', email }, keep))
   }
 
-  // First login without a gender detours once through /witaj (E01-S12).
+  // Applies a guest heart's favorite intent; no gender detour (#376).
   redirect(await postLoginPath(supabase, next))
 }

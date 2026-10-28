@@ -1,21 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { firstLoginTarget, genderSaveRedirect, parseGender, postLoginPath, shouldCheckGender, welcomePath } from './first-login'
-
-describe('firstLoginTarget', () => {
-  it('sends a user without gender to /witaj, keeping next', () => {
-    expect(firstLoginTarget(null, '/przepis/sernik')).toBe('/witaj?next=%2Fprzepis%2Fsernik')
-  })
-
-  it('passes a user with gender straight through', () => {
-    expect(firstLoginTarget('female', '/recipes')).toBe('/recipes')
-  })
-
-  it('never wraps /witaj in itself', () => {
-    expect(firstLoginTarget(null, '/witaj?next=%2F')).toBe('/witaj?next=%2F')
-    expect(firstLoginTarget(null, '/witaj')).toBe('/witaj')
-  })
-})
+import { genderSaveRedirect, parseGender, postLoginPath, welcomePath } from './first-login'
 
 describe('welcomePath', () => {
   it('puts the error before next', () => {
@@ -58,70 +43,23 @@ function fakeSupabase(user: { id: string } | null, result: { data: unknown; erro
   return { client, from, eq, insert }
 }
 
+// #376: gender is optional, so no login is detoured to /witaj.
 describe('postLoginPath', () => {
-  it('reads the signed-in user’s own row', async () => {
-    const { client, from, eq } = fakeSupabase({ id: 'u1' }, { data: null, error: null })
-    await expect(postLoginPath(client, '/')).resolves.toBe('/witaj?next=%2F')
-    expect(from).toHaveBeenCalledWith('profiles_private')
-    expect(eq).toHaveBeenCalledWith('id', 'u1')
-  })
-
-  it('goes to next when gender is chosen', async () => {
-    const { client } = fakeSupabase({ id: 'u1' }, { data: { gender: 'male' }, error: null })
+  it('goes to next without reading the gender', async () => {
+    const { client, from } = fakeSupabase({ id: 'u1' }, { data: null, error: null })
     await expect(postLoginPath(client, '/recipes')).resolves.toBe('/recipes')
+    expect(from).not.toHaveBeenCalledWith('profiles_private')
   })
 
-  it('fails open on a read error (e.g. table not migrated yet)', async () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { client } = fakeSupabase({ id: 'u1' }, { data: null, error: { code: '42P01' } })
-    await expect(postLoginPath(client, '/recipes')).resolves.toBe('/recipes')
-    spy.mockRestore()
-  })
-
-  it('applies a favorite intent before the gender detour (E01-S06)', async () => {
+  it('applies a favorite intent (E01-S06)', async () => {
     const { client, insert } = fakeSupabase({ id: 'u1' }, { data: null, error: null })
-    await expect(postLoginPath(client, '/przepisy/ciasta?add_fav=12')).resolves.toBe(
-      '/witaj?next=%2Fprzepisy%2Fciasta%3Ffav_added%3D12',
-    )
+    await expect(postLoginPath(client, '/przepisy/ciasta?add_fav=12')).resolves.toBe('/przepisy/ciasta?fav_added=12')
     expect(insert).toHaveBeenCalledWith({ user_id: 'u1', recipe_id: 12 })
-  })
-
-  it('applies a favorite intent for a returning user', async () => {
-    const { client } = fakeSupabase({ id: 'u1' }, { data: { gender: 'female' }, error: null })
-    await expect(postLoginPath(client, '/?add_fav=12')).resolves.toBe('/?fav_added=12')
   })
 
   it('goes to next without a session', async () => {
     const { client, from } = fakeSupabase(null, { data: null, error: null })
     await expect(postLoginPath(client, '/recipes')).resolves.toBe('/recipes')
     expect(from).not.toHaveBeenCalled()
-  })
-})
-
-describe('shouldCheckGender (accounts from before screen 3b)', () => {
-  const base = { method: 'GET', pathname: '/', prefetch: false, userId: 'u1', knownCookie: undefined }
-
-  it('checks a signed-in page view once per account and browser', () => {
-    expect(shouldCheckGender(base)).toBe(true)
-    expect(shouldCheckGender({ ...base, pathname: '/przepis/sernik' })).toBe(true)
-    expect(shouldCheckGender({ ...base, knownCookie: 'u1' })).toBe(false)
-    // Another account signed in on the same browser is checked again.
-    expect(shouldCheckGender({ ...base, knownCookie: 'u2' })).toBe(true)
-  })
-
-  it('skips non-GET requests and prefetches', () => {
-    expect(shouldCheckGender({ ...base, method: 'POST' })).toBe(false)
-    expect(shouldCheckGender({ ...base, prefetch: true })).toBe(false)
-  })
-
-  it.each(['/witaj', '/auth/callback', '/api/dev/login', '/login', '/signup', '/forgot-password', '/reset-password', '/share', '/regulamin', '/polityka-prywatnosci', '/usuwanie-danych'])(
-    'never detours from %s',
-    (pathname) => {
-      expect(shouldCheckGender({ ...base, pathname })).toBe(false)
-    },
-  )
-
-  it('does not mistake a path that merely starts with an exempt word', () => {
-    expect(shouldCheckGender({ ...base, pathname: '/witajcie' })).toBe(true)
   })
 })
