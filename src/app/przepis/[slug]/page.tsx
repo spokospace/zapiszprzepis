@@ -13,6 +13,7 @@ import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps, visibleStepImages } from '@/lib/steps'
+import { findGlossaryTerms } from '@/lib/ingredient-glossary'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
@@ -133,6 +134,13 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // groupBySection splits ingredients by optional `section`.
   const ingredientGroups = groupBySection(parseIngredients(typedRecipe.ingredients))
   const steps = parseSteps(typedRecipe.steps)
+  // Unfamiliar names (manchego, guanciale, aioli) the title, ingredients or steps mention,
+  // explained under the ingredients (#544). Matched here so only the hits reach the client.
+  const glossary = findGlossaryTerms([
+    typedRecipe.title,
+    ...ingredientGroups.flatMap((g) => g.items.map((i) => i.name)),
+    ...steps,
+  ])
   // Per-step photos, index-aligned with steps; empty until the column/view migration
   // and an import that captures them land (recipes without them render exactly as today).
   // Signed-in users only: a guest gets plain step text, with no photo or toggle.
@@ -216,6 +224,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           steps={steps}
           stepImages={stepImages}
           servings={typedRecipe.servings}
+          glossary={glossary}
         >
           {typedRecipe.youtube_id && (
             <section className="mb-12 print:hidden">

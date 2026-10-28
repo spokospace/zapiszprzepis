@@ -10,7 +10,9 @@ import { servingsLabel } from '@/lib/servings'
 import { stepsLabel } from '@/lib/recipe-meta'
 import { ImageLightbox } from '@/app/components/image-lightbox'
 import { householdMeasure, type Ingredient } from '@/lib/ingredients'
+import type { GlossaryEntry } from '@/lib/ingredient-glossary'
 import { useStepPhotos } from './use-step-photos'
+import { IngredientGlossary } from './ingredient-glossary'
 import { RECIPE_SPLIT } from './recipe-split'
 
 /** „Pokaż” / „Ukryj” — the two states of the step-photos toggle (ZMIANY §3). */
@@ -57,6 +59,8 @@ interface RecipeChecklistsProps {
   stepImages?: string[]
   /** Servings the source states; null/undefined hides "na N porcji". */
   servings?: number | null
+  /** Unfamiliar names the recipe mentions, explained under the ingredients (#544). */
+  glossary?: GlossaryEntry[]
   /** Rendered under the steps: in the steps column from lg (video, gallery; E01-S17). */
   children?: React.ReactNode
 }
@@ -180,6 +184,7 @@ export function RecipeChecklists({
   steps,
   stepImages = [],
   servings,
+  glossary = [],
   children,
 }: RecipeChecklistsProps) {
   const [raw, setRaw] = useSessionStorage(checklistStorageKey(recipeId))
@@ -272,6 +277,7 @@ export function RecipeChecklists({
             </ul>
           </div>
         ))}
+        <IngredientGlossary entries={glossary} />
       </section>
 
       <div>
