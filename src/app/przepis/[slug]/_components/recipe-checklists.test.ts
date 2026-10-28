@@ -52,7 +52,7 @@ describe('RecipeChecklists step photos', () => {
 
   it('places a 4:3 figure only under the steps that have a photo, with an alt', () => {
     const html = render(null, ['https://cdn.example/step-1.jpg', ''])
-    const list = html.match(/<ol class="space-y-5">[\s\S]*<\/ol>/)?.[0] ?? ''
+    const list = html.match(/<ol class="space-y-5 lg:space-y-6">[\s\S]*<\/ol>/)?.[0] ?? ''
     expect(list).toContain('<figure')
     expect(list).toContain('aspect-[4/3]')
     expect(list).toContain('Zdjęcie do kroku 1')
@@ -146,10 +146,18 @@ describe('RecipeChecklists alternative measure (#505)', () => {
 // action row (RecipeActions), not here.
 describe('RecipeChecklists steps', () => {
   it('labels each step „Krok N” without the total, in an ordered list', () => {
-    const list = render(null).match(/<ol class="space-y-5">.*?<\/ol>/)?.[0] ?? ''
+    const list = render(null).match(/<ol class="space-y-5 lg:space-y-6">.*?<\/ol>/)?.[0] ?? ''
     expect(list).toContain('<p class="mb-1.5 text-[17px] font-bold text-action-text">Krok 1</p>')
     expect(list).toContain('<p class="mb-1.5 text-[17px] font-bold text-action-text">Krok 2</p>')
     expect(list).not.toContain(' z 2')
+  })
+
+  it('numbers each step with a decorative disc from lg, dropped on paper', () => {
+    const list = render(null).match(/<ol class="space-y-5 lg:space-y-6">.*?<\/ol>/)?.[0] ?? ''
+    expect(list).toMatch(/<span aria-hidden="true" class="hidden [^"]*lg:flex print:hidden">1<\/span>/)
+    expect(list).toContain('lg:grid-cols-[2.5rem_1fr]')
+    // A hairline between steps, not above the first one.
+    expect(list).toContain('lg:border-t lg:border-border-card lg:pt-6 lg:first:border-t-0')
   })
 
   it('no longer renders the cooking-mode button (moved to the action row)', () => {
