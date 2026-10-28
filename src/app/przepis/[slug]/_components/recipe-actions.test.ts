@@ -25,7 +25,7 @@ describe('RecipeActions (handoff 2026-10-28)', () => {
   it('puts "Zacznij gotować" beside the heart in the first row, the cooking part twice as wide', () => {
     const html = render()
     expect(html).toMatch(/^<div class="mt-6 flex flex-col gap-3 print:hidden"><div class="flex flex-col gap-3 min-\[480px\]:flex-row"><div class="min-w-0 flex-\[2\]">/)
-    expect(html.indexOf('Zacznij gotować')).toBeLessThan(html.indexOf('Dodaj do ulubionych'))
+    expect(html.indexOf('Zacznij gotować')).toBeLessThan(html.indexOf('Zapisz<span class="sr-only">'))
   })
 
   it('drops the cooking button when the recipe has no steps; the heart takes the whole row', () => {

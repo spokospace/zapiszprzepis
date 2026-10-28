@@ -42,22 +42,37 @@ describe('RecipeHeader author line (E01-S23)', () => {
   })
 })
 
-describe('RecipeHeader desktop column (A9)', () => {
-  it('shows the times row from lg only, and the "Kategoria · czas" line below lg only', () => {
-    const html = render({ prep_time_minutes: 15, cook_time_minutes: 30, total_time_minutes: 45 })
-    expect(html).toMatch(/<dl class="[^"]*hidden[^"]*lg:flex"/)
-    expect(html).toContain('<dt class="text-[16px] text-ink-soft">Przygotowanie</dt><dd class="text-[20px] font-bold text-ink">15 min</dd>')
-    expect(html).toContain('<dt class="text-[16px] text-ink-soft">Łącznie</dt>')
-    expect(html).toMatch(/<p class="[^"]*lg:hidden">Zupy · 45 min<\/p>/)
+describe('RecipeHeader time strip (handoff 2026-10-28)', () => {
+  it('shows the times and the yield at every width, the category alone below lg', () => {
+    const html = render({ prep_time_minutes: 15, cook_time_minutes: 30, total_time_minutes: 45, servings: 4 })
+    const strip = html.match(/<ul aria-label="Czas i porcje" class="([^"]*)">[\s\S]*?<\/ul>/)
+    expect(strip?.[1]).not.toMatch(/(^|\s)hidden(\s|$)/)
+    expect(strip?.[0]).toContain('<span class="block text-[16px] text-ink-soft">Przygotowanie</span><span class="block text-[20px] font-extrabold text-ink">15 min</span>')
+    expect(strip?.[0]).toContain('>Gotowanie<')
+    expect(strip?.[0]).toContain('>Łącznie<')
+    expect(strip?.[0]).toContain('<span class="block text-[16px] text-ink-soft">Wychodzi</span><span class="block text-[20px] font-extrabold text-ink">4 porcje</span>')
+    expect(html).toMatch(/<p class="[^"]*lg:hidden">Zupy<\/p>/)
   })
 
-  it('marks estimated times with "≈" read as "około"', () => {
-    const html = render({ total_time_minutes: 45, times_estimated: true })
-    expect(html).toContain('<dd class="text-[20px] font-bold text-ink"><span aria-hidden="true">≈ </span><span class="sr-only">około </span>45 min</dd>')
+  it('puts each item beside an icon in a warm circle hidden from screen readers', () => {
+    const strip = render({ total_time_minutes: 45 }).match(/<ul aria-label="Czas i porcje"[\s\S]*?<\/ul>/)?.[0] ?? ''
+    expect(strip).toMatch(/<span aria-hidden="true" class="flex h-11 w-11 [^"]*bg-\[#fdf1e4\]"><svg/)
   })
 
-  it('renders no times row when no time is known', () => {
-    expect(render({ total_time_minutes: null })).not.toContain('<dl')
+  it('marks estimated times with "≈" read as "około", never the yield', () => {
+    const html = render({ total_time_minutes: 45, times_estimated: true, servings: 2 })
+    expect(html).toContain('<span class="block text-[20px] font-extrabold text-ink"><span aria-hidden="true">≈ </span><span class="sr-only">około </span>45 min</span>')
+    expect(html).toContain('<span class="block text-[20px] font-extrabold text-ink">2 porcje</span>')
+  })
+
+  it('renders no strip when neither a time nor the servings are known', () => {
+    expect(render({ total_time_minutes: null })).not.toContain('Czas i porcje')
+  })
+
+  it('shows the yield alone when no time is known', () => {
+    const html = render({ total_time_minutes: null, servings: 1 })
+    expect(html).toContain('>1 porcja<')
+    expect(html).not.toContain('>Łącznie<')
   })
 
   it('renders the description right under the title, before the source and times', () => {

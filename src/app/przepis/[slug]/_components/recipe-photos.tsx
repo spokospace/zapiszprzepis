@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import Image from 'next/image'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
+import { ImageLightbox } from '@/app/components/image-lightbox'
 
 interface RecipePhotosProps {
   /** The recipe's main photo (the archived cover). */
@@ -24,16 +25,23 @@ export function photoAlt(title: string, selected: number, total: number): string
   return selected === 0 ? title : `${title} — zdjęcie ${selected + 1} z ${total}`
 }
 
+/** The name of the control that enlarges the main photo. */
+export function zoomLabel(selected: number, total: number): string {
+  return total > 1 ? `Powiększ zdjęcie ${selected + 1} z ${total}` : 'Powiększ zdjęcie'
+}
+
 /**
  * The recipe's photos (handoff 2026-10-28): a 4:3 main photo with the source badge, and a
  * row of thumbnails under it — the cover first, then the gallery. A tap on a thumbnail
- * swaps the main photo; each thumbnail is a toggle (`aria-pressed`) with its own name.
- * A guest gets only the cover: the gallery is a login perk (A1), so the locked teaser
- * below the steps stands in for it.
+ * swaps the main photo; each thumbnail is a toggle (`aria-pressed`) with its own name. A
+ * tap on the main photo opens it full-screen (owner decision after #595), with the other
+ * photos a swipe away. A guest gets only the cover: the gallery is a login perk (A1), so
+ * the locked teaser below the steps stands in for it.
  */
 export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps) {
   const all = photoList(cover, images)
   const [selected, setSelected] = useState(0)
+  const [zoomed, setZoomed] = useState<number | null>(null)
   const current = all[selected] ?? cover
 
   return (
@@ -54,6 +62,15 @@ export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps)
             className="object-cover"
             priority={selected === 0}
             unoptimized={!isArchivedImageUrl(current)}
+          />
+          {/* The whole photo enlarges it. A layer over the image rather than a button around
+              it, because the source badge below is a link and a link cannot sit inside a
+              button. The focus ring is drawn inside: the box clips anything outside. */}
+          <button
+            type="button"
+            onClick={() => setZoomed(selected)}
+            aria-label={zoomLabel(selected, all.length)}
+            className="absolute inset-0 cursor-zoom-in focus-visible:outline-offset-[-4px]! print:hidden"
           />
           {/* Source on the photo, bottom-left (E01-S31 §3). Hidden on print — the printout
               carries the source in its footer line instead. */}
@@ -89,6 +106,13 @@ export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps)
           ))}
         </ul>
       )}
+
+      <ImageLightbox
+        label={`${title} — zdjęcia`}
+        index={zoomed}
+        onIndex={setZoomed}
+        items={all.map((src, i) => ({ src, caption: `${i + 1} / ${all.length}`, alt: photoAlt(title, i, all.length) }))}
+      />
     </div>
   )
 }
