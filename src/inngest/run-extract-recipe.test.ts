@@ -390,6 +390,8 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     const body = JSON.parse(String(extraction?.[1]?.body))
     expect(body.model).toBe(EXTRACTION_MODEL)
     expect(body.messages[0].content).not.toContain('The source is NOT in Polish')
+    // The verbatim source line is asked for from a foreign source only.
+    expect(body.messages[0].content).not.toContain('"source"')
   })
 
   it('localizes an English source with the stronger model (#524)', async () => {
@@ -408,6 +410,8 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(body.model).toBe(FOREIGN_EXTRACTION_MODEL)
     const system = body.messages[0].content as string
     expect(system).toContain('The source is NOT in Polish')
+    // In the schema itself, not only the rules: the model follows "this exact structure".
+    expect(system).toContain('{"source":')
     expect(system).toContain('pounds and ounces to grams')
     expect(system).toContain('"mięso mielone z indyka"')
     expect(system).toContain('keep the brand with its own spelling')

@@ -39,6 +39,7 @@ import {
   detectSourceLanguage,
   EXTRACTION_MODEL,
   FOREIGN_EXTRACTION_MODEL,
+  FOREIGN_INGREDIENT_FIELDS,
   FOREIGN_SOURCE_RULES,
   localizeForeignIngredients,
 } from '@/lib/source-language'
@@ -608,7 +609,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
   "dishKind": "what the dish IS, 1–3 Polish words, decided before the title (\"dip\", \"zapiekanka makaronowa\", \"spód do pizzy\")",
   "title": "Recipe title in Polish, built around that dish",
   "ingredients": [
-      {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
+      {${foreignSource ? FOREIGN_INGREDIENT_FIELDS : ''}"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
   ],
   "steps": [{"text": "Step 1 description", "image": "image URL from the content that shows THIS step, or null"}],
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
