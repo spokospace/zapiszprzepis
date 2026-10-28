@@ -9,7 +9,9 @@ import { rehypeMermaidTheme } from './src/lib/rehype-mermaid-theme';
 import { mermaidOptions } from './src/lib/mermaid-options';
 
 export default defineConfig({
-  // No `site` yet: the docs are local only. A deploy would set it (README.md).
+  // Cloudflare Pages project `zapiszprzepis-docs` (README.md). Gives the
+  // sitemap and canonical links their host.
+  site: 'https://zapiszprzepis-docs.pages.dev',
   integrations: [
     starlight({
       title: 'ZapiszPrzepis docs',

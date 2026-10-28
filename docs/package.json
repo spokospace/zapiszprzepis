@@ -7,7 +7,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "ship": "node scripts/ship.mjs"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.3.4",
@@ -24,6 +25,7 @@
     "@types/hast": "^3.0.4",
     "@types/mdast": "^4.0.4",
     "typescript": "^5.9.3",
-    "vfile": "^6.0.3"
+    "vfile": "^6.0.3",
+    "wrangler": "^4.155.0"
   }
 }
