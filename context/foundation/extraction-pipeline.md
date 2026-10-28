@@ -32,8 +32,9 @@ flowchart TD
 
     gateOut{Bramka wyjściowa<br/>isExtractedRecipeUsable} -- brak tytułu, składników lub kroków --> retry2[/błąd → Inngest ponawia/]
     gateOut --> dedup[Dedup: ten sam link, tekst, film]
-    dedup --> label[labelRecipe gpt-4.1<br/>sentence case, opis, tagi + classifyDish]
-    label --> db[(recipes)]
+    dedup --> label[gpt-4.1, dwa wywołania równolegle<br/>labelRecipe: wielkość liter, nota, meta, tagi<br/>classifyDish: danie ze słownika]
+    label --> variant[gpt-4.1: writeVariantNote<br/>czym różni się od rodzeństwa dania]
+    variant --> db[(recipes)]
     db --> images[Zdjęcia w osobnych krokach Inngest<br/>okładka, galeria, kroki]
 ```
 
@@ -49,7 +50,7 @@ flowchart TD
 | Fixes in code | Rules the prompt could not enforce: `metricUnits` rewrites US units left in any step; `localizeForeignIngredients` drops made-up cup measures and lean grades; `settleAlt` keeps only a Polish household measure in `alt`. | `us-units.ts`, `source-language.ts`, `extracted-recipe.ts` |
 | Output gate | `isExtractedRecipeUsable`: a title, at least one ingredient, at least one real step (steps optional for a post whose method is on video). Fails the run otherwise. | `content-quality.ts` |
 | Dedup | The same source URL, the same author text (fingerprint) or the same YouTube video links the share to the saved recipe instead of saving a copy. | `recipe-dedup.ts` |
-| Labelling | `gpt-4.1` (`LABEL_MODEL`, kept distinct from the extraction model) writes the sentence-case title, the short note that tells same-titled recipes apart, and the tags; `classifyDish` groups it with its dish. | `recipe-labeling.ts`, `recipe-dish.ts` |
+| Labelling | Three `gpt-4.1` calls (`LABEL_MODEL`, kept distinct from the extraction model) over the extracted recipe. In parallel: `labelRecipe` writes the sentence-case title, the note that tells the user's same-titled recipes apart (it reads those recipes), the meta description and the tags; `classifyDish` picks the dish from the vocabulary. Then `writeVariantNote` says how this recipe differs from its dish siblings (read after classification). The backfill script reuses the same calls on stored recipes. | `recipe-labeling.ts`, `recipe-dish.ts` |
 | Images | Archived into Storage in separate Inngest steps after the row exists: cover, gallery, per-step photos. | `recipe-image-archive.ts` |
 
 ## Known limits
