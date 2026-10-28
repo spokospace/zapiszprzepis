@@ -96,21 +96,19 @@ pnpm docs:deploy
 
 That installs the docs' dependencies, builds, and runs
 `wrangler pages deploy dist` as a production deployment of the `master`
-branch. Run it after merging anything that changes the rendered folders.
+branch. Run it from the repository root, in any shell, after merging anything
+that changes the rendered folders.
 
-**Which account it goes to.** The project lives on the account that runs the
-app, `7a4ca0444df1850c59cc436a4ff3ea71`. Pages config files cannot pin an
-account, and wrangler caches the last account it used under
-`docs/node_modules/.cache/wrangler`, so name it on every deploy. To keep this
-login apart from a wrangler used for other accounts, give it a config folder
-of its own:
+**Which account and login it uses.** `docs/scripts/ship.mjs` sets both, so the
+command needs no environment variables: the account that runs the app, and a
+wrangler login kept in `~/.wrangler-zapiszprzepis`, so a wrangler signed in
+to another account on the same machine is neither used nor replaced. The
+script explains why each is needed, and either can be overridden from the
+environment. Sign that login in once, or again when it expires:
 
 ```bash
-XDG_CONFIG_HOME="$HOME/.wrangler-zapiszprzepis" CLOUDFLARE_ACCOUNT_ID=7a4ca0444df1850c59cc436a4ff3ea71 pnpm docs:deploy
+pnpm docs:login
 ```
-
-Run `npx wrangler@4 login` once with the same `XDG_CONFIG_HOME` to create
-that login.
 
 **Why not Pages' Git integration or GitHub Pages.** Both build in the cloud,
 where there is no Chromium for the Mermaid diagrams, and GitHub Pages

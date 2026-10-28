@@ -1,5 +1,6 @@
 // Cloudflare Pages project for the docs site. It sits here so wrangler, run
-// from docs/, finds this file and never the app's ../wrangler.jsonc.
+// from docs/, finds this file and never the app's ../wrangler.jsonc. Pages
+// config cannot pin an account: scripts/ship.mjs sets it for each deploy.
 {
   "name": "zapiszprzepis-docs",
   "pages_build_output_dir": "./dist",
