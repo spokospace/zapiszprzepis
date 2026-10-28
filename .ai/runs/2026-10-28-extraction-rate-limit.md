@@ -42,12 +42,22 @@ Cap how often one account can start a paid recipe extraction, in all four entry 
 
 ## Progress
 
+PR: #598
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Limiter
 
-- [ ] 1.1 Shared Workers rate-limit helper + extractionAllowed + EXTRACTION_LIMIT binding
+- [x] 1.1 Shared Workers rate-limit helper + extractionAllowed + EXTRACTION_LIMIT binding — b687a56
 
 ### Phase 2: Entry points
 
-- [ ] 2.1 Gate add, share, refresh and retry; show the rate-limited message
+- [x] 2.1 Gate add, share, refresh and retry; show the rate-limited message — df37251
+
+## Validation
+
+- `pnpm typecheck` ✓, `pnpm test` ✓ (188 files, 2075 tests).
+- `pnpm lint` ✗ only on `.ai/specs/assets/recipe-page-handoff/support.js` (2 errors), added to
+  `master` by #593; every file this run touches lints clean.
+- `pnpm test:reflow` not run: no `.env.local` in the worktree or the main checkout, so the dev
+  server cannot start. The run only adds message strings and a toast branch.
