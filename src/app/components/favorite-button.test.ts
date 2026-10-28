@@ -34,13 +34,22 @@ describe('FavoriteButton on a card photo', () => {
 })
 
 describe('FavoriteButton on the recipe page', () => {
-  it('is the C3 58 px button with a 19 px label', () => {
-    expect(heart({}).match(/<button[^>]*>/)?.[0]).toMatch(/min-h-\[58px\][^"]*text-\[19px\]/)
+  it('is the 76 px framed action card (design 2026-10-28)', () => {
+    const button = heart({}).match(/<button[^>]*>/)?.[0]
+    expect(button).toContain('min-h-[76px]')
+    expect(button).toContain('border-border-chip')
   })
 
-  it('keeps its visible label and no aria-label', () => {
+  it('keeps its visible label over a hint, and no aria-label', () => {
     const html = heart({})
-    expect(html).toContain('Dodaj do ulubionych</button>')
+    expect(html).toMatch(/>Dodaj do ulubionych<\/span><span[^>]*>Zapisz przepis na później<\/span>/)
     expect(html).not.toContain('aria-label')
+  })
+
+  it('shows the saved state with an orange frame and a filled heart', () => {
+    const html = heart({ initialFavorited: true })
+    expect(html).toContain('border-action bg-surface-accent')
+    expect(html).toContain('>W ulubionych</span>')
+    expect(html).toContain('fill="currentColor"')
   })
 })

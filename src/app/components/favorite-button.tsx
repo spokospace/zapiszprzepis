@@ -7,6 +7,7 @@ import { addFavorite, removeFavorite } from '@/app/favorites/actions'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
 import { stripSearchParam } from '@/lib/strip-search-param'
+import { ACTION_CARD, ACTION_CARD_FRAME, ACTION_CARD_ICON, ActionCardText } from '@/app/components/ui/action-card'
 
 interface FavoriteButtonProps {
   recipeId: number
@@ -23,28 +24,38 @@ interface FavoriteButtonProps {
   recipeTitle?: string
 }
 
+/** Label per state; `hint` is the recipe page's second line (design 2026-10-28). */
 const COPY = {
-  full: { off: 'Dodaj do ulubionych', on: 'W ulubionych · usuń' },
-  photo: { off: 'Dodaj do ulubionych', on: 'W ulubionych' },
+  off: { label: 'Dodaj do ulubionych', hint: 'Zapisz przepis na później' },
+  on: { label: 'W ulubionych', hint: 'Naciśnij, aby usunąć' },
 } as const
 
-// wrap-anywhere + shrink-0 icon: the label wraps at 320 px / A++ instead of
-// widening the page (WCAG 1.4.10).
-const BASE = 'inline-flex items-center justify-center gap-2 font-bold wrap-anywhere transition-colors'
 const SIZE = {
-  // no-underline!: a guest gets this as a link to /login, shaped like the button.
-  // C3, item 5: 58 px, 19 px bold. Always full-width — it fills its action-row grid cell.
-  full: `${BASE} min-h-[58px] w-full rounded-pill border-[2.5px] border-action px-5 text-[19px] no-underline!`,
+  // The recipe page's tall action card: a framed tile with the label over a hint.
+  // Always full-width — it fills its action-row grid cell.
+  full: ACTION_CARD.tall,
   // No grey ring — a soft shadow sets the white circle off a light photo and the
   // heart itself carries the contrast (ZMIANY_prototyp §6).
   photo:
     'inline-flex h-12 w-12 items-center justify-center rounded-pill bg-white shadow-[0_2px_8px_rgba(17,24,39,0.22)] transition-colors',
 } as const
 const LOOK = {
-  full: { off: 'bg-white text-action-text hover:bg-surface-accent', on: 'bg-action text-white hover:bg-action-hover' },
+  // Saved: a warm wash and an orange frame, so the state reads without the hint.
+  full: { off: ACTION_CARD_FRAME, on: 'border-2 border-action bg-surface-accent text-ink hover:bg-surface-accent-2' },
   photo: { off: 'text-ink hover:bg-surface-3', on: 'text-action hover:bg-surface-accent' },
 } as const
-const ICON = 'h-6 w-6 shrink-0'
+/** The visible content: a heart alone on a photo; heart + label + hint on the recipe page. */
+function Content({ size, favorited }: { size: 'full' | 'photo'; favorited: boolean }) {
+  const fill = favorited ? 'currentColor' : 'none'
+  if (size === 'photo') return <Heart aria-hidden="true" className="h-6 w-6 shrink-0" fill={fill} />
+  const copy = favorited ? COPY.on : COPY.off
+  return (
+    <>
+      <Heart aria-hidden="true" className={`${ACTION_CARD_ICON} text-action`} fill={fill} />
+      <ActionCardText title={copy.label} hint={copy.hint} tone="accent" />
+    </>
+  )
+}
 
 /**
  * `?fav_added={recipeId}` (set by postLoginPath after a guest heart's login):
@@ -128,7 +139,6 @@ export function FavoriteButton({
   const [error, setError] = useState(false)
   const [pending, startTransition] = useTransition()
   const favorited = override ?? initialFavorited
-  const copy = COPY[size]
   const iconOnly = size === 'photo'
   // An icon alone names itself; the title tells one card's heart from the next.
   const name = (label: string) => (iconOnly ? (recipeTitle ? `${label}: ${recipeTitle}` : label) : undefined)
@@ -165,11 +175,10 @@ export function FavoriteButton({
         onClick={(e) => {
           e.currentTarget.href = loginPath(`${window.location.pathname}${window.location.search}`, recipeId)
         }}
-        aria-label={name(copy.off)}
+        aria-label={name(COPY.off.label)}
         className={`${SIZE[size]} ${LOOK[size].off}`}
       >
-        <Heart aria-hidden="true" className={ICON} />
-        {!iconOnly && copy.off}
+        <Content size={size} favorited={false} />
       </a>
     )
   }
@@ -179,13 +188,12 @@ export function FavoriteButton({
       <button
         type="button"
         aria-pressed={favorited}
-        aria-label={name(favorited ? copy.on : copy.off)}
+        aria-label={name(favorited ? COPY.on.label : COPY.off.label)}
         disabled={pending}
         onClick={() => change(!favorited)}
         className={`${SIZE[size]} ${favorited ? LOOK[size].on : LOOK[size].off} disabled:opacity-70`}
       >
-        <Heart aria-hidden="true" className={ICON} fill={favorited ? 'currentColor' : 'none'} />
-        {!iconOnly && (favorited ? copy.on : copy.off)}
+        <Content size={size} favorited={favorited} />
       </button>
       <FavoriteToast show={toast} onUndo={() => change(false)} />
       {error && (

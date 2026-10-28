@@ -7,6 +7,7 @@ import { clampStep, isLastStep, progressRatio, progressSegments, stepLabel } fro
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { createScreenWakeLock, type ScreenWakeLock } from '@/lib/wake-lock'
 import { useStepPhotos } from './use-step-photos'
+import { ACTION_CARD, ACTION_CARD_ICON, ActionCardText } from '@/app/components/ui/action-card'
 
 /**
  * Keeps the screen on while `active` (E01-S08). Returns `false` once the browser
@@ -177,17 +178,17 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
 
   return (
     <>
-      {/* Handoff C3 item 7: dark, 58 px, full width (white on #111827). */}
+      {/* The dark action card (design 2026-10-28): white on #111827, label over a hint. */}
       <button
         type="button"
         ref={triggerRef}
         onClick={start}
         aria-haspopup="dialog"
         aria-controls="cooking-mode"
-        className="inline-flex min-h-[58px] w-full items-center justify-center gap-2.5 rounded-pill bg-ink px-5 text-[19px] font-bold wrap-anywhere text-white hover:bg-ink-soft"
+        className={ACTION_CARD.dark}
       >
-        <ChefHat aria-hidden="true" className="h-6 w-6 shrink-0" />
-        Tryb gotowania
+        <ChefHat aria-hidden="true" className={ACTION_CARD_ICON} />
+        <ActionCardText title="Włącz tryb gotowania" hint="Gotuj krok po kroku" tone="dark" />
       </button>
 
       <dialog

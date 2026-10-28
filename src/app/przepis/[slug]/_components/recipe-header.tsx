@@ -100,21 +100,25 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
         // margins in sync with that padding by hand — test:reflow only catches an
         // over-wide breakout (horizontal scroll), not a gap left by a mismatch. `w-full`
         // is dropped so the block's auto width expands to the viewport (re-adding it would
-        // shift, not widen). From lg it resets to the padded A9 grid (rounded 16:10).
-        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] overflow-hidden rounded-none bg-surface-3 sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0 lg:aspect-[16/10] lg:rounded-tile">
-          <Image
-            // The LCP image, served from Supabase Storage through next/image.
-            src={cover}
-            alt={recipe.title}
-            fill
-            // Full-bleed = 100vw below lg (1024); from lg the ~600px A9 grid column.
-            sizes="(max-width: 1023px) 100vw, 600px"
-            className="object-cover"
-            priority
-          />
-          {/* Source on the photo, bottom-left (E01-S31 §3). Hidden on print — the
-              printout carries the source in its footer line instead. */}
-          <div className="absolute bottom-0 left-px z-10 max-w-[calc(100%-1px)] print:hidden">{sourceBadge}</div>
+        // shift, not widen). From lg this box is the 16:10 grid cell and the photo inside it
+        // bleeds left to the browser edge (design 2026-10-28, `bleed-left-page`). The cell
+        // keeps the height, so a wide screen gets a wider crop, not a taller photo.
+        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0 lg:aspect-[16/10]">
+          <div className="absolute inset-0 overflow-hidden bg-surface-3 lg:bleed-left-page lg:rounded-r-tile">
+            <Image
+              // The LCP image, served from Supabase Storage through next/image.
+              src={cover}
+              alt={recipe.title}
+              fill
+              // Full-bleed = 100vw below lg (1024); from lg the grid column plus the bleed.
+              sizes="(max-width: 1023px) 100vw, 55vw"
+              className="object-cover"
+              priority
+            />
+            {/* Source on the photo, bottom-left (E01-S31 §3). Hidden on print — the
+                printout carries the source in its footer line instead. */}
+            <div className="absolute bottom-0 left-px z-10 max-w-[calc(100%-1px)] print:hidden">{sourceBadge}</div>
+          </div>
         </div>
       ) : (
         // No cover: from lg a category-icon placeholder fills the photo column so the

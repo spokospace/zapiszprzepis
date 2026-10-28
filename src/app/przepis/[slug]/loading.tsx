@@ -26,21 +26,19 @@ export default function RecipeLoading() {
               <SkeletonBar className="mb-3 h-5 w-2/3" />
               {/* "Dodała/Dodał …" author line. */}
               <SkeletonBar className="h-4 w-40" />
-              {/* The favourite / actions row. */}
-              <SkeletonBar className="mt-4 h-[58px] w-full rounded-pill sm:w-72" />
             </div>
           </header>
 
+          {/* RecipeActions: two big cards, then the print / share pair (2 × 2 from lg). */}
+          <div className="mt-6 mb-8 grid grid-cols-2 gap-3 lg:gap-4">
+            <SkeletonBar className="col-span-2 h-[76px] rounded-xl lg:col-span-1" />
+            <SkeletonBar className="col-span-2 h-[76px] rounded-xl lg:col-span-1" />
+            <SkeletonBar className="h-16 rounded-xl" />
+            <SkeletonBar className="h-16 rounded-xl" />
+          </div>
+
           {/* RecipeChecklists: ingredients panel | steps from lg; single column below. */}
           <div className="lg:grid lg:grid-cols-[1fr_1.6fr] lg:items-start lg:gap-x-12">
-            {/* "Wielkość tekstu" controls row, spanning both columns. */}
-            <div className="mb-6 lg:col-span-2">
-              <SkeletonBar className="h-11 w-56" />
-            </div>
-            {/* "Tryb gotowania" button, spanning both columns. */}
-            <div className="mb-8 lg:col-span-2">
-              <SkeletonBar className="h-14 w-full rounded-pill sm:w-64" />
-            </div>
 
             {/* Składniki — a bordered panel from lg. */}
             <div className="mb-10 lg:rounded-tile lg:border lg:border-border-card lg:bg-surface-2 lg:p-6">
