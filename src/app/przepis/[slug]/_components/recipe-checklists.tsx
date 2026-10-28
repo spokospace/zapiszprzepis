@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Check } from 'lucide-react'
 import { useSessionStorage } from '@/app/components/ui/use-session-storage'
@@ -20,6 +20,29 @@ const PHOTO_OPTIONS: [label: string, show: boolean][] = [
 ]
 /** Stable empty list so „Ukryj” hides photos without a fresh array every render. */
 const NO_STEP_IMAGES: string[] = []
+
+/** Room kept above a focused step button: the sticky progress line's height plus a margin. */
+const PROGRESS_ROOM = 88
+
+/**
+ * The app header's height. It is sticky, so the steps' progress line sticks right under
+ * it rather than behind it. Measured, not hard-coded: it differs per width, per signed-in
+ * state and with the text size, and follows those changes through a ResizeObserver.
+ * 0 before hydration and on a page without the header.
+ */
+function useAppHeaderHeight(): number {
+  const [height, setHeight] = useState(0)
+  useEffect(() => {
+    const header = document.querySelector<HTMLElement>('[data-app-header]')
+    if (!header) return
+    const update = () => setHeight(Math.round(header.getBoundingClientRect().height))
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [])
+  return height
+}
 
 interface IngredientGroup {
   section: string | null
@@ -186,6 +209,7 @@ export function RecipeChecklists({
   const toggle = (index: number) => setRaw(JSON.stringify(toggleChecked(state, 'ingredients', index)))
   const toggleStep = (index: number) => setRaw(toggledStepRaw(state, index))
   const { done: doneSteps, next: nextStep } = stepProgress(steps.length, state.steps)
+  const headerHeight = useAppHeaderHeight()
 
   // Ingredients are numbered flat across sections: each group's first index.
   const offsets = useMemo(
@@ -288,8 +312,13 @@ export function RecipeChecklists({
           ) : (
             <>
               {/* The count is also the progress bar's accessible value; the bar itself is
-                  decorative and hidden from assistive tech. */}
-              <div className="mb-5 print:hidden">
+                  decorative and hidden from assistive tech. Sticky under the app header
+                  while the steps scroll past (owner, 2026-10-29), so the progress stays in
+                  sight; it leaves with the end of the steps section. */}
+              <div
+                className="sticky z-10 -mx-2 mb-5 bg-white px-2 pt-2 pb-3 print:hidden"
+                style={{ top: headerHeight }}
+              >
                 <p className="mb-2 text-[16px] text-ink-soft">
                   {stepProgressLabel(doneSteps, steps.length)}
                 </p>
@@ -309,6 +338,9 @@ export function RecipeChecklists({
                         aria-pressed={done}
                         aria-label={`Krok ${i + 1} — ${done ? 'zrobiony, cofnij' : 'oznacz jako zrobiony'}`}
                         onClick={() => toggleStep(i)}
+                        // A focused step scrolls clear of the sticky header and progress line
+                        // (WCAG 2.4.11, focus not obscured).
+                        style={{ scrollMarginTop: headerHeight + PROGRESS_ROOM }}
                         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-pill border-2 print:hidden ${
                           done ? 'border-success bg-success text-white' : 'border-action bg-white text-action-text hover:bg-surface-3'
                         }`}

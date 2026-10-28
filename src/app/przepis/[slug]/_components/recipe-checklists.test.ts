@@ -185,6 +185,16 @@ describe('RecipeChecklists steps', () => {
     expect(list(render(null))).toContain('print:hidden')
   })
 
+  // Owner, 2026-10-29: the progress stays in sight while the steps scroll. The server
+  // render has no header to measure yet, so it sticks at the very top until hydration.
+  it('keeps the progress line sticky over a white ground, under the app header', () => {
+    expect(render(null)).toMatch(/<div class="sticky z-10 [^"]*bg-white[^"]*" style="top:0(px)?">\s*<p[^>]*>2 kroki · kliknij numer/)
+  })
+
+  it('keeps a focused step clear of the sticky line', () => {
+    expect(list(render(null))).toMatch(/aria-label="Krok 1 — oznacz jako zrobiony"[^>]*style="scroll-margin-top:88px"/)
+  })
+
   it('no longer renders the cooking-mode button (moved to the action row)', () => {
     expect(render(null)).not.toContain('Zacznij gotować')
   })
