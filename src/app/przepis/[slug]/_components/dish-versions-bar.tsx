@@ -8,9 +8,13 @@ export function versionsBoxLabel(n: number): string {
   return `${n} ${polishPlural(n, 'inna wersja', 'inne wersje', 'innych wersji')} tego dania`
 }
 
-/** "np. bez drożdży, z serem, z air fryera" from the versions' notes, or null without any. */
+/**
+ * "np. bez drożdży, z serem, z air fryera" from the versions' notes, or null without any.
+ * The notes are stored sentence-case ("Z oliwą i sezamem"); mid-sentence they start lower.
+ */
 export function versionsExamples(examples: string[]): string | null {
-  return examples.length > 0 ? `np. ${examples.join(', ')}` : null
+  if (examples.length === 0) return null
+  return `np. ${examples.map((note) => note.charAt(0).toLocaleLowerCase('pl-PL') + note.slice(1)).join(', ')}`
 }
 
 /**

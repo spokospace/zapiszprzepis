@@ -68,7 +68,8 @@ describe('DishVersionsBar (handoff 2026-10-28 §3 item 7)', () => {
   })
 
   it('lists example differences, or no line without any', () => {
-    const withNotes = renderToStaticMarkup(createElement(DishVersionsBar, { count: 2, examples: ['bez drożdży', 'z serem'] }))
+    const withNotes = renderToStaticMarkup(createElement(DishVersionsBar, { count: 2, examples: ['Bez drożdży', 'Z serem'] }))
+    // Stored sentence-case, shown mid-sentence in lower case.
     expect(withNotes).toContain('np. bez drożdży, z serem')
     expect(renderToStaticMarkup(createElement(DishVersionsBar, { count: 2 }))).not.toContain('np.')
   })
