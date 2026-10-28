@@ -89,8 +89,11 @@ export function AppHeader({
 
   return (
     // Below lg /szukaj is a full screen with its own „✕ Zamknij” bar (E01-S26).
+    // data-app-header: what a sticky element further down measures to sit under this one
+    // (the recipe steps' progress line).
     <header
       className={`sticky top-0 z-20 bg-white/95 backdrop-blur print:hidden ${pathname === SEARCH_PATH ? 'max-lg:hidden' : ''}`}
+      data-app-header=""
     >
       <Suspense fallback={null}>
         <ReturnPointRecorder />

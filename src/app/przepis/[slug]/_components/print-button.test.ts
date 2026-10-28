@@ -7,20 +7,21 @@ function render() {
   return renderToStaticMarkup(createElement(PrintButton))
 }
 
-describe('PrintButton (A9 "Wydrukuj przepis")', () => {
-  it('is a plain button labelled "Wydrukuj przepis" with an icon', () => {
+describe('PrintButton (A9; handoff 2026-10-28 "Drukuj")', () => {
+  it('is a plain button labelled "Drukuj" with an icon', () => {
     const html = render()
     expect(html).toMatch(/^<button type="button"/)
-    expect(html).toContain('Wydrukuj przepis')
+    expect(html).toContain('Drukuj')
     // The printer glyph is decorative; the label names the control.
     expect(html).toContain('aria-hidden="true"')
     expect(html).toContain('<svg')
   })
 
-  it('is a quiet text button, 48 px high, with no frame (handoff 2026-10-28)', () => {
+  it('is a quiet ink text button, 48 px high, with no frame and no underline', () => {
     const html = render()
     expect(html).toContain('min-h-[48px]')
-    expect(html).toContain('text-action-text')
+    expect(html).toContain('text-ink')
     expect(html).not.toContain('border-2')
+    expect(html).not.toContain('underline')
   })
 })

@@ -7,7 +7,6 @@ import { addFavorite, removeFavorite } from '@/app/favorites/actions'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
 import { stripSearchParam } from '@/lib/strip-search-param'
-import { ACTION_CARD, ACTION_CARD_FRAME, ACTION_CARD_ICON, ActionCardText } from '@/app/components/ui/action-card'
 
 interface FavoriteButtonProps {
   recipeId: number
@@ -24,35 +23,46 @@ interface FavoriteButtonProps {
   recipeTitle?: string
 }
 
-/** Label per state; `hint` is the recipe page's second line (design 2026-10-28). */
-const COPY: Record<'off' | 'on', { label: string; short?: string; hint: string }> = {
-  off: { label: 'Dodaj do ulubionych', short: 'Do ulubionych', hint: 'Zapisz przepis na później' },
-  on: { label: 'W ulubionych', hint: 'Naciśnij, aby usunąć' },
-}
+/** The heart's name per state: a card heart's accessible name, with the recipe after it. */
+const COPY = { off: 'Dodaj do ulubionych', on: 'W ulubionych' } as const
+/** The recipe page's visible label per state (handoff 2026-10-28): short, beside the heart. */
+const PAGE_LABEL = { off: 'Zapisz', on: 'W ulubionych' } as const
 
 const SIZE = {
-  // The recipe page's tall action card: a framed tile with the label over a hint.
-  // Always full-width — it fills its action-row grid cell.
-  full: ACTION_CARD.tall,
+  // The recipe page's button beside "Zacznij gotować": 60 px, full width of its cell,
+  // as tall as the row so the two match.
+  // A guest gets it as a link to the login: bordered like a button, so no underline.
+  full: 'flex h-full min-h-[60px] w-full items-center justify-center gap-2.5 rounded-pill border-2 border-action px-4 text-[19px] font-bold no-underline!',
   // No grey ring — a soft shadow sets the white circle off a light photo and the
   // heart itself carries the contrast (ZMIANY_prototyp §6).
   photo:
     'inline-flex h-12 w-12 items-center justify-center rounded-pill bg-white shadow-[0_2px_8px_rgba(17,24,39,0.22)] transition-colors',
 } as const
 const LOOK = {
-  // Saved: a warm wash and an orange frame, so the state reads without the hint.
-  full: { off: ACTION_CARD_FRAME, on: 'border-2 border-action bg-surface-accent text-ink hover:bg-surface-accent-2' },
+  // Handoff 2026-10-28: an orange outline; saved, filled orange with white text, so the
+  // state reads from the fill and the words, not the colour alone.
+  full: { off: 'bg-white text-action-text hover:bg-surface-accent', on: 'bg-action text-white hover:opacity-90' },
   photo: { off: 'text-ink hover:bg-surface-3', on: 'text-action hover:bg-surface-accent' },
 } as const
-/** The visible content: a heart alone on a photo; heart + label + hint on the recipe page. */
+/** The visible content: a heart alone on a photo; heart + "Zapisz" / "W ulubionych" on the recipe page. */
 function Content({ size, favorited }: { size: 'full' | 'photo'; favorited: boolean }) {
   const fill = favorited ? 'currentColor' : 'none'
   if (size === 'photo') return <Heart aria-hidden="true" className="h-6 w-6 shrink-0" fill={fill} />
-  const copy = favorited ? COPY.on : COPY.off
   return (
     <>
-      <Heart aria-hidden="true" className={`${ACTION_CARD_ICON} text-action`} fill={fill} />
-      <ActionCardText title={copy.label} short={copy.short} hint={copy.hint} tone="accent" />
+      <Heart aria-hidden="true" className="h-6 w-6 shrink-0" fill={fill} />
+      {/* "Zapisz" alone does not say where to; the hidden words make the name "Zapisz w
+          ulubionych" while the visible label stays the handoff's (label-in-name holds). */}
+      <span>
+        {favorited ? (
+          PAGE_LABEL.on
+        ) : (
+          <>
+            {PAGE_LABEL.off}
+            <span className="sr-only"> w ulubionych</span>
+          </>
+        )}
+      </span>
     </>
   )
 }
@@ -175,7 +185,7 @@ export function FavoriteButton({
         onClick={(e) => {
           e.currentTarget.href = loginPath(`${window.location.pathname}${window.location.search}`, recipeId)
         }}
-        aria-label={name(COPY.off.label)}
+        aria-label={name(COPY.off)}
         className={`${SIZE[size]} ${LOOK[size].off}`}
       >
         <Content size={size} favorited={false} />
@@ -188,7 +198,7 @@ export function FavoriteButton({
       <button
         type="button"
         aria-pressed={favorited}
-        aria-label={name(favorited ? COPY.on.label : COPY.off.label)}
+        aria-label={name(favorited ? COPY.on : COPY.off)}
         disabled={pending}
         onClick={() => change(!favorited)}
         className={`${SIZE[size]} ${favorited ? LOOK[size].on : LOOK[size].off} disabled:opacity-70`}

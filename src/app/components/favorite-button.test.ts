@@ -33,28 +33,33 @@ describe('FavoriteButton on a card photo', () => {
   })
 })
 
-describe('FavoriteButton on the recipe page', () => {
-  it('is the 76 px framed action card (design 2026-10-28)', () => {
+describe('FavoriteButton on the recipe page (handoff 2026-10-28)', () => {
+  it('is a 60 px button with an orange outline, as tall as its row', () => {
     const button = heart({}).match(/<button[^>]*>/)?.[0]
-    expect(button).toContain('min-h-[76px]')
-    expect(button).toContain('border-border-chip')
+    expect(button).toContain('min-h-[60px]')
+    expect(button).toContain('h-full')
+    expect(button).toContain('border-2 border-action')
+    expect(button).toContain('text-action-text')
   })
 
-  it('keeps its visible label over a hint, and no aria-label', () => {
+  it('reads "Zapisz" and is named "Zapisz w ulubionych", with no aria-label', () => {
     const html = heart({})
-    expect(html).toMatch(/>Dodaj do ulubionych<\/span><span[^>]*>Do ulubionych<\/span><\/span><span[^>]*>Zapisz przepis na później<\/span>/)
+    expect(html).toContain('<span>Zapisz<span class="sr-only"> w ulubionych</span></span>')
     expect(html).not.toContain('aria-label')
+    expect(html).toContain('aria-pressed="false"')
   })
 
-  it('shows only the short label in the one-row layout (lg–xl)', () => {
-    const html = heart({})
-    expect(html).toContain('<span class="lg:max-xl:hidden">Dodaj do ulubionych</span><span class="hidden lg:max-xl:inline">Do ulubionych</span>')
-  })
-
-  it('shows the saved state with an orange frame and a filled heart', () => {
+  it('fills orange with white "W ulubionych" and a filled heart once saved', () => {
     const html = heart({ initialFavorited: true })
-    expect(html).toContain('border-action bg-surface-accent')
-    expect(html).toContain('>W ulubionych</span>')
+    expect(html).toContain('bg-action text-white')
+    expect(html).toContain('<span>W ulubionych</span>')
     expect(html).toContain('fill="currentColor"')
+    expect(html).toContain('aria-pressed="true"')
+  })
+
+  it('gives a guest the same "Zapisz" as a login link', () => {
+    const html = heart({ isAuthenticated: false })
+    expect(html).toMatch(/<a href="\/login\?[^"]*fav=7"[^>]*>/)
+    expect(html).toContain('Zapisz<span class="sr-only"> w ulubionych</span>')
   })
 })

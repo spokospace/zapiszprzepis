@@ -3,7 +3,6 @@ import {
   ingredientKey,
   ingredientDiff,
   versionBadges,
-  versionsBarLabel,
   versionsHeading,
   sortVersions,
   parseVersionsSort,
@@ -189,16 +188,7 @@ describe('versionBadges', () => {
   })
 })
 
-describe('versionsBarLabel & versionsHeading', () => {
-  it('names the dish in the accusative with the count in brackets', () => {
-    expect(versionsBarLabel(1, 'szarlotkę')).toBe('Inne przepisy na szarlotkę (1)')
-    expect(versionsBarLabel(9, 'szarlotkę')).toBe('Inne przepisy na szarlotkę (9)')
-  })
-
-  it('falls back to "na to danie" without an accusative', () => {
-    expect(versionsBarLabel(5, null)).toBe('Inne przepisy na to danie (5)')
-  })
-
+describe('versionsHeading', () => {
   it('headings use the genitive of a known dish or the case-free fallback', () => {
     expect(versionsHeading(5, 'pączki')).toBe('Inne wersje pączków (5)')
     expect(versionsHeading(3, 'Szarlotka')).toBe('Inne wersje szarlotki (3)')
