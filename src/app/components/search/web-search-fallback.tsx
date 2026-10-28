@@ -151,7 +151,7 @@ function WebResults({ results, canSave, onClose }: { results: ExaResult[]; canSa
                   <span className="sr-only"> (w nowej karcie)</span>
                 </a>
                 {canSave &&
-                  (result.alreadySaved ? (
+                  (result.existing?.owner === 'own' ? (
                     <span className="inline-flex min-h-[48px] items-center px-2 text-[17px] font-bold text-success">
                       Już zapisany
                     </span>
