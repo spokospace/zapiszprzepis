@@ -57,6 +57,8 @@ export type PluralForms = { one: string; few: string; many: string }
 
 export const SZKLANKI: PluralForms = { one: 'szklanka', few: 'szklanki', many: 'szklanek' }
 export const KOSTKI: PluralForms = { one: 'kostka', few: 'kostki', many: 'kostek' }
+export const LYZKI: PluralForms = { one: 'łyżka', few: 'łyżki', many: 'łyżek' }
+export const LYZECZKI: PluralForms = { one: 'łyżeczka', few: 'łyżeczki', many: 'łyżeczek' }
 
 const QUARTER = ['', '1/4', '1/2', '3/4']
 

@@ -12,9 +12,12 @@ export const NUMBER = String.raw`\d*[${GLYPHS}]|\d+(?:\s+\d+/\d+|/\d+|[.,]\d+)?`
 const RANGE = String.raw`(${NUMBER})(?:\s*(?:-|–|do)\s*(${NUMBER}))?`
 const GLYPH = new RegExp(`(\\d*)([${GLYPHS}])`, 'g')
 
+/** A NUMBER match with its fraction glyph spelled out: "1½" → "1 1/2", "¼" → "1/4". */
+export const plainFraction = (raw: string) =>
+  raw.replace(GLYPH, (_, whole: string, f: string) => `${whole} ${UNICODE_FRACTIONS[f]}`).trim()
+
 /** A NUMBER match as a number; 0 when it cannot be read. */
-export const toNumber = (raw: string) =>
-  parseAmount(raw.replace(GLYPH, (_, whole: string, f: string) => `${whole} ${UNICODE_FRACTIONS[f]}`).trim()) ?? 0
+export const toNumber = (raw: string) => parseAmount(plainFraction(raw)) ?? 0
 
 const roundTo = (value: number, step: number) => Math.max(step, Math.round(value / step) * step)
 // Grams to the step a kitchen scale reads at that size.
