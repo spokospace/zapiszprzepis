@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Share2 } from 'lucide-react'
-import { buttonClasses } from '@/app/components/ui/button'
+import { ACTION_CARD, ACTION_CARD_ICON_COMPACT } from '@/app/components/ui/action-card'
 
 export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed'
 
@@ -40,18 +40,9 @@ export const SHARE_MESSAGES: Partial<Record<ShareOutcome, string>> = {
 }
 
 /**
- * "Udostępnij" in the recipe header: under the heart on phones, beside "Oryginał"
- * from lg (handoff A9). The outcome is spoken from a status region that is always mounted.
+ * "Udostępnij przepis" in the recipe action row, beside "Wydrukuj przepis". The outcome is spoken from a status region that is always mounted.
  */
-export function ShareButton({
-  title,
-  url,
-  className = buttonClasses('outline', 'md'),
-}: {
-  title: string
-  url: string
-  className?: string
-}) {
+export function ShareButton({ title, url }: { title: string; url: string }) {
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null)
   const message = outcome ? SHARE_MESSAGES[outcome] : undefined
 
@@ -69,10 +60,10 @@ export function ShareButton({
           setOutcome(null)
           setOutcome(await shareLink(navigator, { title, url }))
         }}
-        className={className}
+        className={ACTION_CARD.compact}
       >
-        <Share2 aria-hidden="true" size={22} className="shrink-0" />
-        Udostępnij
+        <Share2 aria-hidden="true" className={ACTION_CARD_ICON_COMPACT} />
+        Udostępnij przepis
       </button>
       <span
         role="status"

@@ -117,6 +117,17 @@ body {
   hyphens: auto;
 }
 
+/*
+ * Pulls an absolutely positioned box out to the left browser edge from inside the wide
+ * PageContainer (max-w-6xl, lg:px-8): its left gutter is max(px-8, half the space beside
+ * max-w-6xl + px-8). Read from the same theme tokens, so it follows the container; change
+ * both together. 100vw counts the scrollbar, which only pushes the box a few px past the
+ * left edge (left overflow never scrolls). The recipe cover uses it from lg.
+ */
+@utility bleed-left-page {
+  left: calc(-1 * max(--spacing(8), (100vw - --theme(--container-6xl)) / 2 + --spacing(8)));
+}
+
 /* A fieldset's default min-width is min-content and a legend shrink-wraps its text,
    so a long word would widen either past a 320 px screen (WCAG 1.4.10). */
 fieldset {

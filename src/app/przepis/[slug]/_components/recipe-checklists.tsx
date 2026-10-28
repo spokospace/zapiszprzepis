@@ -240,35 +240,49 @@ export function RecipeChecklists({
           {steps.length === 0 ? (
             <p className="text-[19px] text-ink-soft">Brak kroków przygotowania.</p>
           ) : (
-            <ol className="space-y-5">
+            // From lg (design 2026-10-28) each step gets a numbered orange disc beside it and
+            // a hairline between steps. The disc is decorative — „Krok N” and the <ol> already
+            // say the position — and both drop on paper, where the plain list prints.
+            <ol className="space-y-5 lg:space-y-6">
               {steps.map((step, i) => (
-                <li key={i} className="text-[19px]">
-                  <p className="mb-1.5 text-[17px] font-bold text-action-text">
-                    Krok {i + 1}
-                  </p>
-                  <p className="text-scalable leading-[1.6] text-ink">{step}</p>
-                  {/* Source photo under the step text, same <li>; 4:3, no layout jump (ZMIANY §2).
-                      A tap opens the full-screen viewer, like a gallery photo. */}
-                  {visibleStepImages[i] && (
-                    <figure className="mt-1.5 max-w-full md:max-w-[520px] print:hidden">
-                      <button
-                        type="button"
-                        onClick={() => setPhotoIndex(stepPhotos.findIndex((p) => p.step === i))}
-                        aria-label={`Powiększ zdjęcie do kroku ${i + 1}`}
-                        className="relative block aspect-[4/3] w-full overflow-hidden rounded-tile bg-surface-3"
-                      >
-                        <Image
-                          src={visibleStepImages[i]}
-                          alt={`Zdjęcie do kroku ${i + 1}`}
-                          fill
-                          sizes="(min-width: 768px) 520px, 100vw"
-                          loading="lazy"
-                          className="object-cover transition-transform hover:scale-105"
-                          unoptimized={!isArchivedImageUrl(visibleStepImages[i])}
-                        />
-                      </button>
-                    </figure>
-                  )}
+                <li
+                  key={i}
+                  className="text-[19px] lg:grid lg:grid-cols-[2.5rem_1fr] lg:gap-x-4 lg:border-t lg:border-border-card lg:pt-6 lg:first:border-t-0 lg:first:pt-0 print:block print:border-0 print:pt-0"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="hidden h-10 w-10 items-center justify-center rounded-pill bg-action text-[18px] font-bold text-white lg:flex print:hidden"
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="mb-1.5 text-[17px] font-bold text-action-text">
+                      Krok {i + 1}
+                    </p>
+                    <p className="text-scalable leading-[1.6] text-ink">{step}</p>
+                    {/* Source photo under the step text, same <li>; 4:3, no layout jump (ZMIANY §2).
+                        A tap opens the full-screen viewer, like a gallery photo. */}
+                    {visibleStepImages[i] && (
+                      <figure className="mt-1.5 max-w-full md:max-w-[520px] print:hidden">
+                        <button
+                          type="button"
+                          onClick={() => setPhotoIndex(stepPhotos.findIndex((p) => p.step === i))}
+                          aria-label={`Powiększ zdjęcie do kroku ${i + 1}`}
+                          className="relative block aspect-[4/3] w-full overflow-hidden rounded-tile bg-surface-3"
+                        >
+                          <Image
+                            src={visibleStepImages[i]}
+                            alt={`Zdjęcie do kroku ${i + 1}`}
+                            fill
+                            sizes="(min-width: 768px) 520px, 100vw"
+                            loading="lazy"
+                            className="object-cover transition-transform hover:scale-105"
+                            unoptimized={!isArchivedImageUrl(visibleStepImages[i])}
+                          />
+                        </button>
+                      </figure>
+                    )}
+                  </div>
                 </li>
               ))}
             </ol>

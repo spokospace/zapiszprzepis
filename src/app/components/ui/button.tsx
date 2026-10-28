@@ -10,7 +10,7 @@ const SIZES: Record<ButtonSize, string> = {
   xl: 'min-h-[72px] px-6 text-[20px]',
 }
 
-const VARIANTS: Record<ButtonVariant, string> = {
+export const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   // #c2410c + white text clears 4.5:1; never use #ea580c/#f97316 with white.
   primary: 'bg-action text-white hover:bg-action-hover',
   // #111827 with white text (17:1): secondary actions on light surfaces (A5 gallery lock, cooking mode).
@@ -26,13 +26,15 @@ const VARIANTS: Record<ButtonVariant, string> = {
 // scrolling the page sideways at 320 px (WCAG 1.4.10). no-underline!: a <Link>
 // styled as a button is recognisable by its shape, so it drops the global link
 // underline (the `!` beats the unlayered `a` rule in globals.css).
-const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-pill font-bold no-underline! ' +
+// No radius and no gap here: the action cards (action-card.tsx) build on the same core.
+export const BUTTON_CORE =
+  'inline-flex items-center justify-center font-bold no-underline! ' +
   'leading-tight wrap-anywhere transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+const BASE = `${BUTTON_CORE} gap-2 rounded-pill`
 
 /** Shared class string so <Link> and <button> render identically. */
 export function buttonClasses(variant: ButtonVariant = 'primary', size: ButtonSize = 'lg'): string {
-  return `${BASE} ${SIZES[size]} ${VARIANTS[variant]}`
+  return `${BASE} ${SIZES[size]} ${BUTTON_VARIANTS[variant]}`
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
