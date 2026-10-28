@@ -115,7 +115,30 @@ Probed directly against each model:
   foreign path's `gpt-4.1-mini` rejects `reasoning_effort`, so it cannot be added
   unconditionally.)
 
-## Foreign source (recommendation only — out of scope to change here)
+## Foreign source — switched to `gpt-5.4-mini` (2026-10-28 follow-up)
+
+The dedicated eval recommended below was run on 2026-10-28, after #557: 19
+English recipes (recipetineats, bbcgoodfood, four Blogspot blogs, budgetbytes,
+simplyrecipes, allrecipes), both models, 3 runs each, the production prompt
+with a `"dishKind"` field written ahead of `"title"`. Two sites refused Jina (451)
+and one page was a 404 (both models answered "no recipe", which the output
+gate rejects), leaving 45 outputs for `gpt-4.1-mini` and 48 for `gpt-5.4-mini`.
+
+- **Title** (a `gpt-4.1` judge: natural Polish naming the same dish): 36/45
+  vs 40/48 — a tie. Both miss the same two pages (*Monster Cookies*, *scones*);
+  `gpt-4.1-mini` also drops "hazelnut" from a cake title in all 3 runs.
+- **US units left in steps**: 0/45 vs 4/48 outputs (5 hits: „7 uncjami”,
+  °F). All of them are rewritten by `metricUnits` (`src/lib/us-units.ts`),
+  which now runs on every step (a Polish blog can write "350°F" too), so the
+  model's habit no longer reaches the saved recipe.
+- **Steps**: `gpt-5.4-mini` keeps the author's paragraphs (mean 7.3 steps vs
+  9.2); content was complete in both.
+
+Decision: `FOREIGN_EXTRACTION_MODEL = EXTRACTION_MODEL`. One model for the
+whole app, the unit conversion the prompt could not enforce moved into code,
+and the `dishKind` field as the cheap stand-in for reasoning at effort `none`.
+
+### Earlier note (2026-10-25, before the eval)
 
 On the one foreign recipe (howsweeteats pizza), `gpt-5.4-mini` translated cleanly,
 kept the infinitive step form, had 1/17 raw `alt` violations and no English

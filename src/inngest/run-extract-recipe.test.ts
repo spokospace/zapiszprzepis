@@ -393,6 +393,37 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(system).toContain('never turn a weight into szklanki')
   })
 
+  it('writes US units left in a step metric, whatever the source language', async () => {
+    const answer = JSON.stringify({
+      ...JSON.parse(VALID_RECIPE_JSON),
+      steps: [{ text: 'Wymieszać serek z około 7 uncjami sera i piec w 400°F.', image: null }],
+    })
+    const english = 'Turkey burgers with guacamole. 1 pound ground turkey and 1 shallot, finely grated. Mix with the spices until combined. '.repeat(5)
+    const polish = 'Składniki: 200 g mąki, 2 jajka, mleko. Sposób przygotowania: wymieszać i smażyć na patelni. '.repeat(5)
+
+    for (const markdown of [english, polish]) {
+      const mock = makeSupabaseMock()
+      mock.queue('recipes', { data: { id: 7 }, error: null })
+      const fetch = makeFetchMock({ openaiContent: answer, firecrawlMarkdown: markdown, firecrawlHtml: `<p>${markdown}</p>` })
+
+      await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+      expect(mock.insertArgs('recipes')?.steps).toEqual(['Wymieszać serek z około 200 g sera i piec w 200°C.'])
+    }
+  })
+
+  it('asks for the kind of dish ahead of the title', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const system = JSON.parse(String(openaiCalls(fetch)[0][1].body)).messages[0].content as string
+    expect(system.indexOf('"dishKind"')).toBeGreaterThan(-1)
+    expect(system.indexOf('"dishKind"')).toBeLessThan(system.indexOf('"title"'))
+  })
+
   it('asks for steps as impersonal infinitive instructions, not the author narration', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 7 }, error: null })

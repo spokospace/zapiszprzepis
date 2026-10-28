@@ -17,9 +17,10 @@ export type SourceLanguage = 'pl' | 'foreign'
 // unchanged; the gpt-5 *mini/nano* tiers reject `temperature` and would need a
 // request change (see context/foundation/extraction-model-eval-2026-10.md).
 export const EXTRACTION_MODEL = 'gpt-5.4-mini'
-/** The model for a foreign source. Not LABEL_MODEL, so the labelling call is
- *  still told apart by its model. */
-export const FOREIGN_EXTRACTION_MODEL = 'gpt-4.1-mini'
+/** The model for a foreign source: the same one since the foreign eval (see
+ *  extraction-model-eval-2026-10.md). Its own constant so the paths can be
+ *  split again; must differ from LABEL_MODEL. */
+export const FOREIGN_EXTRACTION_MODEL = EXTRACTION_MODEL
 
 // Polish text runs ~6–8% diacritic letters; an English page with a Polish word or
 // two stays far below this.
