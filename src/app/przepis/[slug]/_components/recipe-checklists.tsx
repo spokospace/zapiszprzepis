@@ -152,21 +152,6 @@ export function RecipeChecklists({
 
   return (
     <div className={`recipe-print-grid ${RECIPE_SPLIT}`}>
-      {/* With „Wielkość tekstu" moved to /wyswietlanie (FR #485), this row holds only
-          the optional „Wyczyść zaznaczenia" reset, right-aligned; it is dropped entirely
-          when nothing is ticked so it leaves no empty gap above „Tryb gotowania". */}
-      {state.ingredients.length > 0 && (
-        <div className="mb-6 flex justify-end lg:col-span-2 print:hidden">
-          <button
-            type="button"
-            onClick={() => setRaw(null)}
-            className="min-h-[48px] px-1 text-[17px] font-bold text-action-text underline hover:text-action-hover"
-          >
-            Wyczyść zaznaczenia
-          </button>
-        </div>
-      )}
-
       <section
         aria-labelledby="ingredients-heading"
         className="mb-10 lg:rounded-tile lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"
@@ -179,6 +164,18 @@ export function RecipeChecklists({
             Składniki
           </h2>
           {servings != null && <p className="min-w-0 text-[16px] text-ink-soft">{servingsLabel(servings)}</p>}
+          {/* Always mounted, so ticking an ingredient moves nothing on the page. `invisible`
+              keeps the space and takes the reset out of the tab order and the accessibility
+              tree while nothing is ticked. */}
+          <button
+            type="button"
+            onClick={() => setRaw(null)}
+            className={`min-h-[48px] px-1 text-[17px] font-bold text-action-text underline hover:text-action-hover print:hidden${
+              state.ingredients.length === 0 ? ' invisible' : ''
+            }`}
+          >
+            Wyczyść zaznaczenia
+          </button>
         </div>
         {ingredientGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-5' : ''}>

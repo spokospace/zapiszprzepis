@@ -18,12 +18,22 @@ function render(servings: number | null, stepImages?: string[]) {
 describe('RecipeChecklists headings (C3)', () => {
   it('puts "na N porcji" on the "Składniki" row, 16 px secondary', () => {
     expect(render(4)).toMatch(
-      /<div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3"><h2 id="ingredients-heading" class="min-w-0 text-\[24px\] font-bold text-ink">Składniki<\/h2><p class="min-w-0 text-\[16px\] text-ink-soft">na 4 porcje<\/p><\/div>/,
+      /<div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-3"><h2 id="ingredients-heading" class="min-w-0 text-\[24px\] font-bold text-ink">Składniki<\/h2><p class="min-w-0 text-\[16px\] text-ink-soft">na 4 porcje<\/p><button type="button" class="min-h-\[48px\] px-1 text-\[17px\] font-bold text-action-text underline hover:text-action-hover print:hidden invisible">Wyczyść zaznaczenia<\/button><\/div>/,
     )
   })
 
   it('leaves the row to the heading when the servings are unknown', () => {
-    expect(render(null)).toContain('<h2 id="ingredients-heading" class="min-w-0 text-[24px] font-bold text-ink">Składniki</h2></div>')
+    expect(render(null)).toContain('<h2 id="ingredients-heading" class="min-w-0 text-[24px] font-bold text-ink">Składniki</h2><button type="button"')
+  })
+
+  // Regression (#578): the reset control used to mount only once an ingredient was ticked,
+  // which pushed both columns down. It now sits in the Składniki card from the first render.
+  it('keeps the reset control inside the Składniki section with nothing ticked', () => {
+    const html = render(null)
+    const section = html.match(/<section aria-labelledby="ingredients-heading"[\s\S]*?<\/section>/)?.[0] ?? ''
+    expect(section).toContain('Wyczyść zaznaczenia')
+    expect(section).toContain(' invisible')
+    expect(html.match(/Wyczyść zaznaczenia/g)).toHaveLength(1)
   })
 
   it('sets the section headings at 24 px (README: H2 22–24 px)', () => {
