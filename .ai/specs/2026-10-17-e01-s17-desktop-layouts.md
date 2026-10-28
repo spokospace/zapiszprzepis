@@ -62,8 +62,8 @@ flowchart LR
   H[AppHeader] --> N[HeaderNav - new, lg only]
   H --> S[HeaderSearch - new, lg only]
   H --> B[Bell / Dodaj / MENU - existing]
-  P[przepis page] --> RH[RecipeHeader: photo | text]
-  P --> RC[RecipeChecklists: panel | steps + children]
+  P[przepis page] --> RH["RecipeHeader: photo | text"]
+  P --> RC["RecipeChecklists: panel | steps + children"]
   RC --> G[Video / Gallery / LockedGallery as children]
 ```
 
