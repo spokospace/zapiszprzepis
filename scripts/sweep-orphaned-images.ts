@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { orphanedImagePaths, removeImages } from '../src/lib/recipe-image-archive'
+import { extractStoragePath, orphanedImagePaths, removeImages } from '../src/lib/recipe-image-archive'
 
 /**
  * Removes recipe-images objects whose recipe no longer exists (#132). Until the
@@ -33,17 +33,26 @@ async function listAll(supabase: SupabaseClient, prefix = '', keys: string[] = [
   }
 }
 
-async function liveRecipeIds(supabase: SupabaseClient): Promise<Set<number>> {
+/** Ids of every recipe, and every Storage key one of them points at. */
+async function liveRecipes(supabase: SupabaseClient): Promise<{ ids: Set<number>; referenced: Set<string> }> {
   const ids = new Set<number>()
+  const referenced = new Set<string>()
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
       .from('recipes')
-      .select('id')
+      .select('id, image_url, image_urls, step_images')
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1)
     if (error) throw new Error(`recipes query failed: ${error.message}`)
-    for (const r of data ?? []) ids.add(r.id as number)
-    if ((data?.length ?? 0) < PAGE) return ids
+    for (const r of data ?? []) {
+      ids.add(r.id as number)
+      const urls: (string | null)[] = [r.image_url, ...(r.image_urls ?? []), ...(r.step_images ?? [])]
+      for (const url of urls) {
+        const key = url ? extractStoragePath(url) : null
+        if (key) referenced.add(key)
+      }
+    }
+    if ((data?.length ?? 0) < PAGE) return { ids, referenced }
   }
 }
 
@@ -63,7 +72,8 @@ async function main(): Promise<void> {
   // Storage first, recipes second: a recipe created in between then counts as
   // live, so its freshly archived photos are never mistaken for orphans.
   const keys = await listAll(supabase)
-  const orphans = orphanedImagePaths(keys, await liveRecipeIds(supabase))
+  const { ids, referenced } = await liveRecipes(supabase)
+  const orphans = orphanedImagePaths(keys, ids, referenced)
 
   if (orphans.length === 0) {
     console.log(`✓ Nothing to sweep — all ${keys.length} object(s) belong to an existing recipe.`)

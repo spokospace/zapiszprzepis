@@ -845,13 +845,19 @@ export function recipeIdOfImage(path: string): number | null {
  * Keys whose recipe no longer exists: images left behind by deletes that ran
  * before the bucket had an owner delete policy (#132). Recipe ids are global,
  * so the owner folder is not compared; a recipe that changed owner keeps its
- * files. Keys that do not name a recipe are never returned.
+ * files. A key a live recipe still references (`referenced`, from its
+ * image_url, image_urls and step_images) is kept whatever id it carries, and
+ * keys that do not name a recipe are never returned.
  */
-export function orphanedImagePaths(paths: Iterable<string>, liveRecipeIds: ReadonlySet<number>): string[] {
+export function orphanedImagePaths(
+  paths: Iterable<string>,
+  liveRecipeIds: ReadonlySet<number>,
+  referenced: ReadonlySet<string> = new Set(),
+): string[] {
   const orphans: string[] = []
   for (const path of paths) {
     const id = recipeIdOfImage(path)
-    if (id != null && !liveRecipeIds.has(id)) orphans.push(path)
+    if (id != null && !liveRecipeIds.has(id) && !referenced.has(path)) orphans.push(path)
   }
   return orphans
 }

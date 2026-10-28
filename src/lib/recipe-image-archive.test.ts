@@ -943,6 +943,10 @@ describe('orphanedImagePaths — the #132 sweep', () => {
     expect(orphanedImagePaths(paths, new Set([1, 3]))).toEqual(['u/2.jpg', 'u/2/0.jpg', 'u/2/step-0.jpg'])
   })
 
+  it('keeps a file a live recipe still points at, whatever id its key carries', () => {
+    expect(orphanedImagePaths(['u/9.jpg', 'u/9/0.jpg'], new Set([1]), new Set(['u/9.jpg']))).toEqual(['u/9/0.jpg'])
+  })
+
   it("keeps a live recipe's files under another owner's folder", () => {
     expect(orphanedImagePaths(['previous-owner/5.jpg'], new Set([5]))).toEqual([])
   })
