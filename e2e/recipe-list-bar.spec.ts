@@ -24,6 +24,16 @@ async function firstRecipePath(page: Page): Promise<string> {
   return new URL(href!, 'http://x').pathname
 }
 
+/** Pixels from the top of <main> to the first element matching `selector`, or null. */
+function offsetFromMain(page: Page, selector: string): Promise<number | null> {
+  return page.evaluate((sel) => {
+    const main = document.querySelector('main')
+    const el = main?.querySelector(sel)
+    if (!main || !el) return null
+    return Math.round(el.getBoundingClientRect().top - main.getBoundingClientRect().top)
+  }, selector)
+}
+
 /** Opens the first live recipe and waits for the page to settle. */
 async function openFirstRecipe(page: Page) {
   const path = await firstRecipePath(page)
@@ -71,6 +81,14 @@ test.describe('desktop (lg)', () => {
     expect(crumbsAboveTitle, 'the breadcrumbs should sit above the title').toBe(true)
     expect(crumbsInHeaderColumn, 'the breadcrumbs should sit inside the header column').toBe(true)
   })
+
+  test('the photo sits flush with the top of <main>', async ({ page }) => {
+    await openFirstRecipe(page)
+
+    const photoOffset = await offsetFromMain(page, 'header img')
+    expect(photoOffset, 'recipe photo (main > header img) not found').not.toBeNull()
+    expect(photoOffset, `the photo starts ${photoOffset} px below <main>; it should sit at the top`).toBeLessThanOrEqual(1)
+  })
 })
 
 test.describe('phone (390 px)', () => {
@@ -85,12 +103,7 @@ test.describe('phone (390 px)', () => {
       'the list bar should stay hidden below lg',
     ).toBeHidden()
 
-    const offset = await page.evaluate(() => {
-      const main = document.querySelector('main')
-      const header = main?.querySelector('header')
-      if (!main || !header) return null
-      return Math.round(header.getBoundingClientRect().top - main.getBoundingClientRect().top)
-    })
+    const offset = await offsetFromMain(page, 'header')
     expect(offset, 'recipe header (main > header) not found').not.toBeNull()
     expect(offset, `the header starts ${offset} px below <main> on a phone (need ≤ ${MAX_HEADER_OFFSET})`).toBeLessThanOrEqual(MAX_HEADER_OFFSET)
   })

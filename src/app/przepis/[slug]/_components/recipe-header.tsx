@@ -119,7 +119,7 @@ export function RecipeHeader({ recipe, versionsBar, actions, listBar }: RecipeHe
         // 1fr | 1.6fr split and gap as RecipeChecklists), so its right edge lines up with
         // „Składniki”, and `bleed-left-page` widens it to the left browser edge. It stays
         // 4:3 at every width, so the height follows the widened photo.
-        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] sm:-mx-6 sm:-mt-8 lg:mt-0 lg:mr-0 lg:mb-0 lg:bleed-left-page xl:row-span-2">
+        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] sm:-mx-6 sm:-mt-8 lg:mr-0 lg:mb-0 lg:bleed-left-page xl:row-span-2">
           <div className="absolute inset-0 overflow-hidden bg-surface-3 lg:rounded-r-tile">
             <Image
               // The LCP image, served from Supabase Storage through next/image.
