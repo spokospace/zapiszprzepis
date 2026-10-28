@@ -61,7 +61,7 @@ function IngredientRow({
   const text = checked ? 'text-ink-muted line-through' : 'text-ink'
   const altText = checked ? text : 'text-ink-soft'
   return (
-    <label className="flex min-h-[56px] cursor-pointer items-center gap-3.5 border-b-[1.5px] border-border-card px-1 py-1.5">
+    <label className="flex min-h-[56px] cursor-pointer flex-wrap items-center gap-3.5 border-b-[1.5px] border-border-card px-1 py-1.5 max-[359px]:gap-y-1">
       <span className="relative flex h-8 w-8 shrink-0">
         <input
           type="checkbox"
@@ -85,7 +85,7 @@ function IngredientRow({
           sits on top and the household measure below it, lighter and 16 px — the
           owner's "second line" treatment (#505). */}
       {alt ? (
-        <span className="flex max-w-[45%] flex-col items-end text-right">
+        <span className="flex max-w-[45%] flex-col items-end text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:items-start max-[359px]:pl-[46px] max-[359px]:text-left">
           {amount && <b className={`text-scalable ${text}`}>{amount}</b>}{' '}
           {/* 16 px base so .text-scalable (which scales the parent em) grows from 16, not 19. */}
           <span className="text-[16px]">
@@ -93,7 +93,11 @@ function IngredientRow({
           </span>
         </span>
       ) : (
-        amount && <b className={`text-scalable max-w-[45%] text-right ${text}`}>{amount}</b>
+        amount && (
+          <b className={`text-scalable max-w-[45%] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:pl-[46px] max-[359px]:text-left ${text}`}>
+            {amount}
+          </b>
+        )
       )}
     </label>
   )
@@ -152,33 +156,34 @@ export function RecipeChecklists({
 
   return (
     <div className={`recipe-print-grid ${RECIPE_SPLIT}`}>
-      {/* With „Wielkość tekstu" moved to /wyswietlanie (FR #485), this row holds only
-          the optional „Wyczyść zaznaczenia" reset, right-aligned; it is dropped entirely
-          when nothing is ticked so it leaves no empty gap above „Tryb gotowania". */}
-      {state.ingredients.length > 0 && (
-        <div className="mb-6 flex justify-end lg:col-span-2 print:hidden">
-          <button
-            type="button"
-            onClick={() => setRaw(null)}
-            className="min-h-[48px] px-1 text-[17px] font-bold text-action-text underline hover:text-action-hover"
-          >
-            Wyczyść zaznaczenia
-          </button>
-        </div>
-      )}
-
       <section
         aria-labelledby="ingredients-heading"
         className="mb-10 lg:rounded-tile lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"
       >
         {/* C3, item 8: "Składniki" with "na 4 porcje" on the same baseline, only when
             the source states the servings. */}
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3">
-          {/* min-w-0: a flex item never shrinks below its longest word otherwise (WCAG 1.4.10). */}
-          <h2 id="ingredients-heading" className="min-w-0 text-[24px] font-bold text-ink">
-            Składniki
-          </h2>
-          {servings != null && <p className="min-w-0 text-[16px] text-ink-soft">{servingsLabel(servings)}</p>}
+        <div className="mb-3 flex items-baseline justify-between gap-x-3">
+          {/* The reset stays on the heading's line: the heading never shrinks, so it cannot
+              break mid-word (WCAG 1.4.10), and the reset gives up width and wraps its own
+              text instead. The servings label wraps under the heading. */}
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+            <h2 id="ingredients-heading" className="shrink-0 text-[24px] font-bold text-ink">
+              Składniki
+            </h2>
+            {servings != null && <p className="min-w-0 text-[16px] text-ink-soft">{servingsLabel(servings)}</p>}
+          </div>
+          {/* Always mounted, so ticking an ingredient moves nothing on the page. `invisible`
+              keeps the space and takes the reset out of the tab order and the accessibility
+              tree while nothing is ticked. */}
+          <button
+            type="button"
+            onClick={() => setRaw(null)}
+            className={`min-h-[48px] min-w-0 px-1 text-right text-[17px] font-bold text-action-text underline hover:text-action-hover print:hidden${
+              state.ingredients.length === 0 ? ' invisible' : ''
+            }`}
+          >
+            Wyczyść zaznaczenia
+          </button>
         </div>
         {ingredientGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
