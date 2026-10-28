@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { metricUnits } from '@/lib/us-units'
+import { metricIngredient, metricUnits } from '@/lib/us-units'
 
 describe('metricUnits', () => {
   it('converts ounces left in a Polish step, in any case form', () => {
@@ -36,5 +36,33 @@ describe('metricUnits', () => {
   it('leaves metric text, times and plain numbers alone', () => {
     const step = 'Piec 25–30 minut w 200°C, dodać 2 łyżki oliwy i 450 g mięsa. Podzielić na 4 części.'
     expect(metricUnits(step)).toBe(step)
+  })
+})
+
+describe('metricIngredient', () => {
+  const ing = (amount: string, unit: string, name = 'serek kremowy') => ({ name, amount, unit, alt: '', section: '' })
+
+  it('writes a US unit in the unit field metric', () => {
+    expect(metricIngredient(ing('18', 'uncji'))).toMatchObject({ amount: '510', unit: 'g' })
+    expect(metricIngredient(ing('1/2', 'funta', 'makaron'))).toMatchObject({ amount: '230', unit: 'g' })
+    expect(metricIngredient(ing('1', 'pint', 'pomidorki'))).toMatchObject({ amount: '475', unit: 'ml' })
+    expect(metricIngredient(ing('1', 'quart', 'bulion'))).toMatchObject({ amount: '945', unit: 'ml' })
+    expect(metricIngredient(ing('8', 'fl oz', 'mleko'))).toMatchObject({ amount: '235', unit: 'ml' })
+    expect(metricIngredient(ing('2-3', 'uncje', 'ser'))).toMatchObject({ amount: '60–90', unit: 'g' })
+  })
+
+  it('converts pints and quarts in a step too', () => {
+    expect(metricUnits('Wlać 1 pint bulionu i 2 quarts wody')).toBe('Wlać 475 ml bulionu i 1895 ml wody')
+  })
+
+  it('converts a US unit left inside the name', () => {
+    expect(metricIngredient(ing('1', 'opakowanie', 'serek kremowy (8 oz)')).name).toBe('serek kremowy (230 g)')
+  })
+
+  it('leaves metric and Polish household units alone, and an amount it cannot read', () => {
+    const metric = ing('200', 'g')
+    expect(metricIngredient(metric)).toBe(metric)
+    expect(metricIngredient(ing('2', 'szklanki', 'rukola'))).toMatchObject({ amount: '2', unit: 'szklanki' })
+    expect(metricIngredient(ing('kilka', 'uncji'))).toMatchObject({ amount: 'kilka', unit: 'uncji' })
   })
 })

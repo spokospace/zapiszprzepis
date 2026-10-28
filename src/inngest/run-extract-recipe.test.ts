@@ -437,6 +437,20 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     }
   })
 
+  it('writes a US unit in an ingredient field metric', async () => {
+    const answer = JSON.stringify({
+      ...JSON.parse(VALID_RECIPE_JSON),
+      ingredients: [{ name: 'serek kremowy, zmiękczony', amount: '18', unit: 'uncji', alt: '', section: '' }],
+    })
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: answer })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes')?.ingredients[0]).toMatchObject({ amount: '510', unit: 'g' })
+  })
+
   it('asks for the kind of dish ahead of the title', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 7 }, error: null })

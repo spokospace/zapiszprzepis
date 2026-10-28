@@ -3,6 +3,8 @@
 // (`ingredientNames` trims `name`), and a time like "15-20" or 37.5 fails the
 // int insert. Both used to throw the whole, already paid, extraction away.
 
+import { metricIngredient } from './us-units'
+
 export interface ExtractedIngredient {
   name: string
   amount: string
@@ -69,10 +71,11 @@ export function toIngredients(value: unknown): ExtractedIngredient[] {
     if (typeof item !== 'object' || item === null || Array.isArray(item)) continue
     const raw = item as Record<string, unknown>
     if (typeof raw.name !== 'string' || raw.name.trim().length === 0) continue
-    const amount = toText(raw.amount)
-    const unit = toText(raw.unit)
-    const { name, alt } = settleAlt(raw.name, amount, unit, toText(raw.alt))
-    ingredients.push({ name, amount, unit, alt, section: toText(raw.section) })
+    // A US unit the model copied into the fields ("18" + "uncji") is written
+    // metric first, so settleAlt compares `alt` with the measure as saved.
+    const metric = metricIngredient({ name: raw.name, amount: toText(raw.amount), unit: toText(raw.unit) })
+    const { name, alt } = settleAlt(metric.name, metric.amount, metric.unit, toText(raw.alt))
+    ingredients.push({ name, amount: metric.amount, unit: metric.unit, alt, section: toText(raw.section) })
   }
   return ingredients
 }
