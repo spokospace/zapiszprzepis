@@ -59,10 +59,10 @@ export function ShareButton({ title, url }: { title: string; url: string }) {
           setOutcome(null)
           setOutcome(await shareLink(navigator, { title, url }))
         }}
-        className="inline-flex min-h-[48px] items-center gap-2 rounded-tile px-3 text-[17px] font-bold text-action-text underline hover:bg-surface-3 hover:text-action-hover"
+        className="inline-flex min-h-[48px] items-center gap-2 rounded-pill px-3 text-[17px] font-bold text-ink hover:bg-surface-3"
       >
         <Share2 aria-hidden="true" className="h-5 w-5 shrink-0" />
-        Udostępnij przepis
+        Udostępnij
       </button>
       <span
         role="status"

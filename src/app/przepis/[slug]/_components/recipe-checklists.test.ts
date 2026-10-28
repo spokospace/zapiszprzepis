@@ -176,7 +176,7 @@ describe('RecipeChecklists steps', () => {
 
   it('shows the progress count and no "Teraz" or done message when nothing is ticked', () => {
     const html = render(null)
-    expect(html).toContain('0 z 2 kroków zrobione')
+    expect(html).toContain('2 kroki · kliknij numer, gdy skończysz krok')
     expect(html).not.toContain('Teraz')
     expect(html).not.toContain('Gotowe! Smacznego.')
   })

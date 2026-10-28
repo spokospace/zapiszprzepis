@@ -4,13 +4,13 @@ import { Clock, Flame, Timer, Utensils, type LucideIcon } from 'lucide-react'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
 import { recipeTimeStats } from '@/lib/recipe-meta'
+import { tagLabel } from '@/lib/recipe-tags'
 import { servingsCount } from '@/lib/servings'
 import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
 import { SourceBadge } from '@/app/components/source-badge'
 import { NoPhoto } from '@/app/components/no-photo'
-import { RECIPE_SPLIT } from './recipe-split'
 import { RecipePhotos } from './recipe-photos'
 
 export interface RecipeHeaderData {
@@ -19,6 +19,8 @@ export interface RecipeHeaderData {
   meta_description: string | null
   image_url: string | null
   category: string
+  /** The recipe's tags (closed list); the first ones join the category over the title. */
+  tags?: string[] | null
   prep_time_minutes: number | null
   cook_time_minutes: number | null
   total_time_minutes: number | null
@@ -41,19 +43,10 @@ interface RecipeHeaderProps {
    * (handoff 2026-10-28). Empty for a guest, who gets the cover only.
    */
   galleryImages?: string[]
-  /** E01-S21: the "Inne przepisy na {danie} (N)" link, under the author line. */
+  /** E01-S21: the "N innych wersji tego dania" box, last in the text column. */
   versionsBar?: ReactNode
-  /**
-   * The action cards (RecipeActions): a full-width row under the photo and text between
-   * lg and xl, under the description in the text column from xl.
-   */
+  /** The action buttons (RecipeActions), under the time strip in the text column. */
   actions?: ReactNode
-  /**
-   * The list position link and the breadcrumbs (A9): from lg, the first item of the
-   * text column, above the title. Hidden below lg, where the header carries the back
-   * link and the category line instead.
-   */
-  listBar?: ReactNode
 }
 
 export interface TimeStripItem {
@@ -85,11 +78,25 @@ export function timeStripItems(r: RecipeHeaderData): TimeStripItem[] {
 }
 
 /**
- * "Przepisy › {Kategoria}" (A4/A9): in the header column below lg, and from lg on
- * the right of the list bar's row (the page renders that copy). "Przepisy" goes
- * where the desktop header's "Przepisy" goes (E01-S17).
+ * The label over the title (handoff 2026-10-28): the category, then up to two tags,
+ * "Pieczywo · Drożdżowe". A tag that only repeats the category is left out.
  */
-export function RecipeBreadcrumbs({ category, className = '' }: { category: string; className?: string }) {
+export function eyebrowParts(category: string, tags: string[] | null | undefined): string[] {
+  const first = categoryLabel(category)
+  const rest = (tags ?? []).map(tagLabel).filter((label) => label.toLowerCase() !== first.toLowerCase())
+  return [first, ...rest.slice(0, 2)]
+}
+
+/** The author's initial for the avatar circle; "?" never shows, a missing name renders no line. */
+export function authorInitial(name: string): string {
+  return name.trim().charAt(0).toLocaleUpperCase('pl-PL')
+}
+
+/**
+ * "Przepisy › {Kategoria} › {Przepis}" (A4/A9; handoff 2026-10-28): on the right of the
+ * row above the hero, from lg. The recipe itself is the last crumb, not a link.
+ */
+export function RecipeBreadcrumbs({ category, title, className = '' }: { category: string; title?: string; className?: string }) {
   return (
     <nav aria-label="Okruszki" className={`text-[16px] text-ink-soft ${className}`}>
       <ol className="flex flex-wrap items-center gap-x-2">
@@ -104,6 +111,14 @@ export function RecipeBreadcrumbs({ category, className = '' }: { category: stri
             {categoryLabel(category)}
           </Link>
         </li>
+        {title && (
+          <>
+            <li aria-hidden="true">›</li>
+            <li aria-current="page" className="min-w-0 wrap-anywhere text-ink">
+              {title}
+            </li>
+          </>
+        )}
       </ol>
     </nav>
   )
@@ -121,15 +136,15 @@ function Approx() {
 
 /**
  * The time strip (handoff 2026-10-28): no frame, an icon in a 44 px warm circle beside a
- * label and a 20 px value, in a grid that wraps to fit. At every width — below lg it
- * replaces the time in the "Kategoria · czas" line. Labels are 16 px, not the mock's 14:
- * secondary text is never under 16 px (ZASADY_PROJEKTU). That is also why a column is
- * 165 px, not the mock's 130: "Przygotowanie" at 16 px beside the circle needs it, and
- * narrower it broke mid-word. Three to a row in the desktop column, two at 390, one at 320.
+ * label and a 20 px value, in a grid that wraps to fit, at every width. Labels are 16 px,
+ * not the mock's 14: secondary text is never under 16 px (ZASADY_PROJEKTU). That is also
+ * why a column is 165 px, not the mock's 130: "Przygotowanie" at 16 px beside the circle
+ * needs it, and narrower it broke mid-word. Three to a row in the desktop column, two at
+ * 390, one at 320.
  */
 function TimeStrip({ items }: { items: TimeStripItem[] }) {
   return (
-    <ul aria-label="Czas i porcje" className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(165px,1fr))] gap-x-5 gap-y-4">
+    <ul aria-label="Czas i porcje" className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(165px,1fr))] gap-x-5 gap-y-4">
       {items.map((item) => {
         const Icon = STRIP_ICON[item.key]
         return (
@@ -152,12 +167,13 @@ function TimeStrip({ items }: { items: TimeStripItem[] }) {
 }
 
 /**
- * The recipe page header (E01-S07, S07b): the photos (main + thumbnails), 32 px title,
- * the category (below lg), source, who added it, the time strip, and the actions.
- * No breadcrumbs below lg (C3); from lg they sit above the title, in the list bar slot.
- * The tags render at the bottom of the page, in "Ten przepis jest" (E01-S16).
+ * The recipe page header (E01-S07, S07b; handoff 2026-10-28): two equal columns from lg —
+ * the photos | the label over the title, title, subtitle, who added it and the source,
+ * description, time strip, actions and the versions box. One column below lg, photos
+ * first. The list position and the breadcrumbs sit in a row above it (the page renders
+ * it); the tags render at the bottom of the page, in "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions, listBar }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions }: RecipeHeaderProps) {
   const authorHref = profilePath(recipe.author_username)
   const strip = timeStripItems(recipe)
   const source = formatSource(recipe.source_type, recipe.source_url, recipe.source_author)
@@ -167,19 +183,8 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions,
   const sourceBadge = <SourceBadge kind={source.kind} text={source.text} href={recipe.source_url} variant="recipe" />
 
   return (
-    // Desktop (E01-S17, A9): a 4:3 photo | the text column (1fr 1.6fr). The grid
-    // applies whether or not there is a cover (#495): a cover-less recipe gets a
-    // category-icon placeholder in the photo column so its header keeps the two-column
-    // balance instead of stretching full-width. Top-aligned, so a shorter photo or text
-    // column never floats. The actions are the header's third item: between lg and xl the
-    // text column is too narrow for them beside a 4:3 photo (it would run far past it),
-    // so they take a full-width row below both; from xl the photo spans two rows and they
-    // sit under the description, the `1fr` row soaking up any height the photo adds.
-    <header className={`mb-8 ${RECIPE_SPLIT} xl:grid-rows-[auto_1fr]`}>
+    <header className="mb-10 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-10">
       {cover ? (
-        // The photos (see RecipePhotos): the main photo bleeds like the header photo always
-        // did, and the thumbnails sit under it. From lg the photo sits in the ingredients
-        // column, so its right edge lines up with „Składniki”.
         <RecipePhotos cover={cover} title={recipe.title} images={galleryImages} badge={sourceBadge} />
       ) : (
         // No cover: from lg a category-icon placeholder fills the photo column so the
@@ -187,20 +192,21 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions,
         // decorative placeholder, not a photo, so the source badge stays inline in the
         // text column (E01-S31 §3), not on it. Hidden below lg — there the badge is inline
         // and no photo block shows, exactly as before.
-        <div className="hidden aspect-[4/3] overflow-hidden rounded-tile bg-surface-3 lg:block xl:row-span-2">
+        <div className="hidden aspect-[4/3] overflow-hidden bg-surface-3 lg:block">
           <NoPhoto category={recipe.category} iconClassName="h-16 w-16" />
         </div>
       )}
 
       <div>
-        {listBar && <div className="hidden print:hidden lg:mb-3 lg:block">{listBar}</div>}
-        <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
-        {/* The recipe's own short description sits right under the title, not after the
-            times row (owner request) — a subtitle qualifying the dish ("ze smalcem"). */}
-        {recipe.description && <p className="mb-3 text-scalable-body text-ink-soft">{recipe.description}</p>}
-        {/* Below lg (C3): the category. From lg it is in the breadcrumbs. The time moved
-            out of this line into the time strip, which shows at every width. */}
-        <p className="mb-3 text-[17px] text-ink-soft lg:hidden">{categoryLabel(recipe.category)}</p>
+        <p className="mb-2 text-[16px] font-bold uppercase tracking-[0.06em] text-action-text">
+          {eyebrowParts(recipe.category, recipe.tags).join(' · ')}
+        </p>
+        <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[48px] lg:leading-[1.05] lg:font-extrabold">
+          {recipe.title}
+        </h1>
+        {/* The recipe's own short description sits right under the title — a subtitle
+            qualifying the dish ("ze smalcem"). */}
+        {recipe.description && <p className="mb-3 text-scalable-body text-ink-soft lg:text-[22px]">{recipe.description}</p>}
 
         {/* With no photo there is no corner for the badge, so it sits here instead
             (E01-S31 §3) — at every width, since the lg placeholder carries no badge. */}
@@ -208,27 +214,53 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions,
 
         {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the
             raw gender, which stays owner-only (E01-S12); neutral "Dodane przez" when
-            unknown. A link to /u/{username} when the author has a username. */}
+            unknown. An initial in a warm circle before it, and the source after it
+            (handoff 2026-10-28). */}
         {recipe.author_name && (
-          // C3/A4: a small 16 px line, the name an underlined link in the accent colour.
-          <p className="text-[16px] text-ink-soft print:hidden">
-            {authorLinePrefix(parseGenderForm(recipe.author_gender_form))}{' '}
-            {authorHref ? (
-              <Link href={authorHref} className="text-action-text underline hover:text-action-hover">
-                {recipe.author_name}
-              </Link>
-            ) : (
-              <span className="text-ink">{recipe.author_name}</span>
-            )}
+          <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-ink-soft print:hidden">
+            <span
+              aria-hidden="true"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-pill bg-[#fde7d3] font-bold text-action-text"
+            >
+              {authorInitial(recipe.author_name)}
+            </span>
+            <span>
+              {authorLinePrefix(parseGenderForm(recipe.author_gender_form))}{' '}
+              {authorHref ? (
+                <Link href={authorHref} className="font-bold text-action-text underline hover:text-action-hover">
+                  {recipe.author_name}
+                </Link>
+              ) : (
+                <span className="font-bold text-ink">{recipe.author_name}</span>
+              )}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span className="min-w-0 wrap-anywhere">
+              źródło:{' '}
+              {recipe.source_url ? (
+                <a
+                  href={recipe.source_url}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-action-text underline hover:text-action-hover"
+                >
+                  {source.text}
+                  <span className="sr-only"> (nowa karta)</span>
+                </a>
+              ) : (
+                source.text
+              )}
+            </span>
           </p>
         )}
 
+        {recipe.meta_description && <p className="mt-4 text-scalable-body leading-relaxed text-ink">{recipe.meta_description}</p>}
+
         {strip.length > 0 && <TimeStrip items={strip} />}
 
-        {recipe.meta_description && <p className="mt-4 text-scalable-body leading-relaxed text-ink">{recipe.meta_description}</p>}
+        {actions}
         {versionsBar && <div className="print:hidden">{versionsBar}</div>}
       </div>
-      {actions && <div className="lg:col-span-2 xl:col-span-1 xl:col-start-2">{actions}</div>}
     </header>
   )
 }

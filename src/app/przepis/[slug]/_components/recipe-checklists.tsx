@@ -7,6 +7,7 @@ import { useSessionStorage } from '@/app/components/ui/use-session-storage'
 import { checklistStorageKey, parseChecklist, toggleChecked } from '@/lib/recipe-checklist'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { servingsLabel } from '@/lib/servings'
+import { stepsLabel } from '@/lib/recipe-meta'
 import { ImageLightbox } from '@/app/components/image-lightbox'
 import { householdMeasure, type Ingredient } from '@/lib/ingredients'
 import { useStepPhotos } from './use-step-photos'
@@ -115,9 +116,14 @@ export function stepProgress(total: number, ticked: number[]): { done: number; n
 
 type Checklist = ReturnType<typeof parseChecklist>
 
-/** The progress line over the steps. A one-step recipe gets its own words: "1 z 1 kroków" is not Polish. */
+/**
+ * The progress line over the steps (handoff 2026-10-28): before the first tick it says
+ * how to tick ("9 kroków · kliknij numer, gdy skończysz krok"), then counts. A one-step
+ * recipe gets its own words once ticked: "1 z 1 kroków" is not Polish.
+ */
 export function stepProgressLabel(done: number, total: number): string {
-  if (total === 1) return done === 1 ? 'Krok zrobiony' : 'Jeden krok do zrobienia'
+  if (done === 0) return `${stepsLabel(total)} · kliknij numer, gdy skończysz krok`
+  if (total === 1) return 'Krok zrobiony'
   return `${done} z ${total} kroków zrobione`
 }
 
@@ -188,7 +194,8 @@ export function RecipeChecklists({
   )
 
   return (
-    <div className={`recipe-print-grid ${RECIPE_SPLIT}`}>
+    // A hairline above, 40 px over the two lists (handoff 2026-10-28 §4); not on paper.
+    <div className={`recipe-print-grid border-t border-border-card pt-10 print:border-0 print:pt-0 ${RECIPE_SPLIT}`}>
       <section
         aria-labelledby="ingredients-heading"
         className="mb-10 lg:rounded-tile lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"

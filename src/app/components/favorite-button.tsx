@@ -31,7 +31,7 @@ const PAGE_LABEL = { off: 'Zapisz', on: 'W ulubionych' } as const
 const SIZE = {
   // The recipe page's button beside "Zacznij gotować": 60 px, full width of its cell,
   // as tall as the row so the two match.
-  full: 'flex h-full min-h-[60px] w-full items-center justify-center gap-2.5 rounded-tile border-2 border-action px-4 text-[19px] font-bold',
+  full: 'flex h-full min-h-[60px] w-full items-center justify-center gap-2.5 rounded-pill border-2 border-action px-4 text-[19px] font-bold',
   // No grey ring — a soft shadow sets the white circle off a light photo and the
   // heart itself carries the contrast (ZMIANY_prototyp §6).
   photo:

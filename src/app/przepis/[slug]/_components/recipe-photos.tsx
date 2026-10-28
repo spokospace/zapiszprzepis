@@ -45,12 +45,12 @@ export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps)
   const current = all[selected] ?? cover
 
   return (
-    // The cover bleeds to the screen edges below lg and to the left browser edge from lg,
-    // exactly as the header's cover did; the negative margins mirror PageContainer and
-    // <main>'s padding (see recipe-header.tsx).
-    <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 sm:-mx-6 sm:-mt-8 lg:mr-0 lg:mb-0 lg:bleed-left-page xl:row-span-2">
+    // Below lg the cover bleeds to the screen edges; the negative margins mirror
+    // PageContainer's and <main>'s padding. From lg it sits inside the container, in the
+    // hero's left column, with square corners (handoff 2026-10-28: photos have no radius).
+    <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0">
       <div className="relative aspect-[4/3]">
-        <div className="absolute inset-0 overflow-hidden bg-surface-3 lg:rounded-r-tile">
+        <div className="absolute inset-0 overflow-hidden bg-surface-3">
           <Image
             // The LCP image is the cover; a swapped-in gallery photo is never the LCP.
             src={current}

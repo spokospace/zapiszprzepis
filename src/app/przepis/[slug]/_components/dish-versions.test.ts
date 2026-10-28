@@ -13,7 +13,7 @@ vi.mock('@/app/components/favorite-button', () => ({
     }),
 }))
 
-import { DishVersionsBar } from './dish-versions-bar'
+import { DishVersionsBar, versionsBoxLabel } from './dish-versions-bar'
 import { DishVersions } from './dish-versions'
 import type { DishVersionRow } from '@/lib/dish-versions'
 
@@ -47,20 +47,39 @@ const current = {
   ingredients: [] as unknown,
 }
 
-describe('DishVersionsBar', () => {
+describe('DishVersionsBar (handoff 2026-10-28 §3 item 7)', () => {
+  const THUMB = 'https://x.supabase.co/storage/v1/object/public/recipe-images/1/a.webp'
+
   it('renders nothing when there are no other versions', () => {
-    expect(renderToStaticMarkup(createElement(DishVersionsBar, { count: 0, dishAccusative: 'sernik' }))).toBe('')
+    expect(renderToStaticMarkup(createElement(DishVersionsBar, { count: 0 }))).toBe('')
   })
 
-  it('links to the section with singular wording and the accusative', () => {
-    const html = renderToStaticMarkup(createElement(DishVersionsBar, { count: 1, dishAccusative: 'szarlotkę' }))
-    expect(html).toContain('href="#inne-przepisy"')
-    expect(html).toContain('Inne przepisy na szarlotkę (1)')
+  it('is one framed link to the section, the title underlined', () => {
+    const html = renderToStaticMarkup(createElement(DishVersionsBar, { count: 9 }))
+    expect(html).toMatch(/^<a href="#inne-przepisy" class="[^"]*border border-border-card[^"]*"/)
+    expect(html).toContain('<span class="block text-[17px] font-bold underline wrap-anywhere">9 innych wersji tego dania</span>')
   })
 
-  it('falls back to "na to danie" without an accusative', () => {
-    const html = renderToStaticMarkup(createElement(DishVersionsBar, { count: 3, dishAccusative: null }))
-    expect(html).toContain('Inne przepisy na to danie (3)')
+  it('shows up to the given thumbnails, decorative, overlapping after the first', () => {
+    const html = renderToStaticMarkup(createElement(DishVersionsBar, { count: 3, thumbs: [THUMB, `${THUMB}?2`] }))
+    expect(html.match(/<img/g)).toHaveLength(2)
+    expect(html).toContain('alt=""')
+    expect(html.match(/-ml-3/g)).toHaveLength(1)
+  })
+
+  it('lists example differences, or no line without any', () => {
+    const withNotes = renderToStaticMarkup(createElement(DishVersionsBar, { count: 2, examples: ['bez drożdży', 'z serem'] }))
+    expect(withNotes).toContain('np. bez drożdży, z serem')
+    expect(renderToStaticMarkup(createElement(DishVersionsBar, { count: 2 }))).not.toContain('np.')
+  })
+})
+
+describe('versionsBoxLabel', () => {
+  it('uses the Polish plural', () => {
+    expect(versionsBoxLabel(1)).toBe('1 inna wersja tego dania')
+    expect(versionsBoxLabel(3)).toBe('3 inne wersje tego dania')
+    expect(versionsBoxLabel(9)).toBe('9 innych wersji tego dania')
+    expect(versionsBoxLabel(22)).toBe('22 inne wersje tego dania')
   })
 })
 

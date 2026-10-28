@@ -246,11 +246,7 @@ export function versionBadges(current: BadgeTimes, other: BadgeTimes): { serving
 }
 
 // --- Wording ---------------------------------------------------------------
-
-/** Link: "Inne przepisy na {acc} (N)" (or "… na to danie (N)" without one). */
-export function versionsBarLabel(n: number, dishAccusative: string | null): string {
-  return `Inne przepisy na ${dishAccusative ?? 'to danie'} (${n})`
-}
+// (The shortcut box's wording lives with it, in dish-versions-bar.tsx.)
 
 /**
  * The genitive of common dish names, for "Inne wersje pączków". The data carries only the
