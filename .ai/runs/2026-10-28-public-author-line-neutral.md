@@ -43,18 +43,20 @@ What others see about a user matches the privacy policy ("Nigdy nie pokazujemy i
 
 ## Progress
 
+PR: #601
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Database
 
-- [ ] 1.1 Neutralise author_gender_form and revoke profile_gender_form from guests
+- [x] 1.1 Neutralise author_gender_form and revoke profile_gender_form from guests — ca6d039
 
 ### Phase 2: App
 
-- [ ] 2.1 Neutral author wording on public pages
-- [ ] 2.2 Remove the forced gender detour and zp-gender cookie
+- [x] 2.1 Neutral author wording on public pages — 27eba4c
+- [x] 2.2 Remove the forced gender detour and zp-gender cookie — 53c5728
 
 ### Phase 3: Copy and rules
 
-- [ ] 3.1 Privacy policy, terms and effective date
-- [ ] 3.2 CLAUDE.md rules
+- [x] 3.1 Privacy policy, terms and effective date — 3577db7
+- [x] 3.2 CLAUDE.md rules — 26a2a76
