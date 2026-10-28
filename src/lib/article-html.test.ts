@@ -26,6 +26,27 @@ describe('articleHtml', () => {
     expect(out).toContain('<p>2 cups pasta</p>')
   })
 
+  it('keeps a recipe card inside an <aside>, without its buttons', () => {
+    const html =
+      '<p>Intro</p><aside class="wprm-recipe-container"><h2>Sernik</h2><button>Print</button>' +
+      '<ul class="wprm-recipe-ingredients"><li>1 kg twarogu</li></ul></aside>' +
+      '<aside class="sidebar">Popular posts</aside>'
+    expect(articleHtml(html)).toBe('<p>Intro</p><aside><h2>Sernik</h2><ul><li>1 kg twarogu</li></ul></aside>')
+  })
+
+  it.each([
+    ['schema.org microdata', '<div itemscope itemtype="https://schema.org/Recipe"><p>3 jajka</p></div>'],
+    ['an ingredients list', '<ul class="recipe-ingredients"><li>3 jajka</li></ul>'],
+    ['Tasty Recipes', '<div class="tasty-recipes"><p>3 jajka</p></div>'],
+  ])('keeps a <form> holding %s', (_, card) => {
+    expect(articleHtml(`<form action="/servings">${card}</form>`)).toContain('3 jajka')
+  })
+
+  it('drops a newsletter form', () => {
+    const html = '<p>Body</p><form action="/subscribe"><input name="email"><p>Get new recipes by email</p></form>'
+    expect(articleHtml(html)).toBe('<p>Body</p>')
+  })
+
   it('keeps image URLs, links and alt text, and drops every other attribute', () => {
     const html =
       '<div class="wp-block-image size-large" style="x" data-id="9"><img class="lazy" src="https://e.com/a.jpg" data-src="https://e.com/b.jpg" alt="Step 1" srcset="https://e.com/a-300.jpg 300w" /></div>' +
