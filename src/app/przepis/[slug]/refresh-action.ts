@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { inngest } from '@/inngest/client'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { checkUser, SessionCheckError } from '@/lib/supabase/user-check'
-import { detectSourceType } from '@/lib/detect-source-type'
+import { queueRecipeRefresh } from '@/lib/recipe-refresh'
 import { recipePath } from '@/lib/routes'
 import { getFullAccess } from '@/lib/full-access'
 
@@ -42,40 +42,7 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
     redirect(`${recipePath(slug)}?refresh_error=1`)
   }
 
-  const { data: share } = await supabase
-    .from('recipe_shares')
-    .insert({
-      user_id: user.id,
-      shared_url: recipe.source_url,
-      share_intent: { url: recipe.source_url },
-      status: 'pending',
-      attempts: 0,
-    })
-    .select()
-    .single()
-
-  if (share) {
-    try {
-      await inngest.send({
-        name: 'recipe/extract',
-        data: {
-          shareId: share.id,
-          sharedUrl: recipe.source_url,
-          sourceType: detectSourceType(recipe.source_url),
-          userId: user.id,
-          force: true,
-        },
-      })
-    } catch (error) {
-      // Like the add flows: a share that was never queued is failed, not left
-      // pending to block re-adding its link (#382).
-      console.error('[refresh] Failed to trigger re-extraction:', error)
-      await supabase
-        .from('recipe_shares')
-        .update({ status: 'failed', error_message: 'Failed to queue extraction' })
-        .eq('id', share.id)
-    }
-  }
+  await queueRecipeRefresh(supabase, inngest, { userId: user.id, sourceUrl: recipe.source_url })
 
   redirect(`${recipePath(slug)}?refreshing=1`)
 }
