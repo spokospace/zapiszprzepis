@@ -83,59 +83,50 @@ Astro caches rendered entries by file content. If you change a plugin under
 rm -rf docs/.astro docs/node_modules/.astro
 ```
 
-## Deploying it: a decision for the owner
+## Deploying it
 
-Nothing here is deployed, and nothing should be until the owner decides.
+The site is the Cloudflare Pages project `zapiszprzepis-docs` on the account
+that runs the app, served publicly at <https://zapiszprzepis-docs.pages.dev>.
+Nothing builds it in the cloud: it is built on a machine that has the
+Playwright Chromium, and the finished `dist/` is uploaded.
 
-**What would be published.** The repository is public, so every file this site
-renders can already be read on GitHub. A docs site makes the same text easier
-to find and read. A scan of the rendered folders found no keys or tokens. It
-did find the Supabase project hostname, which the app's browser bundle exposes
-anyway, and internal plans, model costs and audit notes, which are fine to
-publish only if you are comfortable with that. Reread `context/foundation/`
-with that in mind before choosing public.
+```bash
+pnpm docs:deploy
+```
 
-**Cloudflare Pages, Git integration.** Create a Pages project on this
-repository with these settings:
+That installs the docs' dependencies, builds, and runs
+`wrangler pages deploy dist` as a production deployment of the `master`
+branch. Run it after merging anything that changes the rendered folders.
 
-| Setting                | Value                                  |
-| ---------------------- | -------------------------------------- |
-| Root directory         | `docs`                                 |
-| Build command          | `pnpm install && pnpm build`           |
-| Build output directory | `dist`                                 |
-| Production branch      | `master`                               |
+**Which account it goes to.** The project lives on the account that runs the
+app, `7a4ca0444df1850c59cc436a4ff3ea71`. Pages config files cannot pin an
+account, and wrangler caches the last account it used under
+`docs/node_modules/.cache/wrangler`, so name it on every deploy. To keep this
+login apart from a wrangler used for other accounts, give it a config folder
+of its own:
 
-Pages clones the whole repository, so the loader can still read `../context`
-and `../.ai/specs`. The catch is Chromium. The Pages build image does not have
-Playwright's browser, and this has not been tested there. Pick one of these:
+```bash
+XDG_CONFIG_HOME="$HOME/.wrangler-zapiszprzepis" CLOUDFLARE_ACCOUNT_ID=7a4ca0444df1850c59cc436a4ff3ea71 pnpm docs:deploy
+```
 
-1. **Install it in the build.** Prefix the build command with
-   `pnpm exec playwright install chromium &&`. This adds a full browser
-   download to every build. Whether the image has Chromium's system libraries
-   is untested.
-2. **Draw diagrams in the browser on Pages only.** Switch `rehype-mermaid` to
-   `strategy: 'pre-mermaid'` when `CF_PAGES` is set, and load Mermaid on the
-   page. This needs no browser at build time but ships Mermaid to readers.
-3. **Build here, upload the result.** Run `pnpm docs:build`, then
-   `wrangler pages deploy docs/dist --project-name <name>`. This needs no CI
-   and no browser in the cloud, but someone has to remember to run it.
+Run `npx wrangler@4 login` once with the same `XDG_CONFIG_HOME` to create
+that login.
 
-Option 3 fits this repository best. GitHub Actions minutes are not available,
-and the app already ships through local commands. Set `site` in
-`astro.config.mjs` to the final URL so the sitemap and canonical links come out
-right.
+**Why not Pages' Git integration or GitHub Pages.** Both build in the cloud,
+where there is no Chromium for the Mermaid diagrams, and GitHub Pages
+publishes through GitHub Actions, which this account cannot run.
 
-**Gating it with Cloudflare Access.** If the docs should stay private, put the
-Pages project behind Access:
+**`docs/wrangler.jsonc`.** Wrangler looks for a config file upwards from
+where it runs. Without this one it finds the app's `../wrangler.jsonc` and
+treats the docs as the app's Worker. Recent wrangler versions also try to hand
+`pages` commands to Workers; the project is created once with
+`wrangler pages project create --force`, and later commands go to Pages
+directly.
 
-1. Pages project, **Settings**, **General**, **Enable access policy**. This
-   protects preview deployments only.
-2. To cover the `*.pages.dev` hostname too, open that Access application in
-   **Zero Trust**, **Access controls**, **Applications**. Remove the `*`
-   wildcard from its subdomain, then re-enable the preview policy. Cloudflare's
-   "Known issues" page for Pages describes this step.
-3. A custom domain needs its own self-hosted Access application, or the login
-   page renders but does not let anyone in.
-4. Use an allow policy for the owner's e-mail with one-time PIN login.
-
-Without Access, the site is as public as the repository.
+**What is published.** The site is public, like the repository it renders: the
+same text as on GitHub, easier to read. A scan of the rendered folders found no
+keys or tokens, only the Supabase project hostname, which the app's browser
+bundle exposes anyway. Internal plans, model costs and audit notes are among
+the pages. Putting it behind Cloudflare Access later needs Zero Trust enabled
+on the account and a self-hosted Access application for
+`zapiszprzepis-docs.pages.dev` and `*.zapiszprzepis-docs.pages.dev`.
