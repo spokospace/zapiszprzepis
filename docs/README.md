@@ -85,11 +85,10 @@ rm -rf docs/.astro docs/node_modules/.astro
 
 ## Deploying it
 
-The site is the Cloudflare Pages project `zapiszprzepis-docs`, served at
-<https://zapiszprzepis-docs.pages.dev> and meant to sit behind Cloudflare
-Access so only the owner can read it. Nothing builds it in the cloud: it is
-built on a machine that has the Playwright Chromium, and the finished `dist/`
-is uploaded.
+The site is the Cloudflare Pages project `zapiszprzepis-docs` on the account
+that runs the app, served publicly at <https://zapiszprzepis-docs.pages.dev>.
+Nothing builds it in the cloud: it is built on a machine that has the
+Playwright Chromium, and the finished `dist/` is uploaded.
 
 ```bash
 pnpm docs:deploy
@@ -97,38 +96,37 @@ pnpm docs:deploy
 
 That installs the docs' dependencies, builds, and runs
 `wrangler pages deploy dist` as a production deployment of the `master`
-branch. Run it after merging anything that changes the rendered folders. It
-needs a `wrangler login` to the account that owns the project.
+branch. Run it after merging anything that changes the rendered folders.
+
+**Which account it goes to.** The project lives on the account that runs the
+app, `7a4ca0444df1850c59cc436a4ff3ea71`. Pages config files cannot pin an
+account, and wrangler caches the last account it used under
+`docs/node_modules/.cache/wrangler`, so name it on every deploy. To keep this
+login apart from a wrangler used for other accounts, give it a config folder
+of its own:
+
+```bash
+XDG_CONFIG_HOME="$HOME/.wrangler-zapiszprzepis" CLOUDFLARE_ACCOUNT_ID=7a4ca0444df1850c59cc436a4ff3ea71 pnpm docs:deploy
+```
+
+Run `npx wrangler@4 login` once with the same `XDG_CONFIG_HOME` to create
+that login.
 
 **Why not Pages' Git integration or GitHub Pages.** Both build in the cloud,
 where there is no Chromium for the Mermaid diagrams, and GitHub Pages
-publishes through GitHub Actions, which this account cannot run. GitHub Pages
-also cannot be made private on this plan.
+publishes through GitHub Actions, which this account cannot run.
 
 **`docs/wrangler.jsonc`.** Wrangler looks for a config file upwards from
 where it runs. Without this one it finds the app's `../wrangler.jsonc` and
 treats the docs as the app's Worker. Recent wrangler versions also try to hand
-`pages` commands to Workers; the project was created with
-`wrangler pages project create --force`, once, so later commands go to Pages
+`pages` commands to Workers; the project is created once with
+`wrangler pages project create --force`, and later commands go to Pages
 directly.
 
-**Access.** Set up once, before the first deployment:
-
-1. Zero Trust must be enabled on the account (dashboard, **Zero Trust**, pick
-   a team name and the Free plan).
-2. **Access controls**, **Applications**, **Add an application**,
-   **Self-hosted**. Add two public hostnames, `zapiszprzepis-docs.pages.dev`
-   and `*.zapiszprzepis-docs.pages.dev`, so production and every preview URL
-   are covered.
-3. One **Allow** policy that includes the owner's e-mail, with the One-time
-   PIN login method.
-4. Check from a private window that the site asks for a login before
-   deploying anything.
-
-A custom domain later needs its own hostname in that application.
-
-**What is published.** The repository is public, so this is the same text as
-on GitHub, made easier to read. A scan of the rendered folders found no keys
-or tokens, only the Supabase project hostname, which the app's browser bundle
-exposes anyway. Internal plans, model costs and audit notes are among the
-pages, which is why the site stays behind Access.
+**What is published.** The site is public, like the repository it renders: the
+same text as on GitHub, easier to read. A scan of the rendered folders found no
+keys or tokens, only the Supabase project hostname, which the app's browser
+bundle exposes anyway. Internal plans, model costs and audit notes are among
+the pages. Putting it behind Cloudflare Access later needs Zero Trust enabled
+on the account and a self-hosted Access application for
+`zapiszprzepis-docs.pages.dev` and `*.zapiszprzepis-docs.pages.dev`.

@@ -9,8 +9,8 @@ import { rehypeMermaidTheme } from './src/lib/rehype-mermaid-theme';
 import { mermaidOptions } from './src/lib/mermaid-options';
 
 export default defineConfig({
-  // Cloudflare Pages project `zapiszprzepis-docs`, behind Cloudflare Access
-  // (README.md). Gives the sitemap and canonical links their host.
+  // Cloudflare Pages project `zapiszprzepis-docs` (README.md). Gives the
+  // sitemap and canonical links their host.
   site: 'https://zapiszprzepis-docs.pages.dev',
   integrations: [
     starlight({
