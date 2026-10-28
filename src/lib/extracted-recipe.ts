@@ -3,7 +3,8 @@
 // (`ingredientNames` trims `name`), and a time like "15-20" or 37.5 fails the
 // int insert. Both used to throw the whole, already paid, extraction away.
 
-import { metricIngredient } from './us-units'
+import { containerMeasure } from './container-measure'
+import { metricIngredient, metricUnits } from './us-units'
 
 export interface ExtractedIngredient {
   name: string
@@ -71,10 +72,13 @@ export function toIngredients(value: unknown): ExtractedIngredient[] {
     if (typeof item !== 'object' || item === null || Array.isArray(item)) continue
     const raw = item as Record<string, unknown>
     if (typeof raw.name !== 'string' || raw.name.trim().length === 0) continue
-    // A US unit the model copied into the fields ("18" + "uncji") is written
-    // metric first, so settleAlt compares `alt` with the measure as saved.
-    const metric = metricIngredient({ name: raw.name, amount: toText(raw.amount), unit: toText(raw.unit) })
-    const { name, alt } = settleAlt(metric.name, metric.amount, metric.unit, toText(raw.alt))
+    // A packaged US ingredient is totalled from its source line, any other US
+    // unit written metric — before settleAlt, which compares `alt` with the measure as saved.
+    const packaged = containerMeasure(toText(raw.source))
+    const metric = packaged
+      ? { name: metricUnits(raw.name), amount: packaged.amount, unit: packaged.unit }
+      : metricIngredient({ name: raw.name, amount: toText(raw.amount), unit: toText(raw.unit) })
+    const { name, alt } = settleAlt(metric.name, metric.amount, metric.unit, packaged?.alt || toText(raw.alt))
     ingredients.push({ name, amount: metric.amount, unit: metric.unit, alt, section: toText(raw.section) })
   }
   return ingredients

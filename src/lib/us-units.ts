@@ -8,11 +8,12 @@ import { parseAmount, UNICODE_FRACTIONS } from './measure-format'
 
 const GLYPHS = Object.keys(UNICODE_FRACTIONS).join('')
 // "7", "1.5", "1 1/2", "1/2", "½", "1½" — the glyph forms first, so "1½" is not read as "1".
-const NUMBER = String.raw`\d*[${GLYPHS}]|\d+(?:\s+\d+/\d+|/\d+|[.,]\d+)?`
+export const NUMBER = String.raw`\d*[${GLYPHS}]|\d+(?:\s+\d+/\d+|/\d+|[.,]\d+)?`
 const RANGE = String.raw`(${NUMBER})(?:\s*(?:-|–|do)\s*(${NUMBER}))?`
 const GLYPH = new RegExp(`(\\d*)([${GLYPHS}])`, 'g')
 
-const toNumber = (raw: string) =>
+/** A NUMBER match as a number; 0 when it cannot be read. */
+export const toNumber = (raw: string) =>
   parseAmount(raw.replace(GLYPH, (_, whole: string, f: string) => `${whole} ${UNICODE_FRACTIONS[f]}`).trim()) ?? 0
 
 const roundTo = (value: number, step: number) => Math.max(step, Math.round(value / step) * step)
@@ -55,8 +56,8 @@ export function metricUnits(text: string): string {
   return RULES.reduce((out, [re, write]) => out.replace(re, (...args) => write(args as string[])), text)
 }
 
-// "18 uncji" → "510 g": the amount and unit fields read as one measure.
-const METRIC_MEASURE = /^(\S+) (g|ml)$/
+/** "18 uncji" → "510 g": a measure the rules above wrote, as [amount, unit]. */
+export const METRIC_MEASURE = /^(\S+) (g|ml)$/
 
 /**
  * The ingredient with a US unit written metric: in its own `unit` field ("18"
