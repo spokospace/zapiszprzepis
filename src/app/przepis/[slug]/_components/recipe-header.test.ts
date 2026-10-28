@@ -47,13 +47,10 @@ describe('RecipeHeader author line (E01-S23; handoff 2026-10-28)', () => {
     expect(render({})).toMatch(/<span aria-hidden="true" class="flex h-8 w-8 [^"]*bg-\[#fde7d3\][^"]*">A<\/span>/)
   })
 
-  it('names the source after the author, linked to the original in a new tab', () => {
-    const html = render({})
-    expect(html).toMatch(/źródło: <a href="https:\/\/aniagotuje\.pl\/przepis\/zupa" target="_blank" rel="noopener"[^>]*>aniagotuje\.pl<span class="sr-only"> \(nowa karta\)<\/span><\/a>/)
-  })
-
-  it('names a page-less source without a link', () => {
-    expect(render({ source_type: 'other', source_url: null })).toMatch(/źródło: Inny/)
+  // Owner, 2026-10-28: the badge already names the source, so the author line does not.
+  it('does not repeat the source after the author', () => {
+    expect(render({})).not.toContain('źródło:')
+    expect(render({ image_url: 'https://x.supabase.co/storage/v1/object/public/recipe-images/1/c.webp' })).not.toContain('źródło:')
   })
 })
 
