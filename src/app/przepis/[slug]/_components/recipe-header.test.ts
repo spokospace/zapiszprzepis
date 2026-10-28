@@ -99,11 +99,11 @@ describe('RecipeHeader list bar slot (A9)', () => {
     const html = renderToStaticMarkup(
       createElement(RecipeHeader, { recipe: BASE, listBar: createElement('span', null, 'BAR') }),
     )
-    expect(html).toMatch(/<div><div class="hidden print:hidden lg:mb-5 lg:block"><span>BAR<\/span><\/div><h1/)
+    expect(html).toMatch(/<div><div class="hidden print:hidden lg:mb-3 lg:block"><span>BAR<\/span><\/div><h1/)
   })
 
   it('renders no slot wrapper without a listBar', () => {
-    expect(render({})).not.toContain('lg:mb-5 lg:block')
+    expect(render({})).not.toContain('lg:mb-3 lg:block')
   })
 })
 

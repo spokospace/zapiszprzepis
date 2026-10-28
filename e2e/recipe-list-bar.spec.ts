@@ -1,10 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /**
- * Desktop placement of the list-position link and the breadcrumbs (#574). They sit in
- * the recipe header's text column, above the title, from lg. Before the fix they were a
- * full-width row above the whole header, which added roughly 104 px of vertical space
- * before the photo. Measured from the laid-out DOM, not from class strings.
+ * Placement of the list-position link and the breadcrumbs (#574). They sit in the recipe
+ * header's text column, above the title, from lg. Before the fix they were a full-width
+ * row above the whole header, which added roughly 104 px of vertical space before the
+ * photo. Below lg the list bar stays hidden (C3); the phone list nav sits at the end of
+ * the recipe. Measured from the laid-out DOM, not from class strings.
  *
  * Guest-only and read-only, like recipe-layout.spec.ts: it only reads the live page.
  * Run: pnpm test:reflow (project `layout`).
@@ -21,6 +22,24 @@ async function firstRecipePath(page: Page): Promise<string> {
   const href = await page.locator('main a[href^="/przepis/"]').first().getAttribute('href')
   expect(href, 'no recipe link on /przepisy/ciasta').toBeTruthy()
   return new URL(href!, 'http://x').pathname
+}
+
+/** Pixels from the top of <main> to the first element matching `selector`, or null. */
+function offsetFromMain(page: Page, selector: string): Promise<number | null> {
+  return page.evaluate((sel) => {
+    const main = document.querySelector('main')
+    const el = main?.querySelector(sel)
+    if (!main || !el) return null
+    return Math.round(el.getBoundingClientRect().top - main.getBoundingClientRect().top)
+  }, selector)
+}
+
+/** Opens the first live recipe and waits for the page to settle. */
+async function openFirstRecipe(page: Page) {
+  const path = await firstRecipePath(page)
+  const res = await page.goto(path)
+  expect(res?.status(), `${path} did not render`).toBe(200)
+  await page.waitForLoadState('networkidle')
 }
 
 /** Boxes of the header, the title and the breadcrumbs, read from the rendered page. */
@@ -48,10 +67,7 @@ test.describe('desktop (lg)', () => {
   test.use({ viewport: { width: 1280, height: 900 } })
 
   test('the list bar and breadcrumbs sit above the title, not in a row over the header', async ({ page }) => {
-    const path = await firstRecipePath(page)
-    const res = await page.goto(path)
-    expect(res?.status(), `${path} did not render`).toBe(200)
-    await page.waitForLoadState('networkidle')
+    await openFirstRecipe(page)
 
     const measured = await page.evaluate(measureListBar)
     expect(measured, 'error' in measured ? measured.error : undefined).not.toHaveProperty('error')
@@ -64,5 +80,31 @@ test.describe('desktop (lg)', () => {
     expect(headerOffset, `the header starts ${headerOffset} px below <main>; the old row put it at ~104 px (need ≤ ${MAX_HEADER_OFFSET})`).toBeLessThanOrEqual(MAX_HEADER_OFFSET)
     expect(crumbsAboveTitle, 'the breadcrumbs should sit above the title').toBe(true)
     expect(crumbsInHeaderColumn, 'the breadcrumbs should sit inside the header column').toBe(true)
+  })
+
+  test('the photo sits flush with the top of <main>', async ({ page }) => {
+    await openFirstRecipe(page)
+
+    const photoOffset = await offsetFromMain(page, 'header img')
+    expect(photoOffset, 'recipe photo (main > header img) not found').not.toBeNull()
+    expect(photoOffset, `the photo starts ${photoOffset} px below <main>; it should sit at the top`).toBeLessThanOrEqual(1)
+  })
+})
+
+test.describe('phone (390 px)', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('the list bar stays hidden and the header still starts at the top', async ({ page }) => {
+    await openFirstRecipe(page)
+
+    // Below lg the desktop list bar must not leak into the header column.
+    await expect(
+      page.locator('main header nav[aria-label="Lista przepisów"]'),
+      'the list bar should stay hidden below lg',
+    ).toBeHidden()
+
+    const offset = await offsetFromMain(page, 'header')
+    expect(offset, 'recipe header (main > header) not found').not.toBeNull()
+    expect(offset, `the header starts ${offset} px below <main> on a phone (need ≤ ${MAX_HEADER_OFFSET})`).toBeLessThanOrEqual(MAX_HEADER_OFFSET)
   })
 })

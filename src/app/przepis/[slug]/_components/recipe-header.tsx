@@ -119,7 +119,7 @@ export function RecipeHeader({ recipe, versionsBar, actions, listBar }: RecipeHe
         // 1fr | 1.6fr split and gap as RecipeChecklists), so its right edge lines up with
         // „Składniki”, and `bleed-left-page` widens it to the left browser edge. It stays
         // 4:3 at every width, so the height follows the widened photo.
-        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] sm:-mx-6 sm:-mt-8 lg:mt-0 lg:mr-0 lg:mb-0 lg:bleed-left-page xl:row-span-2">
+        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] sm:-mx-6 sm:-mt-8 lg:mr-0 lg:mb-0 lg:bleed-left-page xl:row-span-2">
           <div className="absolute inset-0 overflow-hidden bg-surface-3 lg:rounded-r-tile">
             <Image
               // The LCP image, served from Supabase Storage through next/image.
@@ -149,7 +149,7 @@ export function RecipeHeader({ recipe, versionsBar, actions, listBar }: RecipeHe
       )}
 
       <div>
-        {listBar && <div className="hidden print:hidden lg:mb-5 lg:block">{listBar}</div>}
+        {listBar && <div className="hidden print:hidden lg:mb-3 lg:block">{listBar}</div>}
         <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
         {/* The recipe's own short description sits right under the title, not after the
             times row (owner request) — a subtitle qualifying the dish ("ze smalcem"). */}

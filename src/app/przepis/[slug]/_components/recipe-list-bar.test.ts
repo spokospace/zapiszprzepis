@@ -34,7 +34,7 @@ describe('RecipeListBar (A4 phones, A9 desktop)', () => {
 
   it('shows "N z M" as 16 px secondary text, joined with "·" from lg', () => {
     const html = bar()
-    expect(html).toContain('<span class="shrink-0 text-[16px] text-ink-soft lg:text-[18px] lg:font-bold lg:text-ink">')
+    expect(html).toContain('<span class="shrink-0 text-[16px] text-ink-soft lg:text-[18px] lg:font-bold lg:text-ink-soft">')
     expect(html).toContain('<span aria-hidden="true"><span class="hidden lg:inline">· </span>3 z 18</span>')
     expect(html).toContain('<span class="sr-only">Przepis 3 z 18 na liście Zupy</span>')
   })
