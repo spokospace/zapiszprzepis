@@ -4,9 +4,20 @@
 
 Guests and signed-in users read a recipe on `/przepis/[slug]` today, but the page has four parts that the handoff replaces: the hero (a separate photo gallery block and a source line), the steps (plain text, nothing to tick), the "Mamy jeszcze N…" bar that opens the other versions, and the layout of the actions. The proposed behaviour is the handoff's layout: one main action ("Zacznij gotować") and the key facts above the fold, ingredients beside the steps, steps that can be ticked off and remembered per tab, and other versions shown as a short, scannable comparison. This is future behaviour; the page's data, routes and server actions do not change.
 
+## 📋 Status (updated after implementation)
+
+This spec was written before the components were read, and it overstated the gap. Checked against `master` at 8ba964e, these were **already in place** before #595: the source badge on the photo with no "Źródło:" line and no "Oryginał" button, the subtitle under the title, the "Ma dodatkowo:" / "Nie ma:" labels, the per-tab ingredient ticks, and the guest gallery lock.
+
+Shipped in #595 (30042df): the action rows ("Zacznij gotować" beside the heart, quiet print and share), thumbnails under the main photo for signed-in readers with the separate "Zdjęcia" section removed, the plain "Inne przepisy na … (N)" link, and tickable steps with a progress line.
+
+Owner decisions after #595 (2026-10-28), each in its own follow-up PR:
+- The heart on the recipe page reads "Zapisz" / "W ulubionych" (the handoff), not "Dodaj do ulubionych".
+- A tap on the main photo opens the full-screen viewer again; the thumbnails still swap the main photo.
+- The time strip with icons ships now. The "Doliczyć ok. 30 min" note is left out: no recipe field holds a waiting time.
+
 ## 📝 Problem Statement
 
-- Readers on a phone (the target group includes older people) have to scroll past a separate gallery section to reach the steps, and the steps cannot be marked as done. Only ingredients can.
+- Readers on a phone (the target group includes older people) have to scroll past a separate gallery section to see the recipe's other photos, and the steps cannot be marked as done. Only ingredients can.
 - The other versions of a dish are behind a yellow bar that does not say what the versions differ in.
 - The current design does not match the 2026-10-28 owner handoff, which is the design authority for this change (`ZASADY_PROJEKTU.md` and the README are embedded in issue #590 and copied to `.ai/specs/assets/recipe-page-handoff/`).
 
