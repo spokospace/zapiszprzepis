@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>Bułki pszenne · strona przepisu</title>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+body{margin:0;background:#fff;font-family:'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}
+a{color:#9a3412}a:hover{color:#7c2d12}
+:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}
+button,input{font-family:inherit}
+.zp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.zp-cats::-webkit-scrollbar{display:none}
+@media (min-width:960px){.zp-ing{position:sticky;top:16px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</helmet>
+<div style="min-height:100%;background:#fff">
+
+  <header style="background:#fff;border-bottom:1px solid #e5e7eb">
+    <div style="max-width:1180px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <a href="#" aria-label="Zapisz Przepis — strona główna" style="font-size:24px;font-weight:800;color:#111827;text-decoration:none;white-space:nowrap">Zapisz <span style="color:#c2410c">Przepis</span></a>
+      <form role="search" onSubmit="{{ noSubmit }}" style="flex:1 1 280px;max-width:460px;display:flex;align-items:center;gap:8px;height:48px;box-sizing:border-box;border:2px solid #111827;border-radius:999px;padding:0 6px 0 16px">
+        <span style="color:#4b5563;display:flex">{{ I.search }}</span>
+        <label for="q" class="zp-sr">Szukaj przepisu lub składnika</label>
+        <input id="q" type="search" placeholder="Przepis lub składnik" style="flex:1;min-width:0;border:0;outline:0;background:none;font-size:17px;color:#111827"/>
+        <button type="submit" style="height:36px;padding:0 14px;border:0;border-radius:999px;background:#111827;color:#fff;font-size:16px;font-weight:700;cursor:pointer">Szukaj</button>
+      </form>
+      <nav aria-label="Konto" style="margin-left:auto;display:flex;align-items:center;gap:6px">
+        <a href="#" style="height:48px;padding:0 12px;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827;text-decoration:none"><span style="color:#c2410c;display:flex">{{ I.heart }}</span>Ulubione</a>
+        <a href="#" style="height:48px;box-sizing:border-box;padding:0 16px;border:2px solid #c2410c;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#9a3412;text-decoration:none">{{ I.plus }}Dodaj przepis</a>
+        <button type="button" style="height:48px;padding:0 10px;border:0;background:none;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827;cursor:pointer">{{ I.menu }}Menu</button>
+      </nav>
+    </div>
+    <nav aria-label="Kategorie" class="zp-cats" style="max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none">
+      <sc-for list="{{ cats }}" as="c" hint-placeholder-count="10">
+        <a href="#" aria-current="{{ c.cur }}" style="flex-shrink:0;height:48px;box-sizing:border-box;padding:0 12px;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;text-decoration:none;color:{{ c.fg }};border-bottom:3px solid {{ c.line }}">{{ c.icon }}{{ c.t }}</a>
+      </sc-for>
+    </nav>
+  </header>
+
+  <main style="max-width:1180px;margin:0 auto;padding:4px 24px 72px;box-sizing:border-box;display:flex;flex-direction:column;gap:48px">
+
+    <!-- okruszki -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin-bottom:-36px">
+      <a href="#" style="height:44px;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827;text-decoration:none">{{ I.arrowL }}Pieczywo<span style="font-weight:400;color:#4b5563">· przepis 6 z 23</span></a>
+      <nav aria-label="Okruszki" style="display:flex;align-items:center;gap:6px;font-size:16px"><a href="#">Przepisy</a><span aria-hidden="true" style="color:#4b5563">›</span><a href="#">Pieczywo</a><span aria-hidden="true" style="color:#4b5563">›</span><span aria-current="page" style="color:#4b5563">Bułki pszenne</span></nav>
+    </div>
+
+    <!-- HERO -->
+    <section aria-labelledby="tytul" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:40px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="position:relative;aspect-ratio:4/3;overflow:hidden;background:{{ mainImg.bg }}">
+          <span style="position:absolute;right:14px;top:12px;font:13px monospace;color:#7c2d12">{{ mainImg.label }}</span>
+          <a href="#" style="position:absolute;left:0;bottom:12px;min-height:40px;box-sizing:border-box;padding:0 12px;background:rgba(255,255,255,.95);display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;color:#111827;text-decoration:none">{{ I.globe }}<span style="text-decoration:underline;text-underline-offset:3px">aniagotuje.pl</span>{{ I.ext }}</a>
+        </div>
+        <div role="group" aria-label="Zdjęcia przepisu" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+          <sc-for list="{{ gallery }}" as="g" hint-placeholder-count="3">
+            <button type="button" onClick="{{ g.pick }}" aria-pressed="{{ g.on }}" aria-label="{{ g.aria }}" style="aspect-ratio:4/3;padding:0;border-radius:0;cursor:pointer;background:{{ g.bg }};border:3px solid {{ g.ring }}"></button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a3412">Pieczywo · drożdżowe</span>
+          <h1 id="tytul" style="margin:0;font-size:48px;font-weight:800;line-height:1.05;letter-spacing:-.01em;text-wrap:balance">Bułki pszenne</h1>
+          <span style="font-size:22px;color:#374151">z sezamem i oliwą</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:16px;color:#374151">
+          <span aria-hidden="true" style="width:32px;height:32px;border-radius:999px;background:#fde7d3;color:#9a3412;display:flex;align-items:center;justify-content:center;font-weight:800">T</span>
+          <span>Dodała <a href="#" style="font-weight:700">Tola</a></span>
+          <span aria-hidden="true">·</span>
+          <span>źródło: <a href="#">aniagotuje.pl</a></span>
+        </div>
+        <p style="margin:0;font-size:19px;line-height:1.55;text-wrap:pretty">Domowe pieczywo drożdżowe z dodatkiem oliwy z oliwek i posypką z sezamu — idealne na śniadanie lub kolację.</p>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <dl style="margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px 20px">
+            <sc-for list="{{ facts }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span aria-hidden="true" style="flex-shrink:0;width:44px;height:44px;border-radius:999px;background:#fdf1e4;color:#c2410c;display:flex;align-items:center;justify-content:center">{{ f.icon }}</span>
+                <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                  <dt style="font-size:14px;color:#4b5563">{{ f.l }}</dt>
+                  <dd style="margin:0;font-size:20px;font-weight:800;white-space:nowrap">{{ f.v }}</dd>
+                </div>
+              </div>
+            </sc-for>
+          </dl>
+          <p style="margin:0;display:flex;align-items:center;gap:8px;font-size:16px;color:#7c2d12">{{ I.info }}<span>Doliczyć ok. <b>30 min</b> na wyrośnięcie ciasta (krok 3).</span></p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button type="button" style="flex:2 1 220px;min-height:60px;border:0;border-radius:999px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 22px;font-size:19px;font-weight:700;cursor:pointer" style-hover="background:#374151">{{ I.chef }}Zacznij gotować</button>
+            <button type="button" onClick="{{ toggleFav }}" aria-pressed="{{ fav }}" style="flex:1 1 160px;min-height:60px;border:2px solid #c2410c;border-radius:999px;background:{{ favBg }};color:{{ favFg }};display:flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;font-size:18px;font-weight:700;cursor:pointer">{{ favIcon }}{{ favLabel }}</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" style="min-height:48px;padding:0 12px;border:0;border-radius:999px;background:none;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#111827;cursor:pointer" style-hover="background:#f3f4f6">{{ I.print }}Drukuj</button>
+            <button type="button" style="min-height:48px;padding:0 12px;border:0;border-radius:999px;background:none;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#111827;cursor:pointer" style-hover="background:#f3f4f6">{{ I.share }}Udostępnij</button>
+          </div>
+        </div>
+
+        <a href="#wersje" style="display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid #e5e7eb;border-radius:4px;text-decoration:none;color:#111827" style-hover="background:#fafaf9">
+          <span aria-hidden="true" style="display:flex">
+            <span style="width:40px;height:40px;border-radius:999px;border:2px solid #fff;background:#e9c9a4"></span>
+            <span style="width:40px;height:40px;border-radius:999px;border:2px solid #fff;margin-left:-14px;background:#dcae7a"></span>
+            <span style="width:40px;height:40px;border-radius:999px;border:2px solid #fff;margin-left:-14px;background:#f1d9b8"></span>
+          </span>
+          <span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+            <span style="font-size:17px;font-weight:700">9 innych wersji tego dania</span>
+            <span style="font-size:15px;color:#4b5563">np. bez drożdży, z serem, z air fryera</span>
+          </span>
+          <span style="display:flex;color:#9a3412">{{ I.chevD }}</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- GOTOWANIE -->
+    <section aria-label="Przepis" style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;border-top:1px solid #e5e7eb;padding-top:40px">
+      <aside aria-labelledby="ing-h" class="zp-ing" style="flex:1 1 340px;max-width:420px;box-sizing:border-box;background:#f3f4f6;border-radius:4px;padding:24px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;gap:2px"><h2 id="ing-h" style="margin:0;font-size:26px;font-weight:800">Składniki</h2><span style="font-size:16px;color:#4b5563">na 12 bułek</span></div>
+          <span style="font-size:15px;color:#4b5563">{{ checkedLabel }}</span>
+        </div>
+        <sc-for list="{{ groups }}" as="gr" hint-placeholder-count="2">
+          <div style="margin-top:16px">
+            <h3 style="margin:0 0 4px;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a3412">{{ gr.g }}</h3>
+            <ul style="list-style:none;margin:0;padding:0">
+              <sc-for list="{{ gr.items }}" as="it" hint-placeholder-count="4">
+                <li style="border-bottom:1px solid #e0e2e6">
+                  <label style="min-height:56px;display:flex;align-items:center;gap:14px;padding:6px 0;cursor:pointer">
+                    <input type="checkbox" checked="{{ it.on }}" onChange="{{ it.toggle }}" style="width:26px;height:26px;margin:0;flex-shrink:0;accent-color:#15803d;cursor:pointer"/>
+                    <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                      <span style="font-size:18px;line-height:1.3;color:{{ it.fg }};text-decoration:{{ it.deco }}">{{ it.n }}</span>
+                      <sc-if value="{{ it.note }}" hint-placeholder-val="{{ false }}"><span style="font-size:15px;color:#4b5563">{{ it.note }}</span></sc-if>
+                    </span>
+                    <b style="text-align:right;font-size:18px;white-space:nowrap;color:{{ it.fg }};text-decoration:{{ it.deco }}">{{ it.amt }}</b>
+                  </label>
+                </li>
+              </sc-for>
+            </ul>
+          </div>
+        </sc-for>
+        <sc-if value="{{ anyChecked }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ clearChecks }}" style="margin-top:12px;min-height:44px;padding:0;border:0;background:none;font-size:16px;font-weight:700;color:#9a3412;text-decoration:underline;cursor:pointer">Odznacz wszystko</button>
+        </sc-if>
+      </aside>
+
+      <section aria-labelledby="steps-h" style="flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin-bottom:8px">
+          <h2 id="steps-h" style="margin:0;font-size:26px;font-weight:800">Przygotowanie</h2>
+          <span style="font-size:16px;color:#4b5563">{{ stepsLabel }}</span>
+        </div>
+        <div aria-hidden="true" style="height:6px;border-radius:999px;background:#f3f4f6;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:{{ progress }};background:#15803d;border-radius:999px;transition:width .3s"></div></div>
+        <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px">
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="9">
+            <li style="display:flex;gap:16px;padding:16px;border-radius:4px;background:{{ s.bg }};transition:background .2s">
+              <button type="button" onClick="{{ s.toggle }}" aria-pressed="{{ s.done }}" aria-label="{{ s.aria }}" style="flex-shrink:0;width:48px;height:48px;border-radius:999px;border:2px solid {{ s.ring }};background:{{ s.dotBg }};color:{{ s.dotFg }};display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;cursor:pointer">{{ s.mark }}</button>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding-top:2px">
+                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:17px;font-weight:700;color:{{ s.labelFg }}">Krok {{ s.num }}</span><sc-if value="{{ s.now }}" hint-placeholder-val="{{ false }}"><span style="padding:2px 8px;border-radius:4px;background:#c2410c;color:#fff;font-size:14px;font-weight:700">Teraz</span></sc-if><sc-if value="{{ s.done }}" hint-placeholder-val="{{ false }}"><span style="font-size:15px;color:#15803d;font-weight:700">zrobiony</span></sc-if></div>
+                <p style="margin:0;font-size:19px;line-height:1.6;color:{{ s.fg }};text-wrap:pretty"><sc-for list="{{ s.parts }}" as="p" hint-placeholder-count="1"><span style="font-weight:{{ p.w }}">{{ p.t }}</span></sc-for></p>
+              </div>
+            </li>
+          </sc-for>
+        </ol>
+        <sc-if value="{{ allDone }}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="margin-top:8px;padding:16px 20px;border-radius:4px;background:#ecfdf3;color:#14532d;display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700">{{ I.check }}Gotowe! Smacznego.</div>
+        </sc-if>
+      </section>
+    </section>
+
+    <!-- nastepny -->
+    <nav aria-label="Następny przepis" style="display:flex">
+      <a href="#" style="flex:1;display:flex;align-items:center;gap:16px;padding:16px 20px;border:1px solid #111827;border-radius:4px;text-decoration:none;color:#111827" style-hover="background:#fafaf9">
+        <span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;color:#4b5563">Następny w kategorii Pieczywo · 7 z 23</span><span style="font-size:20px;font-weight:800">Bułki proteinowe z air fryera</span></span>
+        <span style="width:48px;height:48px;border-radius:999px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center">{{ I.arrowR }}</span>
+      </a>
+    </nav>
+
+    <!-- WERSJE -->
+    <section id="wersje" aria-labelledby="wersje-h" style="display:flex;flex-direction:column;gap:18px;scroll-margin-top:16px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px 24px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <h2 id="wersje-h" style="margin:0;font-size:30px;font-weight:800">Inne wersje tego dania <span style="color:#9a3412">(9)</span></h2>
+          <span style="font-size:17px;color:#4b5563">Porównane z tym przepisem: co dochodzi, czego brakuje i ile dłużej trwa.</span>
+        </div>
+        <div role="group" aria-label="Kolejność" style="display:flex;gap:4px;padding:4px;border-radius:999px;background:#f3f4f6">
+          <sc-for list="{{ sorts }}" as="o" hint-placeholder-count="3">
+            <button type="button" onClick="{{ o.pick }}" aria-pressed="{{ o.on }}" style="height:44px;padding:0 16px;border:0;border-radius:999px;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }};font-size:16px;font-weight:700;cursor:pointer">{{ o.l }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div aria-hidden="true" style="display:flex;gap:16px;flex-wrap:wrap;font-size:15px;color:#4b5563">
+        <span style="display:flex;align-items:center;gap:6px"><span style="padding:2px 8px;border-radius:6px;background:#dcfce7;color:#14532d;font-weight:700">+ jajko</span>ma dodatkowo</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="padding:2px 8px;border-radius:6px;background:#fee2e2;color:#7f1d1d;font-weight:700;text-decoration:line-through">sezam</span>nie ma</span>
+      </div>
+      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border-top:1px solid #e5e7eb">
+        <sc-for list="{{ versions }}" as="v" hint-placeholder-count="4">
+          <li style="border-bottom:1px solid #e5e7eb">
+            <div style="display:flex;gap:18px;padding:16px 0;flex-wrap:wrap;align-items:flex-start">
+              <a href="#" aria-hidden="true" tabindex="-1" style="flex-shrink:0;width:132px;aspect-ratio:4/3;background:{{ v.bg }}"></a>
+              <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <a href="#" style="font-size:20px;font-weight:800;color:#111827;text-decoration:none" style-hover="text-decoration:underline">{{ v.t }}</a>
+                  <span style="font-size:16px;color:#4b5563">{{ v.s }} · {{ v.src }}</span>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <sc-for list="{{ v.plus }}" as="x" hint-placeholder-count="2"><span style="padding:3px 9px;border-radius:6px;background:#dcfce7;color:#14532d;font-size:15px;font-weight:700"><span class="zp-sr">ma dodatkowo: </span>+ {{ x }}</span></sc-for>
+                  <sc-for list="{{ v.minus }}" as="x" hint-placeholder-count="2"><span style="padding:3px 9px;border-radius:6px;background:#fee2e2;color:#7f1d1d;font-size:15px;font-weight:700;text-decoration:line-through"><span class="zp-sr">nie ma: </span>{{ x }}</span></sc-for>
+                </div>
+              </div>
+              <div style="flex:0 0 auto;display:flex;align-items:center;gap:12px;margin-left:auto">
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:120px">
+                  <span style="display:flex;align-items:center;gap:6px;font-size:18px;font-weight:800">{{ I.clockSm }}{{ v.time }}</span>
+                  <span style="font-size:15px;color:#4b5563">{{ v.diff }}</span>
+                </div>
+                <button type="button" onClick="{{ v.fav }}" aria-pressed="{{ v.isFav }}" aria-label="{{ v.favAria }}" style="width:48px;height:48px;border-radius:999px;border:2px solid #e5e7eb;background:#fff;color:#c2410c;display:flex;align-items:center;justify-content:center;cursor:pointer">{{ v.favIcon }}</button>
+              </div>
+            </div>
+          </li>
+        </sc-for>
+      </ul>
+      <sc-if value="{{ canMore }}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{ showAll }}" style="align-self:flex-start;min-height:52px;padding:0 22px;border:2px solid #111827;border-radius:999px;background:#fff;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#111827;cursor:pointer" style-hover="background:#f3f4f6">Pokaż wszystkie 9 wersji{{ I.chevD }}</button>
+      </sc-if>
+    </section>
+
+    <!-- PODOBNE -->
+    <section aria-labelledby="podobne-h" style="display:flex;flex-direction:column;gap:18px;border-top:1px solid #e5e7eb;padding-top:40px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px 24px;flex-wrap:wrap">
+        <h2 id="podobne-h" style="margin:0;font-size:30px;font-weight:800">Podobne: drożdżowe pieczywo</h2>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:16px;color:#4b5563">Więcej z tagów:</span>
+          <a href="#" style="height:44px;box-sizing:border-box;padding:0 14px;border:2px solid #111827;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:#9a3412;text-decoration:none">{{ I.tag }}szybkie</a>
+          <a href="#" style="height:44px;box-sizing:border-box;padding:0 14px;border:2px solid #111827;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:#9a3412;text-decoration:none">{{ I.tag }}drożdżowe</a>
+        </div>
+      </div>
+      <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:20px">
+        <sc-for list="{{ similar }}" as="m" hint-placeholder-count="4">
+          <li style="display:flex;flex-direction:column;gap:10px">
+            <div style="aspect-ratio:4/3;background:{{ m.bg }}"></div>
+            <a href="#" style="font-size:18px;font-weight:800;line-height:1.3;color:#111827;text-decoration:none" style-hover="text-decoration:underline">{{ m.t }}</a>
+            <span style="font-size:15px;color:#4b5563;margin-top:-6px">{{ m.s }}</span>
+          </li>
+        </sc-for>
+      </ul>
+      <a href="#" style="align-self:flex-start;min-height:52px;box-sizing:border-box;padding:0 22px;border:2px solid #c2410c;border-radius:999px;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#9a3412;text-decoration:none">Całe pieczywo (23){{ I.arrowR }}</a>
+    </section>
+  </main>
+
+  <footer style="background:#f7f5f2;border-top:1px solid #e5e7eb">
+    <div style="max-width:1180px;margin:0 auto;padding:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:18px;font-weight:800">Zapisz <span style="color:#c2410c">Przepis</span></span><span style="font-size:15px;color:#4b5563">© 2026 zapiszprzepis.pl</span></div>
+      <nav aria-label="Stopka" style="display:flex;gap:20px;flex-wrap:wrap;font-size:16px"><a href="#">Regulamin</a><a href="#">Polityka prywatności</a><a href="#">Usuwanie danych</a></nav>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":3700}}'>
+const BASE = 12;
+const PH = (a, b) => 'repeating-linear-gradient(135deg,' + a + ' 0 12px,' + b + ' 12px 24px)';
+const TINTS = [PH('#f4dcc0', '#efd0ae'), PH('#fbe6d3', '#f6dac0'), PH('#ead2b5', '#e2c39f'), PH('#f8e8d6', '#f1dcc4'), PH('#efd6bd', '#e8c8a8')];
+const UNITS = {
+  g: { f: ['g', 'g', 'g'], step: 1 }, ml: { f: ['ml', 'ml', 'ml'], step: 5 },
+  tsp: { f: ['łyżeczka', 'łyżeczki', 'łyżeczek'], frac: 'łyżeczki', half: true },
+  tbsp: { f: ['łyżka', 'łyżki', 'łyżek'], frac: 'łyżki', half: true },
+  cup: { f: ['szklanka', 'szklanki', 'szklanek'], frac: 'szklanki', half: true },
+};
+const ING = [
+  { g: 'Ciasto', items: [
+    { id: 'drozdze', n: 'drożdże suche', q: 7, u: 'g', alt: { q: 20, u: 'g', pre: 'lub ', post: ' świeżych' } },
+    { id: 'maka', n: 'mąka pszenna', q: 400, u: 'g', alt: { q: 3, u: 'cup', pre: 'ok. ' } },
+    { id: 'cukier', n: 'cukier', q: 1, u: 'tsp' },
+    { id: 'sol', n: 'sól', q: 1, u: 'tsp' },
+    { id: 'woda', n: 'ciepła woda', q: 250, u: 'ml', alt: { q: 1, u: 'cup', pre: 'ok. ' } },
+    { id: 'oliwa1', n: 'oliwa z oliwek', q: 1, u: 'tbsp' },
+  ] },
+  { g: 'Na wierzch', items: [
+    { id: 'oliwa2', n: 'oliwa z oliwek', q: 20, u: 'ml', alt: { q: 1, u: 'tbsp', pre: 'ok. ' } },
+    { id: 'sezam', n: 'sezam', q: 2, u: 'tbsp' },
+  ] },
+];
+const STEPS = [
+  { t: 'Drożdże, cukier oraz **50 ml wody** umieścić w wysokim naczyniu. Wymieszać i przykryć na kilka minut ściereczką.' },
+  { t: 'Do dużej miski wsypać **mąkę**, **sól**, **olej (1 łyżka)** oraz buzujące drożdże i **resztę wody**. Ciasto wyrabiać ręcznie kilka minut, aż powstanie zwarta kula.' },
+  { t: 'Kulę ciasta zostawić w misce przykrytej ściereczką na **30 minut**.', timer: 30 },
+  { t: 'Wyjąć ciasto na obsypany mąką blat i wyrabiać kilka minut.' },
+  { t: 'Nagrzewać piekarnik na **250 stopni**.', temp: '250°C' },
+  { t: 'Ciasto podzielić na **{N} równych kawałków** i uformować kulki.' },
+  { t: 'Namoczyć palce w **oliwie** i pokryć każdą bułkę oliwą. Układać na blaszce w odstępach około 5 cm.' },
+  { t: 'Posypać każdą bułkę **sezamem**. Od uformowania bułek do umieszczenia ich w piekarniku powinno minąć około 20 minut.', timer: 20 },
+  { t: 'Umieścić blachę w piekarniku i piec bułki około **12–15 minut**.', timer: 15, timerL: '12–15 min' },
+];
+const VERSIONS = [
+  { t: 'Bułki poznańskie jak dawniej', s: 'Na podmłodzie', src: 'kuchniarodzinki', min: 180, nw: 3, plus: [], minus: ['cukier', 'oliwa z oliwek', 'sezam'] },
+  { t: 'Bułki proteinowe z air fryera', s: 'Z serkiem wiejskim', src: 'aniagotuje.pl', min: 33, nw: 1, plus: ['serek wiejski', 'jajko', 'proszek do pieczenia'], minus: ['drożdże', 'cukier', 'ciepła woda', 'sezam'] },
+  { t: 'Bułki z pieczarkami i serem', s: 'Nadziewane', src: 'Kulinarna Wiola', min: 124, nw: 5, plus: ['jajko', 'mleko', 'pieczarki'], minus: ['ciepła woda', 'oliwa z oliwek', 'sezam'] },
+  { t: 'Bułeczki czosnkowe', s: 'Z masłem i natką', src: 'Barbara B.', min: 75, nw: 2, plus: ['jajko', 'masło', 'czosnek', 'natka pietruszki'], minus: ['sezam'] },
+  { t: 'Szybkie bułki śniadaniowe', s: 'Na wodzie i oleju', src: 'panimkuchniasmakowita', min: 40, nw: 4, plus: ['olej'], minus: ['cukier', 'oliwa z oliwek', 'sezam'] },
+  { t: 'Bułeczki babci', s: 'Maślane, na mleku i jajkach', src: 'obzarciuch.pl', min: 90, nw: 8, plus: ['mleko', 'masło', 'jajka'], minus: ['ciepła woda', 'oliwa z oliwek', 'sezam'] },
+  { t: 'Bułeczki drożdżowe', s: 'Na wodzie i mleku', src: 'kulinarneprzeboje.pl', min: 90, nw: 7, plus: ['masło', 'mleko', 'jajko'], minus: ['oliwa z oliwek', 'sezam'] },
+  { t: 'Bułki pszenne bez drożdży i bez zakwasu', s: 'Na jogurcie', src: 'kulinarneprzeboje.pl', min: 30, nw: 6, plus: ['jogurt naturalny', 'soda oczyszczona'], minus: ['drożdże', 'oliwa z oliwek'] },
+  { t: 'Bułeczki jogurtowe pszenne', s: 'Z miodem', src: 'kulinarneprzeboje.pl', min: 60, nw: 9, plus: ['jogurt naturalny', 'mleko', 'jajko', 'miód'], minus: ['cukier', 'ciepła woda', 'oliwa z oliwek', 'sezam'] },
+];
+const SIMILAR = [
+  { t: 'Cienki i chrupiący spód do pizzy', s: 'szybkie · drożdżowe' },
+  { t: 'Croissanty', s: 'drożdżowe' },
+  { t: 'Spód do pizzy jak chleb czosnkowy', s: 'drożdżowe' },
+  { t: 'Ciabatta z sosem pomidorowym i serem', s: 'szybkie' },
+];
+const CATS = [['Obiady', 'Utensils'], ['Zupy', 'Soup'], ['Desery', 'CakeSlice'], ['Ciasta', 'Cake'], ['Ciasteczka', 'Cookie'], ['Śniadania', 'Coffee'], ['Pieczywo', 'Croissant'], ['Przekąski', 'Sandwich'], ['Sałatki', 'Salad'], ['Napoje', 'CupSoda']];
+const SORTS = [['pop', 'Najpopularniejsze'], ['new', 'Najnowsze'], ['fast', 'Najszybsze']];
+
+function plural(n, f) { if (n === 1) return f[0]; const d = n % 10, t = n % 100; return (d >= 2 && d <= 4 && (t < 12 || t > 14)) ? f[1] : f[2]; }
+function fmt(q, u) {
+  const U = UNITS[u];
+  if (U.half) {
+    const r = Math.max(0.5, Math.round(q * 2) / 2), whole = Math.floor(r), half = r - whole > 0;
+    if (!half) return whole + ' ' + plural(whole, U.f);
+    return (whole ? whole : '') + '½ ' + U.frac;
+  }
+  let v = q < 20 ? Math.round(q) : q < 100 ? Math.round(q / U.step) * U.step : Math.round(q / 10) * 10;
+  return Math.max(1, v) + ' ' + U.f[0];
+}
+function tl(m) { const h = Math.floor(m / 60), r = m % 60; return h ? (h + ' godz.' + (r ? ' ' + r + ' min' : '')) : r + ' min'; }
+function parts(t) { return t.split('**').map((x, i) => ({ t: x, w: i % 2 ? 800 : 400 })).filter(p => p.t); }
+
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { n: BASE, checks: {}, done: {}, fav: false, img: 0, sort: 'pop', all: false, vfav: {}, timers: {}, lucide: !!window.lucide };
+  }
+  componentDidMount() {
+    if (!window.lucide) { const t = () => window.lucide ? this.setState({ lucide: true }) : setTimeout(t, 80); t(); }
+  }
+  ic(name, size = 20, fill) {
+    const L = window.lucide && window.lucide.icons; if (!L) return null;
+    const node = L[name]; if (!node) return null;
+    const kids = Array.isArray(node[0]) ? node : (node[2] || []);
+    return React.createElement('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: fill || 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true', focusable: 'false', style: { flexShrink: 0, display: 'block' } },
+      kids.map((k, i) => React.createElement(k[0], Object.assign({}, k[1], { key: i }))));
+  }
+  renderVals() {
+    const st = this.state, f = st.n / BASE;
+    const I = {
+      search: this.ic('Search'), heart: this.ic('Heart'), heartFill: this.ic('Heart', 20, 'currentColor'), plus: this.ic('Plus'), minus: this.ic('Minus'), menu: this.ic('Menu', 22),
+      arrowL: this.ic('ArrowLeft'), arrowR: this.ic('ArrowRight'), chevD: this.ic('ChevronDown'), globe: this.ic('Globe', 16), ext: this.ic('ExternalLink', 14),
+      chef: this.ic('ChefHat', 22), print: this.ic('Printer'), share: this.ic('Share2'), info: this.ic('Info', 18), check: this.ic('CircleCheck', 22),
+      tag: this.ic('Tag', 16), clockSm: this.ic('Clock', 16),
+    };
+    const cats = CATS.map(([t, ic]) => ({ t, icon: this.ic(ic, 18), cur: t === 'Pieczywo' ? 'page' : undefined, fg: t === 'Pieczywo' ? '#9a3412' : '#111827', line: t === 'Pieczywo' ? '#c2410c' : 'transparent' }));
+
+    const imgs = [{ bg: TINTS[0], label: 'zdjęcie główne' }, { bg: TINTS[2], label: 'zdjęcie 2' }, { bg: TINTS[4], label: 'zdjęcie 3' }];
+    const gallery = imgs.map((g, i) => ({ bg: g.bg, on: st.img === i, ring: st.img === i ? '#111827' : 'transparent', aria: 'Pokaż zdjęcie ' + (i + 1) + ' z ' + imgs.length, pick: () => this.setState({ img: i }) }));
+
+    const facts = [
+      { icon: this.ic('Clock', 18), l: 'Przygotowanie', v: '5 min' },
+      { icon: this.ic('Flame', 18), l: 'Pieczenie', v: '15 min' },
+      { icon: this.ic('Timer', 18), l: 'Łącznie', v: '20 min' },
+      { icon: this.ic('Croissant', 18), l: 'Wychodzi', v: st.n + ' ' + plural(st.n, ['bułka', 'bułki', 'bułek']) },
+    ];
+
+    let total = 0, checked = 0;
+    const groups = ING.map(gr => ({ g: gr.g, items: gr.items.map(it => {
+      total++; const on = !!st.checks[it.id]; if (on) checked++;
+      return {
+        n: it.n, amt: fmt(it.q * f, it.u), note: it.alt ? (it.alt.pre || '') + fmt(it.alt.q * f, it.alt.u) + (it.alt.post || '') : '',
+        on, fg: on ? '#6b7280' : '#111827', deco: on ? 'line-through' : 'none',
+        toggle: () => this.setState(s => ({ checks: Object.assign({}, s.checks, { [it.id]: !s.checks[it.id] }) })),
+      };
+    }) }));
+
+    const doneCount = STEPS.filter((_, i) => st.done[i]).length;
+    const nowIdx = STEPS.findIndex((_, i) => !st.done[i]);
+    const steps = STEPS.map((s, i) => {
+      const done = !!st.done[i], now = i === nowIdx && doneCount > 0;
+      const chipList = [];
+      if (s.timer) { const on = !!st.timers[i]; chipList.push({ icon: this.ic('Timer', 18), l: on ? 'Minutnik działa · ' + (s.timerL || s.timer + ' min') : 'Minutnik ' + (s.timerL || s.timer + ' min'), on, border: on ? '#15803d' : '#111827', bg: on ? '#15803d' : '#fff', fg: on ? '#fff' : '#111827', go: () => this.setState(x => ({ timers: Object.assign({}, x.timers, { [i]: !x.timers[i] }) })) }); }
+      if (s.temp) chipList.push({ icon: this.ic('Thermometer', 18), l: s.temp, on: false, border: '#fde7d3', bg: '#fff7ed', fg: '#7c2d12', go: () => {} });
+      return {
+        parts: parts(s.t.replace('{N}', st.n)), done, now, num: i + 1, labelFg: done ? '#6b7280' : '#9a3412', chips: chipList.length > 0, chipList,
+        mark: done ? this.ic('Check', 22) : String(i + 1),
+        aria: 'Krok ' + (i + 1) + (done ? ' — zrobiony, cofnij' : ' — oznacz jako zrobiony'),
+        ring: done ? '#15803d' : '#c2410c', dotBg: done ? '#15803d' : '#fff', dotFg: done ? '#fff' : '#9a3412',
+        fg: done ? '#6b7280' : '#111827', bg: now ? '#fff7ed' : 'transparent',
+        toggle: () => this.setState(x => ({ done: Object.assign({}, x.done, { [i]: !x.done[i] }) })),
+      };
+    });
+
+    const order = VERSIONS.map((v, i) => Object.assign({ i }, v));
+    if (st.sort === 'new') order.sort((a, b) => a.nw - b.nw);
+    if (st.sort === 'fast') order.sort((a, b) => a.min - b.min);
+    const shown = st.all ? order : order.slice(0, 4);
+    const versions = shown.map(v => {
+      const d = v.min - 20, isFav = !!st.vfav[v.i];
+      return {
+        t: v.t, s: v.s, src: v.src, bg: TINTS[v.i % TINTS.length], plus: v.plus, minus: v.minus, time: tl(v.min),
+        diff: d > 0 ? 'o ' + tl(d) + ' dłużej' : d < 0 ? 'o ' + tl(-d) + ' krócej' : 'tyle samo',
+        isFav, favIcon: isFav ? this.ic('Heart', 20, 'currentColor') : this.ic('Heart'), favAria: (isFav ? 'Usuń z ulubionych: ' : 'Dodaj do ulubionych: ') + v.t,
+        fav: () => this.setState(x => ({ vfav: Object.assign({}, x.vfav, { [v.i]: !x.vfav[v.i] }) })),
+      };
+    });
+    const sorts = SORTS.map(([k, l]) => ({ l, on: st.sort === k, bg: st.sort === k ? '#fff' : 'transparent', fg: '#111827', sh: st.sort === k ? '0 1px 3px rgba(17,24,39,.18)' : 'none', pick: () => this.setState({ sort: k }) }));
+
+    return {
+      I, cats, gallery, mainImg: imgs[st.img], facts, groups, steps, versions, sorts,
+      similar: SIMILAR.map((m, i) => Object.assign({ bg: TINTS[(i + 1) % TINTS.length] }, m)),
+      noSubmit: (e) => e.preventDefault(),
+      fav: st.fav, favBg: st.fav ? '#c2410c' : '#fff', favFg: st.fav ? '#fff' : '#9a3412',
+      favIcon: st.fav ? I.heartFill : I.heart, favLabel: st.fav ? 'W ulubionych' : 'Zapisz',
+      toggleFav: () => this.setState(s => ({ fav: !s.fav })),
+      n: st.n, scaled: st.n !== BASE, atMin: st.n <= 2, lessOp: st.n <= 2 ? 0.35 : 1,
+      less: () => this.setState(s => ({ n: Math.max(2, s.n - 2) })),
+      more: () => this.setState(s => ({ n: Math.min(48, s.n + 2) })),
+      resetN: () => this.setState({ n: BASE }),
+      checkedLabel: checked ? 'masz ' + checked + ' z ' + total : total + ' składników',
+      anyChecked: checked > 0, clearChecks: () => this.setState({ checks: {} }),
+      stepsLabel: doneCount ? doneCount + ' z ' + STEPS.length + ' kroków zrobione' : STEPS.length + ' kroków · kliknij numer, gdy skończysz krok',
+      progress: Math.round(doneCount / STEPS.length * 100) + '%', allDone: doneCount === STEPS.length,
+      canMore: !st.all, showAll: () => this.setState({ all: true }),
+    };
+  }
+}
+</script>
+</body>
+</html>
