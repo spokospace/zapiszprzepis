@@ -1,4 +1,3 @@
-import { categoryLabel } from './recipe-categories'
 import { formatMinutes } from './format-minutes'
 
 interface RecipeTimes {
@@ -28,17 +27,6 @@ export function photosLabel(count: number): string {
   return `${count} ${polishPlural(count, 'zdjęcie', 'zdjęcia', 'zdjęć')}`
 }
 
-/**
- * The recipe header's "Kategoria · czas" line (E01-S07). "≈" marks an estimated
- * time; with no known time the line is just the category.
- */
-export function recipeMetaLine(r: RecipeTimes & { category: string; times_estimated: boolean }): string {
-  const minutes = recipeTotalMinutes(r)
-  const category = categoryLabel(r.category)
-  if (minutes == null || minutes <= 0) return category
-  return `${category} · ${r.times_estimated ? '≈ ' : ''}${formatMinutes(minutes)}`
-}
-
 export interface RecipeTimeStat {
   label: 'Przygotowanie' | 'Gotowanie' | 'Łącznie'
   /** "15 min", "1 godz 30 min". */
@@ -46,8 +34,8 @@ export interface RecipeTimeStat {
 }
 
 /**
- * The desktop header's times row (handoff A9: "Przygotowanie / Gotowanie /
- * Łącznie"): only the known, positive times. "Łącznie" shows when the source
+ * The recipe header's time strip (handoff A9, then 2026-10-28: "Przygotowanie /
+ * Gotowanie / Łącznie", at every width): only the known, positive times. "Łącznie" shows when the source
  * states a total or both parts are known, so it never just repeats the one part.
  * The recipe's single `times_estimated` flag covers the whole row.
  */
