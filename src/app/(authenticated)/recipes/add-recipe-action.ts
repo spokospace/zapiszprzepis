@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { checkUser } from '@/lib/supabase/user-check'
-import { inngest } from '@/inngest/client'
+import { sendRecipeExtract } from '@/inngest/send'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
@@ -72,14 +72,11 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   }
 
   try {
-    await inngest.send({
-      name: 'recipe/extract',
-      data: {
-        shareId: share.id,
-        sharedUrl: dedup.normalizedUrl,
-        userId: user.id,
-        sourceType,
-      },
+    await sendRecipeExtract({
+      shareId: share.id,
+      sharedUrl: dedup.normalizedUrl,
+      userId: user.id,
+      sourceType,
     })
   } catch (err) {
     console.error('Failed to trigger extraction:', err)

@@ -47,7 +47,7 @@ async function main() {
     }
     console.log(`${values.run ? '→' : '·'} ${r.slug}  (${r.source_url})`)
     if (!values.run) continue
-    const shareId = await queueRecipeRefresh(supabase, inngest, { userId: r.user_id, sourceUrl: r.source_url })
+    const shareId = await queueRecipeRefresh(supabase, (data) => inngest.send({ name: 'recipe/extract', data }), { userId: r.user_id, sourceUrl: r.source_url })
     if (shareId == null) console.error(`✗ ${r.slug}: share insert failed`)
     await new Promise((resolve) => setTimeout(resolve, everySeconds * 1000))
   }

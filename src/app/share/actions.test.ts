@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/lib/supabase/server', () => ({
   createSupabaseServerClient: vi.fn(),
 }))
-vi.mock('@/inngest/client', () => ({
-  inngest: { send: vi.fn() },
+vi.mock('@/inngest/send', () => ({
+  sendRecipeExtract: vi.fn(),
 }))
 vi.mock('@/lib/recipe-dedup', () => ({
   findExistingRecipeForUrl: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock('next/cache', () => ({
 vi.mock('@/lib/full-access', () => ({ getFullAccess: vi.fn().mockResolvedValue(true), NO_FULL_ACCESS: 'No full access' }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { inngest } from '@/inngest/client'
+import { sendRecipeExtract } from '@/inngest/send'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
 import { getFullAccess } from '@/lib/full-access'
@@ -51,7 +51,7 @@ describe('triggerRecipeExtraction — a link someone else added first (E01-S03a)
     expect(favoriteExistingRecipe).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, 'https://example.com/tiramisu')
     // No share row, no extraction: the recipe already exists.
     expect(from).not.toHaveBeenCalled()
-    expect(inngest.send).not.toHaveBeenCalled()
+    expect(sendRecipeExtract).not.toHaveBeenCalled()
   })
 })
 
@@ -60,7 +60,7 @@ describe('triggerRecipeExtraction — send-failure marks share failed (Risk 3)',
     vi.clearAllMocks()
   })
 
-  it('updates share to status:failed when inngest.send() throws', async () => {
+  it('updates share to status:failed when sendRecipeExtract() throws', async () => {
     const updateEq = vi.fn().mockResolvedValue({ data: null, error: null })
     const updateFn = vi.fn().mockReturnValue({ eq: updateEq })
 
@@ -83,7 +83,7 @@ describe('triggerRecipeExtraction — send-failure marks share failed (Risk 3)',
       status: 'new',
       normalizedUrl: 'https://example.com/recipe',
     })
-    vi.mocked(inngest.send).mockRejectedValue(new Error('queue down'))
+    vi.mocked(sendRecipeExtract).mockRejectedValue(new Error('queue down'))
 
     await triggerRecipeExtraction('https://example.com/recipe')
 
@@ -94,7 +94,7 @@ describe('triggerRecipeExtraction — send-failure marks share failed (Risk 3)',
     expect(updateEq).toHaveBeenCalledWith('id', 42)
   })
 
-  it('still returns a share result even when inngest.send() throws', async () => {
+  it('still returns a share result even when sendRecipeExtract() throws', async () => {
     const mockSupabase = {
       auth: {
         getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }),
@@ -116,7 +116,7 @@ describe('triggerRecipeExtraction — send-failure marks share failed (Risk 3)',
       status: 'new',
       normalizedUrl: 'https://example.com/recipe',
     })
-    vi.mocked(inngest.send).mockRejectedValue(new Error('queue down'))
+    vi.mocked(sendRecipeExtract).mockRejectedValue(new Error('queue down'))
 
     const result = await triggerRecipeExtraction('https://example.com/recipe')
 
@@ -141,6 +141,6 @@ describe('triggerRecipeExtraction — full-access gate (E01-S11)', () => {
     await expect(triggerRecipeExtraction('https://example.com/tiramisu')).rejects.toThrow('No full access')
 
     expect(from).not.toHaveBeenCalled()
-    expect(inngest.send).not.toHaveBeenCalled()
+    expect(sendRecipeExtract).not.toHaveBeenCalled()
   })
 })
