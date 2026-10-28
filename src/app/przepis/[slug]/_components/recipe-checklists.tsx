@@ -61,7 +61,7 @@ function IngredientRow({
   const text = checked ? 'text-ink-muted line-through' : 'text-ink'
   const altText = checked ? text : 'text-ink-soft'
   return (
-    <label className="flex min-h-[56px] cursor-pointer items-center gap-3.5 border-b-[1.5px] border-border-card px-1 py-1.5">
+    <label className="flex min-h-[56px] cursor-pointer flex-wrap items-center gap-3.5 border-b-[1.5px] border-border-card px-1 py-1.5 max-[359px]:gap-y-1">
       <span className="relative flex h-8 w-8 shrink-0">
         <input
           type="checkbox"
@@ -85,7 +85,7 @@ function IngredientRow({
           sits on top and the household measure below it, lighter and 16 px — the
           owner's "second line" treatment (#505). */}
       {alt ? (
-        <span className="flex max-w-[45%] flex-col items-end text-right">
+        <span className="flex max-w-[45%] flex-col items-end text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:items-start max-[359px]:pl-[46px] max-[359px]:text-left">
           {amount && <b className={`text-scalable ${text}`}>{amount}</b>}{' '}
           {/* 16 px base so .text-scalable (which scales the parent em) grows from 16, not 19. */}
           <span className="text-[16px]">
@@ -93,7 +93,11 @@ function IngredientRow({
           </span>
         </span>
       ) : (
-        amount && <b className={`text-scalable max-w-[45%] text-right ${text}`}>{amount}</b>
+        amount && (
+          <b className={`text-scalable max-w-[45%] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:pl-[46px] max-[359px]:text-left ${text}`}>
+            {amount}
+          </b>
+        )
       )}
     </label>
   )

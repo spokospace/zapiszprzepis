@@ -125,7 +125,9 @@ describe('RecipeChecklists alternative measure (#505)', () => {
   it('keeps an ingredient without an alt measure on a single plain amount line', () => {
     const html = renderAlt()
     // The no-alt row keeps the original <b> amount markup and adds no 16 px line.
-    expect(html).toContain('<b class="text-scalable max-w-[45%] text-right text-ink">4</b>')
+    expect(html).toContain(
+      '<b class="text-scalable max-w-[45%] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:pl-[46px] max-[359px]:text-left text-ink">4</b>',
+    )
     expect((html.match(/text-\[16px\]/g) ?? []).length).toBe(1)
   })
 
