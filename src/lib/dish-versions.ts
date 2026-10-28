@@ -245,6 +245,23 @@ export function versionBadges(current: BadgeTimes, other: BadgeTimes): { serving
   return { servings, time }
 }
 
+/**
+ * The time column of a version row (handoff 2026-10-28 §6): the version's total ("3 godz",
+ * "≈ 40 min" when estimated) and how it compares with the viewed recipe ("o 2 godz 40 min
+ * dłużej", "o 15 min krócej"). The comparison is null when either total is unknown or the
+ * gap is under the badge threshold; the value is null when the version has no time.
+ */
+export function versionTimeCompare(current: BadgeTimes, other: BadgeTimes): { value: string | null; delta: string | null } {
+  const otherTime = totalTime(other)
+  if (otherTime == null) return { value: null, delta: null }
+  const value = `${other.times_estimated ? '≈ ' : ''}${formatMinutes(otherTime)}`
+  const currentTime = totalTime(current)
+  if (currentTime == null) return { value, delta: null }
+  const gap = otherTime - currentTime
+  if (Math.abs(gap) < TIME_DELTA_THRESHOLD) return { value, delta: null }
+  return { value, delta: `o ${formatMinutes(Math.abs(gap))} ${gap > 0 ? 'dłużej' : 'krócej'}` }
+}
+
 // --- Wording ---------------------------------------------------------------
 // (The shortcut box's wording lives with it, in dish-versions-bar.tsx.)
 
