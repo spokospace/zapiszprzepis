@@ -1,0 +1,38 @@
+/*
+ * Mermaid diagrams: rehype-mermaid-theme.ts emits one <img> per theme. A wide
+ * left-to-right flowchart scaled down to the column would have unreadable
+ * text, so diagrams keep their drawn size and the figure scrolls sideways
+ * (it is focusable, so the scroll works from the keyboard too).
+ */
+.mermaid-figure {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.mermaid-figure:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 4px;
+}
+
+.mermaid-figure img {
+  display: block;
+  max-width: none;
+  height: auto;
+  margin-inline: auto;
+}
+
+:root[data-theme='light'] .mermaid-dark,
+:root[data-theme='dark'] .mermaid-light {
+  display: none;
+}
+
+.mermaid-error {
+  white-space: pre-wrap;
+  border-left: 4px solid var(--sl-color-red);
+  padding-left: 1rem;
+}
+
+/* Room for the specs' wide tables. */
+:root {
+  --sl-content-width: 52rem;
+}
