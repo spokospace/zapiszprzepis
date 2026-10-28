@@ -33,25 +33,25 @@ async function firstRecipePath(page: Page): Promise<string> {
 }
 
 /**
- * The gaps around the recipe-page action row, read from the rendered boxes. The action
- * row is the element immediately before the ingredients/steps grid (`.recipe-print-grid`);
- * the header is the element before the row. Anchored on structure, not on margin classes,
- * and guarded: if the element before the content grid is not the action row (a „Udostępnij”
- * button inside it), it returns an error instead of silently measuring the wrong block.
+ * The gaps around the recipe-page action row, read from the rendered boxes. The row is
+ * the grid holding „Udostępnij przepis”, last in the header's text column; the content
+ * below is the ingredients/steps grid (`.recipe-print-grid`) and the block above is the
+ * row's previous sibling (the description or the versions bar). Anchored on structure,
+ * not on margin classes, and guarded so a moved row errors instead of measuring the
+ * wrong block.
  */
 function measureActionRowGaps() {
   const content = document.querySelector('.recipe-print-grid')
   if (!content) return { error: 'recipe content grid (.recipe-print-grid) not found' }
-  const row = content.previousElementSibling
-  if (!row) return { error: 'no element before the content grid — action row missing' }
-  const hasShare = [...row.querySelectorAll('button')].some((b) => /Udostępnij/.test(b.textContent ?? ''))
-  if (!hasShare) return { error: `element before content grid is not the action row: <${row.tagName.toLowerCase()} class="${row.className}">` }
+  const share = [...document.querySelectorAll('header button')].find((b) => /Udostępnij/.test(b.textContent ?? ''))
+  const row = share?.closest('div.grid')
+  if (!row) return { error: 'no action row (a grid with „Udostępnij”) in the recipe header' }
 
-  const header = row.previousElementSibling
+  const above = row.previousElementSibling
   const rowBox = row.getBoundingClientRect()
   return {
     below: Math.round(content.getBoundingClientRect().top - rowBox.bottom),
-    above: header ? Math.round(rowBox.top - header.getBoundingClientRect().bottom) : null,
+    above: above ? Math.round(rowBox.top - above.getBoundingClientRect().bottom) : null,
   }
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { Printer } from 'lucide-react'
-import { ACTION_CARD, ACTION_CARD_ICON_COMPACT } from '@/app/components/ui/action-card'
+import { ACTION_CARD, ACTION_CARD_ICON_COMPACT, ActionLabel } from '@/app/components/ui/action-card'
 
 /**
  * "Wydrukuj przepis" in the recipe actions row, beside "Udostępnij przepis" (A9). Opens the browser's
@@ -14,7 +14,7 @@ export function PrintButton() {
   return (
     <button type="button" onClick={() => window.print()} className={ACTION_CARD.compact}>
       <Printer aria-hidden="true" className={ACTION_CARD_ICON_COMPACT} />
-      Wydrukuj przepis
+      <ActionLabel label="Wydrukuj przepis" short="Drukuj" />
     </button>
   )
 }

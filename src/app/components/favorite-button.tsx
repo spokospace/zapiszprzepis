@@ -25,10 +25,10 @@ interface FavoriteButtonProps {
 }
 
 /** Label per state; `hint` is the recipe page's second line (design 2026-10-28). */
-const COPY = {
-  off: { label: 'Dodaj do ulubionych', hint: 'Zapisz przepis na później' },
+const COPY: Record<'off' | 'on', { label: string; short?: string; hint: string }> = {
+  off: { label: 'Dodaj do ulubionych', short: 'Do ulubionych', hint: 'Zapisz przepis na później' },
   on: { label: 'W ulubionych', hint: 'Naciśnij, aby usunąć' },
-} as const
+}
 
 const SIZE = {
   // The recipe page's tall action card: a framed tile with the label over a hint.
@@ -52,7 +52,7 @@ function Content({ size, favorited }: { size: 'full' | 'photo'; favorited: boole
   return (
     <>
       <Heart aria-hidden="true" className={`${ACTION_CARD_ICON} text-action`} fill={fill} />
-      <ActionCardText title={copy.label} hint={copy.hint} tone="accent" />
+      <ActionCardText title={copy.label} short={copy.short} hint={copy.hint} tone="accent" />
     </>
   )
 }

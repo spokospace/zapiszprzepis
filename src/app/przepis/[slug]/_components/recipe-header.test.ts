@@ -20,8 +20,8 @@ const BASE: RecipeHeaderData = {
   author_username: 'ania',
 }
 
-function render(extra: Partial<RecipeHeaderData>) {
-  return renderToStaticMarkup(createElement(RecipeHeader, { recipe: { ...BASE, ...extra } }))
+function render(extra: Partial<RecipeHeaderData>, actions?: Parameters<typeof RecipeHeader>[0]['actions']) {
+  return renderToStaticMarkup(createElement(RecipeHeader, { recipe: { ...BASE, ...extra }, actions }))
 }
 
 describe('RecipeHeader author line (E01-S23)', () => {
@@ -64,6 +64,33 @@ describe('RecipeHeader desktop column (A9)', () => {
     const html = render({ description: 'ze smalcem' })
     expect(html).toMatch(/<\/h1><p class="mb-3 text-scalable-body text-ink-soft">ze smalcem<\/p>/)
     expect(html.indexOf('ze smalcem')).toBeLessThan(html.indexOf('aniagotuje.pl'))
+  })
+})
+
+describe('RecipeHeader layout (design 2026-10-28)', () => {
+  const COVER = 'https://x.supabase.co/storage/v1/object/public/recipe-images/1/c.webp'
+
+  it('splits like the checklists below (1fr | 1.6fr), so the photo ends over „Składniki”', () => {
+    expect(render({})).toMatch(/^<header class="mb-8 lg:grid lg:grid-cols-\[1fr_1\.6fr\][^"]*lg:gap-x-12[^"]*"/)
+  })
+
+  it('keeps the cover 4:3 at every width and bleeds it left from lg', () => {
+    const html = render({ image_url: COVER })
+    expect(html).toMatch(/class="recipe-print-cover [^"]*aspect-\[4\/3\][^"]*lg:bleed-left-page xl:row-span-2"/)
+    expect(html).not.toContain('16/10')
+  })
+
+  it('puts the actions after the text: a full row below xl, under the description from xl', () => {
+    const html = render({ meta_description: 'Opis przepisu.' }, createElement('div', { id: 'actions' }))
+    expect(html).toMatch(
+      /Opis przepisu\.<\/p><\/div><div class="lg:col-span-2 xl:col-span-1 xl:col-start-2"><div id="actions"><\/div><\/div><\/header>$/,
+    )
+    // From xl the photo spans both rows, so the actions sit in the text column.
+    expect(html).toContain('xl:grid-rows-[auto_1fr]')
+  })
+
+  it('renders no actions wrapper when there are no actions', () => {
+    expect(render({})).not.toContain('xl:col-start-2')
   })
 })
 
