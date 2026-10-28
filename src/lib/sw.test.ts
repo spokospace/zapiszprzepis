@@ -113,7 +113,11 @@ describe('sw.js routing', () => {
     (path) => { expect(sw.routeFor(request(path))).toBe('public-page') },
   )
 
-  it.each(['/ulubione', '/powiadomienia', '/settings', '/recipes', '/dodaj', '/witaj', '/login'])(
+  it.each([
+    '/ulubione', '/powiadomienia', '/settings', '/recipes', '/dodaj', '/witaj', '/login',
+    // The staff panel is never cached: it shows e-mail addresses and audit rows.
+    '/admin', '/admin/uzytkownicy', '/admin/dziennik',
+  ])(
     'keeps %s network-only',
     (path) => { expect(sw.routeFor(request(path))).toBe('private-page') },
   )
