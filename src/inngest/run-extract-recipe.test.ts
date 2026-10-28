@@ -239,6 +239,18 @@ describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () =>
     })
   }
 
+  it('keeps the stored gallery on a refresh read through Jina that finds no photos (#536)', async () => {
+    // A degraded read finding no photos is no sign the source lost them.
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeOutOfCreditsFetch(), supabase: mock.supabase as any })
+
+    expect(archiveRecipeImages).toHaveBeenCalledWith(expect.anything(), 'user-1', 7, expect.anything(), [], {
+      clearStale: false,
+    })
+  })
+
   it('extracts the recipe from Jina Reader when Firecrawl answers 402', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const mock = makeSupabaseMock()

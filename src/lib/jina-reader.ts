@@ -4,7 +4,7 @@
 // feeds the LLM, and the page's own HTML, fetched directly, keeps the photos,
 // JSON-LD and embedded players the rest of the pipeline reads.
 
-import { isPrivateUrl } from './recipe-image-archive'
+import { isPrivateUrl, namesTheDish } from './recipe-image-archive'
 import { fetchPublicHtml } from './public-fetch'
 import { decodeEntities } from './html-entities'
 
@@ -57,12 +57,45 @@ interface Deps {
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
-async function readMarkdown(url: string, { fetch }: Deps): Promise<Omit<ReaderPage, 'html'>> {
+interface ReaderImage {
+  url: string
+  alt: string
+}
+
+/**
+ * The page's images from Jina's image summary, in page order. Its keys read
+ * `Image 4,1: fig jam pizza` — the alt after the colon. A lazy-loaded photo
+ * shows up there (and in the markdown) as a `blob:` URL of Jina's own browser,
+ * next to the real URL of the same photo; only real http(s) URLs are kept.
+ */
+function summaryImages(images: unknown): ReaderImage[] {
+  if (!images || typeof images !== 'object') return []
+  const out: ReaderImage[] = []
+  for (const [key, value] of Object.entries(images)) {
+    const url = str(value)
+    // Written into a src attribute verbatim (an entity there would never be
+    // decoded on the way to the archiver), so a URL that would need one is skipped.
+    if (!/^https?:\/\/[^\s"'<>]+$/i.test(url)) continue
+    out.push({ url, alt: key.split(/:\s*/).slice(1).join(': ').trim() })
+  }
+  return out
+}
+
+async function readMarkdown(
+  url: string,
+  { fetch }: Deps,
+): Promise<Omit<ReaderPage, 'html'> & { images: ReaderImage[] }> {
   // Keyless, Jina limits by IP, and Cloudflare Workers share their egress
   // IPs: production gets HTTP 429. With a key the limit is the key's own.
   const key = process.env.JINA_API_KEY
   const response = await fetch(`${JINA_READER}${url}`, {
-    headers: { Accept: 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}) },
+    headers: {
+      Accept: 'application/json',
+      // The page's image URLs, for when neither HTML source gets past the
+      // site's bot check (see readerScrape).
+      'X-With-Images-Summary': 'true',
+      ...(key ? { Authorization: `Bearer ${key}` } : {}),
+    },
     signal: AbortSignal.timeout(45_000),
   })
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -79,7 +112,24 @@ async function readMarkdown(url: string, { fetch }: Deps): Promise<Omit<ReaderPa
       ogImage: str(data.metadata?.['og:image']) || undefined,
       statusCode: typeof data.httpStatus === 'number' ? data.httpStatus : undefined,
     },
+    images: summaryImages(data.images),
   }
+}
+
+const escapeAlt = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+
+/**
+ * `<img>` tags for the summary images that name the dish, so the gallery and
+ * step-photo scans, which read HTML, see them. Only those: stripped of its
+ * markup, the summary cannot otherwise tell a photo of the recipe from the
+ * site's logo, the author's portrait or a book cover in the sidebar.
+ */
+function dishImageTags(images: ReaderImage[], pageUrl: string): string {
+  const isDish = namesTheDish(pageUrl)
+  return images
+    .filter(({ url, alt }) => isDish(url, alt))
+    .map(({ url, alt }) => `<img src="${url}" alt="${escapeAlt(alt)}">`)
+    .join('\n')
 }
 
 // A bot-check interstitial (Cloudflare's "Just a moment…") instead of the page.
@@ -103,7 +153,11 @@ async function readHtml(url: string, { fetch }: Deps): Promise<string> {
       signal: AbortSignal.timeout(45_000),
     })
     if (!response.ok) return ''
-    return str((await response.json())?.data?.html)
+    const html = str((await response.json())?.data?.html)
+    // Jina's browser can be stopped by the same bot check (howsweeteats.com).
+    // Tested without scripts: Cloudflare puts its `challenge-platform` beacon
+    // on ordinary pages too.
+    return BLOCKED_PAGE_RE.test(readableHtml(html)) ? '' : html
   } catch {
     return ''
   }
@@ -115,7 +169,7 @@ async function readHtml(url: string, { fetch }: Deps): Promise<string> {
  */
 export async function readerScrape(url: string, deps: Deps): Promise<ReaderPage> {
   if (isPrivateUrl(url)) throw new Error('Jina Reader: private address')
-  const [read, html] = await Promise.all([
+  const [{ images, ...read }, html] = await Promise.all([
     readMarkdown(url, deps).catch((err) => {
       throw new Error(`Jina Reader: ${err instanceof Error ? err.message : String(err)}`, { cause: err })
     }),
@@ -129,5 +183,9 @@ export async function readerScrape(url: string, deps: Deps): Promise<ReaderPage>
   const ogImage = read.metadata.ogImage ?? ogImageFromHtml(rawHtml)
   // Hand on the content-only HTML (see readableHtml) so the LLM's per-step image
   // picks and the gallery/cover scans reach the article, not ~90 KB of <head>.
-  return { ...read, html: readableHtml(rawHtml), metadata: { ...read.metadata, ogImage } }
+  let content = readableHtml(rawHtml)
+  // No photo in it — the site turned both HTML fetches away — but the markdown
+  // read got through: its image summary stands in, or the gallery comes up empty.
+  if (!/<img\b/i.test(content)) content = [content, dishImageTags(images, url)].filter(Boolean).join('\n')
+  return { ...read, html: content, metadata: { ...read.metadata, ogImage } }
 }
