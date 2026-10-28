@@ -104,7 +104,7 @@ export function RecipeListBar(props: RecipeListProps) {
         <ArrowLeft aria-hidden="true" size={20} className="shrink-0" />
         {position.label}
       </Link>
-      <span className="shrink-0 text-[16px] text-ink-soft lg:text-[18px] lg:font-bold lg:text-ink">
+      <span className="shrink-0 text-[16px] text-ink-soft lg:text-[18px] lg:font-bold lg:text-ink-soft">
         <span aria-hidden="true">
           <span className="hidden lg:inline">· </span>
           {position.index} z {position.total}
