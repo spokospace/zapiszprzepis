@@ -99,7 +99,7 @@ export function RecipeListBar(props: RecipeListProps) {
           of pushing "N z M" off screen (WCAG 1.4.10, 200% zoom). */}
       <Link
         href={position.href}
-        className="inline-flex min-h-[48px] lg:min-h-0 min-w-0 items-center gap-1.5 text-[18px] font-bold no-underline! wrap-anywhere hover:text-action-hover"
+        className="inline-flex min-h-[48px] lg:min-h-0 min-w-0 items-center gap-1.5 text-[18px] font-bold text-ink-soft no-underline! wrap-anywhere hover:text-action-hover"
       >
         <ArrowLeft aria-hidden="true" size={20} className="shrink-0" />
         {position.label}
