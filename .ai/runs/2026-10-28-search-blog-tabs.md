@@ -35,17 +35,25 @@ tabs „W serwisie” (default, count) and „Na blogach” (on-demand blog sear
 ## Risks
 
 - Up to 2 extra DB reads per blog result (5 results) — bounded, run in parallel.
+- Reflow e2e not run in this session (no env); verify locally before merge.
 - Tabs must keep server-rendered results in the DOM (hidden panel) so links work without JS.
 
 ## Progress
+
+PR: #602
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Existing-recipe lookup for blog results
 
-- [ ] 1.1 Return existing recipe per blog result from searchViaExa
+- [x] 1.1 Return existing recipe per blog result from searchViaExa — 9c45996
 
 ### Phase 2: Tabs on /szukaj
 
-- [ ] 2.1 SearchTabs and blog panel component
-- [ ] 2.2 Wire tabs into /szukaj and update reflow e2e
+- [x] 2.1 SearchTabs and blog panel component — 984958f
+- [x] 2.2 Wire tabs into /szukaj and update reflow e2e — 984958f
+
+## Validation
+
+- `pnpm typecheck`, `pnpm lint` (0 errors; 1 pre-existing warning in `signin-form.tsx`), `pnpm test` (187 files, 2074 tests) — green.
+- `pnpm test:reflow` — not run: no `.env.local` in this checkout or the main one, so the dev server cannot reach Supabase. The `#no-results-heading` selector the reflow spec uses is kept.
