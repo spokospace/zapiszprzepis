@@ -3,13 +3,12 @@ import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn() }))
 vi.mock('@/lib/recipe-image-archive', () => ({
-  extractStoragePath: vi.fn(() => 'user-1/1/cover.jpg'),
-  removeGallery: vi.fn(),
+  removeRecipeImages: vi.fn(),
 }))
 vi.mock('@/lib/recipe-cache', () => ({ revalidateRecipeCaches: vi.fn() }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { removeGallery } from '@/lib/recipe-image-archive'
+import { removeRecipeImages } from '@/lib/recipe-image-archive'
 import { revalidateRecipeCaches } from '@/lib/recipe-cache'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { POST } from './route'
@@ -30,14 +29,12 @@ function mockClient(deleteError: { code: string; message: string } | null) {
       },
     }),
   }
-  const remove = vi.fn(async () => {
+  const remove = vi.mocked(removeRecipeImages).mockImplementation(async () => {
     steps.push('storage')
-    return { error: null }
   })
   vi.mocked(createSupabaseServerClient).mockResolvedValue({
     auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
     from: () => lookup,
-    storage: { from: () => ({ remove }) },
   } as any)
   return { steps, remove }
 }
@@ -65,7 +62,6 @@ describe('POST /api/recipes/delete — a recipe others keep as a favorite (E01-S
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ error: 'recipe_shared', message: RECIPE_SHARED_MESSAGE })
     expect(remove).not.toHaveBeenCalled()
-    expect(removeGallery).not.toHaveBeenCalled()
     // A refused delete leaves the caches alone — nothing changed.
     expect(revalidateRecipeCaches).not.toHaveBeenCalled()
   })
@@ -88,7 +84,8 @@ describe('POST /api/recipes/delete — a recipe others keep as a favorite (E01-S
     expect(response.status).toBe(303)
     expect(response.headers.get('location')).toBe('http://localhost/recipes')
     expect(steps).toEqual(['row', 'storage'])
-    expect(removeGallery).toHaveBeenCalledWith(expect.anything(), 'user-1', 1)
+    // Cover, gallery and step photos go in one remove that checks what Storage really deleted (#132).
+    expect(removeRecipeImages).toHaveBeenCalledWith(expect.anything(), 'user-1', 1, 'https://cdn/cover.jpg')
     // The public list + this recipe's cached page are purged (#445).
     expect(revalidateRecipeCaches).toHaveBeenCalledWith('tiramisu')
   })
