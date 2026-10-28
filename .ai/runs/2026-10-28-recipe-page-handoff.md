@@ -58,11 +58,11 @@ Non-goals (kept): no portion calculator, no timers, no temperature labels; no sc
 
 ### Phase 1: wording and links
 
-- [ ] 1.1 Rename the cooking-mode entry to "Zacznij gotować"
-- [ ] 1.2 Versions bar becomes the plain link "Inne przepisy na … (N) ↓"
+- [x] 1.1 Rename the cooking-mode entry to "Zacznij gotować" — afeb834
+- [x] 1.2 Versions bar becomes the plain link "Inne przepisy na … (N) ↓" — afeb834
 
 ### Phase 2: step ticks
 
-- [ ] 2.1 Numbered, ticked steps with aria-pressed
-- [ ] 2.2 Progress text, "Teraz" marker, done message
-- [ ] 2.3 Tests for step ticks and the reset
+- [x] 2.1 Numbered, ticked steps with aria-pressed — 0bf1fbd
+- [x] 2.2 Progress text, "Teraz" marker, done message — 0bf1fbd (progress bar is aria-hidden; the count line is the accessible value)
+- [x] 2.3 Tests for step ticks and the reset — 0bf1fbd (stepProgress and render tests; the tick round-trip through sessionStorage and the reset are not automated, since the test environment is Node-only)
