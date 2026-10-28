@@ -39,6 +39,12 @@ interface RecipeHeaderProps {
    * lg and xl, under the description in the text column from xl.
    */
   actions?: ReactNode
+  /**
+   * The list position link and the breadcrumbs (A9): from lg, the first item of the
+   * text column, above the title. Hidden below lg, where the header carries the back
+   * link and the category line instead.
+   */
+  listBar?: ReactNode
 }
 
 /**
@@ -79,10 +85,10 @@ function Approx() {
 /**
  * The recipe page header (E01-S07, S07b): 4:3 photo, 32 px title, "Kategoria ·
  * czas" (from lg the A9 times row), source, who added it, and the actions. No
- * breadcrumbs below lg (C3); from lg they are in the page's A9 row. The tags render at the bottom of the page, in
- * "Ten przepis jest" (E01-S16).
+ * breadcrumbs below lg (C3); from lg they sit above the title, in the list bar slot.
+ * The tags render at the bottom of the page, in "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, versionsBar, actions, listBar }: RecipeHeaderProps) {
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
   const times = recipeTimeStats(recipe)
@@ -143,8 +149,7 @@ export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps
       )}
 
       <div>
-        {/* No breadcrumbs below lg (C3): the header leads back to the list and the
-            category is in the line under the title. From lg they sit in the A9 row. */}
+        {listBar && <div className="hidden print:hidden lg:mb-5 lg:block">{listBar}</div>}
         <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[44px] lg:leading-[1.1]">{recipe.title}</h1>
         {/* The recipe's own short description sits right under the title, not after the
             times row (owner request) — a subtitle qualifying the dish ("ze smalcem"). */}

@@ -8,7 +8,7 @@ const port = process.env.E2E_PORT ?? '3001'
 const baseURL = `http://localhost:${port}`
 const REFLOW = /reflow\.spec\.ts/
 const PHONE = /(menu-drawer|system-font)\.spec\.ts/
-const LAYOUT = /recipe-layout\.spec\.ts/
+const LAYOUT = /(recipe-layout|recipe-list-bar)\.spec\.ts/
 const IMAGE_ALLOWLIST = /image-optimizer-allowlist\.spec\.ts/
 
 export default defineConfig({

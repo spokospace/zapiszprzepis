@@ -94,6 +94,19 @@ describe('RecipeHeader layout (design 2026-10-28)', () => {
   })
 })
 
+describe('RecipeHeader list bar slot (A9)', () => {
+  it('renders the slot first in the text column, hidden below lg', () => {
+    const html = renderToStaticMarkup(
+      createElement(RecipeHeader, { recipe: BASE, listBar: createElement('span', null, 'BAR') }),
+    )
+    expect(html).toMatch(/<div><div class="hidden print:hidden lg:mb-5 lg:block"><span>BAR<\/span><\/div><h1/)
+  })
+
+  it('renders no slot wrapper without a listBar', () => {
+    expect(render({})).not.toContain('lg:mb-5 lg:block')
+  })
+})
+
 describe('RecipeHeader source badge (E01-S31 §3)', () => {
   it('links to the original in a new tab, with no "Źródło:" line', () => {
     const html = render({})

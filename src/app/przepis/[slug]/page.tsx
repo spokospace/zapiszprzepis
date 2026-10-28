@@ -172,18 +172,19 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {/* Not `narrow`: the desktop layout (E01-S17, A9) uses the full 1152 px; below lg
           both widths are the viewport anyway. */}
       <PageContainer>
-        {/* A9: from lg one row, "← {lista} · N z M" left and the breadcrumbs right;
-            below lg neither (C3): the header's „← {lista}” and the category line. */}
-        <div className="lg:mb-6 lg:flex lg:items-center lg:gap-6 print:hidden">
-          <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
-          <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block" />
-        </div>
         {/* The action cards sit last in the header's text column, under the description,
             so from lg they share the row with the photo. The cooking button and the steps
             list far below share the step-photos toggle through the module-level
             useStepPhotos store, so „Ukryj” reaches both. */}
         <RecipeHeader
           recipe={typedRecipe}
+          listBar={
+            // A9: from lg, the list position and the breadcrumbs share one row above the title.
+            <div className="lg:flex lg:items-center lg:gap-6">
+              <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+              <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block" />
+            </div>
+          }
           versionsBar={
             versionsTotal > 0 ? (
               <DishVersionsBar count={versionsTotal} dishAccusative={typedRecipe.dish_accusative ?? null} />
