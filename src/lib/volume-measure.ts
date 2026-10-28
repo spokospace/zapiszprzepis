@@ -7,7 +7,7 @@
 // the ingredient's density — so it is handled separately, only for stable staples
 // with a curated density table, in `weight-density.ts`.
 
-import { parseAmount, quarterMeasure, SZKLANKI } from './measure-format'
+import { LYZECZKI, LYZKI, parseAmount, quarterMeasure, SZKLANKI } from './measure-format'
 import { polishPlural } from './recipe-meta'
 
 const ML_SZKLANKA = 250
@@ -45,8 +45,7 @@ export function deriveVolumeMeasure(amount: string | undefined, unit: string | u
   const count = Math.round(ml / perUnit)
   if (count <= 0) return null
   const exact = Math.abs(ml - count * perUnit) < 1e-6
-  const word = useLyzka
-    ? polishPlural(count, 'łyżka', 'łyżki', 'łyżek')
-    : polishPlural(count, 'łyżeczka', 'łyżeczki', 'łyżeczek')
+  const forms = useLyzka ? LYZKI : LYZECZKI
+  const word = polishPlural(count, forms.one, forms.few, forms.many)
   return `${exact ? '' : 'ok. '}${count} ${word}`
 }

@@ -4,6 +4,7 @@
 // int insert. Both used to throw the whole, already paid, extraction away.
 
 import { containerMeasure } from './container-measure'
+import { householdAlt } from './household-alt'
 import { metricIngredient, metricUnits } from './us-units'
 
 export interface ExtractedIngredient {
@@ -74,11 +75,15 @@ export function toIngredients(value: unknown): ExtractedIngredient[] {
     if (typeof raw.name !== 'string' || raw.name.trim().length === 0) continue
     // A packaged US ingredient is totalled from its source line, any other US
     // unit written metric — before settleAlt, which compares `alt` with the measure as saved.
-    const packaged = containerMeasure(toText(raw.source))
+    const source = toText(raw.source)
+    const packaged = containerMeasure(source)
     const metric = packaged
       ? { name: metricUnits(raw.name), amount: packaged.amount, unit: packaged.unit }
       : metricIngredient({ name: raw.name, amount: toText(raw.amount), unit: toText(raw.unit) })
-    const { name, alt } = settleAlt(metric.name, metric.amount, metric.unit, packaged?.alt || toText(raw.alt))
+    // The measure the source line states beats the model's `alt`: exact, and
+    // there even when the model left `alt` empty.
+    const stated = packaged?.alt || householdAlt(source) || toText(raw.alt)
+    const { name, alt } = settleAlt(metric.name, metric.amount, metric.unit, stated)
     ingredients.push({ name, amount: metric.amount, unit: metric.unit, alt, section: toText(raw.section) })
   }
   return ingredients

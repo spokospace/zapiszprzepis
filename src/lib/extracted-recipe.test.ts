@@ -39,6 +39,15 @@ describe('toIngredients (#381)', () => {
     expect(toIngredients([{ name: 'ser', amount: '', unit: '', alt: '8 oz' }])[0].alt).toBe('8 oz')
   })
 
+  it('takes alt from the household measure the source line states, over the model\'s own', () => {
+    expect(toIngredients([{ name: 'pomidorki winogronowe', amount: '475', unit: 'ml', alt: '', source: '2 cups grape tomatoes, halved' }])[0])
+      .toMatchObject({ amount: '475', unit: 'ml', alt: '2 szklanki' })
+    expect(toIngredients([{ name: 'oregano', amount: '7.5', unit: 'ml', alt: 'ok. 2 łyżeczki', source: '1 1/2 teaspoons fresh oregano' }])[0])
+      .toMatchObject({ alt: '1 1/2 łyżeczki' })
+    // No stated measure: the model's alt stays.
+    expect(toIngredients([{ name: 'kurczak', amount: '450', unit: 'g', alt: '', source: '1 pound chicken' }])[0]).toMatchObject({ alt: '' })
+  })
+
   it('drops an alt that only repeats the amount (#524)', () => {
     expect(toIngredients([{ name: 'pomidorki koktajlowe', amount: '1', unit: 'garść', alt: '1 garść' }])[0].alt).toBe('')
   })
