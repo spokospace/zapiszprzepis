@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-// The version cards are the shared RecipeCard, whose heart pulls in server-only
-// actions; stub it with a marker that shows where the heart sits and what it was given.
+// The rows' heart pulls in server-only actions; stub it with a marker that shows where the
+// heart sits and what it was given.
 vi.mock('@/app/components/favorite-button', () => ({
   FavoriteButton: ({ recipeId, initialFavorited, isAuthenticated }: { recipeId: number; initialFavorited: boolean; isAuthenticated: boolean }) =>
     createElement('i', {
@@ -14,7 +14,8 @@ vi.mock('@/app/components/favorite-button', () => ({
 }))
 
 import { DishVersionsBar, versionsBoxLabel } from './dish-versions-bar'
-import { DishVersions } from './dish-versions'
+import { DishVersions, splitHeadingCount } from './dish-versions'
+import { showAllLabel } from './dish-versions-sort'
 import type { DishVersionRow } from '@/lib/dish-versions'
 
 const row = (p: Partial<DishVersionRow> = {}): DishVersionRow => ({
@@ -98,25 +99,27 @@ function section(props: Partial<Parameters<typeof DishVersions>[0]>) {
   )
 }
 
-describe('DishVersions', () => {
+describe('DishVersions (handoff 2026-10-28 §6)', () => {
   it('renders nothing with no versions (empty-data state)', () => {
     expect(section({ versions: [], totalCount: 0 })).toBe('')
   })
 
-  it('shows the heading (genitive + N) and the caption (handoff 16)', () => {
+  it('shows the heading with the count in the accent colour, and the caption', () => {
     const html = section({ versions: [row()], totalCount: 5, dish: 'pączki' })
     expect(html).toContain('id="inne-przepisy"')
-    expect(html).toContain('Inne wersje pączków (5)')
-    expect(html).toContain('Czym różnią się od tego przepisu')
-    expect(html).not.toContain('przepisu, który oglądasz')
+    expect(html).toContain('Inne wersje pączków <span class="text-action-text">(5)</span>')
+    expect(html).toContain('Porównane z tym przepisem: co dochodzi, czego brakuje i ile dłużej trwa.')
   })
 
   it('uses the case-free heading for an unknown or missing dish', () => {
-    expect(section({ versions: [row()], totalCount: 1, dish: null })).toContain('Inne wersje tego dania (1)')
-    expect(section({ versions: [row()], totalCount: 1, dish: 'nieznane' })).toContain('Inne wersje tego dania (1)')
+    expect(section({ versions: [row()], totalCount: 1, dish: null })).toContain('Inne wersje tego dania <span class="text-action-text">(1)</span>')
   })
 
-  it('puts a heart on every card, filled for the viewer\'s favorites, login-bound for a guest', () => {
+  it('clears the sticky app header when the box jumps to the heading', () => {
+    expect(section({ versions: [row()], totalCount: 1 })).toMatch(/id="inne-przepisy"[^>]*class="[^"]*scroll-mt-36[^"]*lg:scroll-mt-40/)
+  })
+
+  it('puts a heart on every row, filled for the viewer\'s favorites, login-bound for a guest', () => {
     const rows = [row({ id: 1, slug: 'a' }), row({ id: 2, slug: 'b' })]
     const member = section({ versions: rows, totalCount: 2, favoriteIds: new Set([2]) })
     expect(member).toContain('data-heart="1" data-favorited="false" data-auth="true"')
@@ -129,11 +132,11 @@ describe('DishVersions', () => {
     expect(section({ versions: [row()], totalCount: 1 })).not.toContain('Kolejność')
   })
 
-  it('shows the sort control and marks the active order with aria-current', () => {
+  it('shows the segmented switch and marks the active order with aria-current', () => {
     const html = section({ versions: [row({ id: 1 }), row({ id: 2 })], totalCount: 2, order: 'nowe' })
     expect(html).toContain('Kolejność')
-    expect(html).toContain('aria-current="true"')
-    expect(html).toContain('✓ Najnowsze')
+    expect(html).toMatch(/aria-current="true"[^>]*>Najnowsze</)
+    expect(html).toContain('rounded-pill bg-[#f3f4f6]')
   })
 
   it('server-renders the chosen order (newest first for ?wersje=nowe)', () => {
@@ -143,37 +146,61 @@ describe('DishVersions', () => {
     expect(html.indexOf('/przepis/nowy')).toBeLessThan(html.indexOf('/przepis/stary'))
   })
 
-  it('shows the recipe title and the variant note as its subtitle', () => {
-    const html = section({
-      versions: [row({ variant_note: 'Na zimno', title: 'Sernik truskawkowy' })],
-      totalCount: 1,
-    })
-    expect(html).toContain('Sernik truskawkowy')
-    expect(html).toContain('Na zimno')
+  it('shows the linked title and "podpis · źródło"', () => {
+    const html = section({ versions: [row({ variant_note: 'Na zimno', title: 'Sernik truskawkowy' })], totalCount: 1 })
+    expect(html).toMatch(/<h3[^>]*><a[^>]*href="\/przepis\/sernik-1"[^>]*>Sernik truskawkowy<\/a><\/h3>/)
+    expect(html).toContain('Na zimno · aniagotuje.pl')
   })
 
-  it('shows the ingredient difference with labelled "Ma dodatkowo:" / "Nie ma:"', () => {
-    const html = section({
-      versions: [row({ ingredients: [{ name: 'rodzynki' }] as unknown })],
-      totalCount: 1,
-    })
+  it('shows the differences as chips with a hidden prefix for screen readers', () => {
+    const html = section({ versions: [row({ ingredients: [{ name: 'rodzynki' }] as unknown })], totalCount: 1 })
     // current has no ingredients, so the version only adds.
-    expect(html).toContain('Ma dodatkowo:')
-    expect(html).toContain('rodzynki')
+    expect(html).toContain('<span class="sr-only">ma dodatkowo: </span><span aria-hidden="true">+ </span>rodzynki')
+    expect(html).toContain('bg-[#dcfce7] text-[#14532d]')
   })
 
-  it('sets the differences under a thin rule, cut to two lines, labels coloured (handoff 16)', () => {
+  it('strikes what a version lacks, with its own hidden prefix', () => {
     const html = section({
-      versions: [row({ ingredients: [{ name: 'rodzynki' }] as unknown })],
+      versions: [row({ ingredients: [] as unknown })],
       totalCount: 1,
+      current: { ...current, ingredients: [{ name: 'sezam' }] as unknown },
     })
-    expect(html).toContain('border-t border-border-card pt-2')
-    expect(html).toContain('<p class="line-clamp-2 break-words"><b class="text-[#166534]">Ma dodatkowo:</b>')
-    // Colour reinforces the labels (the words still carry the meaning): green adds, red drops.
-    expect(html).toContain('text-[#166534]')
+    expect(html).toMatch(/<li class="[^"]*line-through[^"]*"><span class="sr-only">nie ma: <\/span>sezam<\/li>/)
   })
 
-  it('shows no rule when a version differs in nothing', () => {
-    expect(section({ versions: [row()], totalCount: 1 })).not.toContain('pt-2 text-[16px] leading-[1.4]')
+  it('shows no chip list when a version differs in nothing', () => {
+    expect(section({ versions: [row()], totalCount: 1 })).not.toContain('Różnice w składnikach')
+  })
+
+  it('shows the time and how much longer the version takes', () => {
+    const html = section({
+      versions: [row({ total_time_minutes: 180 })],
+      totalCount: 1,
+      current: { ...current, total_time_minutes: 20 },
+    })
+    expect(html).toContain('3 godz')
+    expect(html).toContain('o 2 godz 40 min dłużej')
+  })
+
+  it('renders every row on the server, so the list works without JS', () => {
+    const rows = Array.from({ length: 6 }, (_, i) => row({ id: i + 1, slug: `s-${i}` }))
+    const html = section({ versions: rows, totalCount: 6 })
+    expect(html.match(/<li(?: class="hidden")?><div class="border-t/g)).toHaveLength(6)
+    expect(html).not.toContain('class="hidden"><div class="border-t')
+    expect(html).not.toContain('Pokaż wszystkie')
+  })
+})
+
+describe('splitHeadingCount', () => {
+  it('splits off the count in brackets', () => {
+    expect(splitHeadingCount('Inne wersje pączków (5)')).toEqual(['Inne wersje pączków', '5'])
+    expect(splitHeadingCount('Inne wersje')).toEqual(['Inne wersje', null])
+  })
+})
+
+describe('showAllLabel', () => {
+  it('uses the Polish plural', () => {
+    expect(showAllLabel(9)).toBe('Pokaż wszystkie 9 wersji')
+    expect(showAllLabel(22)).toBe('Pokaż wszystkie 22 wersje')
   })
 })

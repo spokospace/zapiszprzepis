@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { DishVersionsSort } from './dish-versions-sort'
+import { DishVersionsSort, VERSIONS_SHOWN } from './dish-versions-sort'
 import type { DishVersionRow } from '@/lib/dish-versions'
 
 const row = (id: number): DishVersionRow => ({
@@ -24,37 +24,41 @@ const row = (id: number): DishVersionRow => ({
   total_count: 2,
 })
 
-// The island only re-orders server-rendered cards, so a marker node per id stands in.
-const cards = { 1: createElement('i', { 'data-card': '1' }), 2: createElement('i', { 'data-card': '2' }) }
+// The island only re-orders server-rendered rows, so a marker node per id stands in.
+function render(count: number) {
+  const versions = Array.from({ length: count }, (_, i) => row(i + 1))
+  const rows = Object.fromEntries(versions.map((v) => [v.id, createElement('i', { 'data-row': String(v.id) })]))
+  return renderToStaticMarkup(
+    createElement(DishVersionsSort, {
+      versions,
+      initialOrder: 'popularne',
+      rows,
+      header: createElement('h2', { id: 'inne-przepisy' }, 'Inne wersje'),
+      legend: createElement('p', { 'data-legend': '' }),
+    }),
+  )
+}
 
-const html = renderToStaticMarkup(
-  createElement(DishVersionsSort, {
-    versions: [row(1), row(2)],
-    initialOrder: 'popularne',
-    label: 'Inne przepisy na pierogi ruskie (2)',
-    cards,
-  }),
-)
+const html = render(2)
 
-describe('DishVersionsSort', () => {
-  it('puts every server-rendered card in the carousel: 270 px on a phone, 2 columns from sm, 3 from lg', () => {
-    expect(html.match(/<li class="w-\[270px\] [^"]*"><i data-card/g)).toHaveLength(2)
-    expect(html).toMatch(/<ul id="[^"]+" class="[^"]*sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-3/)
+describe('DishVersionsSort (handoff 2026-10-28 §6)', () => {
+  it('lists every server-rendered row, in order, after the legend', () => {
+    expect(html.match(/<li><i data-row/g)).toHaveLength(2)
+    expect(html.indexOf('data-legend')).toBeLessThan(html.indexOf('data-row'))
   })
 
-  it('names the carousel buttons after the section heading', () => {
-    expect(html).toContain('Następne<span class="sr-only">: Inne przepisy na pierogi ruskie (2)</span>')
+  it('puts the segmented switch beside the heading from md, hidden below', () => {
+    expect(html).toMatch(/<div class="flex flex-wrap items-start justify-between[^"]*"><h2 id="inne-przepisy">/)
+    expect(html).toMatch(/role="group" aria-labelledby="wersje-kolejnosc" class="hidden md:block"/)
+    expect(html).toContain('<span id="wersje-kolejnosc" class="sr-only">Kolejność</span>')
   })
 
-  it('lets the "Kolejność:" label break a long word instead of widening the page (WCAG 1.4.10)', () => {
-    expect(html).toContain('<span id="wersje-kolejnosc" class="mr-1 text-[16px] font-bold wrap-anywhere text-ink-soft">')
+  it('gives every switch option a 48 px target', () => {
+    const options = html.match(/<a href="\?wersje=[^"]+"[^>]*class="inline-flex min-h-12[^"]*"/g) ?? []
+    expect(options).toHaveLength(3)
   })
 
-  it('keeps the desktop pills, hidden below md (11a)', () => {
-    expect(html).toMatch(/role="group" aria-labelledby="wersje-kolejnosc" class="[^"]*hidden[^"]*md:flex/)
-  })
-
-  // 11b: below md the three pills wrap awkwardly, so the order is one „Kolejność: …” button
+  // 11b: below md the three options do not fit, so the order is one „Kolejność: …” button
   // that opens a <details> list — working without JS via the same ?wersje= links.
   it('offers a <details> order dropdown below md, showing the current choice (11b)', () => {
     expect(html).toMatch(/<details[^>]*class="[^"]*md:hidden/)
@@ -65,7 +69,12 @@ describe('DishVersionsSort', () => {
     for (const key of ['popularne', 'nowe', 'szybkie']) {
       expect(html).toContain(`href="?wersje=${key}#inne-przepisy"`)
     }
-    // The selected row carries aria-current and the check mark.
     expect(html).toMatch(/aria-current="true"[\s\S]*?Najpopularniejsze<\/span><svg/)
+  })
+
+  it('shows every row on the server and no „Pokaż wszystkie” until hydration', () => {
+    const many = render(VERSIONS_SHOWN + 2)
+    expect(many.match(/<li><i data-row/g)).toHaveLength(VERSIONS_SHOWN + 2)
+    expect(many).not.toContain('Pokaż wszystkie')
   })
 })
