@@ -4,11 +4,14 @@ import { requirePermission } from '@/lib/staff/context'
 import { readFlash } from '@/lib/staff/flash'
 import { DELETE_CONFIRMATION, getUser } from '@/lib/staff/users'
 import { Banner, buttonClass, buttonDangerClass, buttonOutlineClass, fieldClass, formatWhen, PageTitle } from '../../ui'
+import { setFullAccess } from '../../dostep/actions'
 import { blockUser, deleteUser, unblockUser } from '../actions'
 
 const OK_MESSAGES = {
   blocked: 'Konto zablokowane. Użytkownik jest wylogowany i nie zaloguje się ponownie.',
   unblocked: 'Konto odblokowane.',
+  access_granted: 'Pełny dostęp nadany. Użytkownik może dodawać przepisy.',
+  access_revoked: 'Pełny dostęp odebrany.',
 } as const
 
 export default async function UserPage({
@@ -71,6 +74,21 @@ export default async function UserPage({
             ? 'To Twoje konto. Nie zablokujesz go ani nie usuniesz.'
             : 'To konto ma rolę w panelu. Aby je zablokować lub usunąć, administrator musi najpierw odebrać rolę.'}
         </p>
+      )}
+
+      {staff.permissions.has('access.manage') && (
+        <section aria-labelledby="access-heading" className="mb-8 max-w-xl">
+          <h2 id="access-heading" className="mb-2 text-xl font-semibold">
+            Pełny dostęp
+          </h2>
+          <form action={setFullAccess}>
+            <input type="hidden" name="id" value={user.id} />
+            <input type="hidden" name="on" value={user.fullAccess ? 'false' : 'true'} />
+            <button type="submit" className={user.fullAccess ? buttonOutlineClass : buttonClass}>
+              {user.fullAccess ? 'Odbierz pełny dostęp' : 'Nadaj pełny dostęp'}
+            </button>
+          </form>
+        </section>
       )}
 
       {canBlock && !protectedAccount && (
