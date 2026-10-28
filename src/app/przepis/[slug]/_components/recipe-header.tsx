@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { Clock, Flame, Timer, Utensils, type LucideIcon } from 'lucide-react'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
-import { recipeMetaLine, recipeTimeStats } from '@/lib/recipe-meta'
+import { recipeTimeStats } from '@/lib/recipe-meta'
+import { servingsCount } from '@/lib/servings'
 import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
@@ -21,6 +23,8 @@ export interface RecipeHeaderData {
   cook_time_minutes: number | null
   total_time_minutes: number | null
   times_estimated: boolean
+  /** Servings the source states (1–99), or null: the time strip's "Wychodzi". */
+  servings?: number | null
   source_type: RecipeSource
   source_url: string | null
   source_author: string | null
@@ -50,6 +54,34 @@ interface RecipeHeaderProps {
    * link and the category line instead.
    */
   listBar?: ReactNode
+}
+
+export interface TimeStripItem {
+  key: 'prep' | 'cook' | 'total' | 'yield'
+  label: string
+  value: string
+  /** Times carry the recipe's "≈" when they are estimated; the yield never does. */
+  estimated: boolean
+}
+
+const STRIP_KEY = { Przygotowanie: 'prep', Gotowanie: 'cook', Łącznie: 'total' } as const
+const STRIP_ICON: Record<TimeStripItem['key'], LucideIcon> = { prep: Clock, cook: Flame, total: Timer, yield: Utensils }
+
+/**
+ * The time strip's items (handoff 2026-10-28, §3 item 5): the known times from
+ * `recipeTimeStats`, then "Wychodzi" from the stated servings. "Gotowanie" stays even for
+ * a bake: no field says which it is, and the handoff asks not to guess. No "Doliczyć …"
+ * note either: no field holds a waiting or rising time.
+ */
+export function timeStripItems(r: RecipeHeaderData): TimeStripItem[] {
+  const items: TimeStripItem[] = recipeTimeStats(r).map((s) => ({
+    key: STRIP_KEY[s.label],
+    label: s.label,
+    value: s.value,
+    estimated: r.times_estimated,
+  }))
+  if (r.servings != null) items.push({ key: 'yield', label: 'Wychodzi', value: servingsCount(r.servings), estimated: false })
+  return items
 }
 
 /**
@@ -88,15 +120,44 @@ function Approx() {
 }
 
 /**
+ * The time strip (handoff 2026-10-28): no frame, an icon in a 44 px warm circle beside a
+ * label and a 20 px value, in a grid that wraps to fit. At every width — below lg it
+ * replaces the time in the "Kategoria · czas" line. Labels are 16 px, not the mock's 14:
+ * secondary text is never under 16 px (ZASADY_PROJEKTU).
+ */
+function TimeStrip({ items }: { items: TimeStripItem[] }) {
+  return (
+    <ul aria-label="Czas i porcje" className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-x-5 gap-y-4">
+      {items.map((item) => {
+        const Icon = STRIP_ICON[item.key]
+        return (
+          <li key={item.key} className="flex items-center gap-3">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-pill bg-[#fdf1e4]">
+              <Icon className="h-[18px] w-[18px] text-action" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[16px] text-ink-soft">{item.label}</span>
+              <span className="block text-[20px] font-extrabold text-ink">
+                {item.estimated && <Approx />}
+                {item.value}
+              </span>
+            </span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+/**
  * The recipe page header (E01-S07, S07b): the photos (main + thumbnails), 32 px title,
- * "Kategoria · czas" (from lg the A9 times row), source, who added it, and the actions.
+ * the category (below lg), source, who added it, the time strip, and the actions.
  * No breadcrumbs below lg (C3); from lg they sit above the title, in the list bar slot.
  * The tags render at the bottom of the page, in "Ten przepis jest" (E01-S16).
  */
 export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions, listBar }: RecipeHeaderProps) {
   const authorHref = profilePath(recipe.author_username)
-  const [before, after] = recipeMetaLine(recipe).split('≈ ')
-  const times = recipeTimeStats(recipe)
+  const strip = timeStripItems(recipe)
   const source = formatSource(recipe.source_type, recipe.source_url, recipe.source_author)
   const cover = coverImageSrc(recipe.image_url)
   // The source leads to the original (E01-S31 §3): a link-badge on the photo, or,
@@ -135,17 +196,9 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions,
         {/* The recipe's own short description sits right under the title, not after the
             times row (owner request) — a subtitle qualifying the dish ("ze smalcem"). */}
         {recipe.description && <p className="mb-3 text-scalable-body text-ink-soft">{recipe.description}</p>}
-        {/* Below lg (C3). From lg the category is in the breadcrumbs and the times get
-            their own row (A9). */}
-        <p className="mb-3 text-[17px] text-ink-soft lg:hidden">
-          {before}
-          {after != null && (
-            <>
-              <Approx />
-              {after}
-            </>
-          )}
-        </p>
+        {/* Below lg (C3): the category. From lg it is in the breadcrumbs. The time moved
+            out of this line into the time strip, which shows at every width. */}
+        <p className="mb-3 text-[17px] text-ink-soft lg:hidden">{categoryLabel(recipe.category)}</p>
 
         {/* With no photo there is no corner for the badge, so it sits here instead
             (E01-S31 §3) — at every width, since the lg placeholder carries no badge. */}
@@ -168,20 +221,7 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions,
           </p>
         )}
 
-        {times.length > 0 && (
-          // A9: "Przygotowanie / Gotowanie / Łącznie", the values 20 px bold.
-          <dl className="mt-4 hidden flex-wrap gap-x-8 gap-y-2 lg:flex">
-            {times.map((t) => (
-              <div key={t.label}>
-                <dt className="text-[16px] text-ink-soft">{t.label}</dt>
-                <dd className="text-[20px] font-bold text-ink">
-                  {recipe.times_estimated && <Approx />}
-                  {t.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
+        {strip.length > 0 && <TimeStrip items={strip} />}
 
         {recipe.meta_description && <p className="mt-4 text-scalable-body leading-relaxed text-ink">{recipe.meta_description}</p>}
         {versionsBar && <div className="print:hidden">{versionsBar}</div>}
