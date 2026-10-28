@@ -25,18 +25,18 @@ describe('RecipeActions (E01-S31 §3, design 2026-10-28)', () => {
   it('is one row of four between lg and xl and a 2 × 2 grid from xl, the cooking card first', () => {
     const html = render()
     expect(html).toMatch(/^<div class="mt-6 grid grid-cols-2 items-start[^"]*xl:grid-cols-2[^"]*lg:grid-cols-4"><div class="col-span-2 lg:col-span-1"><button/)
-    expect(html.indexOf('Tryb gotowania')).toBeLessThan(html.indexOf('Dodaj do ulubionych'))
+    expect(html.indexOf('Zacznij gotować')).toBeLessThan(html.indexOf('Dodaj do ulubionych'))
   })
 
   it('drops the cooking card when the recipe has no steps; three in a row, the heart a full row from xl', () => {
     const html = render({ steps: [], stepImages: [] })
-    expect(html).not.toContain('Tryb gotowania')
+    expect(html).not.toContain('Zacznij gotować')
     expect(html).toMatch(/^<div class="[^"]*lg:grid-cols-3"><div class="col-span-2 lg:col-span-1 xl:col-span-2">/)
   })
 
   it('labels the cooking card with a hint line', () => {
     const html = render()
-    expect(html).toContain('Tryb gotowania')
+    expect(html).toContain('Zacznij gotować')
     expect(html).toContain('Gotuj krok po kroku')
   })
 

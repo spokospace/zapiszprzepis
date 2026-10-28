@@ -2,7 +2,6 @@
 // ingredient diff on each version card, the badges, the bar/heading wording, and
 // the client/server sort. All pure, so they are unit-tested without a DB or DOM.
 import { parseIngredients } from '@/lib/ingredients'
-import { polishPlural } from '@/lib/recipe-meta'
 import { servingsCount } from '@/lib/servings'
 import { formatMinutes } from '@/lib/format-minutes'
 import type { RecipeSource } from '@/lib/recipe-source'
@@ -248,10 +247,9 @@ export function versionBadges(current: BadgeTimes, other: BadgeTimes): { serving
 
 // --- Wording ---------------------------------------------------------------
 
-/** Bar: "Mamy jeszcze N inne przepisy na {acc}" (or "… na to danie" without one). */
+/** Link: "Inne przepisy na {acc} (N)" (or "… na to danie (N)" without one). */
 export function versionsBarLabel(n: number, dishAccusative: string | null): string {
-  const phrase = polishPlural(n, 'inny przepis', 'inne przepisy', 'innych przepisów')
-  return `Mamy jeszcze ${n} ${phrase} na ${dishAccusative ?? 'to danie'}`
+  return `Inne przepisy na ${dishAccusative ?? 'to danie'} (${n})`
 }
 
 /**

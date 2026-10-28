@@ -188,7 +188,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
         className={ACTION_CARD.dark}
       >
         <ChefHat aria-hidden="true" className={ACTION_CARD_ICON} />
-        <ActionCardText title="Tryb gotowania" hint="Gotuj krok po kroku" tone="dark" />
+        <ActionCardText title="Zacznij gotować" hint="Gotuj krok po kroku" tone="dark" />
       </button>
 
       <dialog
@@ -216,7 +216,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
               tabIndex={-1}
               className="min-w-0 truncate text-[17px] font-bold text-border-card"
             >
-              <span className="sr-only">Tryb gotowania: </span>
+              <span className="sr-only">Zacznij gotować: </span>
               {title}
             </h2>
             <button

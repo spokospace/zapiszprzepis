@@ -190,17 +190,13 @@ describe('versionBadges', () => {
 })
 
 describe('versionsBarLabel & versionsHeading', () => {
-  it('uses the accusative and Polish plurals', () => {
-    expect(versionsBarLabel(1, 'szarlotkę')).toBe('Mamy jeszcze 1 inny przepis na szarlotkę')
-    expect(versionsBarLabel(3, 'szarlotkę')).toBe('Mamy jeszcze 3 inne przepisy na szarlotkę')
-    expect(versionsBarLabel(5, 'szarlotkę')).toBe('Mamy jeszcze 5 innych przepisów na szarlotkę')
-    expect(versionsBarLabel(13, 'szarlotkę')).toBe('Mamy jeszcze 13 innych przepisów na szarlotkę')
-    expect(versionsBarLabel(22, 'szarlotkę')).toBe('Mamy jeszcze 22 inne przepisy na szarlotkę')
+  it('names the dish in the accusative with the count in brackets', () => {
+    expect(versionsBarLabel(1, 'szarlotkę')).toBe('Inne przepisy na szarlotkę (1)')
+    expect(versionsBarLabel(9, 'szarlotkę')).toBe('Inne przepisy na szarlotkę (9)')
   })
 
-  it('falls back to "na to danie" without an accusative, keeping the plural rules', () => {
-    expect(versionsBarLabel(1, null)).toBe('Mamy jeszcze 1 inny przepis na to danie')
-    expect(versionsBarLabel(5, null)).toBe('Mamy jeszcze 5 innych przepisów na to danie')
+  it('falls back to "na to danie" without an accusative', () => {
+    expect(versionsBarLabel(5, null)).toBe('Inne przepisy na to danie (5)')
   })
 
   it('headings use the genitive of a known dish or the case-free fallback', () => {
