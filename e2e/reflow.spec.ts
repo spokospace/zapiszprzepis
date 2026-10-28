@@ -144,7 +144,9 @@ test('recipe page reflows at 320 px, A++', async ({ page }) => {
   await inject(page, 'header a[aria-label^="Otwórz oryginał"] span.truncate', `${LONG_WORD}.pl`)
   await inject(page, 'header p a[href^="/u/"]', LONG_WORD)
   await inject(page, `${ingredient} > span.text-scalable`, LONG_TITLE)
-  await inject(page, `${ingredient} > b`, LONG_AMOUNT, 1)
+  // Descendant, not `> b`: with a household measure (#505) the amount sits in a wrapper
+  // span, so a recipe whose every row has one had no direct <b> and failed the inject.
+  await inject(page, `${ingredient} b`, LONG_AMOUNT, 1)
   await inject(page, `${ingredient} >> nth=1 >> b`, LONG_WORD, 1)
   await inject(page, 'section[aria-labelledby="steps-heading"] li p.text-scalable', LONG_TITLE, 2)
   await expectNoHorizontalScroll(page)
