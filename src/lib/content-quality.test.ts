@@ -135,3 +135,24 @@ describe('looksUnextractable — trusted content', () => {
     expect(looksUnextractable(caption, { trusted: true })).toBe(false)
   })
 })
+
+describe('looksUnextractable — bot-check pages', () => {
+  it("rejects Cloudflare's security verification page as Jina returned it", () => {
+    const botCheck =
+      '![Image 1: Icon for www.howsweeteats.com](https://www.howsweeteats.com/favicon.ico)\n\n## www.howsweeteats.com\n\n## Performing security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.'
+    expect(botCheck.length).toBeGreaterThan(150)
+    expect(looksUnextractable(botCheck)).toBe(true)
+  })
+
+  it('keeps a short recipe that quotes one of the phrases', () => {
+    const recipe =
+      'Ciasto drożdżowe. Składniki: 500 g mąki, 25 g drożdży, 250 ml mleka, 2 jajka. Wyrabiaj 10 minut, odstaw do wyrośnięcia. ' +
+      'Strona pokazała mi "performing security verification", więc przepisuję z pamięci. Piecz 40 minut w 180°C.'
+    expect(looksUnextractable(recipe)).toBe(false)
+  })
+
+  it('keeps a real article that merely quotes such a phrase', () => {
+    const article = `Performing security verification is not part of this recipe. ${'Mąka, jajka, mleko. '.repeat(120)}`
+    expect(looksUnextractable(article)).toBe(false)
+  })
+})

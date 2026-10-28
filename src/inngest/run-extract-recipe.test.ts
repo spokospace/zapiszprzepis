@@ -205,7 +205,11 @@ describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () =>
   const JINA_MARKDOWN = 'Składniki: 200 g mąki, 2 jajka, mleko. Sposób przygotowania: wymieszaj i smaż na patelni. '.repeat(10)
 
   // Firecrawl out of credits; Jina and the page itself answer unless told not to.
-  function makeOutOfCreditsFetch({ jinaOk = true }: { jinaOk?: boolean } = {}) {
+  function makeOutOfCreditsFetch({
+    jinaOk = true,
+    jinaContent = JINA_MARKDOWN,
+    pageHtml = '<p>Naleśniki</p>',
+  }: { jinaOk?: boolean; jinaContent?: string; pageHtml?: string } = {}) {
     return vi.fn().mockImplementation((url: string) => {
       if (url.includes('firecrawl.dev')) {
         return Promise.resolve({ ok: false, status: 402, statusText: '', json: async () => ({ success: false }) })
@@ -220,7 +224,7 @@ describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () =>
                   data: {
                     title: 'Naleśniki',
                     url: BASE_EVENT.sharedUrl,
-                    content: JINA_MARKDOWN,
+                    content: jinaContent,
                     httpStatus: 200,
                     metadata: { 'og:image': 'https://example.com/nalesniki.jpg' },
                   },
@@ -235,9 +239,58 @@ describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () =>
           json: async () => ({ choices: [{ message: { content: VALID_RECIPE_JSON } }] }),
         })
       }
-      return Promise.resolve({ ok: true, status: 200, headers: new Headers(), text: async () => '<p>Naleśniki</p>' })
+      return Promise.resolve({ ok: true, status: 200, headers: new Headers(), text: async () => pageHtml })
     })
   }
+
+  // What Jina returned for howsweeteats.com while Firecrawl was out of credits.
+  const BOT_CHECK =
+    '## www.howsweeteats.com\n\n## Performing security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.'
+  const SITE_MENU = '<header class="site"><nav>' + '<a href="/recipes/">Recipes</a>'.repeat(50) + '</nav></header>'
+  const ARTICLE_PAGE =
+    '<html><head><title>White Pizza Dip</title>' +
+    '<meta property="og:description" content="White Pizza Dip serves 6 1 pint grape tomatoes 1/4 cup parmesan 4 […]">' +
+    '</head><body>' + SITE_MENU +
+    '<article class="post"><p>4 garlic cloves, minced. 2 tablespoons fresh thyme. Preheat oven to 400 degrees F and roast the tomatoes for 20 minutes.</p><p>Stir the ricotta, mozzarella and parmesan together and bake until bubbly, 25 to 30 minutes.</p></article>' +
+    '<footer>Order my new book</footer></body></html>'
+
+  it('leaves a bot-check page out of the prompt and hands on the article HTML instead', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeOutOfCreditsFetch({ jinaContent: BOT_CHECK, pageHtml: ARTICLE_PAGE })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const prompt = promptOf(openaiCalls(fetch)[0] as [string, RequestInit])
+    expect(prompt).not.toContain('security verification')
+    expect(prompt).toContain('4 garlic cloves, minced')
+    // The truncated og:description and the site menu are not in front of the model.
+    expect(prompt).not.toContain('og:description')
+    expect(prompt).not.toContain('/recipes/')
+  })
+
+  it('fails as unreadable when the page itself is a bot check too', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    const fetch = makeOutOfCreditsFetch({ jinaContent: BOT_CHECK, pageHtml: `<p>${BOT_CHECK}</p>` })
+
+    await expect(runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow()
+    expect(openaiCalls(fetch)).toHaveLength(0)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+
+  it('fails as unreadable when the page HTML is only site chrome', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    const chrome =
+      '<html><body>' + SITE_MENU + '<footer>' + 'Order my new book. '.repeat(20) + '</footer></body></html>'
+    const fetch = makeOutOfCreditsFetch({ jinaContent: BOT_CHECK, pageHtml: chrome })
+
+    await expect(runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow()
+    expect(openaiCalls(fetch)).toHaveLength(0)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
 
   it('keeps the stored gallery on a refresh read through Jina that finds no photos (#536)', async () => {
     // A degraded read finding no photos is no sign the source lost them.
