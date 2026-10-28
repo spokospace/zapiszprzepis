@@ -246,11 +246,12 @@ describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () =>
   // What Jina returned for howsweeteats.com while Firecrawl was out of credits.
   const BOT_CHECK =
     '## www.howsweeteats.com\n\n## Performing security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.'
+  const SITE_MENU = '<header class="site"><nav>' + '<a href="/recipes/">Recipes</a>'.repeat(50) + '</nav></header>'
   const ARTICLE_PAGE =
     '<html><head><title>White Pizza Dip</title>' +
     '<meta property="og:description" content="White Pizza Dip serves 6 1 pint grape tomatoes 1/4 cup parmesan 4 […]">' +
-    '</head><body><header class="site"><nav>' + '<a href="/recipes/">Recipes</a>'.repeat(50) + '</nav></header>' +
-    '<article class="post"><p>4 garlic cloves, minced. 2 tablespoons fresh thyme. Preheat oven to 400 degrees F and roast the tomatoes for 20 minutes.</p></article>' +
+    '</head><body>' + SITE_MENU +
+    '<article class="post"><p>4 garlic cloves, minced. 2 tablespoons fresh thyme. Preheat oven to 400 degrees F and roast the tomatoes for 20 minutes.</p><p>Stir the ricotta, mozzarella and parmesan together and bake until bubbly, 25 to 30 minutes.</p></article>' +
     '<footer>Order my new book</footer></body></html>'
 
   it('leaves a bot-check page out of the prompt and hands on the article HTML instead', async () => {
@@ -273,6 +274,18 @@ describe('runExtractRecipe — Jina Reader fallback when Firecrawl fails', () =>
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const mock = makeSupabaseMock()
     const fetch = makeOutOfCreditsFetch({ jinaContent: BOT_CHECK, pageHtml: `<p>${BOT_CHECK}</p>` })
+
+    await expect(runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow()
+    expect(openaiCalls(fetch)).toHaveLength(0)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+
+  it('fails as unreadable when the page HTML is only site chrome', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const mock = makeSupabaseMock()
+    const chrome =
+      '<html><body>' + SITE_MENU + '<footer>' + 'Order my new book. '.repeat(20) + '</footer></body></html>'
+    const fetch = makeOutOfCreditsFetch({ jinaContent: BOT_CHECK, pageHtml: chrome })
 
     await expect(runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })).rejects.toThrow()
     expect(openaiCalls(fetch)).toHaveLength(0)

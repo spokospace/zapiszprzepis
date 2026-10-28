@@ -144,6 +144,13 @@ describe('looksUnextractable — bot-check pages', () => {
     expect(looksUnextractable(botCheck)).toBe(true)
   })
 
+  it('keeps a short recipe that quotes one of the phrases', () => {
+    const recipe =
+      'Ciasto drożdżowe. Składniki: 500 g mąki, 25 g drożdży, 250 ml mleka, 2 jajka. Wyrabiaj 10 minut, odstaw do wyrośnięcia. ' +
+      'Strona pokazała mi "performing security verification", więc przepisuję z pamięci. Piecz 40 minut w 180°C.'
+    expect(looksUnextractable(recipe)).toBe(false)
+  })
+
   it('keeps a real article that merely quotes such a phrase', () => {
     const article = `Performing security verification is not part of this recipe. ${'Mąka, jajka, mleko. '.repeat(120)}`
     expect(looksUnextractable(article)).toBe(false)

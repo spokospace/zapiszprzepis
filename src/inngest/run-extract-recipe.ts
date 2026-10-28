@@ -401,7 +401,7 @@ export async function runExtractRecipe(
     const readableLinkedPage =
       linkedPage &&
       (linkedPage.metadata?.statusCode ?? 200) < 400 &&
-      !(looksUnextractable(linkedPage.markdown ?? '') && looksUnextractable(linkedPage.html ?? ''))
+      !(looksUnextractable(linkedPage.markdown ?? '') && looksUnextractable(articleHtml(linkedPage.html ?? '')))
         ? linkedPage
         : null
     if (linkedPage && !readableLinkedPage) {
@@ -505,9 +505,12 @@ export async function runExtractRecipe(
     // artefact, so it is judged on emptiness alone (see ContentQualityOptions).
     // The output-side isExtractedRecipeUsable gate below still rejects
     // anything that isn't actually a recipe.
+    // A page that is all menu and footer clears the floor raw, so the HTML is
+    // judged as the LLM reads it.
     const quality = { trusted: trustedContent }
+    const llmHtml = articleHtml(html)
     const markdownIsJunk = looksUnextractable(markdown, quality)
-    const inputIsJunk = markdownIsJunk && looksUnextractable(html, quality)
+    const inputIsJunk = markdownIsJunk && looksUnextractable(llmHtml, quality)
     // A YouTube link has one more source to try — the spoken video, via its
     // captions — so an empty description is not the end there (see below).
     const canTryTranscript = sourceType === 'youtube' && youtubeId != null
@@ -541,7 +544,6 @@ export async function runExtractRecipe(
     // Jina's render should be) is left out, and the HTML is cut to its article
     // so the recipe fits the prompt's cap.
     const llmMarkdown = markdownIsJunk ? '' : markdown
-    const llmHtml = articleHtml(html)
     const sourceText = (transcript?: string) => `${transcript ?? ''}\n${llmMarkdown || llmHtml}`
 
     // Who published the recipe, for the source label ("Kulinarna Wiola ·
@@ -610,7 +612,7 @@ Rules:
 - When estimating, include passive periods (rising, proofing, marinating, chilling, setting, resting) in totalTimeMinutes. If the recipe clearly has a long passive step whose length you cannot tell, return null for totalTimeMinutes rather than a number that ignores it.
 - All three times null → "timesEstimated": false.
 - servings: only a number of servings the source states ("na 4 porcje", "dla 6 osób", "Serves 4", "4 portions"). A range ("4–6 porcji"), a yield in pieces, tins or litres ("24 sztuki", "1 tortownica"), or no statement at all → null. Never estimate it.
-- Never complete a recipe from your own knowledge of the dish. When the content holds only part of it — a page description or teaser cut off with "…" or "[…]", an ingredient list with no method, a title alone — return only the ingredients and steps it states, and an empty "steps" array when the method is missing. A partial recipe is rejected and retried; an invented one is saved as if it were the author's.${foreignSource ? FOREIGN_SOURCE_RULES : ''}`,
+- Never complete a recipe from your own knowledge of the dish. When the content holds only part of it — a page description or teaser cut off with "…" or "[…]", an ingredient list with no method, a title alone — return only the ingredients and steps it states, and an empty "steps" array when the method is missing. An invented recipe is saved as if it were the author's.${foreignSource ? FOREIGN_SOURCE_RULES : ''}`,
             },
             {
               role: 'user',

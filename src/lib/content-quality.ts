@@ -16,6 +16,7 @@ const JUNK_SIGNATURES = [
 
 // A bot-check page served in place of the article (Cloudflare's "Performing
 // security verification"); it clears the length floor, so it needs its own check.
+// The page carries both phrases; a recipe that quotes one of them is not one.
 const BOT_CHECK_SIGNATURES = [
   'performing security verification',
   'verifies you are not a bot',
@@ -54,7 +55,7 @@ export function looksUnextractable(
   if (clean.length < (trusted ? TRUSTED_MIN_CONTENT_CHARS : MIN_CONTENT_CHARS)) return true
   if (trusted) return false
   const lower = clean.toLowerCase()
-  if (clean.length < BOT_CHECK_MAX_CHARS && BOT_CHECK_SIGNATURES.some((sig) => lower.includes(sig))) return true
+  if (clean.length < BOT_CHECK_MAX_CHARS && BOT_CHECK_SIGNATURES.every((sig) => lower.includes(sig))) return true
   return clean.length < 500 && JUNK_SIGNATURES.some((sig) => lower.includes(sig))
 }
 
