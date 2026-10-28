@@ -1,0 +1,81 @@
+- link "Przejdź do treści":
+  - /url: "#main"
+- banner:
+  - paragraph: Discovery prototype. Simulated data.
+  - strong: Panel personelu
+  - text: "Zalogowano jako: Moderator testowy (rola: moderator)"
+  - navigation "Zasoby panelu":
+    - list:
+      - listitem:
+        - link "Przepisy":
+          - /url: "#/recipes"
+- main:
+  - region "Przepisy":
+    - heading "Przepisy" [level=1]
+    - paragraph: Lista obejmuje także przepisy ukryte przed gośćmi.
+    - text: Szukaj po tytule
+    - searchbox "Szukaj po tytule"
+    - text: Pokaż
+    - combobox "Pokaż":
+      - option "Wszystkie" [selected]
+      - option "Widoczne dla gości"
+      - option "Ukryte"
+    - paragraph: "Znaleziono przepisów: 5"
+    - table "Przepisy w bazie (dane przykładowe)":
+      - caption: Przepisy w bazie (dane przykładowe)
+      - rowgroup:
+        - row "Tytuł Kategoria Dodane przez Data dodania W ulubionych Status":
+          - columnheader "Tytuł"
+          - columnheader "Kategoria"
+          - columnheader "Dodane przez"
+          - columnheader "Data dodania"
+          - columnheader "W ulubionych"
+          - columnheader "Status"
+      - rowgroup:
+        - row "Sernik na zimno Ciasta Użytkownik testowy A 2026-10-02 3 Widoczny":
+          - cell "Sernik na zimno":
+            - link "Sernik na zimno":
+              - /url: "#/recipes/101"
+          - cell "Ciasta"
+          - cell "Użytkownik testowy A"
+          - cell "2026-10-02"
+          - cell "3"
+          - cell "Widoczny"
+        - row "Zupa pomidorowa z ryżem Zupy Użytkownik testowy B 2026-10-05 0 Widoczny":
+          - cell "Zupa pomidorowa z ryżem":
+            - link "Zupa pomidorowa z ryżem":
+              - /url: "#/recipes/102"
+          - cell "Zupy"
+          - cell "Użytkownik testowy B"
+          - cell "2026-10-05"
+          - cell "0"
+          - cell "Widoczny"
+        - row "Pierogi ruskie Dania główne Użytkownik testowy A 2026-10-09 12 Widoczny":
+          - cell "Pierogi ruskie":
+            - link "Pierogi ruskie":
+              - /url: "#/recipes/103"
+          - cell "Dania główne"
+          - cell "Użytkownik testowy A"
+          - cell "2026-10-09"
+          - cell "12"
+          - cell "Widoczny"
+        - row "Chleb na zakwasie Pieczywo Użytkownik testowy C 2026-10-11 1 Ukryty":
+          - cell "Chleb na zakwasie":
+            - link "Chleb na zakwasie":
+              - /url: "#/recipes/104"
+          - cell "Pieczywo"
+          - cell "Użytkownik testowy C"
+          - cell "2026-10-11"
+          - cell "1"
+          - cell "Ukryty"
+        - row "Syrop z mniszka lekarskiego Syropy Użytkownik testowy B 2026-10-14 0 Widoczny":
+          - cell "Syrop z mniszka lekarskiego":
+            - link "Syrop z mniszka lekarskiego":
+              - /url: "#/recipes/105"
+          - cell "Syropy"
+          - cell "Użytkownik testowy B"
+          - cell "2026-10-14"
+          - cell "0"
+          - cell "Widoczny"
+- group: Test state (tylko prototyp, nie jest częścią panelu)
+- status

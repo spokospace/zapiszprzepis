@@ -1,0 +1,159 @@
+{
+  "closed": "closed",
+  "results": [
+    {
+      "id": "C01",
+      "action": "Open the entry state",
+      "expected": "Heading \"Przepisy\" and five rows",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C02",
+      "action": "Search \"pierogi\"",
+      "expected": "One row, count announced",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C03",
+      "action": "Search with no match",
+      "expected": "Empty state with a way out",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C04",
+      "action": "Filter \"Ukryte\"",
+      "expected": "Only the hidden fixture recipe",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C05",
+      "action": "Open a recipe from the list",
+      "expected": "Detail screen, focus on its heading",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C06",
+      "action": "Hide with a reason of 201 characters",
+      "expected": "Inline error, field marked invalid, recipe still visible",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C07",
+      "action": "Correct the reason and hide (keyboard: Enter on the button)",
+      "expected": "Loading text, then success message, banner \"Ukryty\", Cofnij offered",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C08",
+      "action": "Open \"Jak widzą to inni\" for the hidden recipe, switch viewers",
+      "expected": "Guest 404, author \"Przepis jest niedostępny\", staff badge",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C09",
+      "action": "Browser back from the preview, then forward",
+      "expected": "Back lands on the detail, forward on the preview",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C10",
+      "action": "Press \"Przywróć przepis\"",
+      "expected": "Message, no banner, \"Ukryj przepis\" returns",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C11",
+      "action": "Hide then press \"Cofnij\"",
+      "expected": "Recipe visible again, message says it was undone",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C12",
+      "action": "Simulate a write failure, hide, then retry",
+      "expected": "Error message, recipe visible; retry succeeds",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C13",
+      "action": "List after hiding",
+      "expected": "Row shows badge \"Ukryty\"; filter \"Widoczne\" drops it",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C14",
+      "action": "Unknown fragment #/foo",
+      "expected": "Not-found screen with a working way back",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C15",
+      "action": "Open /admin/users directly as moderator",
+      "expected": "Same not-found screen, no \"Użytkownicy\" in the navigation",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C16",
+      "action": "Reset the simulation",
+      "expected": "Start state: list, Sernik visible again, status announced",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C17",
+      "action": "Keyboard: Tab from the top; focus outline",
+      "expected": "First stop is the skip link, outline 3px, then the nav link",
+      "observed": "first: skip link, outline 3px; second: Przepisy",
+      "status": "pass"
+    },
+    {
+      "id": "C18",
+      "action": "Touch targets on the list, detail and preview screens",
+      "expected": "Buttons, inputs and links at least 48 px tall",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C19",
+      "action": "Phone width 375 px: list and detail",
+      "expected": "No horizontal scroll; \"Ukryj przepis\" visible",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C21",
+      "action": "Keyboard traversal of the detail screen (Tab x7 from the top, the seven focusable stops)",
+      "expected": "Every stop shows a 3 px outline; order is skip link, nav, back link, reason, hide, preview link, test state",
+      "observed": "Przejdź do treści > Przepisy > ← Wróć do listy przepisów > reason > Ukryj przepis > Zobacz, jak ten przepis widzą inne > Test state (tylko prototyp, nie je",
+      "status": "pass"
+    },
+    {
+      "id": "C22",
+      "action": "Announcements in the live region",
+      "expected": "Validation error, success, failure and reset are announced",
+      "observed": "as expected",
+      "status": "pass"
+    },
+    {
+      "id": "C20",
+      "action": "Network and script errors during the whole walk",
+      "expected": "No non-file requests, no page errors",
+      "observed": "as expected",
+      "status": "pass"
+    }
+  ]
+}

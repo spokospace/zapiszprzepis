@@ -1,0 +1,70 @@
+{
+  "format": "discovery-prototype-v1",
+  "skill": "om-mockup-prototype",
+  "slug": "admin-panel-hide-recipe",
+  "revision": 1,
+  "revisionPath": ".ai/prototypes/discovery/admin-panel-hide-recipe/revision-001",
+  "previousRevision": null,
+  "brief": ".ai/specs/2026-10-28-admin-panel-roles-moderation-mcp.md",
+  "flow": "A moderator hides a recipe, checks what others see, and restores it",
+  "panelReport": null,
+  "verification": "passed",
+  "files": [
+    {
+      "path": "index.html",
+      "sha256": "721d2ba8a0405a3c2be172c94ace47ef9bc7a3d64111e4b9d31f73a3743c0562"
+    },
+    {
+      "path": "README.md",
+      "sha256": "2a9a060df97b5a9e59dd2ada5042a50463069bc0898dbc1b2086bb293411d69c"
+    },
+    {
+      "path": "evidence/01-list.png",
+      "sha256": "6f5a7d029d3ea16a30fc4e80e321fc23d9e4e748aaafc8c470fb3e81352035bb"
+    },
+    {
+      "path": "evidence/02-list-empty.png",
+      "sha256": "4826a9db174e6ab6b14255a80a622aaca632c80b882984d2699786cadc17b8a2"
+    },
+    {
+      "path": "evidence/03-detail-visible.png",
+      "sha256": "4d4de12bfbfdb09888b1807f8a2ef01d04693a5910e202dd47c49d28e1a21b9b"
+    },
+    {
+      "path": "evidence/04-validation-error.png",
+      "sha256": "5de640d5658c070ddb2613a4918caf5d024fdcfe92ca49cebfc3cd6d361ae4d7"
+    },
+    {
+      "path": "evidence/05-detail-hidden.png",
+      "sha256": "527f8ac6ed71570c708cfcd20d08664ffdf370603f26d3d5d803d5096a505b90"
+    },
+    {
+      "path": "evidence/06-preview-guest-hidden.png",
+      "sha256": "c0e6c0f2574ffb903d866c85dfac4ee6ad4b73f9add969efd963559a936f21c5"
+    },
+    {
+      "path": "evidence/07-write-failure.png",
+      "sha256": "7601acbbadabaabae79d9ba633ab8eba57a0a91c54c6e0c89582772d5dfa6900"
+    },
+    {
+      "path": "evidence/08-not-found.png",
+      "sha256": "f96f17d933d306bd075d64be2b35450cbf937ae7b96a8e8cf981ed6514aa255a"
+    },
+    {
+      "path": "evidence/09-phone-detail.png",
+      "sha256": "0f40e0f15d4d0ab8402a9521bafa9039f6fec9bd675ef72aec8152e97215d3f4"
+    },
+    {
+      "path": "evidence/10-phone-list.png",
+      "sha256": "5157b1da46592e1a6f88a0aeefa967c7eeb95ea7a4005e4328bc5c31bf1a832c"
+    },
+    {
+      "path": "evidence/checks.json",
+      "sha256": "fa1cb73c2f506b4db6d2fda5738d8d6e6ea4759e5a1a1d613f15c09f98a77d66"
+    },
+    {
+      "path": "evidence/snapshot-list.txt",
+      "sha256": "894c5f88b2976e6473d0fdc0d80a6bea656abd4a81892977e562806783c03d38"
+    }
+  ]
+}
