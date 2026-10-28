@@ -259,7 +259,7 @@ Wdrożone increments złożone w powyższą bazę (bez własnych wierszy w Wycin
 - **Placeholder „Zapisuję…" w liście przepisów** — FR-010 nice-to-have. W MVP wystarczy ekran potwierdzenia po share; lista odświeża się przy otwarciu. V2.
 - **Wsparcie Instagram + TikTok** — PRD §Non-Goals. Trudniejszy share intent, osobny scraper. V2.
 - **Współdzielenie rodzinne (ZapiszPrzepis Family)** — PRD §Non-Goals. Płaski model per-użytkownik. V2.
-- **Ręczna edycja przepisu po ekstrakcji** — PRD §Non-Goals + Guardrail „zero data entry".
+- **Ręczna edycja przepisu po ekstrakcji przez użytkownika** — PRD §Non-Goals + Guardrail „zero data entry". Wyjątek od 2026-10-28: edycja przez zespół obsługi w panelu `/admin` (specyfikacja `.ai/specs/2026-10-28-admin-panel-roles-moderation-mcp.md`, fazy 2–3); użytkownik końcowy nadal niczego nie poprawia.
 - **Funkcje wokół gotowania** („co ugotować z tego co mam", lista zakupów, plan tygodnia, voice search) — PRD §Non-Goals. Inna apka.
 - **Wyszukiwanie semantyczne** („coś szybkiego", „bez mięsa") — PRD §Non-Goals. W MVP tylko tekstowe (S-05). V2.
 - **Aplikacja natywna iOS / Android (Capacitor wrap, App Store)** — PRD §Non-Goals. Tylko PWA.

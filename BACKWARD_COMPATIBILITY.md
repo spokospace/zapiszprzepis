@@ -8,6 +8,8 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 **Surface:** `/`, `/recipes`, `/recipes/[slug]`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/confirm`, `/auth/callback`, `/share`, plus the query params links and bookmarks carry (`/recipes?category=…&tag=…&q=…`) and the flags the UI reads (`?add_error=empty|invalid_url|server`, `?duplicate=1|pending`, `?shared=1`, `/login?error=…`).
 
+**Admin panel (staff only, never indexed, 404 for anyone without a role):** `/admin`, `/admin/uzytkownicy`, `/admin/importy`, `/admin/dostep`, `/admin/role`, `/admin/dziennik` and their `?ok=` / `?error=` result keys. Staff bookmark these.
+
 **Breaking:** renaming or removing a path; changing how a recipe slug is derived for existing recipes (slugs are unique per user and stored); removing a query-param code the UI renders.
 
 **Required path:** keep the old path working with a redirect (in middleware or a route) for at least one release; never rewrite stored slugs without a migration that keeps old slugs resolvable.
@@ -43,6 +45,8 @@ There is no public API and no versioned package; the contracts are URLs, payload
 **Breaking:** dropping or renaming a column, table, enum value or tag value that existing rows hold; tightening a constraint existing rows violate; weakening or dropping an RLS policy; moving or deleting stored image objects that recipes reference.
 
 **Required path:** a new forward migration (never edit an applied one) that migrates existing rows in the same migration — the `wegetarianskie` → `salatki` rename (`20260705000000_rename_category_salatki.sql`) and the move into `ciasteczka` (`20261015200100_move_cookies_to_ciasteczka.sql`) are the precedent; regenerate `supabase.types.ts` in the same PR; describe the rollback in the PR body; label `risk-high`. Local development runs against the production database, so applying a migration locally is applying it to production.
+
+**Admin panel additions (Phase 1):** the private tables `staff_roles`, `staff_role_permissions`, `user_roles` and `staff_audit_log`, the composite types `admin_*_row`, the functions `staff_can`, `has_permission`, `my_permissions`, `staff_audit` and every `admin_*` / `admin_*_as` function (names, argument names, error codes such as `forbidden` and `last_admin`), the permission strings (`users.read`, `imports.retry`, …), the policy `recipe_shares_staff_select`, and the `'staff'` value of `user_full_access.source`. Roles never go on `profiles` (anon-readable, owner-updatable). The `_as` functions are `service_role` only and the wrappers `authenticated` only; widening a grant is a breaking change reviewed as a privilege escalation.
 
 ## 6. Worker configuration, cron and bindings
 
