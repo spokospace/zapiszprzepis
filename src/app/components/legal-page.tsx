@@ -16,7 +16,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
         <article className="mx-auto max-w-3xl text-[19px] leading-relaxed text-ink">
           <h1 className="text-[32px] font-bold leading-tight">{bindOrphans(title)}</h1>
           <p className="mt-2 text-[16px] text-ink-soft">
-            Obowiązuje od: 17 października 2026
+            Obowiązuje od: 28 października 2026
           </p>
           <div className="mt-6 flex flex-col gap-4">{children}</div>
           <LegalLinks className="mt-10 border-t border-border-card pt-6" />
