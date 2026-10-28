@@ -182,6 +182,7 @@ describe('addRecipeErrorPath (E01-S10)', () => {
     expect(parseAddRecipeError(undefined)).toBeNull()
     expect(parseAddRecipeError('')).toBeNull()
     expect(parseAddRecipeError('empty')).toBe('empty')
+    expect(parseAddRecipeError('rate_limited')).toBe('rate_limited')
     expect(parseAddRecipeError(['no_access', 'server'])).toBe('no_access')
     expect(parseAddRecipeError('<script>')).toBe('server')
   })

@@ -7,6 +7,7 @@ import { checkUser, SessionCheckError } from '@/lib/supabase/user-check'
 import { queueRecipeRefresh } from '@/lib/recipe-refresh'
 import { recipePath } from '@/lib/routes'
 import { getFullAccess } from '@/lib/full-access'
+import { extractionAllowed } from '@/lib/extraction-rate-limit'
 
 /**
  * "Odśwież przepis" — re-run extraction for an existing recipe and overwrite it
@@ -40,6 +41,11 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
   if (!recipe?.source_url) {
     // Nothing to re-extract from (e.g. a manually-created recipe without a URL).
     redirect(`${recipePath(slug)}?refresh_error=1`)
+  }
+
+  // E02-S11-T04: each extraction is paid, so each account is capped.
+  if (!(await extractionAllowed(user.id))) {
+    redirect(`${recipePath(slug)}?refresh_error=rate_limited`)
   }
 
   await queueRecipeRefresh(supabase, sendRecipeExtract, { userId: user.id, sourceUrl: recipe.source_url })

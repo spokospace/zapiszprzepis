@@ -7,6 +7,7 @@ import { detectSourceType } from '@/lib/detect-source-type'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
 import { getFullAccess, NO_FULL_ACCESS } from '@/lib/full-access'
+import { extractionAllowed, EXTRACTION_RATE_LIMITED } from '@/lib/extraction-rate-limit'
 import { revalidatePath } from 'next/cache'
 
 export type TriggerExtractionResult =
@@ -49,6 +50,10 @@ export async function triggerRecipeExtraction(
   // After dedup: an existing link only goes to favorites, which need no access.
   if (!(await getFullAccess(supabase))) {
     throw new Error(NO_FULL_ACCESS)
+  }
+  // E02-S11-T04: each extraction is paid, so each account is capped.
+  if (!(await extractionAllowed(user.id))) {
+    throw new Error(EXTRACTION_RATE_LIMITED)
   }
 
   const sourceType = detectSourceType(url)

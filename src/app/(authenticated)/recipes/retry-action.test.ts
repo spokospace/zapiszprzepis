@@ -10,10 +10,12 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/supabase/server', () => ({ requireUser: vi.fn() }))
 vi.mock('@/inngest/client', () => ({ inngest: { send: vi.fn() } }))
 vi.mock('@/lib/full-access', () => ({ getFullAccess: vi.fn() }))
+vi.mock('@/lib/extraction-rate-limit', () => ({ extractionAllowed: vi.fn().mockResolvedValue(true), EXTRACTION_RATE_LIMITED: 'Extraction rate limited' }))
 
 import { requireUser } from '@/lib/supabase/server'
 import { inngest } from '@/inngest/client'
 import { getFullAccess } from '@/lib/full-access'
+import { extractionAllowed } from '@/lib/extraction-rate-limit'
 import { retryShare } from './retry-action'
 
 const USER = { id: 'user-1' }
@@ -155,3 +157,37 @@ describe('retryShare — a share stuck in pending (#382)', () => {
   })
 })
 
+
+describe('retryShare — per-account extraction cap (E02-S11-T04)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getFullAccess).mockResolvedValue(true)
+  })
+
+  const FAILED = { id: 42, shared_url: 'https://example.com/x', share_intent: {}, status: 'failed' }
+
+  it('over the cap: asks to try later and leaves the share failed, with no event', async () => {
+    const update = vi.fn()
+    const from = vi.fn(() => ({
+      select: vi.fn(() => ({ eq: vi.fn(() => ({ single: vi.fn().mockResolvedValue({ data: FAILED, error: null }) })) })),
+      update,
+    }))
+    vi.mocked(requireUser).mockResolvedValue({ supabase: { from }, user: USER } as any)
+    vi.mocked(extractionAllowed).mockResolvedValueOnce(false)
+
+    await expect(retryShare(42)).rejects.toThrow('REDIRECT /dodaj?add_error=rate_limited')
+
+    expect(extractionAllowed).toHaveBeenCalledWith('user-1')
+    expect(update).not.toHaveBeenCalled()
+    expect(inngest.send).not.toHaveBeenCalled()
+  })
+
+  it('does not spend the cap on a share that is not retryable', async () => {
+    const { supabase } = supabaseStub({ ...FAILED, status: 'completed' })
+    vi.mocked(requireUser).mockResolvedValue({ supabase, user: USER } as any)
+
+    await retryShare(42)
+
+    expect(extractionAllowed).not.toHaveBeenCalled()
+  })
+})
