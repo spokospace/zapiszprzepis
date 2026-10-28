@@ -1,0 +1,7 @@
+// Cloudflare Pages project for the docs site. It sits here so wrangler, run
+// from docs/, finds this file and never the app's ../wrangler.jsonc.
+{
+  "name": "zapiszprzepis-docs",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-10-01"
+}

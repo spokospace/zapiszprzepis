@@ -31,6 +31,7 @@
     "render:banner": "node docs/banner/render.mjs",
     "docs:dev": "pnpm --dir docs install --frozen-lockfile && pnpm --dir docs dev",
     "docs:build": "pnpm --dir docs install --frozen-lockfile && pnpm --dir docs build",
+    "docs:deploy": "pnpm --dir docs install --frozen-lockfile && pnpm --dir docs run ship",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
