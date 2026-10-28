@@ -23,7 +23,7 @@ interface RecipeListProps {
 // the same space and nothing below jumps on hydration.
 export const LIST_BAR =
   'hidden min-h-[48px] items-center justify-start gap-2 border-b border-border-card ' +
-  'lg:flex lg:border-b-0'
+  'lg:flex lg:min-h-[28px] lg:border-b-0'
 
 // A button-shaped link: bordered, so no underline (as in the header's "Dodaj").
 const NAV = 'flex min-h-[64px] items-center gap-3 rounded-tile border px-4 py-2 leading-tight no-underline!'
@@ -99,7 +99,7 @@ export function RecipeListBar(props: RecipeListProps) {
           of pushing "N z M" off screen (WCAG 1.4.10, 200% zoom). */}
       <Link
         href={position.href}
-        className="inline-flex min-h-[48px] min-w-0 items-center gap-1.5 text-[18px] font-bold no-underline! wrap-anywhere hover:text-action-hover"
+        className="inline-flex min-h-[48px] lg:min-h-0 min-w-0 items-center gap-1.5 text-[18px] font-bold no-underline! wrap-anywhere hover:text-action-hover"
       >
         <ArrowLeft aria-hidden="true" size={20} className="shrink-0" />
         {position.label}
