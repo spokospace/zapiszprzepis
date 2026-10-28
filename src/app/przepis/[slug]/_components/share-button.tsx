@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Share2 } from 'lucide-react'
-import { ACTION_CARD, ACTION_CARD_ICON_COMPACT } from '@/app/components/ui/action-card'
+import { ACTION_CARD, ACTION_CARD_ICON_COMPACT, ActionLabel } from '@/app/components/ui/action-card'
 
 export type ShareOutcome = 'shared' | 'copied' | 'cancelled' | 'failed'
 
@@ -63,7 +63,7 @@ export function ShareButton({ title, url }: { title: string; url: string }) {
         className={ACTION_CARD.compact}
       >
         <Share2 aria-hidden="true" className={ACTION_CARD_ICON_COMPACT} />
-        Udostępnij przepis
+        <ActionLabel label="Udostępnij przepis" short="Udostępnij" />
       </button>
       <span
         role="status"

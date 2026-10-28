@@ -10,6 +10,7 @@ import { servingsLabel } from '@/lib/servings'
 import { ImageLightbox } from '@/app/components/image-lightbox'
 import { householdMeasure, type Ingredient } from '@/lib/ingredients'
 import { useStepPhotos } from './use-step-photos'
+import { RECIPE_SPLIT } from './recipe-split'
 
 /** „Pokaż” / „Ukryj” — the two states of the step-photos toggle (ZMIANY §3). */
 const PHOTO_OPTIONS: [label: string, show: boolean][] = [
@@ -150,7 +151,7 @@ export function RecipeChecklists({
   )
 
   return (
-    <div className="recipe-print-grid lg:grid lg:grid-cols-[1fr_1.6fr] lg:items-start lg:gap-x-12">
+    <div className={`recipe-print-grid ${RECIPE_SPLIT}`}>
       {/* With „Wielkość tekstu" moved to /wyswietlanie (FR #485), this row holds only
           the optional „Wyczyść zaznaczenia" reset, right-aligned; it is dropped entirely
           when nothing is ticked so it leaves no empty gap above „Tryb gotowania". */}

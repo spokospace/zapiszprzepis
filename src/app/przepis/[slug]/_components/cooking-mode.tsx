@@ -188,7 +188,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
         className={ACTION_CARD.dark}
       >
         <ChefHat aria-hidden="true" className={ACTION_CARD_ICON} />
-        <ActionCardText title="Włącz tryb gotowania" hint="Gotuj krok po kroku" tone="dark" />
+        <ActionCardText title="Tryb gotowania" hint="Gotuj krok po kroku" tone="dark" />
       </button>
 
       <dialog

@@ -42,8 +42,13 @@ describe('FavoriteButton on the recipe page', () => {
 
   it('keeps its visible label over a hint, and no aria-label', () => {
     const html = heart({})
-    expect(html).toMatch(/>Dodaj do ulubionych<\/span><span[^>]*>Zapisz przepis na później<\/span>/)
+    expect(html).toMatch(/>Dodaj do ulubionych<\/span><span[^>]*>Do ulubionych<\/span><\/span><span[^>]*>Zapisz przepis na później<\/span>/)
     expect(html).not.toContain('aria-label')
+  })
+
+  it('shows only the short label in the one-row layout (lg–xl)', () => {
+    const html = heart({})
+    expect(html).toContain('<span class="lg:max-xl:hidden">Dodaj do ulubionych</span><span class="hidden lg:max-xl:inline">Do ulubionych</span>')
   })
 
   it('shows the saved state with an orange frame and a filled heart', () => {

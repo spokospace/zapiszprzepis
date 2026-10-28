@@ -9,6 +9,7 @@ import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
 import { SourceBadge } from '@/app/components/source-badge'
 import { NoPhoto } from '@/app/components/no-photo'
+import { RECIPE_SPLIT } from './recipe-split'
 
 export interface RecipeHeaderData {
   title: string
@@ -33,6 +34,11 @@ interface RecipeHeaderProps {
   recipe: RecipeHeaderData
   /** E01-S21: the "N inne przepisy na {danie}" bar, under the author line. */
   versionsBar?: ReactNode
+  /**
+   * The action cards (RecipeActions): a full-width row under the photo and text between
+   * lg and xl, under the description in the text column from xl.
+   */
+  actions?: ReactNode
 }
 
 /**
@@ -76,7 +82,7 @@ function Approx() {
  * breadcrumbs below lg (C3); from lg they are in the page's A9 row. The tags render at the bottom of the page, in
  * "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps) {
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
   const times = recipeTimeStats(recipe)
@@ -87,12 +93,15 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
   const sourceBadge = <SourceBadge kind={source.kind} text={source.text} href={recipe.source_url} variant="recipe" />
 
   return (
-    // Desktop (E01-S17, A9): a 16:10 photo | the text column (1.2fr 1fr). The grid
+    // Desktop (E01-S17, A9): a 4:3 photo | the text column (1fr 1.6fr). The grid
     // applies whether or not there is a cover (#495): a cover-less recipe gets a
     // category-icon placeholder in the photo column so its header keeps the two-column
-    // balance instead of stretching full-width. Top-aligned: with the actions in the
-    // text column it is usually the taller one, and a centred photo would float in white space.
-    <header className="mb-8 lg:grid lg:grid-cols-[1.2fr_1fr] lg:items-start lg:gap-10">
+    // balance instead of stretching full-width. Top-aligned, so a shorter photo or text
+    // column never floats. The actions are the header's third item: between lg and xl the
+    // text column is too narrow for them beside a 4:3 photo (it would run far past it),
+    // so they take a full-width row below both; from xl the photo spans two rows and they
+    // sit under the description, the `1fr` row soaking up any height the photo adds.
+    <header className={`mb-8 ${RECIPE_SPLIT} xl:grid-rows-[auto_1fr]`}>
       {cover ? (
         // Below lg the cover is full-bleed: its negative margins cancel the horizontal
         // padding of PageContainer (px-4 sm:px-6) and the top padding of <main>
@@ -100,18 +109,20 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
         // margins in sync with that padding by hand — test:reflow only catches an
         // over-wide breakout (horizontal scroll), not a gap left by a mismatch. `w-full`
         // is dropped so the block's auto width expands to the viewport (re-adding it would
-        // shift, not widen). From lg this box is the 16:10 grid cell and the photo inside it
-        // bleeds left to the browser edge (design 2026-10-28, `bleed-left-page`). The cell
-        // keeps the height, so a wide screen gets a wider crop, not a taller photo.
-        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0 lg:aspect-[16/10]">
-          <div className="absolute inset-0 overflow-hidden bg-surface-3 lg:bleed-left-page lg:rounded-r-tile">
+        // shift, not widen). From lg the photo sits in the ingredients column (the same
+        // 1fr | 1.6fr split and gap as RecipeChecklists), so its right edge lines up with
+        // „Składniki”, and `bleed-left-page` widens it to the left browser edge. It stays
+        // 4:3 at every width, so the height follows the widened photo.
+        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] sm:-mx-6 sm:-mt-8 lg:mt-0 lg:mr-0 lg:mb-0 lg:bleed-left-page xl:row-span-2">
+          <div className="absolute inset-0 overflow-hidden bg-surface-3 lg:rounded-r-tile">
             <Image
               // The LCP image, served from Supabase Storage through next/image.
               src={cover}
               alt={recipe.title}
               fill
-              // Full-bleed = 100vw below lg (1024); from lg the grid column plus the bleed.
-              sizes="(max-width: 1023px) 100vw, 55vw"
+              // Full-bleed = 100vw below lg (1024); from lg the column plus the bleed,
+              // ~37–40vw up to 1535 px and ~44vw on very wide screens.
+              sizes="(max-width: 1023px) 100vw, (max-width: 1535px) 40vw, 45vw"
               className="object-cover"
               priority
             />
@@ -126,7 +137,7 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
         // decorative placeholder, not a photo, so the source badge stays inline in the
         // text column (E01-S31 §3), not on it. Hidden below lg — there the badge is inline
         // and no photo block shows, exactly as before.
-        <div className="hidden aspect-[16/10] overflow-hidden rounded-tile bg-surface-3 lg:block">
+        <div className="hidden aspect-[4/3] overflow-hidden rounded-tile bg-surface-3 lg:block xl:row-span-2">
           <NoPhoto category={recipe.category} iconClassName="h-16 w-16" />
         </div>
       )}
@@ -189,6 +200,7 @@ export function RecipeHeader({ recipe, versionsBar }: RecipeHeaderProps) {
         {recipe.meta_description && <p className="mt-4 text-scalable-body leading-relaxed text-ink">{recipe.meta_description}</p>}
         {versionsBar && <div className="print:hidden">{versionsBar}</div>}
       </div>
+      {actions && <div className="lg:col-span-2 xl:col-span-1 xl:col-start-2">{actions}</div>}
     </header>
   )
 }
