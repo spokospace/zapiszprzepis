@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { readerScrape, readableHtml } from '@/lib/jina-reader'
 import { fetchPublicHtml } from '@/lib/public-fetch'
+import { pickGalleryImages } from '@/lib/recipe-image-archive'
 
 const PAGE = 'https://blog.example/2018/01/22/spaghetti'
 
@@ -72,7 +73,7 @@ describe('readerScrape', () => {
     const page = await readerScrape(PAGE, { fetch })
 
     expect(fetch.mock.calls[0][0]).toBe(`https://r.jina.ai/${PAGE}`)
-    expect(fetch.mock.calls[0][1].headers).toEqual({ Accept: 'application/json' })
+    expect(fetch.mock.calls[0][1].headers).toEqual({ Accept: 'application/json', 'X-With-Images-Summary': 'true' })
     expect(page).toEqual({
       markdown: '# Barszcz ukraiński\n\n## Składniki:\n* 2 ziemniaki',
       html: '<html><img src="/barszcz.jpg"></html>',
@@ -89,7 +90,11 @@ describe('readerScrape', () => {
     await readerScrape(PAGE, { fetch })
     vi.unstubAllEnvs()
 
-    expect(fetch.mock.calls[0][1].headers).toEqual({ Accept: 'application/json', Authorization: 'Bearer jina_test' })
+    expect(fetch.mock.calls[0][1].headers).toEqual({
+      Accept: 'application/json',
+      'X-With-Images-Summary': 'true',
+      Authorization: 'Bearer jina_test',
+    })
   })
 
   it('does not repeat a title the markdown already holds', async () => {
@@ -206,6 +211,78 @@ describe('readerScrape', () => {
     })
 
     expect((await readerScrape(PAGE, { fetch })).html).toBe('<article>Przepis</article>')
+  })
+
+  describe('when both HTML fetches hit the bot check', () => {
+    // howsweeteats.com (#536): the Worker and Jina's own browser both got
+    // Cloudflare's "Just a moment…", so the gallery scan saw no <img>, while
+    // the markdown read got through with its image summary.
+    const POST = 'https://www.howsweeteats.com/2026/08/prosciutto-fig-jam-pizza/'
+    const UPLOADS = 'https://www.howsweeteats.com/wp-content/uploads'
+    const CHALLENGE = '<html><head><title>Just a moment...</title></head><body>challenge-platform</body></html>'
+    const images = {
+      'Image 1: How Sweet Eats Logo': 'https://www.howsweeteats.com/wp-content/themes/hse/images/logo@2x.png',
+      'Image 2: Easy Everyday book cover.': `${UPLOADS}/2025/01/easyeveryday-sm.jpg`,
+      'Image 3,1: fig jam prosciutto pizza': `${UPLOADS}/2026/08/fig-jam-prosciutto-pizza-8-scaled.jpg`,
+      'Image 4,2: fig jam prosciutto pizza': 'blob:http://localhost/2c584051647a1deba35f792035f6c3d7',
+      'Image 5: fig jam prosciutto pizza': `${UPLOADS}/2026/08/fig-jam-prosciutto-pizza-scaled.jpg`,
+      'Image 6': `${UPLOADS}/2026/08/fig-jam-prosciutto-pizza-6-250x250.jpg`,
+      'Image 7': `${UPLOADS}/2026/08/IMG_2041.jpg`,
+      'Image 8: Jessica in a leopard print top': `${UPLOADS}/2020/10/about-sm.jpg`,
+      'Image 9': 'https://secure.gravatar.com/avatar/6166?s=60',
+    }
+    const blockedFetch = (summary: Record<string, string> = images) =>
+      vi.fn().mockImplementation((url: string, init?: { headers?: Record<string, string> }) => {
+        if (!url.startsWith('https://r.jina.ai/')) return Promise.resolve(htmlResponse(CHALLENGE, 403))
+        return Promise.resolve(
+          init?.headers?.['X-Return-Format'] === 'html'
+            ? jinaResponse({ html: CHALLENGE })
+            : jinaResponse({ content: 'Fig jam pizza', images: summary }),
+        )
+      })
+
+    it("hands on the summary's photos of the dish, not the challenge page", async () => {
+      const { html } = await readerScrape(POST, { fetch: blockedFetch() })
+
+      expect(html).not.toContain('Just a moment')
+      expect(html).not.toContain('blob:')
+      expect(html).not.toContain('easyeveryday')
+      expect(html).not.toContain('about-sm')
+      expect(html).not.toContain('logo')
+      expect(html).toContain('alt="fig jam prosciutto pizza"')
+      expect(pickGalleryImages(html, POST)).toEqual([
+        `${UPLOADS}/2026/08/fig-jam-prosciutto-pizza-8-scaled.jpg`,
+        `${UPLOADS}/2026/08/fig-jam-prosciutto-pizza-scaled.jpg`,
+      ])
+    })
+
+    it('hands on no HTML when no summary image names the dish', async () => {
+      const { html } = await readerScrape(POST, {
+        fetch: blockedFetch({ 'Image 1: How Sweet Eats Logo': `${UPLOADS}/logo.png` }),
+      })
+
+      expect(html).toBe('')
+    })
+
+    it('leaves HTML that has photos of its own alone', async () => {
+      const fetch = vi.fn().mockImplementation((url: string) =>
+        Promise.resolve(
+          url.startsWith('https://r.jina.ai/')
+            ? jinaResponse({ content: 'x', images })
+            : htmlResponse('<article><img src="https://cdn.example/dish.jpg"></article>'),
+        ),
+      )
+
+      expect((await readerScrape(POST, { fetch })).html).toBe('<article><img src="https://cdn.example/dish.jpg"></article>')
+    })
+
+    it('escapes the alt text it writes into a tag', async () => {
+      const { html } = await readerScrape(POST, {
+        fetch: blockedFetch({ 'Image 1: pizza "with" <figs> & ham': `${UPLOADS}/pizza.jpg` }),
+      })
+
+      expect(html).toBe(`<img src="${UPLOADS}/pizza.jpg" alt="pizza &quot;with&quot; &lt;figs> &amp; ham">`)
+    })
   })
 
   it('does not ask Jina for the HTML when the direct fetch works', async () => {

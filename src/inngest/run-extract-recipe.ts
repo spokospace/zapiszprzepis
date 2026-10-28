@@ -917,9 +917,12 @@ Rules:
 
       // A refresh replaces the gallery outright and is how an existing recipe
       // gains step photos from a better extraction (see storeCoverAndGallery).
+      // Not with an empty gallery read through Jina, though: a degraded scrape
+      // finding no photos is no sign the source lost them (#536).
+      const replace = gallery.length > 0 || firecrawlError == null
       return await withImages(
         { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' },
-        { recipeId: refreshed.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: true },
+        { recipeId: refreshed.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace },
       )
     }
 
