@@ -158,19 +158,23 @@ export function RecipeChecklists({
       >
         {/* C3, item 8: "Składniki" with "na 4 porcje" on the same baseline, only when
             the source states the servings. */}
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3">
-          {/* min-w-0: a flex item never shrinks below its longest word otherwise (WCAG 1.4.10). */}
-          <h2 id="ingredients-heading" className="min-w-0 text-[24px] font-bold text-ink">
-            Składniki
-          </h2>
-          {servings != null && <p className="min-w-0 text-[16px] text-ink-soft">{servingsLabel(servings)}</p>}
+        <div className="mb-3 flex items-baseline justify-between gap-x-3">
+          {/* The reset stays on the heading's line: the heading never shrinks, so it cannot
+              break mid-word (WCAG 1.4.10), and the reset gives up width and wraps its own
+              text instead. The servings label wraps under the heading. */}
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+            <h2 id="ingredients-heading" className="shrink-0 text-[24px] font-bold text-ink">
+              Składniki
+            </h2>
+            {servings != null && <p className="min-w-0 text-[16px] text-ink-soft">{servingsLabel(servings)}</p>}
+          </div>
           {/* Always mounted, so ticking an ingredient moves nothing on the page. `invisible`
               keeps the space and takes the reset out of the tab order and the accessibility
               tree while nothing is ticked. */}
           <button
             type="button"
             onClick={() => setRaw(null)}
-            className={`min-h-[48px] px-1 text-[17px] font-bold text-action-text underline hover:text-action-hover print:hidden${
+            className={`min-h-[48px] min-w-0 px-1 text-[17px] font-bold text-action-text underline hover:text-action-hover print:hidden${
               state.ingredients.length === 0 ? ' invisible' : ''
             }`}
           >
