@@ -16,10 +16,11 @@ interface SignUpFormProps {
   error?: string
   email?: string
   sent?: string
+  inviteRequired: boolean
 }
 
 /** Email + invite code sign-up, in the 3a field style (kept by the owner beside Facebook/Google). */
-export function SignUpForm({ error, email, sent }: SignUpFormProps) {
+export function SignUpForm({ error, email, sent, inviteRequired }: SignUpFormProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? ERROR_MESSAGES.unknown) : null
@@ -69,24 +70,26 @@ export function SignUpForm({ error, email, sent }: SignUpFormProps) {
           />
         </div>
 
-        <div>
-          <label htmlFor="invite-code" className={LABEL}>
-            Kod zaproszenia
-          </label>
-          <input
-            id="invite-code"
-            name="inviteCode"
-            type="text"
-            autoComplete="off"
-            required
-            disabled={isLoading}
-            aria-describedby="invite-code-help"
-            className={`mt-1 ${INPUT}`}
-          />
-          <p id="invite-code-help" className="mt-1 text-[16px] text-ink-soft">
-            Kod otrzymany od autora aplikacji.
-          </p>
-        </div>
+        {inviteRequired && (
+          <div>
+            <label htmlFor="invite-code" className={LABEL}>
+              Kod zaproszenia
+            </label>
+            <input
+              id="invite-code"
+              name="inviteCode"
+              type="text"
+              autoComplete="off"
+              required
+              disabled={isLoading}
+              aria-describedby="invite-code-help"
+              className={`mt-1 ${INPUT}`}
+            />
+            <p id="invite-code-help" className="mt-1 text-[16px] text-ink-soft">
+              Kod otrzymany od autora aplikacji.
+            </p>
+          </div>
+        )}
 
         <button type="submit" disabled={isLoading} className={SUBMIT}>
           {isLoading ? 'Wysyłanie…' : 'Zarejestruj się'}
