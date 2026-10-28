@@ -214,8 +214,9 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions 
 
         {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the
             raw gender, which stays owner-only (E01-S12); neutral "Dodane przez" when
-            unknown. An initial in a warm circle before it, and the source after it
-            (handoff 2026-10-28). */}
+            unknown. An initial in a warm circle before it (handoff 2026-10-28). No
+            "źródło: …" after it, unlike the mock: the source badge already names and
+            links the original, on the photo or right above this line (owner, 2026-10-28). */}
         {recipe.author_name && (
           <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-ink-soft print:hidden">
             <span
@@ -232,23 +233,6 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions 
                 </Link>
               ) : (
                 <span className="font-bold text-ink">{recipe.author_name}</span>
-              )}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span className="min-w-0 wrap-anywhere">
-              źródło:{' '}
-              {recipe.source_url ? (
-                <a
-                  href={recipe.source_url}
-                  target="_blank"
-                  rel="noopener"
-                  className="text-action-text underline hover:text-action-hover"
-                >
-                  {source.text}
-                  <span className="sr-only"> (nowa karta)</span>
-                </a>
-              ) : (
-                source.text
               )}
             </span>
           </p>
