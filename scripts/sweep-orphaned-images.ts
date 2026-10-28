@@ -18,19 +18,21 @@ const BUCKET = 'recipe-images'
 const PAGE = 1000
 const REMOVE_BATCH = 100
 
-/** Every object key under `prefix` into `keys`, walking folders (Storage lists one level at a time). */
-async function listAll(supabase: SupabaseClient, prefix = '', keys: string[] = []): Promise<string[]> {
-  for (let offset = 0; ; offset += PAGE) {
-    const { data, error } = await supabase.storage.from(BUCKET).list(prefix, { limit: PAGE, offset })
-    if (error) throw new Error(`list "${prefix}" failed: ${error.message}`)
-    for (const entry of data ?? []) {
-      const key = prefix ? `${prefix}/${entry.name}` : entry.name
-      // A folder is listed without an id.
-      if (entry.id == null) await listAll(supabase, key, keys)
-      else keys.push(key)
-    }
-    if ((data?.length ?? 0) < PAGE) return keys
-  }
+/**
+ * Every object key in the bucket. listV2 without a delimiter returns full keys
+ * flat, a page per request; walking folders with list() took one request per
+ * user and per recipe folder and exhausted Storage's connection pool.
+ */
+async function listAll(supabase: SupabaseClient): Promise<string[]> {
+  const keys: string[] = []
+  let cursor: string | undefined
+  do {
+    const { data, error } = await supabase.storage.from(BUCKET).listV2({ limit: PAGE, cursor })
+    if (error) throw new Error(`list failed: ${error.message}`)
+    for (const object of data.objects) keys.push(object.key ?? object.name)
+    cursor = data.hasNext ? data.nextCursor : undefined
+  } while (cursor)
+  return keys
 }
 
 /** Ids of every recipe, and every Storage key one of them points at. */
@@ -99,5 +101,6 @@ async function main(): Promise<void> {
 
 main().catch((err: Error) => {
   console.error(`✗ Sweep failed: ${err.message}`)
-  process.exit(1)
+  // exitCode, not exit(): exiting with fetches in flight trips a libuv assertion on Windows.
+  process.exitCode = 1
 })
