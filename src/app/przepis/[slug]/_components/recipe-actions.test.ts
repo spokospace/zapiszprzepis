@@ -21,32 +21,28 @@ function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
   return renderToStaticMarkup(createElement(RecipeActions, { ...PROPS, ...extra }))
 }
 
-describe('RecipeActions (E01-S31 §3, design 2026-10-28)', () => {
-  it('is one row of four between lg and xl and a 2 × 2 grid from xl, the cooking card first', () => {
+describe('RecipeActions (handoff 2026-10-28)', () => {
+  it('puts "Zacznij gotować" beside the heart in the first row, the cooking part twice as wide', () => {
     const html = render()
-    expect(html).toMatch(/^<div class="mt-6 grid grid-cols-2 items-start[^"]*xl:grid-cols-2[^"]*lg:grid-cols-4"><div class="col-span-2 lg:col-span-1"><button/)
-    expect(html.indexOf('Tryb gotowania')).toBeLessThan(html.indexOf('Dodaj do ulubionych'))
+    expect(html).toMatch(/^<div class="mt-6 flex flex-col gap-3 print:hidden"><div class="flex flex-col gap-3 min-\[480px\]:flex-row"><div class="min-w-0 flex-\[2\]">/)
+    expect(html.indexOf('Zacznij gotować')).toBeLessThan(html.indexOf('Dodaj do ulubionych'))
   })
 
-  it('drops the cooking card when the recipe has no steps; three in a row, the heart a full row from xl', () => {
+  it('drops the cooking button when the recipe has no steps; the heart takes the whole row', () => {
     const html = render({ steps: [], stepImages: [] })
-    expect(html).not.toContain('Tryb gotowania')
-    expect(html).toMatch(/^<div class="[^"]*lg:grid-cols-3"><div class="col-span-2 lg:col-span-1 xl:col-span-2">/)
+    expect(html).not.toContain('Zacznij gotować')
+    expect(html).not.toContain('flex-[2]')
+    expect(html).toMatch(/<div class="flex flex-col gap-3 min-\[480px\]:flex-row"><div class="w-full">/)
   })
 
-  it('labels the cooking card with a hint line', () => {
+  it('labels the cooking button without the old hint line', () => {
     const html = render()
-    expect(html).toContain('Tryb gotowania')
-    expect(html).toContain('Gotuj krok po kroku')
+    expect(html).toContain('<span>Zacznij gotować</span>')
+    expect(html).not.toContain('Gotuj krok po kroku')
   })
 
-  it('shows "Udostępnij przepis" as a full-width framed card (64 px)', () => {
-    const share = render().match(/<button type="button" class="[^"]*">(?:(?!<\/button>).)*Udostępnij przepis(?:(?!<\/button>).)*<\/button>/)?.[0] ?? ''
-    expect(share).toContain('min-h-[64px]')
-    expect(share).toContain('w-full')
-    expect(share).toContain('border-2')
-    // One-row layout (lg–xl): the short label instead.
-    expect(share).toContain('<span class="hidden lg:max-xl:inline">Udostępnij</span>')
+  it('shows "Udostępnij przepis" in the second row', () => {
+    expect(render()).toContain('Udostępnij przepis')
   })
 
   it('has no "Oryginał" button — the original is on the photo badge now', () => {
@@ -59,13 +55,13 @@ describe('RecipeActions (E01-S31 §3, design 2026-10-28)', () => {
     expect(html.indexOf('Wydrukuj przepis')).toBeLessThan(html.indexOf('Udostępnij przepis'))
   })
 
-  it('hides the whole action row on print — none of these controls belongs on paper', () => {
-    expect(render()).toMatch(/^<div class="mt-6 grid[^"]*print:hidden[^"]*"/)
+  it('hides the whole action block on print — none of these controls belongs on paper', () => {
+    expect(render()).toMatch(/^<div class="mt-6 flex flex-col gap-3 print:hidden">/)
   })
 
-  // The gap to „Składniki” below is the header's mb-8 now that the cards sit inside it
+  // The gap to „Składniki” below is the header's mb-8 now that the actions sit inside it
   // (recipe-header.test.ts); a margin here would stack on top of it.
   it('carries no bottom margin of its own', () => {
-    expect(render()).not.toMatch(/^<div class="[^"]*mb-/)
+    expect(render()).not.toMatch(/^<div class="[^"]*mb-/)
   })
 })

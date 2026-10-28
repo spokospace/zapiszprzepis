@@ -55,12 +55,12 @@ describe('DishVersionsBar', () => {
   it('links to the section with singular wording and the accusative', () => {
     const html = renderToStaticMarkup(createElement(DishVersionsBar, { count: 1, dishAccusative: 'szarlotkę' }))
     expect(html).toContain('href="#inne-przepisy"')
-    expect(html).toContain('Mamy jeszcze 1 inny przepis na szarlotkę')
+    expect(html).toContain('Inne przepisy na szarlotkę (1)')
   })
 
   it('falls back to "na to danie" without an accusative', () => {
     const html = renderToStaticMarkup(createElement(DishVersionsBar, { count: 3, dishAccusative: null }))
-    expect(html).toContain('Mamy jeszcze 3 inne przepisy na to danie')
+    expect(html).toContain('Inne przepisy na to danie (3)')
   })
 })
 

@@ -104,15 +104,46 @@ function IngredientRow({
 }
 
 /**
- * Składniki + Przygotowanie for the recipe page (E01-S07, S07b): ingredient ticks are
- * kept per tab in sessionStorage; steps are plain text under "Krok N" (handoff C3,
- * item 9 — ticking is for ingredients; owner decision 2026-10-20: the total, „z M”,
- * only in cooking mode, where one step shows at a time). Składniki and Przygotowanie
- * keep scaling with the per-device text size (`.text-scalable`, applied app-wide by
- * TextScaleApplier); the A / A+ / A++ control now lives on /wyswietlanie (FR #485).
- * "Tryb gotowania" (E01-S08) opens above the two lists (design handoff C3, item 7).
- * From lg (E01-S17, A9) a `1fr 1.6fr` grid: the ingredients in a panel | the steps
- * plus `children`. Below lg it is one column, in the same order.
+ * Progress through the steps: how many ticked steps still match a step (a stale tick from
+ * an older version of the recipe cannot push the count past the total), and the first step
+ * still open, or -1 when every step is done.
+ */
+export function stepProgress(total: number, ticked: number[]): { done: number; next: number } {
+  const open = Array.from({ length: total }, (_, i) => i).filter((i) => !ticked.includes(i))
+  return { done: total - open.length, next: open[0] ?? -1 }
+}
+
+type Checklist = ReturnType<typeof parseChecklist>
+
+/** The progress line over the steps. A one-step recipe gets its own words: "1 z 1 kroków" is not Polish. */
+export function stepProgressLabel(done: number, total: number): string {
+  if (total === 1) return done === 1 ? 'Krok zrobiony' : 'Jeden krok do zrobienia'
+  return `${done} z ${total} kroków zrobione`
+}
+
+/** The stored checklist after ticking or unticking step `index`. */
+export function toggledStepRaw(state: Checklist, index: number): string {
+  return JSON.stringify(toggleChecked(state, 'steps', index))
+}
+
+/**
+ * The stored checklist after "Wyczyść zaznaczenia". The button sits in the ingredients
+ * card, so it clears the ingredient ticks only; with no step ticks left the key goes.
+ */
+export function ingredientsResetRaw(state: Checklist): string | null {
+  return state.steps.length === 0 ? null : JSON.stringify({ ...state, ingredients: [] })
+}
+
+/**
+ * Składniki + Przygotowanie for the recipe page (E01-S07, S07b): ingredient and step
+ * ticks are kept per tab in sessionStorage and never sent to the server. Each step has a
+ * numbered button (handoff 2026-10-28): ticked steps are struck through, the first open
+ * step after a tick carries "Teraz", and a progress line counts them. The "z M" total
+ * stays in cooking mode only. Składniki and Przygotowanie keep scaling with the per-device
+ * text size (`.text-scalable`, applied app-wide by TextScaleApplier); the A / A+ / A++
+ * control lives on /wyswietlanie (FR #485). "Zacznij gotować" (E01-S08) opens above the
+ * two lists. From lg (E01-S17, A9) a `1fr 1.6fr` grid: the ingredients in a panel | the
+ * steps plus `children`. Below lg it is one column, in the same order.
  */
 export function RecipeChecklists({
   recipeId,
@@ -126,7 +157,7 @@ export function RecipeChecklists({
   const state = useMemo(() => parseChecklist(raw), [raw])
 
   // „Zdjęcia kroków: Pokaż / Ukryj” (ZMIANY §3): only when some step has a photo. The
-  // toggle state is shared (StepPhotosProvider) with „Tryb gotowania”, now in the action
+  // toggle state is shared (StepPhotosProvider) with „Zacznij gotować”, now in the action
   // row far above the steps, so „Ukryj” still hides photos there too.
   const showToggle = stepImages.some(Boolean)
   const { showPhotos, setShowPhotos } = useStepPhotos()
@@ -147,6 +178,8 @@ export function RecipeChecklists({
   const [photoIndex, setPhotoIndex] = useState<number | null>(null)
 
   const toggle = (index: number) => setRaw(JSON.stringify(toggleChecked(state, 'ingredients', index)))
+  const toggleStep = (index: number) => setRaw(toggledStepRaw(state, index))
+  const { done: doneSteps, next: nextStep } = stepProgress(steps.length, state.steps)
 
   // Ingredients are numbered flat across sections: each group's first index.
   const offsets = useMemo(
@@ -177,7 +210,7 @@ export function RecipeChecklists({
               tree while nothing is ticked. */}
           <button
             type="button"
-            onClick={() => setRaw(null)}
+            onClick={() => setRaw(ingredientsResetRaw(state))}
             className={`min-h-[48px] min-w-0 px-1 text-right text-[17px] font-bold text-action-text underline hover:text-action-hover print:hidden${
               state.ingredients.length === 0 ? ' invisible' : ''
             }`}
@@ -246,52 +279,85 @@ export function RecipeChecklists({
           {steps.length === 0 ? (
             <p className="text-[19px] text-ink-soft">Brak kroków przygotowania.</p>
           ) : (
-            // From lg (design 2026-10-28) each step gets a numbered orange disc beside it and
-            // a hairline between steps. The disc is decorative — „Krok N” and the <ol> already
-            // say the position — and both drop on paper, where the plain list prints.
-            <ol className="space-y-5 lg:space-y-6">
-              {steps.map((step, i) => (
-                <li
-                  key={i}
-                  className="text-[19px] lg:grid lg:grid-cols-[2.5rem_1fr] lg:gap-x-4 lg:border-t lg:border-border-card lg:pt-6 lg:first:border-t-0 lg:first:pt-0 print:block print:border-0 print:pt-0"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="hidden h-10 w-10 items-center justify-center rounded-pill bg-action text-[18px] font-bold text-white lg:flex print:hidden"
-                  >
-                    {i + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="mb-1.5 text-[17px] font-bold text-action-text">
-                      Krok {i + 1}
-                    </p>
-                    <p className="text-scalable leading-[1.6] text-ink">{step}</p>
-                    {/* Source photo under the step text, same <li>; 4:3, no layout jump (ZMIANY §2).
-                        A tap opens the full-screen viewer, like a gallery photo. */}
-                    {visibleStepImages[i] && (
-                      <figure className="mt-1.5 max-w-full md:max-w-[520px] print:hidden">
-                        <button
-                          type="button"
-                          onClick={() => setPhotoIndex(stepPhotos.findIndex((p) => p.step === i))}
-                          aria-label={`Powiększ zdjęcie do kroku ${i + 1}`}
-                          className="relative block aspect-[4/3] w-full overflow-hidden rounded-tile bg-surface-3"
-                        >
-                          <Image
-                            src={visibleStepImages[i]}
-                            alt={`Zdjęcie do kroku ${i + 1}`}
-                            fill
-                            sizes="(min-width: 768px) 520px, 100vw"
-                            loading="lazy"
-                            className="object-cover transition-transform hover:scale-105"
-                            unoptimized={!isArchivedImageUrl(visibleStepImages[i])}
-                          />
-                        </button>
-                      </figure>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <>
+              {/* The count is also the progress bar's accessible value; the bar itself is
+                  decorative and hidden from assistive tech. */}
+              <div className="mb-5 print:hidden">
+                <p className="mb-2 text-[16px] text-ink-soft">
+                  {stepProgressLabel(doneSteps, steps.length)}
+                </p>
+                <div aria-hidden="true" className="h-1.5 overflow-hidden rounded-pill bg-surface-3">
+                  <div className="h-full bg-success" style={{ width: `${(doneSteps / steps.length) * 100}%` }} />
+                </div>
+              </div>
+              <ol className="space-y-5">
+                {steps.map((step, i) => {
+                  const done = state.steps.includes(i)
+                  return (
+                    <li key={i} className="flex gap-4 text-[19px] print:block">
+                      {/* The number is the button (handoff 2026-10-28): 48 px, outlined when open,
+                          filled with a ✓ when done. Hidden on paper, where the plain list prints. */}
+                      <button
+                        type="button"
+                        aria-pressed={done}
+                        aria-label={`Krok ${i + 1} — ${done ? 'zrobiony, cofnij' : 'oznacz jako zrobiony'}`}
+                        onClick={() => toggleStep(i)}
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-pill border-2 print:hidden ${
+                          done ? 'border-success bg-success text-white' : 'border-action bg-white text-action-text hover:bg-surface-3'
+                        }`}
+                      >
+                        {done ? (
+                          <Check aria-hidden="true" size={22} strokeWidth={3.5} />
+                        ) : (
+                          <span aria-hidden="true" className="text-[18px] font-bold">
+                            {i + 1}
+                          </span>
+                        )}
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[17px] font-bold text-action-text">
+                          <span className={done ? 'text-ink-soft' : undefined}>Krok {i + 1}</span>
+                          {i === nextStep && doneSteps > 0 && (
+                            <span className="rounded-md bg-action px-2 py-0.5 text-[14px] font-bold text-white print:hidden">
+                              Teraz
+                            </span>
+                          )}
+                          {done && <span className="text-[15px] font-bold text-success print:hidden">zrobiony</span>}
+                        </p>
+                        <p className={`text-scalable leading-[1.6] ${done ? 'text-ink-muted line-through' : 'text-ink'}`}>{step}</p>
+                        {/* Source photo under the step text, same <li>; 4:3, no layout jump (ZMIANY §2).
+                            A tap opens the full-screen viewer, like a gallery photo. */}
+                        {visibleStepImages[i] && (
+                          <figure className="mt-1.5 max-w-full md:max-w-[520px] print:hidden">
+                            <button
+                              type="button"
+                              onClick={() => setPhotoIndex(stepPhotos.findIndex((p) => p.step === i))}
+                              aria-label={`Powiększ zdjęcie do kroku ${i + 1}`}
+                              className="relative block aspect-[4/3] w-full overflow-hidden rounded-tile bg-surface-3"
+                            >
+                              <Image
+                                src={visibleStepImages[i]}
+                                alt={`Zdjęcie do kroku ${i + 1}`}
+                                fill
+                                sizes="(min-width: 768px) 520px, 100vw"
+                                loading="lazy"
+                                className="object-cover transition-transform hover:scale-105"
+                                unoptimized={!isArchivedImageUrl(visibleStepImages[i])}
+                              />
+                            </button>
+                          </figure>
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ol>
+              {doneSteps === steps.length && (
+                <p role="status" className="mt-6 rounded-tile bg-[#ecfdf3] p-4 text-[19px] font-bold text-[#14532d]">
+                  Gotowe! Smacznego.
+                </p>
+              )}
+            </>
           )}
         </section>
         {children}

@@ -7,7 +7,6 @@ import { clampStep, isLastStep, progressRatio, progressSegments, stepLabel } fro
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { createScreenWakeLock, type ScreenWakeLock } from '@/lib/wake-lock'
 import { useStepPhotos } from './use-step-photos'
-import { ACTION_CARD, ACTION_CARD_ICON, ActionCardText } from '@/app/components/ui/action-card'
 
 /**
  * Keeps the screen on while `active` (E01-S08). Returns `false` once the browser
@@ -185,10 +184,10 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
         onClick={start}
         aria-haspopup="dialog"
         aria-controls="cooking-mode"
-        className={ACTION_CARD.dark}
+        className="flex h-full min-h-[60px] w-full items-center justify-center gap-3 rounded-tile bg-ink px-5 text-[19px] font-bold text-white hover:opacity-90"
       >
-        <ChefHat aria-hidden="true" className={ACTION_CARD_ICON} />
-        <ActionCardText title="Tryb gotowania" hint="Gotuj krok po kroku" tone="dark" />
+        <ChefHat aria-hidden="true" className="h-6 w-6 shrink-0" />
+        <span>Zacznij gotować</span>
       </button>
 
       <dialog
@@ -216,7 +215,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
               tabIndex={-1}
               className="min-w-0 truncate text-[17px] font-bold text-border-card"
             >
-              <span className="sr-only">Tryb gotowania: </span>
+              <span className="sr-only">Zacznij gotować: </span>
               {title}
             </h2>
             <button

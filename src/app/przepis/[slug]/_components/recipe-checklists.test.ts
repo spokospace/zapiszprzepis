@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { RecipeChecklists } from './recipe-checklists'
+import { RecipeChecklists, stepProgress } from './recipe-checklists'
 
 function render(servings: number | null, stepImages?: string[]) {
   return renderToStaticMarkup(
@@ -62,7 +62,7 @@ describe('RecipeChecklists step photos', () => {
 
   it('places a 4:3 figure only under the steps that have a photo, with an alt', () => {
     const html = render(null, ['https://cdn.example/step-1.jpg', ''])
-    const list = html.match(/<ol class="space-y-5 lg:space-y-6">[\s\S]*<\/ol>/)?.[0] ?? ''
+    const list = html.match(/<ol class="space-y-5">[\s\S]*<\/ol>/)?.[0] ?? ''
     expect(list).toContain('<figure')
     expect(list).toContain('aspect-[4/3]')
     expect(list).toContain('Zdjęcie do kroku 1')
@@ -128,7 +128,8 @@ describe('RecipeChecklists alternative measure (#505)', () => {
     expect(html).toContain(
       '<b class="text-scalable max-w-[45%] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:pl-[46px] max-[359px]:text-left text-ink">4</b>',
     )
-    expect((html.match(/text-\[16px\]/g) ?? []).length).toBe(1)
+    const ingredients = html.match(/<section aria-labelledby="ingredients-heading"[\s\S]*?<\/section>/)?.[0] ?? ''
+    expect((ingredients.match(/text-\[16px\]/g) ?? []).length).toBe(1)
   })
 
   it('keeps words apart in the row text that crawlers extract', () => {
@@ -153,27 +154,55 @@ describe('RecipeChecklists alternative measure (#505)', () => {
   })
 })
 
-// Owner decision 2026-10-20: „Krok 1” over each step, in an ordered list (screen readers
-// announce the position); the total „z M” is only in cooking mode, which now lives in the
-// action row (RecipeActions), not here.
+// Owner decision 2026-10-20: the total „z M” is only in cooking mode. The 2026-10-28
+// handoff adds a numbered, tickable button per step. Ticks are read from sessionStorage on
+// the client, so server rendering always shows nothing ticked; the tick logic is covered by
+// `stepProgress` below and checked in the browser.
 describe('RecipeChecklists steps', () => {
-  it('labels each step „Krok N” without the total, in an ordered list', () => {
-    const list = render(null).match(/<ol class="space-y-5 lg:space-y-6">.*?<\/ol>/)?.[0] ?? ''
-    expect(list).toContain('<p class="mb-1.5 text-[17px] font-bold text-action-text">Krok 1</p>')
-    expect(list).toContain('<p class="mb-1.5 text-[17px] font-bold text-action-text">Krok 2</p>')
-    expect(list).not.toContain(' z 2')
+  const list = (html: string) => html.match(/<ol class="space-y-5">[\s\S]*?<\/ol>/)?.[0] ?? ''
+
+  it('labels each step „Krok N” in an ordered list, without the total', () => {
+    const items = list(render(null))
+    expect(items).toContain('>Krok 1</span>')
+    expect(items).toContain('>Krok 2</span>')
+    expect(items).not.toContain(' z 2')
   })
 
-  it('numbers each step with a decorative disc from lg, dropped on paper', () => {
-    const list = render(null).match(/<ol class="space-y-5 lg:space-y-6">.*?<\/ol>/)?.[0] ?? ''
-    expect(list).toMatch(/<span aria-hidden="true" class="hidden [^"]*lg:flex print:hidden">1<\/span>/)
-    expect(list).toContain('lg:grid-cols-[2.5rem_1fr]')
-    // A hairline between steps, not above the first one.
-    expect(list).toContain('lg:border-t lg:border-border-card lg:pt-6 lg:first:border-t-0')
+  it('makes the step number a toggle with aria-pressed and an accessible name', () => {
+    const items = list(render(null))
+    expect(items).toContain('<button type="button" aria-pressed="false" aria-label="Krok 1 — oznacz jako zrobiony"')
+    expect(items).toContain('<button type="button" aria-pressed="false" aria-label="Krok 2 — oznacz jako zrobiony"')
+  })
+
+  it('shows the progress count and no "Teraz" or done message when nothing is ticked', () => {
+    const html = render(null)
+    expect(html).toContain('0 z 2 kroków zrobione')
+    expect(html).not.toContain('Teraz')
+    expect(html).not.toContain('Gotowe! Smacznego.')
+  })
+
+  it('drops the step numbers on paper', () => {
+    expect(list(render(null))).toContain('print:hidden')
   })
 
   it('no longer renders the cooking-mode button (moved to the action row)', () => {
-    expect(render(null)).not.toContain('Tryb gotowania')
+    expect(render(null)).not.toContain('Zacznij gotować')
   })
 })
 
+describe('stepProgress', () => {
+  it('counts ticked steps and points at the first open one', () => {
+    expect(stepProgress(3, [])).toEqual({ done: 0, next: 0 })
+    expect(stepProgress(3, [1])).toEqual({ done: 1, next: 0 })
+    expect(stepProgress(3, [0])).toEqual({ done: 1, next: 1 })
+  })
+
+  it('reports completion with no next step', () => {
+    expect(stepProgress(3, [0, 1, 2])).toEqual({ done: 3, next: -1 })
+    expect(stepProgress(0, [])).toEqual({ done: 0, next: -1 })
+  })
+
+  it('ignores a stale tick past the last step', () => {
+    expect(stepProgress(2, [0, 5])).toEqual({ done: 1, next: 1 })
+  })
+})

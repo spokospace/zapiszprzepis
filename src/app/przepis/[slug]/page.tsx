@@ -4,7 +4,6 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { buildFallbackMetaDescription } from '@/lib/recipe-tags'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
-import { RecipeGallery } from '@/app/components/recipe-gallery'
 import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
@@ -178,6 +177,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             useStepPhotos store, so „Ukryj” reaches both. */}
         <RecipeHeader
           recipe={typedRecipe}
+          galleryImages={galleryImages}
           listBar={
             // A9: from lg, the list position and the breadcrumbs share one row above the title.
             <div className="lg:flex lg:items-center lg:gap-6">
@@ -228,13 +228,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             </section>
           )}
 
-          {/* A gallery of one would only repeat the cover. galleryImages is empty for a
-              guest: the gallery view is not granted to anon (decision Q3). */}
-          {galleryImages.length > 1 && (
-            <div className="print:hidden">
-              <RecipeGallery images={galleryImages} title={typedRecipe.title} />
-            </div>
-          )}
+          {/* The photos are in the header now (RecipePhotos): the thumbnails for a signed-in
+              reader, nothing for a guest (decision Q3). */}
           {/* A guest gets a locked teaser with the count only (E01-S07). */}
           {!user && galleryCount > 1 && (
             <div className="print:hidden">

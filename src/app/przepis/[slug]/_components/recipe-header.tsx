@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
@@ -10,6 +9,7 @@ import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
 import { SourceBadge } from '@/app/components/source-badge'
 import { NoPhoto } from '@/app/components/no-photo'
 import { RECIPE_SPLIT } from './recipe-split'
+import { RecipePhotos } from './recipe-photos'
 
 export interface RecipeHeaderData {
   title: string
@@ -32,7 +32,12 @@ export interface RecipeHeaderData {
 
 interface RecipeHeaderProps {
   recipe: RecipeHeaderData
-  /** E01-S21: the "N inne przepisy na {danie}" bar, under the author line. */
+  /**
+   * The gallery photos a signed-in reader can see, under the main photo as thumbnails
+   * (handoff 2026-10-28). Empty for a guest, who gets the cover only.
+   */
+  galleryImages?: string[]
+  /** E01-S21: the "Inne przepisy na {danie} (N)" link, under the author line. */
   versionsBar?: ReactNode
   /**
    * The action cards (RecipeActions): a full-width row under the photo and text between
@@ -83,12 +88,12 @@ function Approx() {
 }
 
 /**
- * The recipe page header (E01-S07, S07b): 4:3 photo, 32 px title, "Kategoria ·
- * czas" (from lg the A9 times row), source, who added it, and the actions. No
- * breadcrumbs below lg (C3); from lg they sit above the title, in the list bar slot.
+ * The recipe page header (E01-S07, S07b): the photos (main + thumbnails), 32 px title,
+ * "Kategoria · czas" (from lg the A9 times row), source, who added it, and the actions.
+ * No breadcrumbs below lg (C3); from lg they sit above the title, in the list bar slot.
  * The tags render at the bottom of the page, in "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe, versionsBar, actions, listBar }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions, listBar }: RecipeHeaderProps) {
   const authorHref = profilePath(recipe.author_username)
   const [before, after] = recipeMetaLine(recipe).split('≈ ')
   const times = recipeTimeStats(recipe)
@@ -109,34 +114,10 @@ export function RecipeHeader({ recipe, versionsBar, actions, listBar }: RecipeHe
     // sit under the description, the `1fr` row soaking up any height the photo adds.
     <header className={`mb-8 ${RECIPE_SPLIT} xl:grid-rows-[auto_1fr]`}>
       {cover ? (
-        // Below lg the cover is full-bleed: its negative margins cancel the horizontal
-        // padding of PageContainer (px-4 sm:px-6) and the top padding of <main>
-        // (py-6 sm:py-8), so it sits flush to the screen edges and the top. Keep those
-        // margins in sync with that padding by hand — test:reflow only catches an
-        // over-wide breakout (horizontal scroll), not a gap left by a mismatch. `w-full`
-        // is dropped so the block's auto width expands to the viewport (re-adding it would
-        // shift, not widen). From lg the photo sits in the ingredients column (the same
-        // 1fr | 1.6fr split and gap as RecipeChecklists), so its right edge lines up with
-        // „Składniki”, and `bleed-left-page` widens it to the left browser edge. It stays
-        // 4:3 at every width, so the height follows the widened photo.
-        <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 aspect-[4/3] sm:-mx-6 sm:-mt-8 lg:mr-0 lg:mb-0 lg:bleed-left-page xl:row-span-2">
-          <div className="absolute inset-0 overflow-hidden bg-surface-3 lg:rounded-r-tile">
-            <Image
-              // The LCP image, served from Supabase Storage through next/image.
-              src={cover}
-              alt={recipe.title}
-              fill
-              // Full-bleed = 100vw below lg (1024); from lg the column plus the bleed,
-              // ~37–40vw up to 1535 px and ~44vw on very wide screens.
-              sizes="(max-width: 1023px) 100vw, (max-width: 1535px) 40vw, 45vw"
-              className="object-cover"
-              priority
-            />
-            {/* Source on the photo, bottom-left (E01-S31 §3). Hidden on print — the
-                printout carries the source in its footer line instead. */}
-            <div className="absolute bottom-0 left-px z-10 max-w-[calc(100%-1px)] print:hidden">{sourceBadge}</div>
-          </div>
-        </div>
+        // The photos (see RecipePhotos): the main photo bleeds like the header photo always
+        // did, and the thumbnails sit under it. From lg the photo sits in the ingredients
+        // column, so its right edge lines up with „Składniki”.
+        <RecipePhotos cover={cover} title={recipe.title} images={galleryImages} badge={sourceBadge} />
       ) : (
         // No cover: from lg a category-icon placeholder fills the photo column so the
         // two-column header does not collapse to a full-width run (#495). It is a
