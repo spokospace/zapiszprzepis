@@ -388,6 +388,7 @@ const GENERIC_SLUG_WORDS = new Set([
   'najlepszy', 'najlepsza', 'najlepsze', 'prawdziwy', 'prawdziwa', 'prawdziwe',
   'szybki', 'szybka', 'szybkie', 'latwy', 'latwa', 'latwe', 'klasyczny', 'pyszny', 'pyszne',
   'easy', 'best', 'homemade', 'quick', 'simple', 'classic',
+  'recipes', 'blog', 'food',
 ])
 
 // WordPress serves a `-696x464` resize of an uploaded photo; the full-size
@@ -397,10 +398,26 @@ function fullSizeImageUrl(url: string): string {
   return url.replace(WP_RESIZE_SUFFIX_RE, '')
 }
 
+/** Whether any of `candidates` is a distinctive (non-generic) slug word. */
+function hasDistinctiveWord(candidates: Iterable<string>, slugWords: Set<string>): boolean {
+  for (const w of candidates) if (slugWords.has(w) && !GENERIC_SLUG_WORDS.has(w)) return true
+  return false
+}
+
 /** Whether the file name carries any distinctive (non-generic) slug word. */
 function sharesDistinctiveWord(url: string, slugWords: Set<string>): boolean {
-  for (const w of fileWords(url)) if (slugWords.has(w) && !GENERIC_SLUG_WORDS.has(w)) return true
-  return false
+  return hasDistinctiveWord(fileWords(url), slugWords)
+}
+
+/**
+ * A test of whether an image's file name or alt text names the dish in the page's URL
+ * slug. For an image list stripped of its markup (Jina's image summary), where
+ * no class or section can tell the recipe's photos from the logo, the author's
+ * portrait or a book cover, this is what is left to go on.
+ */
+export function namesTheDish(pageUrl: string): (url: string, alt: string) => boolean {
+  const slugWords = slugWordsOf(parseBase(pageUrl))
+  return (url, alt) => sharesDistinctiveWord(url, slugWords) || hasDistinctiveWord(words(alt), slugWords)
 }
 
 export const LD_JSON_RE = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi

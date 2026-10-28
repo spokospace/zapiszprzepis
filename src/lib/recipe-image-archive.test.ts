@@ -5,6 +5,7 @@ import {
   jsonLdHowToStepImages,
   pickRecipeImage,
   pickGalleryImages,
+  namesTheDish,
   buildGallery,
   coverImage,
   jsonLdImage,
@@ -953,5 +954,19 @@ describe('orphanedImagePaths — the #132 sweep', () => {
 
   it('never returns a key that does not name a recipe', () => {
     expect(orphanedImagePaths(['u/readme.txt', 'u/.emptyFolderPlaceholder'], new Set())).toEqual([])
+  })
+})
+
+describe('namesTheDish', () => {
+  const isDish = namesTheDish('https://blog.pl/przepis/domowe-ptysie-z-kremem/')
+
+  it('matches a distinctive slug word in the file name or the alt text', () => {
+    expect(isDish('https://blog.pl/wp-content/uploads/ptysie-3.jpg', '')).toBe(true)
+    expect(isDish('https://cdn.blog.pl/IMG_2041.jpg', 'Ptysie z kremem')).toBe(true)
+  })
+
+  it('does not match page chrome, or a word every recipe slug shares', () => {
+    expect(isDish('https://blog.pl/wp-content/uploads/about-sm.jpg', 'Author in the kitchen')).toBe(false)
+    expect(isDish('https://blog.pl/wp-content/uploads/domowe-logo.png', 'Przepis')).toBe(false)
   })
 })
