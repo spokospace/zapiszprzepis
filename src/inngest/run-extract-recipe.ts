@@ -27,6 +27,7 @@ import { fingerprintText } from '@/lib/source-fingerprint'
 import { resolvedSourceUrl } from '@/lib/url-normalize'
 import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quality'
 import { articleHtml } from '@/lib/article-html'
+import { metricUnits } from '@/lib/us-units'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
 import { STEP_CONTENT_RULE, STEP_FORM_RULE } from '@/lib/step-form'
@@ -581,7 +582,11 @@ export async function runExtractRecipe(
         : Promise.resolve(facebookPost?.author ? publicFacebookAuthor(facebookPost.author, sourceUrl) : null)
 
     // One LLM pass over the content. `transcript`, when given, is the video's
-    // captions — the second-pass source for a YouTube link (below).
+    // captions — the second-pass source for a YouTube link (below). The answer's
+    // "dishKind" is a scratch field, unrelated to the dish column classifyDish
+    // sets: written before "title", it makes the model settle what the dish is
+    // first, which a model without reasoning otherwise skips ("White Pizza Dip"
+    // → „Dip z białą pizzą”). It rides along in the parsed object, unread.
     async function extractWithLlm(transcript?: string): Promise<RecipeData> {
       // A foreign source gets the localization rules and a stronger model (#524);
       // a Polish one keeps the prompt and model it always had.
@@ -600,7 +605,8 @@ export async function runExtractRecipe(
               content: `You are a recipe extraction expert. Extract recipe information from user-provided content.
 Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
 {
-  "title": "Recipe title in Polish",
+  "dishKind": "what the dish IS, 1–3 Polish words, decided before the title (\"dip\", \"zapiekanka makaronowa\", \"spód do pizzy\")",
+  "title": "Recipe title in Polish, built around that dish",
   "ingredients": [
       {"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
   ],
@@ -704,7 +710,8 @@ Rules:
         ingredients: foreignSource
           ? localizeForeignIngredients(ingredients, sourceText(transcript))
           : ingredients,
-        steps,
+        // A step copied as written keeps its ounces and °F (see us-units).
+        steps: steps.map(metricUnits),
         stepImages,
         category,
         servings: toServings(parsed.servings),
