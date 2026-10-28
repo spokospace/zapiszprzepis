@@ -66,3 +66,8 @@ Non-goals (kept): no portion calculator, no timers, no temperature labels; no sc
 - [x] 2.1 Numbered, ticked steps with aria-pressed — 0bf1fbd
 - [x] 2.2 Progress text, "Teraz" marker, done message — 0bf1fbd (progress bar is aria-hidden; the count line is the accessible value)
 - [x] 2.3 Tests for step ticks and the reset — 0bf1fbd (stepProgress and render tests; the tick round-trip through sessionStorage and the reset are not automated, since the test environment is Node-only)
+
+### Phase 3: hero actions and photos (added after the first review, on request)
+
+- [x] 3.1 Hero action row: "Zacznij gotować" black beside the heart, print and share as quiet text buttons — 03a2ddf
+- [x] 3.2 Thumbnails under the main photo for signed-in readers, the separate "Zdjęcia" block removed, guest teaser kept (A1) — 03a2ddf
