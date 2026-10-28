@@ -35,10 +35,17 @@
 
 ## Progress
 
+PR: #597
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Keep recipe asides and forms
 
-- [ ] 1.1 Keep aside/form blocks that hold recipe markup
-- [ ] 1.2 Unit tests for kept and dropped blocks
-- [ ] 1.3 Full validation gate
+- [x] 1.1 Keep aside/form blocks that hold recipe markup — 953dd08
+- [x] 1.2 Unit tests for kept and dropped blocks — 953dd08
+- [x] 1.3 Full validation gate — cc74593
+
+## Notes
+
+- `pnpm lint` was red on master: #593 added `.ai/specs/assets/recipe-page-handoff/support.js` (prototype runtime). Ignored alongside `.ai/design/**`.
+- `pnpm test:reflow` could not run: no `.env.local` in this machine's checkouts, so the Playwright web server exits on `NEXT_PUBLIC_SUPABASE_URL`. The change is a server-side string transform with no rendered UI, so reflow is unaffected.
