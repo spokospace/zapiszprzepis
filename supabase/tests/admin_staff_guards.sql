@@ -60,6 +60,8 @@ begin
   if n <> 1 then raise exception 'FAIL 3: expected exactly one admin left, found %', n; end if;
   -- Put the original admin back for the remaining checks.
   perform public.admin_set_role_as(manager_id, admin_id, 'admin', true);
+  -- The plain account is a plain account again (it is blocked and deleted below).
+  perform public.admin_set_role_as(manager_id, plain_id, 'admin', false);
 
   -- 4. A moderator cannot read the audit log nor block anyone.
   begin
