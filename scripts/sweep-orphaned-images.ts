@@ -2,7 +2,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { extractStoragePath, orphanedImagePaths, removeImages } from '../src/lib/recipe-image-archive'
 
 /**
- * Removes recipe-images objects whose recipe no longer exists (#132). Until the
+ * Removes recipe-images objects whose recipe no longer exists (#132), neither
+ * live nor archived by the duplicate collapse. Until the
  * bucket got an owner delete policy, deleting a recipe left its cover and
  * gallery publicly readable in Storage; this sweeps what those deletes left.
  * Keys that do not name a recipe (`<user>/<recipe>.<ext>`,
@@ -35,27 +36,50 @@ async function listAll(supabase: SupabaseClient): Promise<string[]> {
   return keys
 }
 
-/** Ids of every recipe, and every Storage key one of them points at. */
+/**
+ * Tables whose rows keep their images: recipes, and the losers of the duplicate
+ * collapse, which restore_recipe_merge can bring back with the same image URLs.
+ * The archive's columns stop at the collapse (no step_images), so its image
+ * fields are read out of row_data, the full row restore puts back, under the
+ * same names. Recipes first: a row archived between the two reads is then
+ * still seen in the second.
+ */
+const RECIPE_TABLES = [
+  { table: 'recipes', columns: 'id, image_url, image_urls, step_images' },
+  {
+    table: 'recipes_merged_duplicates',
+    columns:
+      'id, image_url:row_data->>image_url, image_urls:row_data->image_urls, step_images:row_data->step_images',
+  },
+]
+
+type ImageRow = { id: number; image_url: string | null; image_urls: string[] | null; step_images: string[] | null }
+
+/** Ids of every recipe in RECIPE_TABLES, and every Storage key one of them points at. */
 async function liveRecipes(supabase: SupabaseClient): Promise<{ ids: Set<number>; referenced: Set<string> }> {
   const ids = new Set<number>()
   const referenced = new Set<string>()
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from('recipes')
-      .select('id, image_url, image_urls, step_images')
-      .order('id', { ascending: true })
-      .range(from, from + PAGE - 1)
-    if (error) throw new Error(`recipes query failed: ${error.message}`)
-    for (const r of data ?? []) {
-      ids.add(r.id as number)
-      const urls: (string | null)[] = [r.image_url, ...(r.image_urls ?? []), ...(r.step_images ?? [])]
-      for (const url of urls) {
-        const key = url ? extractStoragePath(url) : null
-        if (key) referenced.add(key)
+  for (const { table, columns } of RECIPE_TABLES) {
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from(table)
+        .select(columns)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1)
+        .returns<ImageRow[]>()
+      if (error) throw new Error(`${table} query failed: ${error.message}`)
+      for (const r of data ?? []) {
+        ids.add(r.id)
+        const urls: (string | null)[] = [r.image_url, ...(r.image_urls ?? []), ...(r.step_images ?? [])]
+        for (const url of urls) {
+          const key = url ? extractStoragePath(url) : null
+          if (key) referenced.add(key)
+        }
       }
+      if ((data?.length ?? 0) < PAGE) break
     }
-    if ((data?.length ?? 0) < PAGE) return { ids, referenced }
   }
+  return { ids, referenced }
 }
 
 async function main(): Promise<void> {
