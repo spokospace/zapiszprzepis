@@ -1,6 +1,6 @@
 ---
 change_id: web-blog-recipe-source
-title: Drugie źródło: przepisy z blogów WWW
+title: "Drugie źródło: przepisy z blogów WWW"
 description: Mama udostępnia URL bloga kulinarnego i widzi przepis (ten sam pipeline co S-01, inny scraper)
 author: Szymon
 status: implemented

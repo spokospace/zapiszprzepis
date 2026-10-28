@@ -40,7 +40,7 @@ flowchart LR
   C -->|gender set| N["next"]
   W -->|NEW rpc set_gender| T[(NEW profiles_private)]
   W --> N
-  H["home S04 (planned)"] -.->|greeting()| V["NEW src/lib/vocative.ts"]
+  H["home S04 (planned)"] -.->|"greeting()"| V["NEW src/lib/vocative.ts"]
 ```
 
 Everything stays inside the auth area (`src/app/login`, `src/app/auth/*`, the new `src/app/witaj`) plus two pure libs. No middleware change. `handle_new_user` (S18) is unchanged: it already derives `display_name`/`username` from the `full_name`/`name` metadata that Google and Facebook provide. Planned consumers: S04 (greeting), S07/S14 (gendered "Dodała/Dodał", see Resolved assumptions Q4), S13 (shows the gender read-only).

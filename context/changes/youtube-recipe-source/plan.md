@@ -1,6 +1,6 @@
 ---
 change_id: youtube-recipe-source
-title: Trzecie źródło: przepisy z YouTube
+title: "Trzecie źródło: przepisy z YouTube"
 description: Mama udostępnia URL YouTube (lub blog z osadzonym filmem) i widzi przepis z odtwarzaczem wideo (iframe)
 author: Szymon
 status: implemented
