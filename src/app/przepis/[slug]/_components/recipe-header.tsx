@@ -123,11 +123,13 @@ function Approx() {
  * The time strip (handoff 2026-10-28): no frame, an icon in a 44 px warm circle beside a
  * label and a 20 px value, in a grid that wraps to fit. At every width — below lg it
  * replaces the time in the "Kategoria · czas" line. Labels are 16 px, not the mock's 14:
- * secondary text is never under 16 px (ZASADY_PROJEKTU).
+ * secondary text is never under 16 px (ZASADY_PROJEKTU). That is also why a column is
+ * 165 px, not the mock's 130: "Przygotowanie" at 16 px beside the circle needs it, and
+ * narrower it broke mid-word. Three to a row in the desktop column, two at 390, one at 320.
  */
 function TimeStrip({ items }: { items: TimeStripItem[] }) {
   return (
-    <ul aria-label="Czas i porcje" className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-x-5 gap-y-4">
+    <ul aria-label="Czas i porcje" className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(165px,1fr))] gap-x-5 gap-y-4">
       {items.map((item) => {
         const Icon = STRIP_ICON[item.key]
         return (
