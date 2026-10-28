@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   MAX_PROFILE_PAGE,
+  PROFILE_EMPTY_TEXT,
   PROFILE_PAGE_SIZE,
   categoryCounts,
   isProfileOwner,
@@ -10,6 +11,7 @@ import {
   parseProfileCategory,
   parseProfilePage,
   profileCategoryHref,
+  profileCountLine,
   profileMoreHref,
   profileRobots,
 } from './public-profile'
@@ -135,5 +137,14 @@ describe('profileRobots', () => {
   it('is noindex only for an empty profile', () => {
     expect(profileRobots(0)).toEqual({ index: false })
     expect(profileRobots(1)).toBeUndefined()
+  })
+})
+
+// #376: the profile says nothing about the person's gender.
+describe('profile wording', () => {
+  it('is neutral', () => {
+    expect(profileCountLine(5)).toBe('Dodane przepisy: 5')
+    expect(PROFILE_EMPTY_TEXT).toBe('Na tym profilu nie ma jeszcze przepisów.')
+    expect(`${profileCountLine(1)} ${PROFILE_EMPTY_TEXT}`).not.toMatch(/Dodała|Dodał\b|dodała|dodał\b/)
   })
 })

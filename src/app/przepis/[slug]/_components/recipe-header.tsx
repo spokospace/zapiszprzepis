@@ -5,7 +5,6 @@ import { formatSource, type RecipeSource } from '@/lib/recipe-source'
 import { recipeMetaLine, recipeTimeStats } from '@/lib/recipe-meta'
 import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
-import { authorLinePrefix, parseGenderForm } from '@/lib/gender-form'
 import { SourceBadge } from '@/app/components/source-badge'
 import { NoPhoto } from '@/app/components/no-photo'
 import { RECIPE_SPLIT } from './recipe-split'
@@ -26,8 +25,6 @@ export interface RecipeHeaderData {
   source_author: string | null
   author_name: string | null
   author_username?: string | null
-  /** 'f' | 'm' | null from the E01-S23 view column; missing before that migration → neutral. */
-  author_gender_form?: string | null
 }
 
 interface RecipeHeaderProps {
@@ -151,13 +148,13 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions,
             (E01-S31 §3) — at every width, since the lg placeholder carries no badge. */}
         {!cover && <div className="mb-3 print:hidden">{sourceBadge}</div>}
 
-        {/* "Dodała/Dodał {nazwa}" by the author's grammatical form (E01-S23) — never the
-            raw gender, which stays owner-only (E01-S12); neutral "Dodane przez" when
-            unknown. A link to /u/{username} when the author has a username. */}
+        {/* Always the neutral "Dodane przez {nazwa}": others never learn the author's
+            gender (#376, privacy policy §3). A link to /u/{username} when the author has
+            a username. */}
         {recipe.author_name && (
           // C3/A4: a small 16 px line, the name an underlined link in the accent colour.
           <p className="text-[16px] text-ink-soft print:hidden">
-            {authorLinePrefix(parseGenderForm(recipe.author_gender_form))}{' '}
+            Dodane przez{' '}
             {authorHref ? (
               <Link href={authorHref} className="text-action-text underline hover:text-action-hover">
                 {recipe.author_name}
