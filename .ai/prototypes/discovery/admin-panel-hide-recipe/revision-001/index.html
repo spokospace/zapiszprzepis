@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel personelu: ukrywanie przepisu (prototyp)</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; font-size: 19px; line-height: 1.5; color: #111827; background: #f3f4f6; }
+  a { color: #1d4ed8; text-decoration: underline; }
+  a, button, input, select, summary { min-height: 48px; }
+  main a { display: inline-flex; align-items: center; }
+  :focus-visible { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .skip { position: absolute; left: 8px; top: -80px; background: #fff; border: 2px solid #111827; padding: 10px 14px; z-index: 10; }
+  .skip:focus { top: 8px; }
+  .banner { margin: 0; padding: 6px 16px; background: #111827; color: #fff; font-size: 16px; }
+  header .bar { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; padding: 12px 16px; background: #fff; border-bottom: 2px solid #9ca3af; }
+  header .bar span { color: #374151; font-size: 16px; }
+  nav ul { list-style: none; display: flex; gap: 8px; margin: 0; padding: 8px 16px; background: #e5e7eb; }
+  nav a { display: inline-flex; align-items: center; padding: 0 14px; }
+  nav a[aria-current="page"] { font-weight: 700; border-bottom: 4px solid #111827; text-decoration: none; color: #111827; }
+  main { max-width: 64rem; margin: 0 auto; padding: 16px; }
+  main:focus { outline: none; }
+  h1 { font-size: 1.5rem; margin: 8px 0 16px; }
+  h1:focus { outline: 3px solid #1d4ed8; outline-offset: 4px; }
+  h2 { font-size: 1.2rem; margin: 24px 0 8px; }
+  p, li, dd, dt, label, legend { font-size: 1rem; }
+  .help { color: #374151; font-size: 16px; }
+  .panel { background: #fff; border: 2px solid #9ca3af; padding: 16px; margin: 16px 0; }
+  .tools { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  input[type="text"], input[type="search"], select { font: inherit; padding: 8px 10px; border: 2px solid #4b5563; background: #fff; min-width: 14rem; }
+  button { font: inherit; padding: 8px 18px; border: 2px solid #111827; background: #fff; color: #111827; cursor: pointer; font-weight: 600; }
+  button.primary { background: #111827; color: #fff; }
+  button[disabled] { background: #e5e7eb; color: #4b5563; border-color: #6b7280; cursor: not-allowed; }
+  table { width: 100%; border-collapse: collapse; background: #fff; }
+  caption { text-align: left; font-weight: 700; padding: 8px 0; }
+  th, td { text-align: left; padding: 10px 12px; border: 1px solid #9ca3af; vertical-align: top; }
+  th { background: #e5e7eb; }
+  .badge { display: inline-block; padding: 2px 10px; border: 2px solid #111827; font-weight: 700; }
+  .badge.hidden { background: #111827; color: #fff; }
+  .notice { border-left: 8px solid #111827; background: #fff; padding: 12px 16px; margin: 16px 0; }
+  .notice.error { border-left-color: #b91c1c; }
+  .notice.error strong { color: #991b1b; }
+  .err { color: #991b1b; font-weight: 600; margin: 4px 0 0; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 0; }
+  dt { font-weight: 700; }
+  dd { margin: 0; }
+  fieldset { border: 2px solid #9ca3af; padding: 8px 16px 12px; margin: 12px 0; }
+  .radios label { display: flex; align-items: center; gap: 10px; min-height: 48px; }
+  .radios input { width: 24px; height: 24px; min-height: 0; }
+  details.test { max-width: 64rem; margin: 24px auto 48px; padding: 0 16px; }
+  details.test summary { cursor: pointer; font-weight: 700; display: flex; align-items: center; }
+  .sim { border: 2px dashed #6b7280; background: #fff; padding: 16px; margin: 12px 0; }
+  .sim h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .row-unavailable { border: 1px solid #9ca3af; background: #f3f4f6; padding: 12px; color: #374151; }
+  @media (max-width: 40rem) {
+    body { font-size: 19px; }
+    table, thead, tbody, tr, th, td { display: block; }
+    thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    tr { border: 2px solid #9ca3af; margin: 0 0 12px; background: #fff; }
+    td { border: 0; border-bottom: 1px solid #d1d5db; }
+    td::before { content: attr(data-label) ": "; font-weight: 700; }
+    dl { grid-template-columns: 1fr; }
+    input[type="text"], input[type="search"], select { min-width: 0; width: 100%; }
+    .tools .field { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" id="skip" href="#main">Przejdź do treści</a>
+<header>
+  <p class="banner">Discovery prototype. Simulated data.</p>
+  <div class="bar">
+    <strong>Panel personelu</strong>
+    <span>Zalogowano jako: Moderator testowy (rola: moderator)</span>
+  </div>
+  <nav aria-label="Zasoby panelu">
+    <ul><li><a id="nav-recipes" href="#/recipes">Przepisy</a></li></ul>
+  </nav>
+</header>
+<main id="main" tabindex="-1"></main>
+<details class="test" id="test-state">
+  <summary>Test state (tylko prototyp, nie jest częścią panelu)</summary>
+  <div class="panel">
+    <p class="help">Te kontrolki ustawiają sytuacje do sprawdzenia. W prawdziwym panelu ich nie ma.</p>
+    <div class="field">
+      <label><input type="checkbox" id="t-fail"> Symuluj błąd zapisu przy następnym ukryciu</label>
+    </div>
+    <p><button type="button" id="t-denied">Otwórz /admin/users bezpośrednio (moderator bez uprawnień)</button></p>
+    <p><button type="button" id="t-reset">Zresetuj symulację</button></p>
+  </div>
+</details>
+<div id="live" class="sr-only" role="status" aria-live="polite"></div>
+<script>
+(function () {
+  'use strict';
+
+  var FIXTURE = [
+    { id: 101, title: 'Sernik na zimno', category: 'Ciasta', adder: 'Użytkownik testowy A', added: '2026-10-02', favorites: 3, source: 'przepisy-przyklad.example', hidden: false, reason: '', hiddenBy: '' },
+    { id: 102, title: 'Zupa pomidorowa z ryżem', category: 'Zupy', adder: 'Użytkownik testowy B', added: '2026-10-05', favorites: 0, source: 'kuchnia-przyklad.example', hidden: false, reason: '', hiddenBy: '' },
+    { id: 103, title: 'Pierogi ruskie', category: 'Dania główne', adder: 'Użytkownik testowy A', added: '2026-10-09', favorites: 12, source: 'przepisy-przyklad.example', hidden: false, reason: '', hiddenBy: '' },
+    { id: 104, title: 'Chleb na zakwasie', category: 'Pieczywo', adder: 'Użytkownik testowy C', added: '2026-10-11', favorites: 1, source: 'blog-przyklad.example', hidden: true, reason: 'Zdjęcie z cudzego bloga, do wyjaśnienia (dane przykładowe).', hiddenBy: 'Moderator testowy' },
+    { id: 105, title: 'Syrop z mniszka lekarskiego', category: 'Syropy', adder: 'Użytkownik testowy B', added: '2026-10-14', favorites: 0, source: 'blog-przyklad.example', hidden: false, reason: '', hiddenBy: '' }
+  ];
+  var MAX_REASON = 200;
+  var state;
+  var busyTimer = null;
+
+  function resetState() {
+    if (busyTimer) { clearTimeout(busyTimer); busyTimer = null; }
+    state = {
+      recipes: FIXTURE.map(function (r) { return Object.assign({}, r); }),
+      query: '',
+      filter: 'all',
+      viewer: 'guest',
+      reasonDraft: '',
+      reasonError: '',
+      failError: '',
+      message: '',
+      undoId: null,
+      busy: false,
+      failNext: false
+    };
+    var f = document.getElementById('t-fail');
+    if (f) f.checked = false;
+  }
+
+  var main = document.getElementById('main');
+  var live = document.getElementById('live');
+
+  function announce(text) {
+    live.textContent = '';
+    setTimeout(function () { live.textContent = text; }, 30);
+  }
+
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        var v = attrs[k];
+        if (v === false || v === null || v === undefined) return;
+        if (k === 'text') el.textContent = v;
+        else if (k.slice(0, 2) === 'on') el.addEventListener(k.slice(2), v);
+        else if (v === true) el.setAttribute(k, '');
+        else el.setAttribute(k, String(v));
+      });
+    }
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c === null || c === undefined || c === false) continue;
+      el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return el;
+  }
+
+  function findRecipe(id) {
+    for (var i = 0; i < state.recipes.length; i++) if (state.recipes[i].id === id) return state.recipes[i];
+    return null;
+  }
+
+  function parseRoute() {
+    var hash = location.hash || '#/recipes';
+    var m;
+    if (hash === '#/recipes' || hash === '#/' || hash === '#') return { name: 'list' };
+    if ((m = /^#\/recipes\/(\d+)$/.exec(hash))) return { name: 'detail', id: Number(m[1]) };
+    if ((m = /^#\/preview\/(\d+)$/.exec(hash))) return { name: 'preview', id: Number(m[1]) };
+    return { name: 'notfound' };
+  }
+
+  var firstRender = true;
+  function render(opts) {
+    var focusTarget = opts && opts.focus;
+    var route = parseRoute();
+    main.textContent = '';
+    var navLink = document.getElementById('nav-recipes');
+    if (route.name === 'notfound') navLink.removeAttribute('aria-current');
+    else navLink.setAttribute('aria-current', 'page');
+
+    var screenEl;
+    if (route.name === 'list') screenEl = renderList();
+    else if (route.name === 'detail') screenEl = renderDetail(route.id);
+    else if (route.name === 'preview') screenEl = renderPreview(route.id);
+    else screenEl = renderNotFound();
+    main.appendChild(screenEl);
+
+    var heading = main.querySelector('h1');
+    document.title = (heading ? heading.textContent + ' · ' : '') + 'Panel personelu (prototyp)';
+    if (focusTarget) {
+      var t = main.querySelector(focusTarget);
+      if (t) t.focus();
+    } else if (!firstRender && heading) {
+      heading.focus();
+    }
+    firstRender = false;
+  }
+
+  function visibleList() {
+    var q = state.query.trim().toLowerCase();
+    return state.recipes.filter(function (r) {
+      if (state.filter === 'visible' && r.hidden) return false;
+      if (state.filter === 'hidden' && !r.hidden) return false;
+      return !q || r.title.toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function renderList() {
+    var rows = visibleList();
+    var sec = h('section', { id: 'screen-recipe-list', 'aria-labelledby': 'h-list' });
+    sec.appendChild(h('h1', { id: 'h-list', tabindex: '-1', text: 'Przepisy' }));
+    sec.appendChild(h('p', { class: 'help', text: 'Lista obejmuje także przepisy ukryte przed gośćmi.' }));
+
+    var search = h('input', { type: 'search', id: 'f-query', value: state.query, autocomplete: 'off' });
+    search.addEventListener('input', function () {
+      state.query = search.value;
+      render({ focus: '#f-query' });
+      var el = document.getElementById('f-query');
+      if (el) el.setSelectionRange(el.value.length, el.value.length);
+    });
+    var filter = h('select', { id: 'f-filter' },
+      h('option', { value: 'all', text: 'Wszystkie' }),
+      h('option', { value: 'visible', text: 'Widoczne dla gości' }),
+      h('option', { value: 'hidden', text: 'Ukryte' }));
+    filter.value = state.filter;
+    filter.addEventListener('change', function () {
+      state.filter = filter.value;
+      render({ focus: '#f-filter' });
+    });
+    sec.appendChild(h('div', { class: 'panel tools' },
+      h('div', { class: 'field' }, h('label', { for: 'f-query', text: 'Szukaj po tytule' }), search),
+      h('div', { class: 'field' }, h('label', { for: 'f-filter', text: 'Pokaż' }), filter)));
+
+    sec.appendChild(h('p', { id: 'count', 'aria-live': 'polite', text: 'Znaleziono przepisów: ' + rows.length }));
+
+    if (rows.length === 0) {
+      sec.appendChild(h('div', { class: 'notice' },
+        h('p', { text: 'Brak przepisów pasujących do wyszukiwania.' }),
+        h('button', { type: 'button', id: 'clear-filters', text: 'Wyczyść wyszukiwanie i filtr', onclick: function () {
+          state.query = ''; state.filter = 'all'; render({ focus: '#f-query' });
+        } })));
+      return sec;
+    }
+
+    var tbody = h('tbody');
+    rows.forEach(function (r) {
+      tbody.appendChild(h('tr', null,
+        h('td', { 'data-label': 'Tytuł' }, h('a', { href: '#/recipes/' + r.id, text: r.title })),
+        h('td', { 'data-label': 'Kategoria', text: r.category }),
+        h('td', { 'data-label': 'Dodane przez', text: r.adder }),
+        h('td', { 'data-label': 'Data dodania', text: r.added }),
+        h('td', { 'data-label': 'W ulubionych', text: String(r.favorites) }),
+        h('td', { 'data-label': 'Status' }, h('span', { class: 'badge' + (r.hidden ? ' hidden' : ''), text: r.hidden ? 'Ukryty' : 'Widoczny' }))));
+    });
+    sec.appendChild(h('table', null,
+      h('caption', { text: 'Przepisy w bazie (dane przykładowe)' }),
+      h('thead', null, h('tr', null,
+        h('th', { scope: 'col', text: 'Tytuł' }), h('th', { scope: 'col', text: 'Kategoria' }),
+        h('th', { scope: 'col', text: 'Dodane przez' }), h('th', { scope: 'col', text: 'Data dodania' }),
+        h('th', { scope: 'col', text: 'W ulubionych' }), h('th', { scope: 'col', text: 'Status' }))),
+      tbody));
+    return sec;
+  }
+
+  function renderDetail(id) {
+    var r = findRecipe(id);
+    if (!r) return renderNotFound();
+    var sec = h('section', { id: 'screen-recipe-detail', 'aria-labelledby': 'h-detail' });
+    sec.appendChild(h('p', null, h('a', { href: '#/recipes', text: '← Wróć do listy przepisów' })));
+    sec.appendChild(h('h1', { id: 'h-detail', tabindex: '-1', text: r.title }));
+
+    if (r.hidden) {
+      sec.appendChild(h('div', { class: 'notice', id: 'banner-hidden' },
+        h('p', null, h('strong', { text: 'Ukryty. ' }), 'Goście nie widzą tego przepisu. Widzi go tylko personel.'),
+        r.reason ? h('p', { text: 'Powód: ' + r.reason }) : h('p', { text: 'Powód: nie podano.' }),
+        h('p', { class: 'help', text: 'Ukrył(a): ' + (r.hiddenBy || 'personel') })));
+    }
+
+    if (state.message) {
+      var msg = h('div', { class: 'notice', id: 'msg', tabindex: '-1' }, h('p', { text: state.message }));
+      if (state.undoId === r.id) {
+        msg.appendChild(h('button', { type: 'button', id: 'undo', text: 'Cofnij', onclick: function () { doUnhide(r.id, true); } }));
+      }
+      sec.appendChild(msg);
+    }
+    if (state.failError) {
+      sec.appendChild(h('div', { class: 'notice error', id: 'fail-msg', tabindex: '-1' },
+        h('p', null, h('strong', { text: 'Błąd. ' }), state.failError)));
+    }
+
+    sec.appendChild(h('div', { class: 'panel' },
+      h('dl', null,
+        h('dt', { text: 'Kategoria' }), h('dd', { text: r.category }),
+        h('dt', { text: 'Dodane przez' }), h('dd', { text: r.adder }),
+        h('dt', { text: 'Data dodania' }), h('dd', { text: r.added }),
+        h('dt', { text: 'W ulubionych u' }), h('dd', { text: r.favorites + ' osób' }),
+        h('dt', { text: 'Źródło' }), h('dd', { text: r.source + ' (link do źródła nie jest symulowany)' }))));
+
+    var mod = h('div', { class: 'panel' }, h('h2', { text: 'Moderacja' }));
+    if (!r.hidden) {
+      var input = h('input', { type: 'text', id: 'reason', autocomplete: 'off', 'aria-describedby': 'reason-help' + (state.reasonError ? ' reason-err' : ''), 'aria-invalid': state.reasonError ? 'true' : false, value: state.reasonDraft });
+      input.addEventListener('input', function () {
+        state.reasonDraft = input.value;
+        var c = document.getElementById('reason-count');
+        if (c) c.textContent = input.value.length + ' z ' + MAX_REASON + ' znaków';
+      });
+      mod.appendChild(h('div', { class: 'field' },
+        h('label', { for: 'reason', text: 'Powód ukrycia (opcjonalnie, do ' + MAX_REASON + ' znaków)' }),
+        input,
+        h('span', { class: 'help', id: 'reason-help' }, h('span', { id: 'reason-count', text: state.reasonDraft.length + ' z ' + MAX_REASON + ' znaków' }), '. Przepis zniknie dla gości, a Ty możesz go od razu cofnąć.'),
+        state.reasonError ? h('p', { class: 'err', id: 'reason-err', text: state.reasonError }) : null));
+      mod.appendChild(h('p', null, h('button', { type: 'button', id: 'hide', class: 'primary', disabled: state.busy, text: state.busy ? 'Ukrywanie…' : 'Ukryj przepis', onclick: function () { doHide(r.id); } })));
+    } else {
+      mod.appendChild(h('p', null, h('button', { type: 'button', id: 'unhide', class: 'primary', text: 'Przywróć przepis', onclick: function () { doUnhide(r.id, false); } })));
+    }
+    mod.appendChild(h('p', null, h('a', { href: '#/preview/' + r.id, text: 'Zobacz, jak ten przepis widzą inne osoby' })));
+    mod.appendChild(h('p', { class: 'help', text: 'Poza zakresem tego prototypu: edycja treści, scalanie duplikatów, kategoria i tagi, usuwanie przepisu.' }));
+    sec.appendChild(mod);
+    return sec;
+  }
+
+  function doHide(id) {
+    var r = findRecipe(id);
+    if (!r || state.busy) return;
+    state.message = '';
+    state.failError = '';
+    state.undoId = null;
+    if (state.reasonDraft.length > MAX_REASON) {
+      state.reasonError = 'Powód może mieć najwyżej ' + MAX_REASON + ' znaków (jest ' + state.reasonDraft.length + '). Skróć go i spróbuj ponownie.';
+      render({ focus: '#reason' });
+      announce(state.reasonError);
+      return;
+    }
+    state.reasonError = '';
+    state.busy = true;
+    render({ focus: '#h-detail' });
+    announce('Ukrywanie…');
+    busyTimer = setTimeout(function () {
+      busyTimer = null;
+      state.busy = false;
+      if (state.failNext) {
+        state.failNext = false;
+        document.getElementById('t-fail').checked = false;
+        state.failError = 'Nie udało się ukryć przepisu. Przepis nadal jest widoczny. Spróbuj ponownie.';
+        render({ focus: '#fail-msg' });
+        announce(state.failError);
+        return;
+      }
+      r.hidden = true;
+      r.reason = state.reasonDraft.trim();
+      r.hiddenBy = 'Moderator testowy';
+      state.reasonDraft = '';
+      state.message = 'Przepis ukryty przed gośćmi.';
+      state.undoId = r.id;
+      render({ focus: '#msg' });
+      announce('Przepis ukryty przed gośćmi. Dostępny przycisk Cofnij.');
+    }, 400);
+  }
+
+  function doUnhide(id, isUndo) {
+    var r = findRecipe(id);
+    if (!r) return;
+    r.hidden = false;
+    r.reason = '';
+    r.hiddenBy = '';
+    state.failError = '';
+    state.reasonError = '';
+    state.undoId = null;
+    state.message = isUndo ? 'Cofnięto. Przepis jest znowu widoczny dla gości.' : 'Przepis przywrócony. Goście znowu go widzą.';
+    render({ focus: '#msg' });
+    announce(state.message);
+  }
+
+  var VIEWERS = [
+    { value: 'guest', label: 'Gość (bez logowania)' },
+    { value: 'owner', label: 'Autor przepisu lub osoba, która ma go w ulubionych' },
+    { value: 'staff', label: 'Personel' }
+  ];
+
+  function renderPreview(id) {
+    var r = findRecipe(id);
+    if (!r) return renderNotFound();
+    var sec = h('section', { id: 'screen-viewer-preview', 'aria-labelledby': 'h-preview' });
+    sec.appendChild(h('p', null, h('a', { href: '#/recipes/' + r.id, text: '← Wróć do przepisu' })));
+    sec.appendChild(h('h1', { id: 'h-preview', tabindex: '-1', text: 'Jak widzą to inni: ' + r.title }));
+    sec.appendChild(h('p', { class: 'help', text: 'Aktualny status przepisu: ' + (r.hidden ? 'ukryty' : 'widoczny') + '. Zmień go na ekranie przepisu i wróć tutaj.' }));
+
+    var fs = h('fieldset', { class: 'radios' }, h('legend', { text: 'Wyświetl jako' }));
+    VIEWERS.forEach(function (v) {
+      var inp = h('input', { type: 'radio', name: 'viewer', value: v.value, id: 'v-' + v.value, checked: state.viewer === v.value });
+      inp.addEventListener('change', function () { state.viewer = v.value; render({ focus: '#v-' + v.value }); });
+      fs.appendChild(h('label', { for: 'v-' + v.value }, inp, v.label));
+    });
+    sec.appendChild(fs);
+
+    var out = h('div', { class: 'sim', id: 'sim-out' });
+    if (state.viewer === 'guest') {
+      if (r.hidden) {
+        out.appendChild(h('h3', { text: 'Strona przepisu dla gościa' }));
+        out.appendChild(h('p', { text: 'Nie znaleziono strony (404).' }));
+        out.appendChild(h('p', { class: 'help', text: 'Przepis nie występuje też na listach kategorii, w wyszukiwaniu, w mapie strony ani w wersji Markdown.' }));
+      } else {
+        out.appendChild(h('h3', { text: 'Strona przepisu dla gościa' }));
+        out.appendChild(h('p', { text: r.title + ' (przepis widoczny dla gości)' }));
+      }
+    } else if (state.viewer === 'owner') {
+      out.appendChild(h('h3', { text: 'Wiersz na liście „Moje przepisy” lub „Ulubione”' }));
+      if (r.hidden) out.appendChild(h('p', { class: 'row-unavailable', text: 'Przepis jest niedostępny' }));
+      else out.appendChild(h('p', { class: 'row-unavailable', text: r.title }));
+    } else {
+      out.appendChild(h('h3', { text: 'Strona przepisu dla personelu' }));
+      if (r.hidden) out.appendChild(h('p', null, h('span', { class: 'badge hidden', text: 'Ukryty' }), ' ' + r.title));
+      else out.appendChild(h('p', { text: r.title }));
+    }
+    sec.appendChild(out);
+    return sec;
+  }
+
+  function renderNotFound() {
+    var sec = h('section', { id: 'screen-not-found', 'aria-labelledby': 'h-nf' });
+    sec.appendChild(h('h1', { id: 'h-nf', tabindex: '-1', text: 'Nie znaleziono strony' }));
+    sec.appendChild(h('p', { text: 'Ta strona nie istnieje albo nie masz do niej dostępu.' }));
+    sec.appendChild(h('p', null, h('a', { id: 'nf-back', href: '#/recipes', text: 'Wróć do listy przepisów' })));
+    return sec;
+  }
+
+  window.addEventListener('hashchange', function () {
+    state.message = '';
+    state.undoId = null;
+    state.failError = '';
+    state.reasonError = '';
+    render();
+  });
+
+  document.getElementById('skip').addEventListener('click', function (e) {
+    e.preventDefault();
+    main.focus();
+  });
+  document.getElementById('t-fail').addEventListener('change', function (e) { state.failNext = e.target.checked; });
+  document.getElementById('t-denied').addEventListener('click', function () { location.hash = '#/admin/users'; });
+  document.getElementById('t-reset').addEventListener('click', function () {
+    resetState();
+    var wasList = location.hash === '#/recipes';
+    location.hash = '#/recipes';
+    if (wasList) render({ focus: '#h-list' });
+    announce('Symulacja zresetowana.');
+  });
+
+  resetState();
+  render();
+})();
+</script>
+</body>
+</html>
