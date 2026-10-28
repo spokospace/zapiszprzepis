@@ -240,8 +240,9 @@ async function archiveImageAt(
   }
 }
 
+// The key ends before the `?v=` cache buster the cover scripts append.
 export function extractStoragePath(imageUrl: string): string | null {
-  const match = imageUrl.match(/\/storage\/v1\/object\/public\/recipe-images\/(.+)$/)
+  const match = imageUrl.match(/\/storage\/v1\/object\/public\/recipe-images\/([^?#]+)/)
   return match ? match[1] : null
 }
 
@@ -793,19 +794,89 @@ export async function removeGallery(
   { keepStepImages = false }: { keepStepImages?: boolean } = {},
 ): Promise<void> {
   const folder = galleryFolder(userId, recipeId)
-  const bucket = supabase.storage.from('recipe-images')
-  const { data, error } = await bucket.list(folder)
-  if (error) {
-    console.warn(`[removeGallery] list failed: ${error.message}`)
-    return
-  }
-  const stale = (data ?? [])
-    .filter((file) => !(keepStepImages && file.name.startsWith(STEP_IMAGE_PREFIX)))
-    .map((file) => `${folder}/${file.name}`)
+  const files = await listGallery(supabase, folder, 'removeGallery')
+  const stale = files
+    .filter((name) => !(keepStepImages && name.startsWith(STEP_IMAGE_PREFIX)))
+    .map((name) => `${folder}/${name}`)
     .filter((path) => !keep.has(path))
-  if (stale.length === 0) return
-  const { error: removeError } = await bucket.remove(stale)
-  if (removeError) console.warn(`[removeGallery] remove failed: ${removeError.message}`)
+  await removeImages(supabase, stale, 'removeGallery')
+}
+
+/** File names in a gallery folder; empty (and logged) when the listing fails. */
+async function listGallery(supabase: SupabaseClient, folder: string, tag: string): Promise<string[]> {
+  const { data, error } = await supabase.storage.from('recipe-images').list(folder)
+  if (error) {
+    console.warn(`[${tag}] list failed: ${error.message}`)
+    return []
+  }
+  return (data ?? []).map((file) => file.name)
+}
+
+/**
+ * Deletes everything a recipe has in Storage — the cover, the gallery and the
+ * step photos — in one remove, for a recipe whose row is already gone. Never throws.
+ */
+export async function removeRecipeImages(
+  supabase: SupabaseClient,
+  userId: string,
+  recipeId: number,
+  coverUrl: string | null,
+): Promise<void> {
+  const folder = galleryFolder(userId, recipeId)
+  const cover = coverUrl ? extractStoragePath(coverUrl) : null
+  const gallery = (await listGallery(supabase, folder, 'removeRecipeImages')).map((name) => `${folder}/${name}`)
+  await removeImages(supabase, cover ? [cover, ...gallery] : gallery, 'removeRecipeImages')
+}
+
+/**
+ * Removes `paths` from the recipe-images bucket and logs when any of them is
+ * still there afterwards, and returns those. Storage answers a delete that row-level security
+ * filters out with `data: []` and no error (#132: covers outlived their
+ * recipes for months with nothing in the logs), so the count of removed
+ * objects is checked, not only the error. Never throws.
+ */
+export async function removeImages(supabase: SupabaseClient, paths: string[], tag: string): Promise<string[]> {
+  if (paths.length === 0) return []
+  const { data, error } = await supabase.storage.from('recipe-images').remove(paths)
+  if (error) {
+    console.warn(`[${tag}] remove failed: ${error.message}`)
+    return paths
+  }
+  const removed = new Set((data ?? []).map((file) => file.name))
+  const left = paths.filter((path) => !removed.has(path))
+  if (left.length > 0) console.warn(`[${tag}] removed ${removed.size} of ${paths.length}; still stored: ${left.join(', ')}`)
+  return left
+}
+
+/**
+ * The recipe an object belongs to, read from its key: the cover
+ * `<user>/<recipe>.<ext>` or a gallery/step photo in `galleryFolder`.
+ * Null for a key that fits neither, which a sweep must leave alone.
+ */
+export function recipeIdOfImage(path: string): number | null {
+  const match = path.match(/^[^/]+\/(\d+)(?:\.[a-z0-9]+|\/[^/]+)$/i)
+  return match ? Number(match[1]) : null
+}
+
+/**
+ * Keys whose recipe no longer exists: images left behind by deletes that ran
+ * before the bucket had an owner delete policy (#132). Recipe ids are global,
+ * so the owner folder is not compared; a recipe that changed owner keeps its
+ * files. A key a live recipe still references (`referenced`, from its
+ * image_url, image_urls and step_images) is kept whatever id it carries, and
+ * keys that do not name a recipe are never returned.
+ */
+export function orphanedImagePaths(
+  paths: Iterable<string>,
+  liveRecipeIds: ReadonlySet<number>,
+  referenced: ReadonlySet<string> = new Set(),
+): string[] {
+  const orphans: string[] = []
+  for (const path of paths) {
+    const id = recipeIdOfImage(path)
+    if (id != null && !liveRecipeIds.has(id) && !referenced.has(path)) orphans.push(path)
+  }
+  return orphans
 }
 
 /**

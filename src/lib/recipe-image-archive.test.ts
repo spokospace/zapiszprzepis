@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import {
   isPrivateUrl,
   archiveImage,
@@ -11,6 +11,11 @@ import {
   jsonLdImage,
   archiveGallery,
   removeGallery,
+  removeImages,
+  removeRecipeImages,
+  recipeIdOfImage,
+  orphanedImagePaths,
+  extractStoragePath,
   GALLERY_LIMIT,
   isArchivedImageUrl,
   proxiedImageUrl,
@@ -36,8 +41,8 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
         error: null,
       })),
       remove: vi.fn(async (paths: string[]) => {
-        paths.forEach((p) => files.delete(p))
-        return { error: null }
+        const removed = paths.filter((p) => files.delete(p))
+        return { data: removed.map((name) => ({ name })), error: null }
       }),
     }
     return { supabase: { storage: { from: () => bucket } } as any, bucket, files }
@@ -111,6 +116,88 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
     await removeGallery(supabase, 'user-1', 7)
 
     expect(files.size).toBe(0)
+  })
+
+  it('removeRecipeImages takes the cover, cache buster and all, with the gallery in one remove (#132)', async () => {
+    const { supabase, bucket, files } = makeStorage(['0.jpg', 'step-0.jpg'])
+    files.add('user-1/7.jpg')
+
+    await removeRecipeImages(supabase, 'user-1', 7, `${COVER}?v=mabc12`)
+
+    expect(files.size).toBe(0)
+    expect(bucket.remove).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('removeImages — a delete that removed nothing is not a success (#132)', () => {
+  /** A bucket whose remove() answers with the objects it really deleted, the way Storage does under RLS. */
+  function bucketRemoving(removed: string[] | null, error: { message: string } | null = null) {
+    const remove = vi.fn(async () => ({ data: removed?.map((name) => ({ name })) ?? null, error }))
+    return { supabase: { storage: { from: () => ({ remove }) } } as any, remove }
+  }
+
+  let warn: ReturnType<typeof vi.spyOn>
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('stays quiet when every object is gone', async () => {
+    const { supabase, remove } = bucketRemoving(['user-1/7.jpg'])
+
+    expect(await removeImages(supabase, ['user-1/7.jpg'], 'delete')).toEqual([])
+    expect(remove).toHaveBeenCalledWith(['user-1/7.jpg'])
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('logs the objects still stored when Storage removed nothing and reported no error', async () => {
+    const { supabase } = bucketRemoving([])
+
+    expect(await removeImages(supabase, ['user-1/7.jpg'], 'delete')).toEqual(['user-1/7.jpg'])
+    expect(warn).toHaveBeenCalledWith('[delete] removed 0 of 1; still stored: user-1/7.jpg')
+  })
+
+  it('logs only the objects left behind by a partial delete', async () => {
+    const { supabase } = bucketRemoving(['user-1/7/0.jpg'])
+
+    await removeImages(supabase, ['user-1/7/0.jpg', 'user-1/7/1.jpg'], 'removeGallery')
+
+    expect(warn).toHaveBeenCalledWith('[removeGallery] removed 1 of 2; still stored: user-1/7/1.jpg')
+  })
+
+  it('logs a Storage error', async () => {
+    const { supabase } = bucketRemoving(null, { message: 'boom' })
+
+    await removeImages(supabase, ['user-1/7.jpg'], 'delete')
+
+    expect(warn).toHaveBeenCalledWith('[delete] remove failed: boom')
+  })
+
+  it('calls nothing for an empty list', async () => {
+    const { supabase, remove } = bucketRemoving([])
+
+    await removeImages(supabase, [], 'delete')
+
+    expect(remove).not.toHaveBeenCalled()
+  })
+})
+
+describe('extractStoragePath', () => {
+  const PUBLIC = 'https://x.supabase.co/storage/v1/object/public/recipe-images/'
+
+  it('returns the object key of an archived image', () => {
+    expect(extractStoragePath(`${PUBLIC}user-1/7.jpg`)).toBe('user-1/7.jpg')
+    expect(extractStoragePath(`${PUBLIC}user-1/7/0.jpg`)).toBe('user-1/7/0.jpg')
+  })
+
+  it('drops the ?v= cache buster the cover scripts append, so the key matches the object (#132)', () => {
+    expect(extractStoragePath(`${PUBLIC}user-1/7.jpg?v=mabc12`)).toBe('user-1/7.jpg')
+  })
+
+  it('returns null for an image outside the bucket', () => {
+    expect(extractStoragePath('https://cdn.example/a.jpg')).toBeNull()
   })
 })
 
@@ -828,6 +915,45 @@ describe('jsonLdHowToStepImages', () => {
   it('returns [] when no step carries an image (nothing to align)', () => {
     expect(jsonLdHowToStepImages(ld(['Przesiej', 'Piecz']), 'https://blog.pl/x')).toEqual([])
     expect(jsonLdHowToStepImages('<p>no json-ld here</p>')).toEqual([])
+  })
+})
+
+describe('recipeIdOfImage', () => {
+  it.each([
+    ['user-1/7.jpg', 7],
+    ['user-1/7.webp', 7],
+    ['user-1/7/0.jpg', 7],
+    ['user-1/7/100-3.png', 7],
+    ['user-1/7/step-2.jpg', 7],
+  ])('%s → recipe %i', (path, id) => {
+    expect(recipeIdOfImage(path)).toBe(id)
+  })
+
+  it.each(['user-1/cover.jpg', '7.jpg', 'user-1/7', 'user-1/7/a/b.jpg', 'user-1/.emptyFolderPlaceholder'])(
+    'leaves %s unclaimed',
+    (path) => {
+      expect(recipeIdOfImage(path)).toBeNull()
+    },
+  )
+})
+
+describe('orphanedImagePaths — the #132 sweep', () => {
+  it("returns the cover, gallery and step photos of a deleted recipe, and nothing of a live one", () => {
+    const paths = ['u/1.jpg', 'u/1/0.jpg', 'u/2.jpg', 'u/2/0.jpg', 'u/2/step-0.jpg', 'other/3.jpg']
+
+    expect(orphanedImagePaths(paths, new Set([1, 3]))).toEqual(['u/2.jpg', 'u/2/0.jpg', 'u/2/step-0.jpg'])
+  })
+
+  it('keeps a file a live recipe still points at, whatever id its key carries', () => {
+    expect(orphanedImagePaths(['u/9.jpg', 'u/9/0.jpg'], new Set([1]), new Set(['u/9.jpg']))).toEqual(['u/9/0.jpg'])
+  })
+
+  it("keeps a live recipe's files under another owner's folder", () => {
+    expect(orphanedImagePaths(['previous-owner/5.jpg'], new Set([5]))).toEqual([])
+  })
+
+  it('never returns a key that does not name a recipe', () => {
+    expect(orphanedImagePaths(['u/readme.txt', 'u/.emptyFolderPlaceholder'], new Set())).toEqual([])
   })
 })
 
