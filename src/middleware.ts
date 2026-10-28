@@ -56,8 +56,9 @@ async function handle(request: NextRequest): Promise<NextResponse> {
 
   // Inngest webhook: external service hits this endpoint to sync functions
   // and trigger runs. Auth is verified by Inngest's own signature
-  // (INNGEST_SIGNING_KEY), not Supabase session.
-  if (pathname === '/api/inngest') {
+  // (INNGEST_SIGNING_KEY, or INNGEST_SIGNING_KEY_2 on /api/inngest-2), not
+  // Supabase session.
+  if (pathname === '/api/inngest' || pathname === '/api/inngest-2') {
     return response
   }
 

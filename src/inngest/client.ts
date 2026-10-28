@@ -11,7 +11,9 @@ let secondary: Inngest | null | undefined
 export function getInngestSecondary(): Inngest | null {
   if (secondary === undefined) {
     const eventKey = process.env.INNGEST_EVENT_KEY_2
-    secondary = eventKey ? new Inngest({ id: 'zapiszprzepis', eventKey }) : null
+    secondary = eventKey
+      ? new Inngest({ id: 'zapiszprzepis', eventKey, signingKey: process.env.INNGEST_SIGNING_KEY_2 })
+      : null
   }
   return secondary
 }
