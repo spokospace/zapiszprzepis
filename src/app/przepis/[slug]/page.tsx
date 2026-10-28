@@ -146,7 +146,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   const recipeJsonLd = serializeJsonLd(buildRecipeJsonLd(typedRecipe, siteUrl))
 
   return (
-    <main className="min-h-screen bg-white py-6 sm:py-8">
+    // From lg the list row sits right under the category bar (handoff 2026-10-28: a small
+    // gap above it, 12 px to the hero), so the top padding shrinks there.
+    <main className="min-h-screen bg-white py-6 sm:py-8 lg:pt-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
       {duplicate === '1' && (
         <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
@@ -171,23 +173,27 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {/* Not `narrow`: the desktop layout (E01-S17, A9) uses the full 1152 px; below lg
           both widths are the viewport anyway. */}
       <PageContainer>
-        {/* The action cards sit last in the header's text column, under the description,
-            so from lg they share the row with the photo. The cooking button and the steps
-            list far below share the step-photos toggle through the module-level
-            useStepPhotos store, so „Ukryj” reaches both. */}
+        {/* Handoff 2026-10-28: one row above the hero, "← {lista} · N z M" on the left and
+            "Przepisy › {Kategoria} › {Przepis}" on the right. From lg only; below lg the
+            header carries the back link (C3). The list bar stays mounted at every width,
+            because it also feeds that back link. */}
+        <div className="lg:mb-3 lg:flex lg:min-h-[44px] lg:items-center lg:gap-6 print:hidden">
+          <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+          <RecipeBreadcrumbs category={typedRecipe.category} title={typedRecipe.title} className="hidden lg:ml-auto lg:block" />
+        </div>
+        {/* The actions and the versions box sit in the header's text column. The cooking
+            button and the steps list far below share the step-photos toggle through the
+            module-level useStepPhotos store, so „Ukryj” reaches both. */}
         <RecipeHeader
           recipe={typedRecipe}
           galleryImages={galleryImages}
-          listBar={
-            // A9: from lg, the list position and the breadcrumbs share one row above the title.
-            <div className="lg:flex lg:items-center lg:gap-6">
-              <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
-              <RecipeBreadcrumbs category={typedRecipe.category} className="hidden lg:ml-auto lg:block lg:self-start" />
-            </div>
-          }
           versionsBar={
             versionsTotal > 0 ? (
-              <DishVersionsBar count={versionsTotal} dishAccusative={typedRecipe.dish_accusative ?? null} />
+              <DishVersionsBar
+                count={versionsTotal}
+                thumbs={versions.flatMap((v) => (v.image_url ? [v.image_url] : [])).slice(0, 3)}
+                examples={versions.flatMap((v) => (v.variant_note ? [v.variant_note] : [])).slice(0, 3)}
+              />
             ) : undefined
           }
           actions={

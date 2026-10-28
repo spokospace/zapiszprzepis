@@ -41,18 +41,24 @@ describe('RecipeActions (handoff 2026-10-28)', () => {
     expect(html).not.toContain('Gotuj krok po kroku')
   })
 
-  it('shows "Udostępnij przepis" in the second row', () => {
-    expect(render()).toContain('Udostępnij przepis')
+  it('shows "Udostępnij" in the second row', () => {
+    expect(render()).toContain('Udostępnij')
   })
 
   it('has no "Oryginał" button — the original is on the photo badge now', () => {
     expect(render()).not.toContain('Oryginał')
   })
 
-  it('offers "Wydrukuj przepis" before "Udostępnij przepis"', () => {
+  it('offers "Drukuj" before "Udostępnij"', () => {
     const html = render()
-    expect(html).toContain('Wydrukuj przepis')
-    expect(html.indexOf('Wydrukuj przepis')).toBeLessThan(html.indexOf('Udostępnij przepis'))
+    expect(html).toContain('Drukuj')
+    expect(html.indexOf('Drukuj')).toBeLessThan(html.indexOf('Udostępnij'))
+  })
+
+  it('makes the two main buttons pills (handoff 2026-10-28: buttons 999 px)', () => {
+    const html = render()
+    expect(html).toMatch(/<button[^>]*class="[^"]*rounded-pill bg-ink[^"]*"[^>]*><svg[^>]*>[\s\S]*?<span>Zacznij gotować<\/span>/)
+    expect(html).toContain('rounded-pill border-2 border-action')
   })
 
   it('hides the whole action block on print — none of these controls belongs on paper', () => {

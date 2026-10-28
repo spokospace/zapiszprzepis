@@ -27,6 +27,11 @@ export function photosLabel(count: number): string {
   return `${count} ${polishPlural(count, 'zdjęcie', 'zdjęcia', 'zdjęć')}`
 }
 
+/** "1 krok", "3 kroki", "9 kroków" — Polish plural (the steps' progress line). */
+export function stepsLabel(count: number): string {
+  return `${count} ${polishPlural(count, 'krok', 'kroki', 'kroków')}`
+}
+
 export interface RecipeTimeStat {
   label: 'Przygotowanie' | 'Gotowanie' | 'Łącznie'
   /** "15 min", "1 godz 30 min". */

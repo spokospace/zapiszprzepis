@@ -184,7 +184,7 @@ export function CookingMode({ title, steps, stepImages = [] }: CookingModeProps)
         onClick={start}
         aria-haspopup="dialog"
         aria-controls="cooking-mode"
-        className="flex h-full min-h-[60px] w-full items-center justify-center gap-3 rounded-tile bg-ink px-5 text-[19px] font-bold text-white hover:opacity-90"
+        className="flex h-full min-h-[60px] w-full items-center justify-center gap-3 rounded-pill bg-ink px-5 text-[19px] font-bold text-white hover:opacity-90"
       >
         <ChefHat aria-hidden="true" className="h-6 w-6 shrink-0" />
         <span>Zacznij gotować</span>

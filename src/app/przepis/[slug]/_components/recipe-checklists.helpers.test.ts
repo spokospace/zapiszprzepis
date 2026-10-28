@@ -3,14 +3,18 @@ import { parseChecklist } from '@/lib/recipe-checklist'
 import { ingredientsResetRaw, stepProgressLabel, toggledStepRaw } from './recipe-checklists'
 
 describe('stepProgressLabel', () => {
-  it('counts done steps out of the total', () => {
-    expect(stepProgressLabel(0, 9)).toBe('0 z 9 kroków zrobione')
+  it('says how to tick before the first tick (handoff 2026-10-28)', () => {
+    expect(stepProgressLabel(0, 9)).toBe('9 kroków · kliknij numer, gdy skończysz krok')
+    expect(stepProgressLabel(0, 3)).toBe('3 kroki · kliknij numer, gdy skończysz krok')
+    expect(stepProgressLabel(0, 1)).toBe('1 krok · kliknij numer, gdy skończysz krok')
+  })
+
+  it('counts done steps out of the total once one is ticked', () => {
     expect(stepProgressLabel(3, 9)).toBe('3 z 9 kroków zrobione')
     expect(stepProgressLabel(2, 2)).toBe('2 z 2 kroków zrobione')
   })
 
-  it('words a one-step recipe on its own, never "1 z 1 kroków"', () => {
-    expect(stepProgressLabel(0, 1)).toBe('Jeden krok do zrobienia')
+  it('words a ticked one-step recipe on its own, never "1 z 1 kroków"', () => {
     expect(stepProgressLabel(1, 1)).toBe('Krok zrobiony')
   })
 })
