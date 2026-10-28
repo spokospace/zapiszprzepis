@@ -18,7 +18,7 @@ function render(servings: number | null, stepImages?: string[]) {
 describe('RecipeChecklists headings (C3)', () => {
   it('puts "na N porcji" on the "Składniki" row, 16 px secondary', () => {
     expect(render(4)).toMatch(
-      /<div class="mb-3 flex items-baseline justify-between gap-x-3"><div class="flex min-w-0 flex-wrap items-baseline gap-x-3"><h2 id="ingredients-heading" class="shrink-0 text-\[24px\] font-bold text-ink">Składniki<\/h2><p class="min-w-0 text-\[16px\] text-ink-soft">na 4 porcje<\/p><\/div><button type="button" class="min-h-\[48px\] min-w-0 px-1 text-\[17px\] font-bold text-action-text underline hover:text-action-hover print:hidden invisible">Wyczyść zaznaczenia<\/button><\/div>/,
+      /<div class="mb-3 flex items-baseline justify-between gap-x-3"><div class="flex min-w-0 flex-wrap items-baseline gap-x-3"><h2 id="ingredients-heading" class="shrink-0 text-\[24px\] font-bold text-ink">Składniki<\/h2><p class="min-w-0 text-\[16px\] text-ink-soft">na 4 porcje<\/p><\/div><button type="button" class="min-h-\[48px\] min-w-0 px-1 text-right text-\[17px\] font-bold text-action-text underline hover:text-action-hover print:hidden invisible">Wyczyść zaznaczenia<\/button><\/div>/,
     )
   })
 

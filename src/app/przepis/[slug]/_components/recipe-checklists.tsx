@@ -174,7 +174,7 @@ export function RecipeChecklists({
           <button
             type="button"
             onClick={() => setRaw(null)}
-            className={`min-h-[48px] min-w-0 px-1 text-[17px] font-bold text-action-text underline hover:text-action-hover print:hidden${
+            className={`min-h-[48px] min-w-0 px-1 text-right text-[17px] font-bold text-action-text underline hover:text-action-hover print:hidden${
               state.ingredients.length === 0 ? ' invisible' : ''
             }`}
           >
