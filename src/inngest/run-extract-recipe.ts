@@ -199,14 +199,31 @@ interface RecipeData {
   cookTimeMinutes?: number | null
   totalTimeMinutes?: number | null
   timesEstimated?: boolean
+  /** Which of the three times the model estimated rather than read from the source (#188). */
+  estimatedTimes?: unknown
   servings?: number | null
+}
+
+const TIME_FIELDS = ['prepTimeMinutes', 'cookTimeMinutes', 'totalTimeMinutes'] as const
+type TimeField = (typeof TIME_FIELDS)[number]
+
+// The non-null times that came from the model's own knowledge. The per-field
+// list says which; when it is missing, malformed or empty next to a raised
+// recipe-level flag, every non-null time counts as estimated (the pre-#188
+// reading, which over-marks rather than under-marks).
+function estimatedTimeFields(r: RecipeData): TimeField[] {
+  const present = TIME_FIELDS.filter(f => r[f] != null)
+  const listed = Array.isArray(r.estimatedTimes)
+    ? present.filter(f => (r.estimatedTimes as unknown[]).includes(f))
+    : []
+  if (listed.length > 0) return listed
+  return r.timesEstimated === true ? present : []
 }
 
 // The model's own flag counts only when there is a time to flag: all three
 // null means nothing is shown, so nothing is an estimate.
 function timesAreEstimated(r: RecipeData): boolean {
-  const hasTime = r.prepTimeMinutes != null || r.cookTimeMinutes != null || r.totalTimeMinutes != null
-  return hasTime && r.timesEstimated === true
+  return estimatedTimeFields(r).length > 0
 }
 
 export async function runExtractRecipe(
@@ -583,6 +600,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
   "cookTimeMinutes": integer or null,
   "totalTimeMinutes": integer or null,
   "timesEstimated": boolean,
+  "estimatedTimes": ["names of the time fields you estimated"],
   "servings": integer or null
 }
 Rules:
@@ -609,6 +627,7 @@ Rules:
 - When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
 - When estimating, include passive periods (rising, proofing, marinating, chilling, setting, resting) in totalTimeMinutes. If the recipe clearly has a long passive step whose length you cannot tell, return null for totalTimeMinutes rather than a number that ignores it.
 - All three times null → "timesEstimated": false.
+- "estimatedTimes" lists exactly the time fields whose value you estimated — any of "prepTimeMinutes", "cookTimeMinutes", "totalTimeMinutes". A stated prep time next to an estimated total → ["totalTimeMinutes"]. No estimated time → [].
 - servings: only a number of servings the source states ("na 4 porcje", "dla 6 osób", "Serves 4", "4 portions"). A range ("4–6 porcji"), a yield in pieces, tins or litres ("24 sztuki", "1 tortownica"), or no statement at all → null. Never estimate it.
 - Best-effort if content incomplete.${foreignSource ? FOREIGN_SOURCE_RULES : ''}`,
             },
@@ -779,6 +798,7 @@ Rules:
     }
 
     const timesEstimated = timesAreEstimated(recipeJSON)
+    const estimatedTimes = estimatedTimeFields(recipeJSON)
     // The page's own JSON-LD recipeYield is read deterministically and beats the
     // LLM's reading of the text; the full-page embed scan keeps the <script>
     // blocks a main-content scrape may drop.
@@ -1042,10 +1062,12 @@ Rules:
             gapFill.total_time_minutes = recipeJSON.totalTimeMinutes
           }
           // A time filled in from an estimate makes the row's times estimated;
-          // stated times filled in next to an earlier estimate leave the flag.
+          // stated times filled in (next to an earlier estimate, or next to an
+          // estimate that fills nothing) leave the flag (#188).
           if (
-            timesEstimated &&
-            (gapFill.prep_time_minutes != null || gapFill.cook_time_minutes != null || gapFill.total_time_minutes != null)
+            (gapFill.prep_time_minutes != null && estimatedTimes.includes('prepTimeMinutes')) ||
+            (gapFill.cook_time_minutes != null && estimatedTimes.includes('cookTimeMinutes')) ||
+            (gapFill.total_time_minutes != null && estimatedTimes.includes('totalTimeMinutes'))
           ) {
             gapFill.times_estimated = true
           }
