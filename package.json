@@ -19,6 +19,7 @@
     "backfill:ingredient-fingerprints": "node --env-file=.env.local --import tsx scripts/backfill-ingredient-fingerprints.ts",
     "collapse:duplicate-recipes": "node --env-file=.env.local --import tsx scripts/collapse-duplicate-recipes.ts",
     "collapse:content-duplicates": "node --env-file=.env.local --import tsx scripts/collapse-content-duplicates.ts",
+    "sweep:orphaned-images": "node --env-file=.env.local --import tsx scripts/sweep-orphaned-images.ts",
     "fix:recipe-covers": "node --env-file=.env.local --import tsx scripts/fix-recipe-covers.ts",
     "backfill:covers": "node --env-file=.env.local --import tsx scripts/backfill-archive-covers.ts",
     "backfill:source-authors": "node --env-file=.env.local --import tsx scripts/backfill-source-authors.ts",

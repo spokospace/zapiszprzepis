@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { checkUser } from '@/lib/supabase/user-check'
-import { extractStoragePath, removeGallery } from '@/lib/recipe-image-archive'
+import { removeRecipeImages } from '@/lib/recipe-image-archive'
 import { isRecipeSharedError, RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { recipePath } from '@/lib/routes'
 import { revalidateRecipeCaches } from '@/lib/recipe-cache'
@@ -64,19 +64,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Failed to delete recipe' }, { status: 500 })
     }
 
-    if (recipe.image_url) {
-      const storagePath = extractStoragePath(recipe.image_url)
-      if (storagePath) {
-        const { error: storageError } = await supabase.storage
-          .from('recipe-images')
-          .remove([storagePath])
-        if (storageError) {
-          console.warn('[delete] Storage cleanup failed:', storageError.message)
-        }
-      }
-    }
-
-    await removeGallery(supabase, recipe.user_id, recipe.id)
+    await removeRecipeImages(supabase, recipe.user_id, recipe.id, recipe.image_url)
 
     // Drop the cached public list + this recipe's cached page at once (#445), so the
     // delete shows immediately rather than lingering up to the TTL.
