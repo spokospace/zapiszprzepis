@@ -73,7 +73,9 @@ function summaryImages(images: unknown): ReaderImage[] {
   const out: ReaderImage[] = []
   for (const [key, value] of Object.entries(images)) {
     const url = str(value)
-    if (!/^https?:\/\//i.test(url)) continue
+    // Written into a src attribute verbatim (an entity there would never be
+    // decoded on the way to the archiver), so a URL that would need one is skipped.
+    if (!/^https?:\/\/[^\s"'<>]+$/i.test(url)) continue
     out.push({ url, alt: key.split(/:\s*/).slice(1).join(': ').trim() })
   }
   return out
@@ -114,7 +116,7 @@ async function readMarkdown(
   }
 }
 
-const escapeAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+const escapeAlt = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 
 /**
  * `<img>` tags for the summary images that name the dish, so the gallery and
@@ -126,7 +128,7 @@ function dishImageTags(images: ReaderImage[], pageUrl: string): string {
   const isDish = namesTheDish(pageUrl)
   return images
     .filter(({ url, alt }) => isDish(url, alt))
-    .map(({ url, alt }) => `<img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}">`)
+    .map(({ url, alt }) => `<img src="${url}" alt="${escapeAlt(alt)}">`)
     .join('\n')
 }
 
@@ -153,7 +155,9 @@ async function readHtml(url: string, { fetch }: Deps): Promise<string> {
     if (!response.ok) return ''
     const html = str((await response.json())?.data?.html)
     // Jina's browser can be stopped by the same bot check (howsweeteats.com).
-    return BLOCKED_PAGE_RE.test(html) ? '' : html
+    // Tested without scripts: Cloudflare puts its `challenge-platform` beacon
+    // on ordinary pages too.
+    return BLOCKED_PAGE_RE.test(readableHtml(html)) ? '' : html
   } catch {
     return ''
   }

@@ -387,6 +387,7 @@ const GENERIC_SLUG_WORDS = new Set([
   'najlepszy', 'najlepsza', 'najlepsze', 'prawdziwy', 'prawdziwa', 'prawdziwe',
   'szybki', 'szybka', 'szybkie', 'latwy', 'latwa', 'latwe', 'klasyczny', 'pyszny', 'pyszne',
   'easy', 'best', 'homemade', 'quick', 'simple', 'classic',
+  'recipes', 'blog', 'food',
 ])
 
 // WordPress serves a `-696x464` resize of an uploaded photo; the full-size

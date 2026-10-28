@@ -255,6 +255,11 @@ export async function runExtractRecipe(
   // it) and appends Jina's reason, so recipe_shares.error_message says both.
   let firecrawlError: string | null = null
   const readerPages = new Map<string, Promise<ReaderPage>>()
+  // The pages Jina returned, so a caller can tell its read went through Jina:
+  // `firecrawlError` alone can be set by a later call (the next page, the embed
+  // scan) after the recipe's own page came from Firecrawl.
+  const readerReads = new WeakSet<object>()
+  let recipeReadViaReader = false
   async function scrape(options: ReturnType<typeof buildFirecrawlOptions>) {
     if (firecrawlError == null) {
       try {
@@ -270,7 +275,9 @@ export async function runExtractRecipe(
       readerPages.set(options.url, read)
     }
     try {
-      return await read
+      const page = await read
+      readerReads.add(page)
+      return page
     } catch (err) {
       throw new Error(`${firecrawlError}; ${err instanceof Error ? err.message : String(err)}`, { cause: err })
     }
@@ -286,6 +293,7 @@ export async function runExtractRecipe(
       console.warn('[extract-recipe] markdown < 200 chars; retrying with fullContent')
       s = await scrape(buildFirecrawlOptions(url, type, { fullContent: true }))
     }
+    recipeReadViaReader = readerReads.has(s)
     return type === 'web_blog' ? withFollowingPages(s, url) : s
   }
 
@@ -919,7 +927,7 @@ Rules:
       // gains step photos from a better extraction (see storeCoverAndGallery).
       // Not with an empty gallery read through Jina, though: a degraded scrape
       // finding no photos is no sign the source lost them (#536).
-      const replace = gallery.length > 0 || firecrawlError == null
+      const replace = gallery.length > 0 || !recipeReadViaReader
       return await withImages(
         { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' },
         { recipeId: refreshed.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace },

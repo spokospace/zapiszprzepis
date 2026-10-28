@@ -276,12 +276,31 @@ describe('readerScrape', () => {
       expect((await readerScrape(POST, { fetch })).html).toBe('<article><img src="https://cdn.example/dish.jpg"></article>')
     })
 
-    it('escapes the alt text it writes into a tag', async () => {
+    it('escapes the alt text, writes the URL as it is and skips one that would need escaping', async () => {
       const { html } = await readerScrape(POST, {
-        fetch: blockedFetch({ 'Image 1: pizza "with" <figs> & ham': `${UPLOADS}/pizza.jpg` }),
+        fetch: blockedFetch({
+          'Image 1: pizza "with" <figs> & ham': `${UPLOADS}/pizza.jpg?resize=1200,800&ssl=1`,
+          'Image 2: pizza': `${UPLOADS}/pizza".jpg`,
+        }),
       })
 
-      expect(html).toBe(`<img src="${UPLOADS}/pizza.jpg" alt="pizza &quot;with&quot; &lt;figs> &amp; ham">`)
+      expect(html).toBe(`<img src="${UPLOADS}/pizza.jpg?resize=1200,800&ssl=1" alt="pizza &quot;with&quot; &lt;figs> &amp; ham">`)
+    })
+
+    it("keeps Jina's HTML of an ordinary page that carries Cloudflare's beacon script", async () => {
+      const page =
+        '<html><head><script src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"></script></head>' +
+        `<body><article><img src="${UPLOADS}/2026/08/dish.jpg"></article></body></html>`
+      const fetch = vi.fn().mockImplementation((url: string, init?: { headers?: Record<string, string> }) => {
+        if (!url.startsWith('https://r.jina.ai/')) return Promise.resolve(htmlResponse(CHALLENGE, 403))
+        return Promise.resolve(
+          init?.headers?.['X-Return-Format'] === 'html' ? jinaResponse({ html: page }) : jinaResponse({ content: 'x', images }),
+        )
+      })
+
+      const { html } = await readerScrape(POST, { fetch })
+      expect(html).toContain(`<article><img src="${UPLOADS}/2026/08/dish.jpg"></article>`)
+      expect(html).not.toContain('alt="fig jam prosciutto pizza"')
     })
   })
 
