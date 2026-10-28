@@ -13,6 +13,8 @@ export const STAFF_ERRORS = {
   last_admin: 'To ostatni administrator. Najpierw nadaj rolę komuś innemu.',
   cannot_change_own_role: 'Własnej roli nie zmienisz. Poproś innego administratora.',
   unknown_role: 'Nie ma takiej roli.',
+  not_retryable: 'Ten import nie wymaga ponowienia albo ktoś już go ponowił.',
+  dispatch_failed: 'Nie udało się uruchomić przetwarzania. Import wrócił na listę błędów.',
   invalid_input: 'Dane są niepoprawne.',
   confirm_mismatch: 'Potwierdzenie się nie zgadza. Nic nie zmieniono.',
   unknown: 'Nie udało się. Spróbuj ponownie.',
