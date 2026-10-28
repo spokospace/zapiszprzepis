@@ -1,6 +1,6 @@
 'use server'
 
-import { inngest } from '@/inngest/client'
+import { sendRecipeExtract } from '@/inngest/send'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { checkUser, SessionCheckError } from '@/lib/supabase/user-check'
 import { detectSourceType } from '@/lib/detect-source-type'
@@ -74,16 +74,13 @@ export async function triggerRecipeExtraction(
   }
 
   try {
-    await inngest.send({
-      name: 'recipe/extract',
-      data: {
-        shareId: share.id,
-        sharedUrl: dedup.normalizedUrl,
-        sharedTitle: title,
-        sharedText: text,
-        userId: user.id,
-        sourceType,
-      },
+    await sendRecipeExtract({
+      shareId: share.id,
+      sharedUrl: dedup.normalizedUrl,
+      sharedTitle: title,
+      sharedText: text,
+      userId: user.id,
+      sourceType,
     })
   } catch (error) {
     console.error('Failed to trigger extraction task:', error)

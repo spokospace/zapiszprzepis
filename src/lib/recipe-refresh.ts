@@ -1,7 +1,7 @@
 // The "Odśwież przepis" queue step, shared by the server action and the
 // refresh script: one pending share plus one forced `recipe/extract` event.
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Inngest } from 'inngest'
+import type { RecipeExtractData } from '@/inngest/send'
 import { detectSourceType } from './detect-source-type'
 
 /**
@@ -11,7 +11,7 @@ import { detectSourceType } from './detect-source-type'
  */
 export async function queueRecipeRefresh(
   supabase: SupabaseClient,
-  inngest: Pick<Inngest, 'send'>,
+  sendExtract: (data: RecipeExtractData) => Promise<unknown>,
   { userId, sourceUrl }: { userId: string; sourceUrl: string },
 ): Promise<number | null> {
   const { data: share } = await supabase
@@ -21,10 +21,7 @@ export async function queueRecipeRefresh(
     .single()
   if (!share) return null
   try {
-    await inngest.send({
-      name: 'recipe/extract',
-      data: { shareId: share.id, sharedUrl: sourceUrl, sourceType: detectSourceType(sourceUrl), userId, force: true },
-    })
+    await sendExtract({ shareId: share.id, sharedUrl: sourceUrl, sourceType: detectSourceType(sourceUrl), userId, force: true })
   } catch (error) {
     console.error('[refresh] Failed to trigger re-extraction:', error)
     await supabase

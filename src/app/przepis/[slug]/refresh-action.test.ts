@@ -6,11 +6,11 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn() }))
-vi.mock('@/inngest/client', () => ({ inngest: { send: vi.fn() } }))
+vi.mock('@/inngest/send', () => ({ sendRecipeExtract: vi.fn() }))
 vi.mock('@/lib/full-access', () => ({ getFullAccess: vi.fn() }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { inngest } from '@/inngest/client'
+import { sendRecipeExtract } from '@/inngest/send'
 import { getFullAccess } from '@/lib/full-access'
 import { refreshRecipe } from './refresh-action'
 
@@ -32,7 +32,7 @@ describe('refreshRecipe — full-access gate (E01-S11)', () => {
     await expect(refreshRecipe(data)).rejects.toThrow('REDIRECT /przepis/tiramisu?refresh_error=no_access')
 
     expect(from).not.toHaveBeenCalled()
-    expect(inngest.send).not.toHaveBeenCalled()
+    expect(sendRecipeExtract).not.toHaveBeenCalled()
   })
 })
 
@@ -65,7 +65,7 @@ describe('refreshRecipe — a share that could not be queued (#382)', () => {
       from: (table: string) => (table === 'recipes' ? recipesQuery : sharesQuery),
     } as any)
     vi.mocked(getFullAccess).mockResolvedValue(true)
-    vi.mocked(inngest.send).mockRejectedValue(new Error('Inngest 503'))
+    vi.mocked(sendRecipeExtract).mockRejectedValue(new Error('Inngest 503'))
     const data = new FormData()
     data.set('slug', 'tiramisu')
 

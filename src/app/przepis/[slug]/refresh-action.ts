@@ -1,7 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { inngest } from '@/inngest/client'
+import { sendRecipeExtract } from '@/inngest/send'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { checkUser, SessionCheckError } from '@/lib/supabase/user-check'
 import { queueRecipeRefresh } from '@/lib/recipe-refresh'
@@ -42,7 +42,7 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
     redirect(`${recipePath(slug)}?refresh_error=1`)
   }
 
-  await queueRecipeRefresh(supabase, inngest, { userId: user.id, sourceUrl: recipe.source_url })
+  await queueRecipeRefresh(supabase, sendRecipeExtract, { userId: user.id, sourceUrl: recipe.source_url })
 
   redirect(`${recipePath(slug)}?refreshing=1`)
 }

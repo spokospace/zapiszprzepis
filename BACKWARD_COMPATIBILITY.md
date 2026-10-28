@@ -54,7 +54,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 ## 7. Environment variables and secrets
 
-**Surface:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (wrangler vars); `SUPABASE_SERVICE_ROLE_KEY`, `INVITE_CODE`, `EXA_API_KEY`, `OPENAI_API_KEY`, `FIRECRAWL_API_KEY`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` (secrets); `JINA_API_KEY` (optional secret — the Jina Reader fallback works without it, but rate-limited to 429 from Workers).
+**Surface:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (wrangler vars); `SUPABASE_SERVICE_ROLE_KEY`, `INVITE_CODE`, `EXA_API_KEY`, `OPENAI_API_KEY`, `FIRECRAWL_API_KEY`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` (secrets); `INNGEST_EVENT_KEY_2` (optional secret — the secondary Inngest account's event key; without it there is no failover, see `src/inngest/send.ts`); `JINA_API_KEY` (optional secret — the Jina Reader fallback works without it, but rate-limited to 429 from Workers).
 
 **Breaking:** renaming or adding a required variable without setting it in the Worker; production then fails at runtime, not at build.
 

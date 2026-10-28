@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { inngest } from '@/inngest/client'
+import { sendRecipeExtract } from '@/inngest/send'
 import { requireUser } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { getFullAccess } from '@/lib/full-access'
@@ -72,16 +72,13 @@ export async function retryShare(shareId: number): Promise<void> {
   }
 
   try {
-    await inngest.send({
-      name: 'recipe/extract',
-      data: {
-        shareId: share.id,
-        sharedUrl: share.shared_url,
-        sharedTitle: intent.title ?? undefined,
-        sharedText: intent.text ?? undefined,
-        sourceType: detectSourceType(share.shared_url),
-        userId: user.id,
-      },
+    await sendRecipeExtract({
+      shareId: share.id,
+      sharedUrl: share.shared_url,
+      sharedTitle: intent.title ?? undefined,
+      sharedText: intent.text ?? undefined,
+      sourceType: detectSourceType(share.shared_url),
+      userId: user.id,
     })
   } catch (error) {
     // Dispatch failed — put the share back to `failed` so it stays visible in
