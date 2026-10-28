@@ -18,6 +18,44 @@ describe('admin panel migrations', () => {
     expect(files.some((f) => f.includes('staff_audit_log'))).toBe(true)
   })
 
+  // The guards SQL enforces cannot run in Vitest. Pin their presence so a rewrite
+  // that drops one fails here; the behaviour is covered by supabase/tests (manual).
+  describe('admin_roles', () => {
+    const roles = files.find((f) => f.includes('admin_roles'))
+    const text = roles ? sql(roles).replace(/--.*$/gm, '') : ''
+
+    it('refuses a self role change and removing the last admin, under a lock', () => {
+      expect(text).toMatch(/p_actor = p_user[\s\S]*cannot_change_own_role/)
+      expect(text).toMatch(/last_admin/)
+      expect(text).toMatch(/pg_advisory_xact_lock\(hashtext\('admin_set_role'\)\)/)
+    })
+  })
+
+  describe('admin_users', () => {
+    const users = files.find((f) => f.includes('admin_users'))
+    const text = users ? sql(users).replace(/--.*$/gm, '') : ''
+
+    it('refuses to block or delete oneself or a staff member', () => {
+      expect(text).toMatch(/cannot_target_self/)
+      expect(text).toMatch(/cannot_target_staff/)
+    })
+
+    it('searches e-mail only for callers who may read it', () => {
+      expect(text).toMatch(/can_email and u\.email ilike/)
+    })
+  })
+
+  describe('admin_access', () => {
+    const access = files.find((f) => f.includes('admin_access'))
+    const text = access ? sql(access).replace(/--.*$/gm, '') : ''
+
+    it('keeps the generated code out of the audit log', () => {
+      const audit = text.match(/staff_audit\([\s\S]*?\);/g) ?? []
+      expect(audit.length).toBeGreaterThan(0)
+      for (const call of audit) expect(call).not.toMatch(/new_code|raw/)
+    })
+  })
+
   for (const file of files) {
     describe(file, () => {
       // Comments are prose ("take them back from anon") and must not trip the grep.

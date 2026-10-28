@@ -4,6 +4,8 @@ import { requirePermission } from '@/lib/staff/context'
 import { readFlash } from '@/lib/staff/flash'
 import { DELETE_CONFIRMATION, getUser } from '@/lib/staff/users'
 import { Banner, buttonClass, buttonDangerClass, buttonOutlineClass, fieldClass, formatWhen, PageTitle } from '../../ui'
+import { listStaff } from '@/lib/staff/roles'
+import { setRole } from '../../role/actions'
 import { setFullAccess } from '../../dostep/actions'
 import { blockUser, deleteUser, unblockUser } from '../actions'
 
@@ -12,6 +14,8 @@ const OK_MESSAGES = {
   unblocked: 'Konto odblokowane.',
   access_granted: 'Pełny dostęp nadany. Użytkownik może dodawać przepisy.',
   access_revoked: 'Pełny dostęp odebrany.',
+  role_granted: 'Rola nadana.',
+  role_revoked: 'Rola odebrana.',
 } as const
 
 export default async function UserPage({
@@ -26,6 +30,8 @@ export default async function UserPage({
   const user = await getUser(staff.supabase, id)
   if (!user) notFound()
 
+  const canManageRoles = staff.permissions.has('roles.manage') && user.id !== staff.user.id
+  const roleCatalog = canManageRoles ? ((await listStaff(staff.supabase))?.roles ?? []) : []
   const canBlock = staff.permissions.has('users.block')
   const canDelete = staff.permissions.has('users.delete')
   // The database refuses these too; the panel just does not offer what cannot work.
@@ -88,6 +94,33 @@ export default async function UserPage({
               {user.fullAccess ? 'Odbierz pełny dostęp' : 'Nadaj pełny dostęp'}
             </button>
           </form>
+        </section>
+      )}
+
+      {canManageRoles && roleCatalog.length > 0 && (
+        <section aria-labelledby="roles-heading" className="mb-8 max-w-xl">
+          <h2 id="roles-heading" className="mb-2 text-xl font-semibold">
+            Rola w panelu
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {roleCatalog.map((role) => {
+              const has = user.roles.includes(role.name)
+              return (
+                <li key={role.name}>
+                  <form action={setRole} className="flex flex-wrap items-center gap-3">
+                    <input type="hidden" name="id" value={user.id} />
+                    <input type="hidden" name="role" value={role.name} />
+                    <input type="hidden" name="on" value={has ? 'false' : 'true'} />
+                    <input type="hidden" name="from" value="account" />
+                    <span className="min-w-28 font-semibold">{role.name}</span>
+                    <button type="submit" className={has ? buttonOutlineClass : buttonClass}>
+                      {has ? `Odbierz rolę ${role.name}` : `Nadaj rolę ${role.name}`}
+                    </button>
+                  </form>
+                </li>
+              )
+            })}
+          </ul>
         </section>
       )}
 
