@@ -197,7 +197,7 @@ const SCREENS: Screen[] = [
     name: 'cooking mode',
     path: recipePath,
     overlay: async (page) => {
-      await page.getByRole('button', { name: /tryb gotowania/i }).first().click()
+      await page.getByRole('button', { name: /zacznij gotować/i }).first().click()
       await expect(page.locator('dialog[open]')).toBeVisible()
     },
   },

@@ -207,7 +207,7 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions 
             >
               {authorInitial(recipe.author_name)}
             </span>
-            <span>
+            <span className="min-w-0 break-words">
               Dodane przez{' '}
               {authorHref ? (
                 <Link href={authorHref} className="font-bold text-action-text underline hover:text-action-hover">

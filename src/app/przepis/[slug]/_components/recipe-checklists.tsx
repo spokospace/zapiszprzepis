@@ -118,16 +118,16 @@ function IngredientRow({
           sits on top and the household measure below it, lighter and 16 px — the
           owner's "second line" treatment (#505). */}
       {alt ? (
-        <span className="flex max-w-[45%] flex-col items-end text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:items-start max-[359px]:pl-[46px] max-[359px]:text-left">
-          {amount && <b className={`text-scalable ${text}`}>{amount}</b>}{' '}
+        <span className="flex min-w-0 max-w-[45%] flex-col items-end [overflow-wrap:anywhere] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:items-start max-[359px]:pl-[46px] max-[359px]:text-left">
+          {amount && <b className={`text-scalable min-w-0 ${text}`}>{amount}</b>}{' '}
           {/* 16 px base so .text-scalable (which scales the parent em) grows from 16, not 19. */}
-          <span className="text-[16px]">
+          <span className="min-w-0 text-[16px]">
             <span className={`text-scalable ${altText}`}>{alt}</span>
           </span>
         </span>
       ) : (
         amount && (
-          <b className={`text-scalable max-w-[45%] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:pl-[46px] max-[359px]:text-left ${text}`}>
+          <b className={`text-scalable min-w-0 max-w-[45%] [overflow-wrap:anywhere] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:pl-[46px] max-[359px]:text-left ${text}`}>
             {amount}
           </b>
         )

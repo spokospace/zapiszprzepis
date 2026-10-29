@@ -1,19 +1,21 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /**
- * Placement of the list-position link and the breadcrumbs (#574). They sit in the recipe
- * header's text column, above the title, from lg. Before the fix they were a full-width
- * row above the whole header, which added roughly 104 px of vertical space before the
- * photo. Below lg the list bar stays hidden (C3); the phone list nav sits at the end of
- * the recipe. Measured from the laid-out DOM, not from class strings.
+ * Placement of the list-position link and the breadcrumbs (#574, then the 2026-10-28
+ * handoff). From lg they sit in one row above the recipe header: "← {lista} · N z M" on
+ * the left, "Przepisy › {Kategoria} › {Przepis}" on the right. The row is a single 44 px
+ * line, not the full-width block #574 removed. Below lg the list bar stays hidden (C3);
+ * the phone list nav sits at the end of the recipe. Measured from the laid-out DOM, not
+ * from class strings.
  *
  * Guest-only and read-only, like recipe-layout.spec.ts: it only reads the live page.
  * Run: pnpm test:reflow (project `layout`).
  */
 
-// The header starts right under <main>'s top padding (py-8 = 32 px). The old full-width
-// row put the header 104 px down. The floor leaves room for the padding and a small gap.
+// The phone header starts right under <main>'s top padding (py-8 = 32 px) with no row above it.
 const MAX_HEADER_OFFSET = 48
+// The row is min-h 44 px; a little slack for wrapping at the lg width.
+const MAX_LIST_ROW_HEIGHT = 56
 
 /** First live recipe reachable from a category, so the test runs against real content. */
 async function firstRecipePath(page: Page): Promise<string> {
@@ -42,52 +44,59 @@ async function openFirstRecipe(page: Page) {
   await page.waitForLoadState('networkidle')
 }
 
-/** Boxes of the header, the title and the breadcrumbs, read from the rendered page. */
+/** Boxes of the list-bar row, the header, and the title, read from the rendered page. */
 function measureListBar() {
   const main = document.querySelector('main')
   const header = main?.querySelector('header')
   const title = header?.querySelector('h1')
   if (!main || !header || !title) return { error: 'recipe header (main > header > h1) not found' }
-  // The breadcrumbs are the only "Przepisy" link in the header; from lg they are visible.
-  const crumbs = [...header.querySelectorAll('a')].find((a) => a.textContent?.trim() === 'Przepisy')
-  if (!crumbs) return { error: 'breadcrumbs („Przepisy”) not found in the recipe header' }
+  // The breadcrumbs are the nav with aria-label "Okruszki", a sibling of the header (from lg).
+  const crumbs = [...main.querySelectorAll('nav[aria-label="Okruszki"] a')].find((a) => a.textContent?.trim() === 'Przepisy')
+  if (!crumbs) return { error: 'breadcrumbs („Przepisy”) not found in <main>' }
+  const row = crumbs.closest('nav')?.parentElement
+  if (!row) return { error: 'list-bar row (breadcrumbs parent) not found' }
 
-  const mainBox = main.getBoundingClientRect()
+  const crumbsBox = crumbs.getBoundingClientRect()
+  const rowBox = row.getBoundingClientRect()
   const headerBox = header.getBoundingClientRect()
   const titleBox = title.getBoundingClientRect()
-  const crumbsBox = crumbs.getBoundingClientRect()
   return {
-    headerOffset: Math.round(headerBox.top - mainBox.top),
+    rowHeight: Math.round(rowBox.height),
+    rowAboveHeader: rowBox.bottom <= headerBox.top,
     crumbsAboveTitle: crumbsBox.bottom <= titleBox.top,
-    crumbsInHeaderColumn: crumbsBox.right <= headerBox.right && crumbsBox.left >= headerBox.left,
   }
 }
 
 test.describe('desktop (lg)', () => {
   test.use({ viewport: { width: 1280, height: 900 } })
 
-  test('the list bar and breadcrumbs sit above the title, not in a row over the header', async ({ page }) => {
+  test('the list bar and breadcrumbs sit in one row above the title', async ({ page }) => {
     await openFirstRecipe(page)
 
     const measured = await page.evaluate(measureListBar)
     expect(measured, 'error' in measured ? measured.error : undefined).not.toHaveProperty('error')
-    const { headerOffset, crumbsAboveTitle, crumbsInHeaderColumn } = measured as {
-      headerOffset: number
+    const { rowHeight, rowAboveHeader, crumbsAboveTitle } = measured as {
+      rowHeight: number
+      rowAboveHeader: boolean
       crumbsAboveTitle: boolean
-      crumbsInHeaderColumn: boolean
     }
 
-    expect(headerOffset, `the header starts ${headerOffset} px below <main>; the old row put it at ~104 px (need ≤ ${MAX_HEADER_OFFSET})`).toBeLessThanOrEqual(MAX_HEADER_OFFSET)
+    expect(rowHeight, `the list-bar row is ${rowHeight} px tall; it should stay one line (need ≤ ${MAX_LIST_ROW_HEIGHT})`).toBeLessThanOrEqual(MAX_LIST_ROW_HEIGHT)
+    expect(rowAboveHeader, 'the list-bar row should sit above the recipe header').toBe(true)
     expect(crumbsAboveTitle, 'the breadcrumbs should sit above the title').toBe(true)
-    expect(crumbsInHeaderColumn, 'the breadcrumbs should sit inside the header column').toBe(true)
   })
 
-  test('the photo sits flush with the top of <main>', async ({ page }) => {
+  test('the photo sits flush with the top of the recipe header', async ({ page }) => {
     await openFirstRecipe(page)
 
-    const photoOffset = await offsetFromMain(page, 'header img')
-    expect(photoOffset, 'recipe photo (main > header img) not found').not.toBeNull()
-    expect(photoOffset, `the photo starts ${photoOffset} px below <main>; it should sit at the top`).toBeLessThanOrEqual(1)
+    const photo = await page.evaluate(() => {
+      const header = document.querySelector('main header')
+      const img = header?.querySelector('img')
+      if (!header || !img) return null
+      return Math.round(img.getBoundingClientRect().top - header.getBoundingClientRect().top)
+    })
+    expect(photo, 'recipe photo (main header img) not found').not.toBeNull()
+    expect(photo, `the photo starts ${photo} px below the header top; it should sit flush with it`).toBeLessThanOrEqual(1)
   })
 })
 
