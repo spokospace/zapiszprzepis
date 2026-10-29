@@ -58,7 +58,7 @@ create table push_subscriptions (
   endpoint text not null unique,
   p256dh text not null,
   auth text not null,
-  user_id uuid references auth.users(id) on delete cascade,  -- null for guests
+  user_id uuid not null references auth.users(id) on delete cascade,  -- push is for signed-in users only
   created_at timestamptz not null default now(),
   last_seen_at timestamptz not null default now()
 );
@@ -79,7 +79,7 @@ create table timers (
 create index timers_subscription_status_idx on timers (subscription_id, status);
 ```
 
-- Sensitive data: `endpoint`, `p256dh` and `auth` are per-device push credentials. They are readable only by the server (service role); RLS denies anon and authenticated clients. Guests have `user_id` null; a signed-in user's subscription is linked on the next `POST`.
+- Sensitive data: `endpoint`, `p256dh` and `auth` are per-device push credentials. They are readable only by the server (service role); RLS denies anon and authenticated clients. Only signed-in users get a subscription; guests never register one.
 - Timer rows hold only the recipe title and slug (public data). No free text from the user.
 - Retention: `timers` rows with status `sent` or `cancelled` older than 7 days are deleted by a daily cron (added to the existing `triggers.crons` list in `wrangler.jsonc`).
 - Migration: one new migration file under `supabase/migrations/`. Applied through the Management API per project memory (`apply-prod-migrations-via-management-api`); the migration is idempotent.
@@ -88,7 +88,7 @@ create index timers_subscription_status_idx on timers (subscription_id, status);
 
 All routes live under `src/app/api/timers/`. Responses are JSON. Validation with the project's existing schema helper; unknown fields refused.
 
-- `POST /api/timers` — body `{ id, subscription: { endpoint, p256dh, auth }, endsAt, name, recipeSlug, recipeTitle, step, next, addMin }` → `201 { id, endsAt }`. Upserts the subscription by `endpoint`, inserts the timer, sends Inngest event `timer/started` with `{ timerId }`. `endsAt` must be in the future and at most 24 h ahead; otherwise `422`.
+- `POST /api/timers` — requires a signed-in session; a guest gets `401` and the timer stays in the browser only. Body `{ id, subscription: { endpoint, p256dh, auth }, endsAt, name, recipeSlug, recipeTitle, step, next, addMin }` → `201 { id, endsAt }`. Upserts the subscription by `endpoint` and `user_id`, inserts the timer, sends Inngest event `timer/started` with `{ timerId }`. `endsAt` must be in the future and at most 24 h ahead; otherwise `422`.
 - `PATCH /api/timers/:id` — body `{ action: 'pause' | 'resume' | 'extend', endsAt?, remainingMs?, addMin? }`:
   - `pause` → status stays `running`, the server cancels via Inngest event `timer/cancelled`; the client keeps `remaining`.
   - `resume` / `extend` → new `endsAt`; the server emits `timer/rescheduled` so the old sleep is cancelled and a new one starts.
@@ -96,7 +96,7 @@ All routes live under `src/app/api/timers/`. Responses are JSON. Validation with
 - `DELETE /api/timers/:id` — end or dismiss; sets status `cancelled`, emits `timer/cancelled`. Idempotent.
 - `POST /api/push/subscribe` — optional separate route for re-subscribing when the browser rotates the subscription; the same upsert logic as `POST /api/timers`.
 
-Authorization: timers are addressed by an unguessable UUID plus ownership by `subscription_id`. Browsers send the subscription identity in the body, not a cookie, so guests work. Signed-in users are linked by `user_id` only.
+Authorization: every route requires the signed-in session. Timers are addressed by an unguessable UUID and must also belong to the caller's `subscription_id`; a foreign id returns `404`.
 
 ## 📝 UI/UX
 
@@ -107,7 +107,7 @@ Source of truth for visuals is the handoff README and `ZASADY_PROJEKTU.md`. Summ
 - **Timer cards.** Fixed bottom-right, 340 px wide, `max-width: calc(100% - 32px)` on phones, stacked with 8 px gap, `role="region"` "Minutniki". Ended state uses `#c2410c` with `role="status"` "Czas minął: {name}".
 - **Menu.** A "Minutniki" section at the top of the panel, a count badge on the Menu button, a custom timer (1–180 min), and a notification status line (on / off / not asked yet).
 - **Keep screen on.** `role="switch"`, Screen Wake Lock API, re-acquired on `visibilitychange`; hidden when the API is unavailable.
-- **Consent.** Asked once, at the first timer start, and only when `PushManager` exists and `Notification.permission === 'default'`. The "Tak" button calls `Notification.requestPermission()` before any other `await` in the click handler. Esc or "Nie" records the refusal in `localStorage`; the timer still starts.
+- **Consent.** Shown only to signed-in users, asked once, at the first timer start, and only when `PushManager` exists and `Notification.permission === 'default'`. Guests see the in-page timer and a status line saying notifications are for signed-in users. The "Tak" button calls `Notification.requestPermission()` before any other `await` in the click handler. Esc or "Nie" records the refusal in `localStorage`; the timer still starts.
 - **Accessibility.** WCAG 2.2 AA per `ZASADY_PROJEKTU.md`: targets ≥ 48 px where the handoff says so (44 px minimum for inline controls, as in the handoff), focus `3px solid #1d4ed8`, announced end of timer, reduced-motion respected.
 
 ## 📝 Edge Cases & Failure Scenarios
@@ -121,8 +121,8 @@ Source of truth for visuals is the handoff README and `ZASADY_PROJEKTU.md`. Summ
 
 ## 📝 Risks & Impact Review
 - **Hard to reverse.** The `push_subscriptions` and `timers` tables and the public `/api/timers` routes become a contract once users have subscriptions. Keep the routes additive; no existing route changes.
-- **Third-party processing.** Inngest receives timer ids and `endsAt` (no subscription keys in event payloads; the function loads them from Supabase by id). Inngest payload retention follows its own policy; this must be stated in the privacy notice. ⚠ NEEDS HUMAN CONFIRMATION: the owner accepts Inngest as the delayed-sender for this data.
-- **Guest subscriptions.** Guests get push subscriptions tied only to a device. This stores a per-device endpoint, which is personal data under GDPR. ⚠ NEEDS HUMAN CONFIRMATION: the owner confirms that guest push subscriptions are acceptable without a consent record beyond the browser permission, or asks for an explicit consent field.
+- **Third-party processing.** Inngest receives timer ids and `endsAt` (no subscription keys in event payloads; the function loads them from Supabase by id). Inngest payload retention follows its own policy; this must be stated in the privacy notice. Owner agreed to Inngest as the delayed sender, tentatively; re-confirm before launch.
+- **Guest subscriptions.** Excluded by owner decision: push is for signed-in users only, so no per-device endpoint is stored for guests.
 - **Cost.** One sleeping Inngest run per active timer. At expected usage this is small; the owner should confirm against the Inngest plan before launch.
 - **Rollback.** Disable by removing the `POST` call from the client (timers then run in-page only). Tables can be left in place; the cron removes old rows.
 - **Who bears impact.** Readers on Android. Other readers see no change.
@@ -152,7 +152,7 @@ Source of truth for visuals is the handoff README and `ZASADY_PROJEKTU.md`. Summ
 9. Add routes `src/app/api/timers/route.ts` and `src/app/api/timers/[id]/route.ts` with validation; integration tests for create, pause/resume/extend, delete, foreign id (`404`), past `endsAt` (`422`).
 10. Add Inngest functions in `src/inngest/timers.ts`: `timer/started` → `step.sleepUntil(endsAt)` → re-read row → send if `running` and `ends_at` unchanged → mark `sent`; cancellation and reschedule events cancel the sleeping run. Register in the existing Inngest serve route. Tests: sent, cancelled before end, rescheduled, duplicate delivery.
 11. Update `public/sw.js`: `push` handler (`waitUntil(showNotification)`, suppression rules per the handoff), `notificationclick` handler (`add` → PATCH `extend`; `open` → focus or `openWindow` on `/przepis/{slug}#krok-{n}`). Test: `src/lib/sw.test.ts` extended.
-12. Add the consent dialog (`role="dialog"`, Esc = no, once only) and the subscription call (`pushManager.subscribe` in the same click handler). Test: dialog appears once; refusal persisted.
+12. Add the consent dialog (`role="dialog"`, Esc = no, once only, signed-in users only) and the subscription call (`pushManager.subscribe` in the same click handler). Test: dialog appears once; refusal persisted; guests never see it.
 
 ### Phase 3 — Hardening
 13. Add the daily retention cron to `wrangler.jsonc` `triggers.crons` and a handler that deletes old `timers` rows. Test: the handler's query selects only rows older than 7 days with terminal status.
@@ -164,8 +164,8 @@ Source of truth for visuals is the handoff README and `ZASADY_PROJEKTU.md`. Summ
 | # | Question | Chosen default | Rationale | Status |
 |---|----------|----------------|-----------|--------|
 | 1 | Delayed-delivery mechanism at second precision | Inngest `step.sleepUntil` | Already in the stack (`src/inngest/`); DO alarms would add a second state store | Reversible |
-| 2 | Should guests receive push? | Yes, per device, `user_id` null | Handoff says so; smallest surface | ⚠ NEEDS HUMAN CONFIRMATION (consent, see Risks) |
+| 2 | Should guests receive push? | No, signed-in users only (owner decision) | Avoids storing per-device endpoints for guests | Owner decided |
 | 3 | Route Inngest payloads contain subscription keys? | No, ids only | Limits what a third party holds | Reversible |
-| 4 | Is a server-side scheduler acceptable at all? | Yes, per the handoff's "propose a solution for the hosting" | The handoff explicitly asks for second-level delivery | ⚠ NEEDS HUMAN CONFIRMATION (Inngest as processor) |
+| 4 | Is a server-side scheduler acceptable at all? | Yes, Inngest as processor (owner, tentatively) | The handoff explicitly asks for second-level delivery | Re-confirm before launch |
 | 5 | iOS support | Out of scope | Handoff non-goal | Reversible |
 | 6 | Timer retention | 7 days, then deleted | Minimal stored history | Reversible |
