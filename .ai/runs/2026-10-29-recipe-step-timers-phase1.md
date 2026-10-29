@@ -41,9 +41,11 @@ Source doc: .ai/specs/2026-10-29-recipe-step-timers-push.md (Phase 1 only).
 
 ### Phase 1: In-page timers
 
-- [ ] 1.1 Duration parser `src/lib/step-duration.ts`
-- [ ] 1.2 Timer store `src/lib/timer-store.ts`
-- [ ] 1.3 Timer provider mounted in the root layout
-- [ ] 1.4 Duration button in the recipe step renderer
-- [ ] 1.5 Timer cards, Menu section and count badge
-- [ ] 1.6 Keep-screen-on switch
+- [x] 1.1 Duration parser `src/lib/step-duration.ts` — 4176462
+- [x] 1.2 Timer store `src/lib/timer-store.ts` — 7a0911d
+- [x] 1.3 Timer provider mounted in the root layout — afa50d0
+- [x] 1.4 Duration button in the recipe step renderer — a2e064d
+- [x] 1.5 Timer cards, Menu section and count badge — 0a1e6e4
+- [x] 1.6 Keep-screen-on switch — a2e064d
+
+Status: in-progress. Validation gate: typecheck, lint, unit tests green. `pnpm test:reflow` fails with 8 failures that are identical on origin/master (pre-existing, not caused by this change). Browser verification of the new UI is not done yet.
