@@ -37,7 +37,7 @@ describe('RecipeActions (handoff 2026-10-28)', () => {
 
   it('labels the cooking button without the old hint line', () => {
     const html = render()
-    expect(html).toContain('<span>Zacznij gotować</span>')
+    expect(html).toContain('<span class="min-w-0 [overflow-wrap:anywhere]">Zacznij gotować</span>')
     expect(html).not.toContain('Gotuj krok po kroku')
   })
 
@@ -57,7 +57,7 @@ describe('RecipeActions (handoff 2026-10-28)', () => {
 
   it('makes the two main buttons pills (handoff 2026-10-28: buttons 999 px)', () => {
     const html = render()
-    expect(html).toMatch(/<button[^>]*class="[^"]*rounded-pill bg-ink[^"]*"[^>]*><svg[^>]*>[\s\S]*?<span>Zacznij gotować<\/span>/)
+    expect(html).toMatch(/<button[^>]*class="[^"]*rounded-pill bg-ink[^"]*"[^>]*><svg[^>]*>[\s\S]*?<span class="min-w-0 \[overflow-wrap:anywhere\]">Zacznij gotować<\/span>/)
     expect(html).toContain('rounded-pill border-2 border-action')
   })
 

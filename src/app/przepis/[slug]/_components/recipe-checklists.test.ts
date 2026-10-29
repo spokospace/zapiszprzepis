@@ -118,15 +118,15 @@ describe('RecipeChecklists alternative measure (#505)', () => {
 
   it('renders the alt measure as a 16 px ink-soft line under the amount', () => {
     const html = renderAlt()
-    expect(html).toContain('<b class="text-scalable text-ink">150 g</b>')
-    expect(html).toContain('<span class="text-[16px]"><span class="text-scalable text-ink-soft">3/4 kostki</span></span>')
+    expect(html).toContain('<b class="text-scalable min-w-0 text-ink">150 g</b>')
+    expect(html).toContain('<span class="min-w-0 text-[16px]"><span class="text-scalable text-ink-soft">3/4 kostki</span></span>')
   })
 
   it('keeps an ingredient without an alt measure on a single plain amount line', () => {
     const html = renderAlt()
     // The no-alt row keeps the original <b> amount markup and adds no 16 px line.
     expect(html).toContain(
-      '<b class="text-scalable max-w-[45%] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:pl-[46px] max-[359px]:text-left text-ink">4</b>',
+      '<b class="text-scalable min-w-0 max-w-[45%] [overflow-wrap:anywhere] text-right max-[359px]:max-w-none max-[359px]:basis-full max-[359px]:pl-[46px] max-[359px]:text-left text-ink">4</b>',
     )
     const ingredients = html.match(/<section aria-labelledby="ingredients-heading"[\s\S]*?<\/section>/)?.[0] ?? ''
     expect((ingredients.match(/text-\[16px\]/g) ?? []).length).toBe(1)
@@ -149,8 +149,8 @@ describe('RecipeChecklists alternative measure (#505)', () => {
         servings: null,
       }),
     )
-    expect(html).toContain('<b class="text-scalable text-ink">180 ml</b>')
-    expect(html).toContain('<span class="text-[16px]"><span class="text-scalable text-ink-soft">ok. 3/4 szklanki</span></span>')
+    expect(html).toContain('<b class="text-scalable min-w-0 text-ink">180 ml</b>')
+    expect(html).toContain('<span class="min-w-0 text-[16px]"><span class="text-scalable text-ink-soft">ok. 3/4 szklanki</span></span>')
   })
 })
 
