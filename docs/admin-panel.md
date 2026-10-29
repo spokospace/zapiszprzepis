@@ -145,15 +145,16 @@ without MCP code. The tool and argument names are a contract: see `BACKWARD_COMP
 ### Limits
 
 16 KiB per request, one JSON-RPC message per request, results cut at 60,000 characters, 60 calls a minute per token
-and per client address (the `MCP_LIMIT` Workers rate-limit binding, which **must exist in Cloudflare before the code
-that declares it is deployed**, like `EXA_SEARCH_LIMIT`). The limiter fails open if the binding is missing, so check
-that it is there.
+and per client address (the `MCP_LIMIT` Workers rate-limit binding, declared in `wrangler.jsonc` with `namespace_id` `1003`). Nothing is
+created in Cloudflare: the id is only a number that must be unique in the account (the other Workers there use
+`1001` and `1002`; checked 2026-10-29). The limiter fails open if the binding is missing, so check that the
+deployed Worker lists it.
 
 ### Deploying Phase 4
 
-1. Create the `MCP_LIMIT` rate-limit namespace (id `1003`, 60 per 60 s) in Cloudflare.
+1. Nothing to create for `MCP_LIMIT`; keep `namespace_id` `1003` unused by any other Worker in the account.
 2. Apply `supabase/migrations/20261030100000_staff_tokens.sql` from the SQL editor (it needs the Phase 1 migrations).
-   It ends with an assertion call that fails the migration if a grant is wrong.
+   It ends with an assertion call that fails the migration if a grant is wrong. Applied to production 2026-10-29.
 3. Merge to `master`. Deployed before step 2 the endpoint answers 503 (it cannot check tokens) and the tokens page
    shows an error; nothing else changes.
 

@@ -38,6 +38,8 @@ describe('RecipeChecklists glossary placement', () => {
     renderToStaticMarkup(
       createElement(RecipeChecklists, {
         recipeId: 1,
+        recipeSlug: 'test',
+        recipeTitle: 'Test',
         ingredientGroups: [{ section: null, items: [{ name: 'pancetta', amount: '100', unit: 'g' }] }],
         steps: ['Podsmaż pancettę.'],
         servings: null,

@@ -47,7 +47,7 @@
     },
     // Staff MCP endpoint (src/lib/staff/mcp): 60 calls a minute per token, and the same
     // cap per client address before the token is even looked up (keys "token:<id>" and
-    // "ip:<address>"). Create the namespace in Cloudflare before merging, like the two above.
+    // "ip:<address>"). Nothing to create in Cloudflare: namespace_id only has to be unique in the account.
     {
       "name": "MCP_LIMIT",
       "namespace_id": "1003",

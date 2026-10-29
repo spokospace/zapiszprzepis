@@ -34,7 +34,7 @@ async function firstRecipePath(page: Page): Promise<string> {
 
 /**
  * The gaps around the recipe-page action row, read from the rendered boxes. The row is
- * the grid holding „Udostępnij przepis”, last in the header's text column; the content
+ * the block holding „Udostępnij przepis” (the `mt-6` action stack, since #595), last in the header's text column; the content
  * below is the ingredients/steps grid (`.recipe-print-grid`) and the block above is the
  * row's previous sibling (the description or the versions bar). Anchored on structure,
  * not on margin classes, and guarded so a moved row errors instead of measuring the
@@ -44,8 +44,8 @@ function measureActionRowGaps() {
   const content = document.querySelector('.recipe-print-grid')
   if (!content) return { error: 'recipe content grid (.recipe-print-grid) not found' }
   const share = [...document.querySelectorAll('header button')].find((b) => /Udostępnij/.test(b.textContent ?? ''))
-  const row = share?.closest('div.grid')
-  if (!row) return { error: 'no action row (a grid with „Udostępnij”) in the recipe header' }
+  const row = share?.closest('div.mt-6')
+  if (!row) return { error: 'no action row (a block with „Udostępnij”) in the recipe header' }
 
   const above = row.previousElementSibling
   const rowBox = row.getBoundingClientRect()

@@ -205,6 +205,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             follow the steps exactly as before. */}
         <RecipeChecklists
           recipeId={typedRecipe.id}
+          recipeSlug={typedRecipe.slug}
+          recipeTitle={typedRecipe.title}
           ingredientGroups={ingredientGroups}
           steps={steps}
           stepImages={stepImages}

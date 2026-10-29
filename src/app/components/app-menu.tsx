@@ -3,7 +3,9 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ALargeSmall, Bell, BookOpen, Heart, House, Lock, LogOut, Menu, Plus, Settings, X, type LucideIcon } from 'lucide-react'
+import { ALargeSmall, Bell, BookOpen, Heart, House, Lock, LogOut, Menu, Plus, Settings, Timer, X, type LucideIcon } from 'lucide-react'
+import { useTimers } from '@/app/components/timer-provider'
+import { MenuTimers } from '@/app/components/menu-timers'
 import { buttonClasses } from '@/app/components/ui/button'
 import { categoryDisplayLabel, CATEGORY_ICONS, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { categoryPath, NOTIFICATIONS_PATH } from '@/lib/routes'
@@ -132,6 +134,7 @@ export function AppMenu({
   const dialogRef = useRef<HTMLDialogElement>(null)
   const pathname = usePathname()
   const { mine, showAccountFooter, displayPrefs } = buildMenuModel({ isAuthenticated, summary })
+  const { runningCount } = useTimers()
 
   function close() {
     dialogRef.current?.close()
@@ -163,8 +166,19 @@ export function AppMenu({
           {notifications && (notifications.count > 0 || notifications.loadFailed) && (
             <NotificationDot className="absolute -top-1.5 -right-1.5" tone={notifications.loadFailed ? 'ink' : 'action'} />
           )}
+          {/* Running step timers (#611): a count next to the icon, orange with white text (WCAG AA). */}
+          {runningCount > 0 && (
+            <span
+              aria-hidden="true"
+              className="absolute -top-2 -right-4 inline-flex items-center gap-0.5 rounded-pill bg-[#c2410c] px-1.5 py-0.5 text-[13px] leading-none font-extrabold text-white"
+            >
+              <Timer className="h-3.5 w-3.5" />
+              {runningCount}
+            </span>
+          )}
         </span>
         Menu
+        {runningCount > 0 && <span className="sr-only">, działające minutniki: {runningCount}</span>}
         {notifications && notifications.count > 0 && <span className="sr-only">, nowe powiadomienia</span>}
         {notifications?.loadFailed && <span className="sr-only">, nie udało się sprawdzić powiadomień</span>}
       </button>
@@ -200,6 +214,7 @@ export function AppMenu({
           </div>
 
           <nav aria-label="Menu główne" className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pb-4">
+            <MenuTimers />
             {/* Style 1b: the start page is the first item for everyone. `replace` swaps the
                 history entry, so Back does not walk through the pages visited before. */}
             <Link
@@ -232,9 +247,9 @@ export function AppMenu({
             <div className="pt-4" />
             {mine ? (
               <section aria-labelledby="app-menu-mine" className="pb-4">
-                <h3 id="app-menu-mine" className={SECTION_HEADING}>
+                <p id="app-menu-mine" className={SECTION_HEADING}>
                   Twoje konto
-                </h3>
+                </p>
                 <ul>
                   {mine.map((entry) => (
                     <li key={entry.key}>
@@ -272,9 +287,9 @@ export function AppMenu({
             )}
 
             <section aria-labelledby="app-menu-categories" className="border-t-2 border-border-card pt-4">
-              <h3 id="app-menu-categories" className={SECTION_HEADING}>
+              <p id="app-menu-categories" className={SECTION_HEADING}>
                 Wszystkie przepisy według kategorii
-              </h3>
+              </p>
               {/* No mid-word break: one column below 360 px (like the home CategoryGrid),
                   two from there up; 16 px + tight spacing keep the longest name ("Ciasteczka")
                   on one line even in the 330 px panel. At a large system font a long name
