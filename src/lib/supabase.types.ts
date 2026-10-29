@@ -1174,6 +1174,7 @@ export type Database = {
         | "napoje"
         | "syropy"
         | "inne"
+        | "przetwory"
       recipe_share_status: "pending" | "completed" | "failed"
       recipe_source:
         | "facebook_text"
@@ -1372,6 +1373,7 @@ export const Constants = {
         "napoje",
         "syropy",
         "inne",
+        "przetwory",
       ],
       recipe_share_status: ["pending", "completed", "failed"],
       recipe_source: [

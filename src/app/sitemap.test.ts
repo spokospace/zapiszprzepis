@@ -33,7 +33,7 @@ describe('sitemap.xml', () => {
     for (const c of RECIPE_CATEGORIES) expect(all).toContain(`https://zapiszprzepis.pl/przepisy/${c.value}`)
     for (const p of LEGAL_PATHS) expect(all).toContain(`https://zapiszprzepis.pl${p}`)
 
-    // 1 home + 1 search + 12 categories + 3 legal + 2 recipes + 2 profiles
+    // 1 home + 1 search + 13 categories + 3 legal + 2 recipes + 2 profiles
     expect(entries).toHaveLength(2 + RECIPE_CATEGORIES.length + LEGAL_PATHS.length + 2 + 2)
 
     const sernik = entries.find((e) => e.url.endsWith('/przepis/sernik'))
@@ -48,7 +48,7 @@ describe('sitemap.xml', () => {
     expect(all).toContain('https://zapiszprzepis.pl/')
     expect(all.some((u) => u.includes('/przepis/'))).toBe(false)
     expect(all.some((u) => u.includes('/u/'))).toBe(false)
-    // home + search + 12 categories + 3 legal
+    // home + search + 13 categories + 3 legal
     expect(all).toHaveLength(2 + RECIPE_CATEGORIES.length + LEGAL_PATHS.length)
   })
 })

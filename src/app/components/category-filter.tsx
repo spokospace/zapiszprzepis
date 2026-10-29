@@ -14,6 +14,7 @@ import {
   Sandwich,
   Salad,
   GlassWater,
+  Amphora,
   FlaskRound,
   UtensilsCrossed,
 } from 'lucide-react'
@@ -32,6 +33,7 @@ const CATEGORY_ICONS: Record<RecipeCategory, LucideIcon> = {
   przekaski: Sandwich,
   salatki: Salad,
   napoje: GlassWater,
+  przetwory: Amphora,
   syropy: FlaskRound,
   inne: UtensilsCrossed,
 }
