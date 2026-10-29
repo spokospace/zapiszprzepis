@@ -25,7 +25,7 @@ export default function RecipeLoading() {
               <SkeletonBar className="mb-3 h-5 w-1/2" />
               {/* Category · time line (below lg) / times row (from lg). */}
               <SkeletonBar className="mb-3 h-5 w-2/3" />
-              {/* "Dodała/Dodał …" author line. */}
+              {/* "Dodane przez …" author line. */}
               <SkeletonBar className="h-4 w-40" />
             </div>
             {/* RecipeActions: two big cards, then the print / share pair; one full-width

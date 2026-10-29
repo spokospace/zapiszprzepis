@@ -115,3 +115,11 @@ export function isProfileOwner(userId: string | null | undefined, profileId: str
 export function profileRobots(total: number): { index: false } | undefined {
   return total === 0 ? { index: false } : undefined
 }
+
+/** Profile header count, neutral: others never learn the person's gender (#376). */
+export function profileCountLine(count: number): string {
+  return `Dodane przepisy: ${count}`
+}
+
+/** A profile without recipes, neutral like the count line (#376). */
+export const PROFILE_EMPTY_TEXT = 'Na tym profilu nie ma jeszcze przepisów.'

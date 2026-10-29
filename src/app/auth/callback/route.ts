@@ -42,6 +42,6 @@ export async function GET(request: NextRequest): Promise<Response> {
     return NextResponse.redirect(new URL(loginErrorPath(mapped, next), origin))
   }
 
-  // First login (no gender chosen yet) detours once through /witaj (E01-S12).
+  // Applies a guest heart's favorite intent; no gender detour (#376).
   return NextResponse.redirect(new URL(await postLoginPath(supabase, next), origin))
 }

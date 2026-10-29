@@ -50,8 +50,8 @@ export default function TermsPage() {
         <LegalList>
           <li>Konto jest osobiste. Nie udostępniaj innym dostępu do niego ani swojego kodu dostępu.</li>
           <li>
-            Płeć wybierasz raz, przy pierwszym logowaniu, i potem nie można jej zmienić w serwisie. Jeśli wybierzesz
-            źle, napisz do nas.
+            Płci nie musisz podawać — bez niej serwis pisze do Ciebie neutralnie. Podanej płci nie można potem
+            zmienić w serwisie. Jeśli wybierzesz źle, napisz do nas.
           </li>
           <li>
             Nazwa użytkownika w adresie Twojego profilu jest tworzona raz i się nie zmienia. Nazwę wyświetlaną i

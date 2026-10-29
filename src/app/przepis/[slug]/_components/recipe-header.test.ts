@@ -26,21 +26,20 @@ function render(extra: Partial<RecipeHeaderData>, props: Partial<Omit<Props, 're
   return renderToStaticMarkup(createElement(RecipeHeader, { recipe: { ...BASE, ...extra }, ...props }))
 }
 
-describe('RecipeHeader author line (E01-S23; handoff 2026-10-28)', () => {
-  it('"Dodała" for the feminine form, linking to the profile', () => {
-    const html = render({ author_gender_form: 'f' })
-    expect(html).toMatch(/Dodała <a[^>]*href="\/u\/ania"[^>]*>Ania K\.<\/a>/)
-    expect(html).not.toContain('Dodane przez')
+// #376: others never learn the author's gender, so the line is always neutral.
+describe('RecipeHeader author line (handoff 2026-10-28)', () => {
+  it('"Dodane przez" linking to the profile', () => {
+    expect(render({})).toMatch(/Dodane przez <a[^>]*href="\/u\/ania"[^>]*>Ania K\.<\/a>/)
   })
 
-  it('"Dodał" for the masculine form', () => {
-    expect(render({ author_gender_form: 'm' })).toMatch(/Dodał <a[^>]*href="\/u\/ania"/)
-  })
-
-  it.each([undefined, null, 'female', 'x'])('neutral "Dodane przez" for %p (column missing or unknown)', (form) => {
-    const html = render({ author_gender_form: form })
+  it.each(['f', 'm'])('stays neutral even if a row still carries the old form %p', (form) => {
+    const html = render({ author_gender_form: form } as Partial<RecipeHeaderData>)
     expect(html).toContain('Dodane przez <a')
     expect(html).not.toMatch(/Dodała|Dodał /)
+  })
+
+  it('plain text without a username', () => {
+    expect(render({ author_username: null })).toContain('Dodane przez <span class="font-bold text-ink">Ania K.</span>')
   })
 
   it('opens with the initial in a warm circle, hidden from screen readers', () => {

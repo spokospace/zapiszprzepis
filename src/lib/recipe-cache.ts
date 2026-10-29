@@ -15,8 +15,6 @@ export type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_finge
   /** Optional until the E01-S07 view migration is applied; the page degrades without them. */
   author_username?: string | null
   gallery_count?: number | null
-  /** 'f' | 'm' | null, optional until the E01-S23 migration; neutral wording without it. */
-  author_gender_form?: string | null
   /** Optional until the E01-S21 view migration (#296); the versions feature stays hidden without them. */
   dish?: string | null
   dish_accusative?: string | null

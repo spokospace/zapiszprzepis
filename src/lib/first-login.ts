@@ -1,12 +1,11 @@
-// First-login gender step (E01-S12). After any login, a user who has not yet
-// chosen a gender goes once to /witaj (screen 3b); everyone else goes to `next`.
+// The common exit of every login path, and the /witaj gender screen (E01-S12).
 //
-// Fails OPEN: if the read errors (e.g. the profiles_private migration is not
-// applied yet), login continues to `next` — this feature must never block
-// signing in.
+// Gender is optional (#376, owner decision 2026-10-28: neutral wording rather
+// than a pop-up question): no login is detoured to /witaj any more. The screen
+// itself still works when opened directly, and a stored gender still shapes the
+// wording a user sees about themselves.
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { applyFavoriteIntent } from './favorites'
-import { LEGAL_PATHS } from './routes'
 import { checkUser } from './supabase/user-check'
 
 export const WELCOME_PATH = '/witaj'
@@ -22,38 +21,14 @@ export function welcomePath(next: string, error?: string): string {
 }
 
 /**
- * Pure decision: `gender` is the stored value (null = not chosen yet).
- */
-export function firstLoginTarget(gender: string | null, next: string): string {
-  if (gender) return next
-  // Never wrap /witaj in itself.
-  if (next === WELCOME_PATH || next.startsWith(`${WELCOME_PATH}?`)) return next
-  return welcomePath(next)
-}
-
-/**
- * Where to send a freshly signed-in user: /witaj when gender is unset, else `next`.
- * The one exit of every login path (password, email link, OAuth), so it also
- * applies a guest heart's favorite intent carried in `next` (E01-S06).
+ * Where to send a freshly signed-in user: `next`, after applying a guest heart's
+ * favorite intent carried in it (E01-S06). Never detours to /witaj (#376).
  */
 export async function postLoginPath(supabase: SupabaseClient, requestedNext: string): Promise<string> {
-  // An undecided check fails open like the rest of this step: continue to `next`.
+  // An undecided check fails open: continue to `next`.
   const { user } = await checkUser(supabase, 'postLoginPath')
   if (!user) return requestedNext
-
-  const next = await applyFavoriteIntent(supabase, user.id, requestedNext)
-
-  const { data, error } = await supabase
-    .from('profiles_private')
-    .select('gender')
-    .eq('id', user.id)
-    .maybeSingle<{ gender: string | null }>()
-
-  if (error) {
-    console.error('first-login gender read failed', { code: error.code })
-    return next
-  }
-  return firstLoginTarget(data?.gender ?? null, next)
+  return applyFavoriteIntent(supabase, user.id, requestedNext)
 }
 
 /** Narrow an untrusted form value to a gender; null otherwise. */
@@ -66,31 +41,4 @@ export function genderSaveRedirect(result: unknown, next: string): string {
   if (result === 'ok' || result === 'already_set') return next
   if (result === 'invalid') return welcomePath(next, 'invalid')
   return welcomePath(next, 'unknown')
-}
-
-/**
- * Accounts from before screen 3b (E01-S12) never chose a gender and never log in
- * again, so the post-login detour never reaches them and their recipes say the
- * neutral „Dodane przez”. The middleware sends such a signed-in user once to
- * /witaj on their next page view; this cookie (holding their user id) records
- * that the choice is known, so the check costs one read per account and browser.
- */
-export const GENDER_KNOWN_COOKIE = 'zp-gender'
-
-// Where the 3b detour never applies: the screen itself, sign-in and password
-// flows, API routes, the share target and the legal pages.
-const GENDER_CHECK_EXEMPT = /^\/(witaj|auth|api|login|signup|forgot-password|reset-password)(\/|$)/
-
-/** Pure: should the middleware look up this signed-in user's gender on this request? */
-export function shouldCheckGender(req: {
-  method: string
-  pathname: string
-  prefetch: boolean
-  userId: string
-  knownCookie: string | undefined
-}): boolean {
-  if (req.method !== 'GET' || req.prefetch) return false
-  if (req.knownCookie === req.userId) return false
-  if (req.pathname === '/share' || LEGAL_PATHS.includes(req.pathname)) return false
-  return !GENDER_CHECK_EXEMPT.test(req.pathname)
 }

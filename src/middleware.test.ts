@@ -113,11 +113,11 @@ describe('middleware — dev-only QA sign-in /api/dev/login', () => {
   })
 })
 
-describe('middleware — one-time gender choice for accounts from before screen 3b', () => {
-  /** A signed-in session whose profiles_private read returns `result`. */
-  function signedIn(result: { data: { gender: string | null } | null; error: unknown }) {
-    const maybeSingle = vi.fn(async () => result)
-    const supabase = { from: vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle }) }) })) }
+// #376: gender is optional — no signed-in user is detoured to /witaj, and the
+// cookie that remembered the old check is expired.
+describe('middleware — no gender detour', () => {
+  function signedIn() {
+    const supabase = { from: vi.fn() }
     vi.mocked(updateSession).mockResolvedValueOnce({
       response: NextResponse.next(),
       user: { id: 'u1' },
@@ -126,41 +126,25 @@ describe('middleware — one-time gender choice for accounts from before screen 
     return supabase
   }
 
-  it('sends a signed-in user without a gender to /witaj, coming back to the page', async () => {
-    signedIn({ data: null, error: null })
+  it('lets a signed-in user without a gender through, without reading profiles_private', async () => {
+    const supabase = signedIn()
     const res = await middleware(get('/przepis/sernik?from=szukaj'))
-    expect(res.status).toBe(307)
-    expect(res.headers.get('location')).toBe('http://localhost/witaj?next=%2Fprzepis%2Fsernik%3Ffrom%3Dszukaj')
-  })
-
-  it('remembers a known gender in a cookie and lets the page through', async () => {
-    signedIn({ data: { gender: 'female' }, error: null })
-    const res = await middleware(get('/'))
     expect(res.headers.get('location')).toBeNull()
-    expect(res.cookies.get('zp-gender')?.value).toBe('u1')
+    expect(supabase.from).not.toHaveBeenCalled()
   })
 
-  it('skips the read once the cookie names this user', async () => {
-    const supabase = signedIn({ data: null, error: null })
+  it('expires a lingering zp-gender cookie', async () => {
+    signedIn()
     const req = get('/')
     req.cookies.set('zp-gender', 'u1')
     const res = await middleware(req)
-    expect(res.headers.get('location')).toBeNull()
-    expect(supabase.from).not.toHaveBeenCalled()
+    expect(res.cookies.get('zp-gender')).toMatchObject({ value: '', maxAge: 0 })
   })
 
-  it('fails open when the read errors — no redirect, no cookie', async () => {
-    signedIn({ data: null, error: { code: '42P01' } })
+  it('sets no zp-gender cookie when there is none', async () => {
+    signedIn()
     const res = await middleware(get('/'))
-    expect(res.headers.get('location')).toBeNull()
     expect(res.cookies.get('zp-gender')).toBeUndefined()
-  })
-
-  it('never detours from /witaj itself', async () => {
-    const supabase = signedIn({ data: null, error: null })
-    const res = await middleware(get('/witaj?next=%2F'))
-    expect(res.headers.get('location')).toBeNull()
-    expect(supabase.from).not.toHaveBeenCalled()
   })
 })
 

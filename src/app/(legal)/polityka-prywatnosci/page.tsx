@@ -48,8 +48,8 @@ export default function PrivacyPolicyPage() {
           </li>
           <li>
             <strong>Dane prywatne.</strong> Imię do powitania, jeśli wpiszesz je w Ustawieniach (bez niego witamy Cię
-            nazwą, która się wyświetla), oraz płeć, którą wybierasz raz przy pierwszym logowaniu — po to, żeby zwracać
-            się do Ciebie w poprawnej formie (np. „dodałaś” albo „dodałeś”).
+            nazwą, która się wyświetla), oraz płeć, jeśli ją podasz — po to, żeby zwracać się do Ciebie w poprawnej
+            formie (np. „dodałaś” albo „dodałeś”). Płci nie musisz podawać; bez niej piszemy do Ciebie neutralnie.
           </li>
           <li>
             <strong>Twoja aktywność w serwisie.</strong> Przepisy, które dodajesz, i linki, które przysyłasz do
@@ -79,7 +79,8 @@ export default function PrivacyPolicyPage() {
           </li>
           <li>
             <strong>Nigdy nie pokazujemy innym:</strong> Twojego adresu e-mail, ulubionych przepisów, imienia
-            z powitania ani płci. Płeć służy tylko temu, jak serwis zwraca się do Ciebie.
+            z powitania ani płci. Płeć służy tylko temu, jak serwis zwraca się do Ciebie — przy Twoich przepisach
+            i na Twoim profilu zawsze piszemy neutralnie („Dodane przez …”).
           </li>
         </LegalList>
       </LegalSection>

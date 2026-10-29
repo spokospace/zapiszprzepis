@@ -28,6 +28,27 @@ describe('gender privacy in migrations', () => {
     expect(view).not.toMatch(/first_name|gender_set_at/)
   })
 
+  // #376: the policy promises others never see a user's gender, and with two
+  // genders the f/m form is the gender. The latest view is gender-blind.
+  it('the latest public_recipes view reads nothing about gender', () => {
+    const defining = files.filter((f) => /create or replace view public\.public_recipes/i.test(sql(f))).sort()
+    const latest = defining.at(-1)!
+    expect(latest).toBe('20261028160000_public_author_gender_neutral.sql')
+    const m = sql(latest)
+    const view = m.slice(m.indexOf('create or replace view public.public_recipes'), m.indexOf('comment on view'))
+    expect(view).toMatch(/null::text as author_gender_form/)
+    expect(view).not.toMatch(/profiles_private|gender\b(?! as)|\bpp\./)
+  })
+
+  it('guests and users can no longer call profile_gender_form', () => {
+    const m = sql('20261028160000_public_author_gender_neutral.sql')
+    expect(m).toMatch(/revoke all on function public\.profile_gender_form\(text\) from public, anon, authenticated;/)
+    const later = files.filter((f) => f > '20261028160000_public_author_gender_neutral.sql')
+    for (const f of later) {
+      expect(sql(f), f).not.toMatch(/grant[^;]*profile_gender_form/i)
+    }
+  })
+
   it('profile_gender_form returns only the form', () => {
     const m = sql('20261017210000_author_gender_form.sql')
     const fn = m.slice(m.indexOf('create or replace function public.profile_gender_form'))
