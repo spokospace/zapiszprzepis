@@ -229,25 +229,25 @@ begin
   select count(*) into n from public.admin_list_deleted_recipes_as(mod_id) where recipe_id = r1;
   if n <> 1 then raise exception 'FAIL 9a: the deleted list does not show the recipe'; end if;
   begin
-    perform public.admin_restore_recipe_as(plain_id, r1);
-    raise exception 'FAIL 9b: a plain account restored a recipe';
+    perform public.admin_restore_recipe_as(mod_id, r1);
+    raise exception 'FAIL 9b: a moderator restored a recipe (admin only)';
   exception when others then
     if sqlerrm <> 'forbidden' then raise; end if;
   end;
   insert into public.recipes (user_id, title, slug, source_type, source_url, category, tags)
   values (owner_id, 'Squatter', 'zupa-pomidorowa-mod', 'web_blog', 'https://mod.invalid/squat', 'zupy', '{}');
   begin
-    perform public.admin_restore_recipe_as(mod_id, r1);
+    perform public.admin_restore_recipe_as(admin_id, r1);
     raise exception 'FAIL 9c: restore over a taken slug succeeded';
   exception when others then
     if sqlerrm <> 'slug_taken' then raise; end if;
   end;
   delete from public.recipes where slug = 'zupa-pomidorowa-mod';
-  if public.admin_restore_recipe_as(mod_id, r1) <> 'zupa-pomidorowa-mod' then raise exception 'FAIL 9d: restore returned the wrong slug'; end if;
+  if public.admin_restore_recipe_as(admin_id, r1) <> 'zupa-pomidorowa-mod' then raise exception 'FAIL 9d: restore returned the wrong slug'; end if;
   select count(*) into n from public.recipes where id = r1 and title = 'Zupa pomidorowa' and source_url = 'https://mod.invalid/1';
   if n <> 1 then raise exception 'FAIL 9e: the restored row differs'; end if;
   begin
-    perform public.admin_restore_recipe_as(mod_id, r1);
+    perform public.admin_restore_recipe_as(admin_id, r1);
     raise exception 'FAIL 9f: a second restore succeeded';
   exception when others then
     if sqlerrm <> 'not_found' then raise; end if;

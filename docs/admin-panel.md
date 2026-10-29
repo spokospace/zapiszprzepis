@@ -64,8 +64,8 @@ Baseline before the panel: 2320 KiB gzipped (see the script header for the figur
 
 ## Phase 2 — recipe moderation (`/admin/przepisy`)
 
-Permissions are the ones Phase 1 already seeded: `recipes.read` opens the list, `recipes.hide`,
-`recipes.delete`, `recipes.merge` and `recipes.taxonomy` gate the buttons (admin and moderator hold all of them).
+Permissions are the ones Phase 1 seeded (plus `recipes.restore`, admin only, seeded by Phase 2): `recipes.read` opens the list, `recipes.hide`,
+`recipes.delete`, `recipes.merge` and `recipes.taxonomy` gate the buttons (admin holds all of them; a moderator holds all but `recipes.restore`).
 
 ### Deploying Phase 2 (after Phase 1 is applied)
 
@@ -91,8 +91,8 @@ Regenerate `src/lib/supabase.types.ts` afterwards; Phase 2 calls the new functio
   URL; staff see the recipe with a „Ukryty” banner. The „mine” and „favorites” search scopes omit hidden recipes.
 - **Delete** archives the whole row first and removes the favorites with it; **restore** (list page, „Usunięte przez
   zespół”) brings back the row under the same id and slug but **not** the favorites. A redirect target must be a
-  visible recipe; without one the old URL answers 404. Restore uses the `recipes.delete` permission (the spec says
-  „restorable by an admin”; moderators hold `recipes.delete`, so they can restore too).
+  visible recipe; without one the old URL answers 404. Restore needs its own permission, `recipes.restore`, seeded for
+  admin only (migration 2); moderators can delete but not restore.
 - **Merge** needs a visible canonical recipe; losers' URLs redirect to it. **Unmerge** is *not*
   `restore_recipe_merge`: that function refuses to run while the global unique indexes on the source link exist
   (and they do). `admin_unmerge_as` undoes the same log, and a restored duplicate comes back **without its source

@@ -46,7 +46,7 @@ describe('recipe moderation — the permission gate', () => {
     ['hideRecipe', hideRecipe, 'recipes.hide'],
     ['unhideRecipe', unhideRecipe, 'recipes.hide'],
     ['deleteRecipe', deleteRecipe, 'recipes.delete'],
-    ['restoreRecipe', restoreRecipe, 'recipes.delete'],
+    ['restoreRecipe', restoreRecipe, 'recipes.restore'],
     ['mergeRecipes', mergeRecipes, 'recipes.merge'],
     ['unmergeRecipes', unmergeRecipes, 'recipes.merge'],
     ['setTaxonomy', setTaxonomy, 'recipes.taxonomy'],

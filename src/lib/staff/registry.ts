@@ -53,7 +53,7 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
       { name: 'hide', label: 'Ukryj przepis', permission: 'recipes.hide', destructive: false },
       { name: 'unhide', label: 'Odkryj przepis', permission: 'recipes.hide', destructive: false },
       { name: 'delete', label: 'Usuń przepis', permission: 'recipes.delete', destructive: true },
-      { name: 'restore', label: 'Przywróć przepis', permission: 'recipes.delete', destructive: false },
+      { name: 'restore', label: 'Przywróć przepis', permission: 'recipes.restore', destructive: false },
       { name: 'merge', label: 'Scal duplikaty', permission: 'recipes.merge', destructive: true },
       { name: 'unmerge', label: 'Cofnij scalenie', permission: 'recipes.merge', destructive: true },
       { name: 'set_taxonomy', label: 'Zmień kategorię i tagi', permission: 'recipes.taxonomy', destructive: false },

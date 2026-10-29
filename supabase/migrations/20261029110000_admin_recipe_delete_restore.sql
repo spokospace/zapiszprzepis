@@ -18,6 +18,9 @@
 -- The redirect lookup (findMergedRecipeSlug) reads this table with the service key and
 -- must never resolve to a hidden recipe; that lives in the app (src/lib/merged-recipe-redirect.ts).
 --
+-- Restore needs its own permission, recipes.restore, seeded for admin only (spec Q7: "restorable
+-- by an admin"); delete stays with recipes.delete, which moderators hold too.
+--
 -- Requires 20261029100000. Applied only with the owner's explicit go (local development
 -- points at the production database).
 --
@@ -46,6 +49,11 @@ comment on table public.recipes_deleted_by_staff is
 
 alter table public.recipes_deleted_by_staff enable row level security;
 revoke all on public.recipes_deleted_by_staff from anon, authenticated;
+
+-- ── Permission ──────────────────────────────────────────────────────────────
+
+insert into public.staff_role_permissions (role, permission) values ('admin', 'recipes.restore')
+on conflict do nothing;
 
 -- ── Row type ────────────────────────────────────────────────────────────────
 
@@ -154,7 +162,7 @@ declare
   archived public.recipes_deleted_by_staff%rowtype;
   restored public.recipes%rowtype;
 begin
-  if not public.staff_can(p_actor, 'recipes.delete') then
+  if not public.staff_can(p_actor, 'recipes.restore') then
     raise exception 'forbidden' using errcode = '42501';
   end if;
   select * into archived

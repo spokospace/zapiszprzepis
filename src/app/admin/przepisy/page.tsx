@@ -26,7 +26,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
     listRecipes(staff.supabase, { query, filter, after: parseRecipesCursor(params.after, params.afterId) }),
     listDeletedRecipes(staff.supabase),
   ])
-  const canRestore = staff.permissions.has('recipes.delete')
+  const canRestore = staff.permissions.has('recipes.restore')
 
   const nextHref = page?.next
     ? `/admin/przepisy?${new URLSearchParams({

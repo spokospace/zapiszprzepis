@@ -82,7 +82,7 @@ export async function deleteRecipe(formData: FormData): Promise<void> {
 
 /** „Przywróć” on the deleted list: the row, its id and slug come back; the lost favorites do not. */
 export async function restoreRecipe(formData: FormData): Promise<void> {
-  const staff = await requirePermission('recipes.delete')
+  const staff = await requirePermission('recipes.restore')
   const id = parseRecipeId(formData.get('id'))
   if (id === null) redirect(flashPath(LIST, { error: 'invalid_input' }))
 
