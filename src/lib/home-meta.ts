@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 
 /**
  * The homepage title and description (the SEO copy from #471) and the social
@@ -28,6 +29,7 @@ export function homeMetadata(siteUrl: string): Metadata {
       description: HOME_DESCRIPTION,
       type: 'website',
       url: siteUrl,
+      ...OG_SITE,
       images: [{ url: ogImage, width: 1200, height: 630, alt: HOME_TITLE }],
     },
     twitter: {
@@ -36,5 +38,20 @@ export function homeMetadata(siteUrl: string): Metadata {
       description: HOME_DESCRIPTION,
       images: [ogImage],
     },
+  }
+}
+
+/**
+ * schema.org/WebSite for the homepage: it is where Google reads the site name it
+ * shows above a result. No SearchAction: Google retired the sitelinks search box.
+ */
+export function homeWebSiteJsonLd(siteUrl: string): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: `${siteUrl}/`,
+    description: HOME_DESCRIPTION,
+    inLanguage: 'pl-PL',
   }
 }
