@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getSiteUrl } from '@/lib/site-url'
 import { getInviteCode } from '@/lib/env'
+import { isOpenRegistration } from '@/lib/registration'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -12,7 +13,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  * magic link that is allowed to create the user (`shouldCreateUser: true`);
  * clicking it provisions the account. The invite code is the only thing that
  * lets a brand-new email create an account — the /login magic-link path uses
- * `shouldCreateUser: false` so it can't be used to bypass this gate.
+ * `shouldCreateUser: false` so it can't be used to bypass this gate. With
+ * OPEN_REGISTRATION=true the code check is skipped (temporary test window).
  */
 export async function signUp(formData: FormData): Promise<void> {
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
@@ -23,7 +25,7 @@ export async function signUp(formData: FormData): Promise<void> {
     redirect(`/signup?error=invalid_email&email=${encodedEmail}`)
   }
 
-  if (inviteCode !== getInviteCode()) {
+  if (!isOpenRegistration() && inviteCode !== getInviteCode()) {
     redirect(`/signup?error=invalid_code&email=${encodedEmail}`)
   }
 

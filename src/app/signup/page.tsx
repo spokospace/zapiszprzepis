@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { SignUpForm } from './signup-form'
 import { LegalLinks } from '@/app/components/legal-page'
 import { BrandLogo } from '@/app/components/brand-logo'
+import { isOpenRegistration } from '@/lib/registration'
 
 export const metadata: Metadata = { title: 'Załóż konto · Zapisz Przepis' }
 
@@ -13,13 +14,14 @@ type SearchParams = Promise<{
   sent?: string
 }>
 
-/** Email sign-up with an invite code, laid out like screen 3a (header "← Wróć", logo, H1). */
+/** Email sign-up, with an invite code unless OPEN_REGISTRATION is set. Laid out like screen 3a (header "← Wróć", logo, H1). */
 export default async function SignUpPage({
   searchParams,
 }: {
   searchParams: SearchParams
 }) {
   const { error, email, sent } = await searchParams
+  const inviteRequired = !isOpenRegistration()
 
   return (
     <div className="flex flex-1 flex-col">
@@ -37,9 +39,11 @@ export default async function SignUpPage({
           <BrandLogo />
           <h1 className="text-[30px] leading-tight font-bold text-ink">Załóż konto</h1>
           <p className="text-[18px] leading-normal text-ink-soft">
-            Wpisz swój email i kod zaproszenia. Wyślemy link, który dokończy rejestrację.
+            {inviteRequired
+              ? 'Wpisz swój email i kod zaproszenia. Wyślemy link, który dokończy rejestrację.'
+              : 'Wpisz swój email. Wyślemy link, który dokończy rejestrację.'}
           </p>
-          <SignUpForm error={error} email={email} sent={sent} />
+          <SignUpForm error={error} email={email} sent={sent} inviteRequired={inviteRequired} />
           <LegalLinks className="mt-auto pt-4" />
         </div>
       </main>
