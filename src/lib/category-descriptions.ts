@@ -30,6 +30,7 @@ const CATEGORY_TITLES: Record<RecipeCategory, string> = {
   przekaski: 'Przekąski — przepisy na małe co nieco',
   salatki: 'Sałatki — przepisy lekkie i sycące',
   napoje: 'Napoje — przepisy na koktajle i lemoniady',
+  przetwory: 'Przetwory — przepisy na dżemy, kiszonki i zimowe zapasy',
   syropy: 'Syropy i napary — domowe przepisy',
   inne: 'Inne przepisy z internetu',
 }

@@ -1,4 +1,5 @@
 import {
+  Amphora,
   Cake,
   CakeSlice,
   Coffee,
@@ -72,6 +73,7 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'przekaski', label: 'Przekąski' },
   { value: 'salatki', label: 'Sałatki' },
   { value: 'napoje', label: 'Napoje' },
+  { value: 'przetwory', label: 'Przetwory' },
   { value: 'syropy', label: 'Syropy i napary' },
   { value: 'inne', label: 'Inne' },
 ]
@@ -92,6 +94,7 @@ export const CATEGORY_ICONS: Record<RecipeCategory, LucideIcon> = {
   przekaski: Sandwich,
   salatki: Salad,
   napoje: GlassWater,
+  przetwory: Amphora,
   syropy: CupSoda,
   inne: UtensilsCrossed,
 }
