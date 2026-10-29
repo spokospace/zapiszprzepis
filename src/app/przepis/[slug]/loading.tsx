@@ -1,64 +1,134 @@
+import type { ReactNode } from 'react'
 import { PageContainer } from '@/app/components/page-container'
 import { LoadingStatus, SkeletonBar } from '@/app/components/recipe-card-skeleton'
-import { RECIPE_SPLIT } from './_components/recipe-split'
+import {
+  RECIPE_CHECKLISTS_TOP,
+  RECIPE_COVER_FRAME,
+  RECIPE_HEADER_GRID,
+  RECIPE_MAIN,
+  RECIPE_SPLIT,
+  RECIPE_TOP_ROW,
+} from './_components/recipe-split'
 
 /**
  * A recipe while its page renders (#227): the cover, title, meta lines, the action
- * cards and the ingredients/steps columns, without data. The shape mirrors page.tsx so
- * the real content lands where the placeholders were, with no reflow: the same
- * full-width container and, from lg, the same 1fr | 1.6fr split for the header (photo |
- * text with the action cards) and the checklists (ingredients panel | steps).
+ * buttons and the ingredients/steps columns, without data. It is built from the same
+ * layout strings as page.tsx (recipe-split.ts: the <main> padding, the row above the
+ * hero, the header grid, the cover frame, the checklists' top rule and the split), so
+ * the columns, gaps and offsets cannot drift from the page (#637). The text column
+ * follows the real blocks in order with the heights they have from lg, because the
+ * header is as tall as that column: a title, the subtitle, the author line, a
+ * three-line description, the four-item time strip and the buttons. The "other
+ * versions" box is not drawn, because most recipes have none.
+ * e2e/recipe-skeleton.spec.ts measures this against the real page.
  */
+
+/** One text line of a given line-box height, with the bar centred in it. */
+function Line({ box, children }: { box: string; children: ReactNode }) {
+  return <div className={`flex items-center ${box}`}>{children}</div>
+}
+
+/** Heading of a checklist block: the 24 px heading's 36 px line plus its 12 px margin. */
+function HeadingBar({ className }: { className: string }) {
+  return (
+    <Line box="mb-3 h-9">
+      <SkeletonBar className={className} />
+    </Line>
+  )
+}
+
 export default function RecipeLoading() {
   return (
-    <main className="min-h-screen bg-white py-6 sm:py-8">
+    <main className={RECIPE_MAIN}>
       <PageContainer>
         <LoadingStatus>Ładowanie przepisu…</LoadingStatus>
         <div aria-hidden="true" className="motion-safe:animate-pulse">
-          {/* RecipeHeader: photo | text column from lg; single column below. */}
-          <header className={`mb-8 ${RECIPE_SPLIT} xl:grid-rows-[auto_1fr]`}>
-            <div className="mb-5 aspect-[4/3] w-full rounded-tile bg-gray-100 lg:mb-0 xl:row-span-2" />
-            <div>
-              {/* 32 px title, 44 px from lg. */}
-              <SkeletonBar className="mb-3 h-9 w-3/4 lg:h-12" />
-              {/* Description / subtitle. */}
-              <SkeletonBar className="mb-3 h-5 w-1/2" />
-              {/* Category · time line (below lg) / times row (from lg). */}
-              <SkeletonBar className="mb-3 h-5 w-2/3" />
-              {/* "Dodane przez …" author line. */}
-              <SkeletonBar className="h-4 w-40" />
+          {/* The row above the hero, from lg: list position left, breadcrumbs right. */}
+          <div className={RECIPE_TOP_ROW}>
+            <SkeletonBar className="hidden h-5 w-40 lg:block" />
+            <SkeletonBar className="ml-auto hidden h-5 w-64 lg:block" />
+          </div>
+
+          <header className={RECIPE_HEADER_GRID}>
+            {/* The photo: 4:3, bleeding to the edges below lg like the real cover. */}
+            <div className={RECIPE_COVER_FRAME}>
+              <div className="aspect-[4/3] w-full bg-gray-100" />
             </div>
-            {/* RecipeActions: two big cards, then the print / share pair; one full-width
-                row of four between lg and xl, 2 × 2 under the text from xl. */}
-            <div className="mt-6 grid grid-cols-2 gap-3 lg:col-span-2 lg:grid-cols-4 lg:gap-4 xl:col-span-1 xl:col-start-2 xl:grid-cols-2">
-              <SkeletonBar className="col-span-2 h-[76px] rounded-xl lg:col-span-1" />
-              <SkeletonBar className="col-span-2 h-[76px] rounded-xl lg:col-span-1" />
-              <SkeletonBar className="h-16 rounded-xl lg:max-xl:h-[76px]" />
-              <SkeletonBar className="h-16 rounded-xl lg:max-xl:h-[76px]" />
+
+            <div>
+              {/* Title: 32 px (a 37 px line), 48 px from lg (a 50 px line). */}
+              <Line box="mb-2 h-[37px] lg:h-[50px]">
+                <SkeletonBar className="h-8 w-3/4 lg:h-10" />
+              </Line>
+              {/* Subtitle: a 29 px line at every width. */}
+              <Line box="mb-3 h-[29px]">
+                <SkeletonBar className="h-5 w-1/2" />
+              </Line>
+              {/* "Dodane przez …": the initial's circle and the line. */}
+              <div className="mt-4 flex h-8 items-center gap-2">
+                <SkeletonBar className="h-8 w-8 shrink-0 rounded-pill" />
+                <SkeletonBar className="h-4 w-40" />
+              </div>
+              {/* Description: three lines of 31 px. */}
+              <div className="mt-4">
+                {[0, 1, 2].map((i) => (
+                  <Line key={i} box="h-[31px]">
+                    <SkeletonBar className={`h-4 ${i === 2 ? 'w-3/5' : 'w-full'}`} />
+                  </Line>
+                ))}
+              </div>
+              {/* The time strip: the same auto-fit grid, 54 px items. */}
+              <div className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(165px,1fr))] gap-x-5 gap-y-4">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="flex h-[54px] items-center gap-3">
+                    <SkeletonBar className="h-11 w-11 shrink-0 rounded-pill" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <SkeletonBar className="h-4 w-20" />
+                      <SkeletonBar className="h-5 w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* The actions: "Zacznij gotować" and "Zapisz", then print / share. */}
+              <div className="mt-6 flex flex-col gap-3">
+                {/* Stacked below 480 px, side by side from there: the flex shares apply to the
+                    row only, because in a column `flex-1` has a 0 basis and collapses the height. */}
+                <div className="flex flex-col gap-3 min-[480px]:flex-row">
+                  <SkeletonBar className="h-[60px] min-w-0 min-[480px]:flex-[2] rounded-pill" />
+                  <SkeletonBar className="h-[60px] min-w-0 min-[480px]:flex-1 rounded-pill" />
+                </div>
+                <div className="flex h-12 items-center gap-6 px-3">
+                  <SkeletonBar className="h-5 w-20" />
+                  <SkeletonBar className="h-5 w-28" />
+                </div>
+              </div>
             </div>
           </header>
 
-          {/* RecipeChecklists: ingredients panel | steps from lg; single column below. */}
-          <div className={RECIPE_SPLIT}>
-
-            {/* Składniki — a bordered panel from lg. */}
+          {/* The checklists: ingredients panel | steps, under the hairline and 40 px. */}
+          <div className={`${RECIPE_CHECKLISTS_TOP} ${RECIPE_SPLIT}`}>
             <div className="mb-10 lg:rounded-tile lg:border lg:border-border-card lg:bg-surface-2 lg:p-6">
-              <SkeletonBar className="mb-4 h-8 w-40" />
-              <div className="space-y-3">
-                {Array.from({ length: 6 }, (_, i) => (
-                  <SkeletonBar key={i} className={`h-4 ${i % 2 ? 'w-2/3' : 'w-5/6'}`} />
-                ))}
-              </div>
+              <HeadingBar className="h-8 w-40" />
+              {/* Ingredient rows are 56 px. */}
+              {Array.from({ length: 6 }, (_, i) => (
+                <Line key={i} box="h-14">
+                  <SkeletonBar className={`h-4 ${i % 2 ? 'w-2/3' : 'w-5/6'}`} />
+                </Line>
+              ))}
             </div>
 
-            {/* Przygotowanie. */}
             <div>
-              <SkeletonBar className="mb-4 h-8 w-48" />
-              <div className="space-y-3">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <SkeletonBar key={i} className={`h-4 ${i % 2 ? 'w-3/4' : 'w-full'}`} />
-                ))}
-              </div>
+              <HeadingBar className="h-8 w-48" />
+              {/* Steps: a number and two lines each. */}
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="mb-6 flex h-[88px] items-start gap-4">
+                  <SkeletonBar className="h-10 w-10 shrink-0 rounded-pill" />
+                  <div className="min-w-0 flex-1 space-y-3 pt-2">
+                    <SkeletonBar className="h-4 w-full" />
+                    <SkeletonBar className={`h-4 ${i % 2 ? 'w-3/4' : 'w-5/6'}`} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
