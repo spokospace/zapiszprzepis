@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { usePathname } from 'next/navigation'
 import { Heart } from 'lucide-react'
 import { addFavorite, removeFavorite } from '@/app/favorites/actions'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
@@ -31,8 +30,7 @@ const PAGE_LABEL = { off: 'Zapisz', on: 'W ulubionych' } as const
 const SIZE = {
   // The recipe page's button beside "Zacznij gotować": 60 px, full width of its cell,
   // as tall as the row so the two match.
-  // A guest gets it as a link to the login: bordered like a button, so no underline.
-  full: 'flex h-full min-h-[60px] w-full items-center justify-center gap-2.5 rounded-pill border-2 border-action px-4 text-[19px] font-bold no-underline!',
+  full: 'flex h-full min-h-[60px] w-full items-center justify-center gap-2.5 rounded-pill border-2 border-action px-4 text-[19px] font-bold',
   // No grey ring — a soft shadow sets the white circle off a light photo and the
   // heart itself carries the contrast (ZMIANY_prototyp §6).
   photo:
@@ -133,7 +131,7 @@ export function FavoriteAddedNotice({ recipeId }: { recipeId: number }) {
  * The heart (E01-S06), never a star: labelled on the recipe page, alone on a
  * card's photo, where its accessible name carries the label and the recipe.
  * Optimistic toggle with a ~5 s "Dodano do ulubionych · Cofnij" toast after
- * adding. A guest gets a link to /login?next={this page}&fav={id}; the favorite
+ * adding. A guest gets a button that opens /login?next={this page}&fav={id}; the favorite
  * is saved as the login completes and the toast shows on the way back.
  */
 export function FavoriteButton({
@@ -143,7 +141,6 @@ export function FavoriteButton({
   size = 'full',
   recipeTitle,
 }: FavoriteButtonProps) {
-  const pathname = usePathname()
   const [override, setOverride] = useState<boolean | null>(null)
   const [toast, setToast] = useState(false)
   const [error, setError] = useState(false)
@@ -178,18 +175,16 @@ export function FavoriteButton({
   useToastTimeout(toast, hideToast)
 
   if (!isAuthenticated) {
+    // A button, not a link: crawlers follow hrefs, so no /login?…&fav= URL is left to index.
     return (
-      <a
-        href={loginPath(pathname, recipeId)}
-        // The render knows only the path; return to the page's current query too.
-        onClick={(e) => {
-          e.currentTarget.href = loginPath(`${window.location.pathname}${window.location.search}`, recipeId)
-        }}
+      <button
+        type="button"
+        onClick={() => window.location.assign(loginPath(`${window.location.pathname}${window.location.search}`, recipeId))}
         aria-label={name(COPY.off)}
         className={`${SIZE[size]} ${LOOK[size].off}`}
       >
         <Content size={size} favorited={false} />
-      </a>
+      </button>
     )
   }
 
