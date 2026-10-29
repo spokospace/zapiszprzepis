@@ -8,7 +8,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 **Surface:** `/`, `/recipes`, `/recipes/[slug]`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/confirm`, `/auth/callback`, `/share`, plus the query params links and bookmarks carry (`/recipes?category=…&tag=…&q=…`) and the flags the UI reads (`?add_error=empty|invalid_url|server`, `?duplicate=1|pending`, `?shared=1`, `/login?error=…`).
 
-**Admin panel (staff only, never indexed, 404 for anyone without a role):** `/admin`, `/admin/uzytkownicy`, `/admin/importy`, `/admin/dostep`, `/admin/role`, `/admin/dziennik` and their `?ok=` / `?error=` result keys. Staff bookmark these.
+**Admin panel (staff only, never indexed, 404 for anyone without a role):** `/admin`, `/admin/uzytkownicy`, `/admin/importy`, `/admin/dostep`, `/admin/role`, `/admin/dziennik`, `/admin/tokeny` and their `?ok=` / `?error=` result keys. Staff bookmark these.
 
 **Breaking:** renaming or removing a path; changing how a recipe slug is derived for existing recipes (slugs are unique per user and stored); removing a query-param code the UI renders.
 
@@ -48,9 +48,11 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 **Admin panel additions (Phase 1):** the private tables `staff_roles`, `staff_role_permissions`, `user_roles` and `staff_audit_log`, the composite types `admin_*_row`, the functions `staff_can`, `has_permission`, `my_permissions`, `staff_audit` and every `admin_*` / `admin_*_as` function (names, argument names, error codes such as `forbidden` and `last_admin`), the permission strings (`users.read`, `imports.retry`, …), the policy `recipe_shares_staff_select`, and the `'staff'` value of `user_full_access.source`. Roles never go on `profiles` (anon-readable, owner-updatable). The `_as` functions are `service_role` only and the wrappers `authenticated` only; widening a grant is a breaking change reviewed as a privilege escalation.
 
+**Admin panel additions (Phase 4):** the private table `staff_tokens` (`token_hash` is the SHA-256 hex of the raw `zpm_` + 64 hex token, which is shown once), the type `admin_token_row`, and the functions `admin_create_token[_as]`, `admin_list_tokens[_as]`, `admin_revoke_token[_as]` and `staff_resolve_token` (service_role only; it returns `token_id`, `actor_id`, `permissions`, and no row for a revoked, expired, blocked or role-less account). The error code `too_many_tokens`. A token never carries a role: permissions are read at every call.
+
 ## 6. Worker configuration, cron and bindings
 
-**Surface:** `wrangler.jsonc` (`main: ./custom-worker.ts`, vars, `compatibility_date`, flags `nodejs_compat` and `global_fetch_strictly_public`), cron triggers `30 3 * * *` (backup to R2) and `0 4 * * *` (keep the database awake) matched as exact strings in `custom-worker.ts`, bindings `BACKUPS` (R2 bucket `zapiszprzepis-backups`) and `ASSETS`, and `src/middleware.ts`.
+**Surface:** `wrangler.jsonc` (`main: ./custom-worker.ts`, vars, `compatibility_date`, flags `nodejs_compat` and `global_fetch_strictly_public`), cron triggers `30 3 * * *` (backup to R2) and `0 4 * * *` (keep the database awake) matched as exact strings in `custom-worker.ts`, bindings `BACKUPS` (R2 bucket `zapiszprzepis-backups`) and `ASSETS`, the `ratelimits` bindings (`EXA_SEARCH_LIMIT`, `EXTRACTION_LIMIT`, `MCP_LIMIT`, namespace ids `1001`–`1003`), and `src/middleware.ts` (its `/api/mcp` pass-through, see §9).
 
 **Breaking:** a cron string changed in only one of the two places; a removed or renamed binding; a new binding whose resource does not exist yet; renaming `src/middleware.ts` to `proxy.ts` (pushes the bundle past the 3 MiB free-tier limit, and the deploy fails).
 
@@ -69,3 +71,31 @@ There is no public API and no versioned package; the contracts are URLs, payload
 **Surface:** `recipe_shares.error_message`, displayed verbatim in the notification bell.
 
 **Breaking:** none for old rows, since they keep their text. A new message must be Polish and readable on its own; don't make the UI depend on parsing message text.
+
+## 9. Staff MCP endpoint
+
+**Surface:** `POST /api/mcp` (MCP Streamable HTTP, JSON-RPC 2.0 subset: `initialize`, `ping`, `notifications/*`, `tools/list`, `tools/call`; one message per request, JSON responses, no sessions; `GET` and `DELETE` answer 405), authenticated by `Authorization: Bearer zpm_…`. Clients (Claude Code, `claude mcp add --transport http …`) are configured against it. Status codes: 401 for any bad token (unknown, revoked, expired, blocked account, no role; one identical body), 413 over 16 KiB, 429 over the per-address or per-token cap, 503 when the token cannot be checked. Tool failures are ordinary results with `isError: true`, in English. Also the `ratelimits` binding `MCP_LIMIT` and the `/api/mcp` entry in the `src/middleware.ts` allow-list.
+
+**Tool names and argument names** (generated from `src/lib/staff/registry.ts`; a tool is `<resource>_list`, `<resource>_get` or `<resource>_<operation>`; every change also takes `dry_run`, destructive ones `confirm: "<operation>"`):
+
+| Tool | Arguments (* = required) |
+|------|--------------------------|
+| `users_list` | `query`, `limit`, `after_created`, `after_id` |
+| `users_get` | `user_id`* |
+| `users_block` (destructive) | `user_id`*, `reason` |
+| `users_unblock` | `user_id`* |
+| `users_delete` (destructive) | `user_id`* |
+| `imports_list` | `status` (`problem`, `failed`, `pending`, `completed`, `all`), `limit`, `before_id` |
+| `imports_retry` | `share_id`* |
+| `access_list` | `limit` |
+| `access_create_code` | `note`, `max_uses`, `expires_at` |
+| `access_set_full_access` (destructive) | `user_id`*, `on`* |
+| `roles_list` | none |
+| `roles_set_role` (destructive) | `user_id`*, `role`*, `on`* |
+| `audit_list` | `resource`, `actor_id`, `from`, `to`, `limit`, `before_id` |
+
+Tools for later resources (recipes) join this table when their registry entries land.
+
+**Breaking:** renaming or removing a tool or an argument, making an optional argument required, changing what a destructive tool's `confirm` must equal, changing the 401/429 semantics, accepting a token without re-reading the owner's roles and ban state, or reusing `MCP_LIMIT`'s `namespace_id` (`1003`) in another Worker of the account (bindings with the same id share counters).
+
+**Required path:** add new tools and optional arguments only; keep the old tool as an alias for one release when renaming. The rate-limit binding needs no Cloudflare resource, only a `namespace_id` unique in the account.

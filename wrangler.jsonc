@@ -44,6 +44,14 @@
       "name": "EXTRACTION_LIMIT",
       "namespace_id": "1002",
       "simple": { "limit": 5, "period": 60 }
+    },
+    // Staff MCP endpoint (src/lib/staff/mcp): 60 calls a minute per token, and the same
+    // cap per client address before the token is even looked up (keys "token:<id>" and
+    // "ip:<address>"). Nothing to create in Cloudflare: namespace_id only has to be unique in the account.
+    {
+      "name": "MCP_LIMIT",
+      "namespace_id": "1003",
+      "simple": { "limit": 60, "period": 60 }
     }
   ],
   "assets": {

@@ -24,7 +24,7 @@ Stack: Next.js 16 App Router (React 19) running on Cloudflare Workers via OpenNe
 
 ### Supabase and data
 
-- User-facing reads and writes use `createSupabaseServerClient()` / `createSupabaseBrowserClient()` so RLS applies. The service-role client is allowed only in Inngest functions, cron jobs (`src/lib/worker-cron.ts`) and storage writes; when it is used, the query must scope by `user_id` explicitly.
+- User-facing reads and writes use `createSupabaseServerClient()` / `createSupabaseBrowserClient()` so RLS applies. The service-role client is allowed only in Inngest functions, cron jobs (`src/lib/worker-cron.ts`) and storage writes; when it is used, the query must scope by `user_id` explicitly. Two request-path exceptions exist, both narrow: `findMergedRecipeSlug` (reads a service-only table), and the staff MCP route `src/app/api/mcp/route.ts` (code in `src/lib/staff/mcp/`), which calls only the `admin_*_as` functions plus `staff_resolve_token` and `staff_audit`, named in `src/lib/staff/registry.ts`, and passes the actor id of the bearer token's owner in place of a `user_id` scope. Those functions re-check the permission in SQL, so the route can hide a tool but not widen access. Flag any other use of the service key in a request path, and any MCP code that names a resource or a function not taken from the registry.
 - New tables get RLS enabled plus a user-isolation policy in the same migration, matching `recipes_user_isolation`.
 - `SECURITY DEFINER` only when elevated privileges are required, always with `SET search_path` (lessons.md #4).
 - Migrations are new files named `YYYYMMDDHHMMSS_snake_case.sql`; never edit an applied migration. Remember that local dev points at the **production** database.
