@@ -6,7 +6,7 @@ import { RecipeChecklists, stepProgress } from './recipe-checklists'
 function render(servings: number | null, stepImages?: string[]) {
   return renderToStaticMarkup(
     createElement(RecipeChecklists, {
-      recipeId: 1,
+      recipeId: 1, recipeSlug: 'test', recipeTitle: 'Test',
       ingredientGroups: [{ section: null, items: [{ name: 'dynia', amount: '1', unit: 'kg' }] }],
       steps: ['Dynię pokroić.', '2 ząbki czosnku posiekać.'],
       stepImages,
@@ -100,7 +100,7 @@ describe('RecipeChecklists alternative measure (#505)', () => {
   function renderAlt() {
     return renderToStaticMarkup(
       createElement(RecipeChecklists, {
-        recipeId: 1,
+        recipeId: 1, recipeSlug: 'test', recipeTitle: 'Test',
         ingredientGroups: [
           {
             section: null,
@@ -143,7 +143,7 @@ describe('RecipeChecklists alternative measure (#505)', () => {
   it('derives a household second line for a volume ingredient with no stated measure', () => {
     const html = renderToStaticMarkup(
       createElement(RecipeChecklists, {
-        recipeId: 1,
+        recipeId: 1, recipeSlug: 'test', recipeTitle: 'Test',
         ingredientGroups: [{ section: null, items: [{ name: 'oleju', amount: '180', unit: 'ml' }] }],
         steps: ['Wymieszać.'],
         servings: null,
