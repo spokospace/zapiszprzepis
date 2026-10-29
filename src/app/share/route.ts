@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { triggerRecipeExtraction } from './actions'
 import { addRecipeErrorPath, recipePath } from '@/lib/routes'
 import { NO_FULL_ACCESS } from '@/lib/full-access'
+import { EXTRACTION_RATE_LIMITED } from '@/lib/extraction-rate-limit'
 import { extractFirstUrl } from '@/lib/extract-url'
 
 /**
@@ -82,6 +83,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Signed in but without full access (E01-S11): /dodaj shows the code gate (E01-S10).
     if (errorMsg === NO_FULL_ACCESS) {
       return NextResponse.redirect(new URL(addRecipeErrorPath('no_access'), request.url), { status: 303 })
+    }
+
+    // Over the per-account extraction cap (E02-S11-T04): /dodaj asks to try later.
+    if (errorMsg === EXTRACTION_RATE_LIMITED) {
+      return NextResponse.redirect(new URL(addRecipeErrorPath('rate_limited'), request.url), { status: 303 })
     }
 
     // On other errors, surface a recoverable error next to the add form.

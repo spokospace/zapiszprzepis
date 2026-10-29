@@ -6,6 +6,7 @@ import { sendRecipeExtract } from '@/inngest/send'
 import { requireUser } from '@/lib/supabase/server'
 import { detectSourceType } from '@/lib/detect-source-type'
 import { getFullAccess } from '@/lib/full-access'
+import { extractionAllowed } from '@/lib/extraction-rate-limit'
 import { addRecipeErrorPath } from '@/lib/routes'
 import { isStalePending } from '@/lib/share-staleness'
 
@@ -22,7 +23,8 @@ import { isStalePending } from '@/lib/share-staleness'
  * /powiadomienia (E01-S15) all read the same shares. The one exception to "no
  * redirect": a user without full access is sent to the access-code gate
  * (/dodaj?add_error=no_access), because a retry spends the same extraction
- * budget as adding (E02-S01 / audit C6).
+ * budget as adding (E02-S01 / audit C6). Over the per-account extraction cap
+ * (E02-S11-T04) it lands on /dodaj?add_error=rate_limited the same way.
  */
 export async function retryShare(shareId: number): Promise<void> {
   if (!Number.isInteger(shareId) || shareId <= 0) return
@@ -46,6 +48,10 @@ export async function retryShare(shareId: number): Promise<void> {
     revalidatePath('/', 'layout')
     return
   }
+
+  // E02-S11-T04: checked once the share is really retryable, so a no-op retry
+  // spends no quota, and before the reset, so a refused one stays `failed`.
+  if (!(await extractionAllowed(user.id))) redirect(addRecipeErrorPath('rate_limited'))
 
   const intent = (share.share_intent ?? {}) as { title?: string | null; text?: string | null }
 

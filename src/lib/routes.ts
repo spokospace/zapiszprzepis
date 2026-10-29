@@ -153,7 +153,7 @@ export const NOTIFICATIONS_PATH = '/powiadomienia'
 export const ADD_RECIPE_PATH = '/dodaj'
 
 /** Why an add failed; /dodaj shows the matching message next to the form. */
-export const ADD_RECIPE_ERRORS = ['empty', 'invalid_url', 'server', 'no_access'] as const
+export const ADD_RECIPE_ERRORS = ['empty', 'invalid_url', 'server', 'no_access', 'rate_limited'] as const
 export type AddRecipeError = (typeof ADD_RECIPE_ERRORS)[number]
 
 /** The ?add_error value /dodaj received: null when absent, the generic `server` for anything unknown. */

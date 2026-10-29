@@ -19,12 +19,14 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }))
 vi.mock('@/lib/full-access', () => ({ getFullAccess: vi.fn().mockResolvedValue(true), NO_FULL_ACCESS: 'No full access' }))
+vi.mock('@/lib/extraction-rate-limit', () => ({ extractionAllowed: vi.fn().mockResolvedValue(true), EXTRACTION_RATE_LIMITED: 'Extraction rate limited' }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { sendRecipeExtract } from '@/inngest/send'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
 import { getFullAccess } from '@/lib/full-access'
+import { extractionAllowed } from '@/lib/extraction-rate-limit'
 import { triggerRecipeExtraction } from '@/app/share/actions'
 
 describe('triggerRecipeExtraction — a link someone else added first (E01-S03a)', () => {
@@ -142,5 +144,45 @@ describe('triggerRecipeExtraction — full-access gate (E01-S11)', () => {
 
     expect(from).not.toHaveBeenCalled()
     expect(sendRecipeExtract).not.toHaveBeenCalled()
+  })
+})
+
+describe('triggerRecipeExtraction — per-account extraction cap (E02-S11-T04)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getFullAccess).mockResolvedValue(true)
+  })
+
+  it('refuses a new link over the cap before any insert or event', async () => {
+    const from = vi.fn()
+    vi.mocked(createSupabaseServerClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from,
+    } as any)
+    vi.mocked(findExistingRecipeForUrl).mockResolvedValue({ status: 'new', normalizedUrl: 'https://example.com/tiramisu' })
+    vi.mocked(extractionAllowed).mockResolvedValueOnce(false)
+
+    await expect(triggerRecipeExtraction('https://example.com/tiramisu')).rejects.toThrow('Extraction rate limited')
+
+    expect(extractionAllowed).toHaveBeenCalledWith('user-1')
+    expect(from).not.toHaveBeenCalled()
+    expect(sendRecipeExtract).not.toHaveBeenCalled()
+  })
+
+  it('does not spend the cap on a link that only goes to favorites', async () => {
+    vi.mocked(createSupabaseServerClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from: vi.fn(),
+    } as any)
+    vi.mocked(findExistingRecipeForUrl).mockResolvedValue({
+      status: 'other',
+      recipeId: 7,
+      slug: 'tiramisu',
+      normalizedUrl: 'https://example.com/tiramisu',
+    })
+
+    await triggerRecipeExtraction('https://example.com/tiramisu')
+
+    expect(extractionAllowed).not.toHaveBeenCalled()
   })
 })

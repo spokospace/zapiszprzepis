@@ -9,6 +9,7 @@ import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
 import { addRecipeErrorPath, recipePath } from '@/lib/routes'
 import { getFullAccess } from '@/lib/full-access'
+import { extractionAllowed } from '@/lib/extraction-rate-limit'
 import { revalidatePath } from 'next/cache'
 
 export async function addRecipeFromUrl(formData: FormData): Promise<void> {
@@ -51,6 +52,8 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   // Checked after dedup: a link someone else already added only goes to
   // favorites, which need no full access.
   if (!(await getFullAccess(supabase))) redirect(addRecipeErrorPath('no_access'))
+  // E02-S11-T04: each extraction is paid, so each account is capped.
+  if (!(await extractionAllowed(user.id))) redirect(addRecipeErrorPath('rate_limited'))
 
   const sourceType = detectSourceType(url)
 

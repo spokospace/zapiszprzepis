@@ -170,6 +170,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {refresh_error === 'no_access' && (
         <Toast message="Odświeżanie przepisów wymaga kodu dostępu." type="error" duration={5000} clearParam="refresh_error" />
       )}
+      {refresh_error === 'rate_limited' && (
+        <Toast message="Za dużo odświeżeń naraz. Spróbuj później, za kilka minut." type="error" duration={5000} clearParam="refresh_error" />
+      )}
       {/* Not `narrow`: the desktop layout (E01-S17, A9) uses the full 1152 px; below lg
           both widths are the viewport anyway. */}
       <PageContainer>

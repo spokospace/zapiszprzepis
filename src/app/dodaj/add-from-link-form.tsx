@@ -15,6 +15,7 @@ export const ADD_FROM_LINK_ERRORS: Record<AddRecipeError, string> = {
   invalid_url: 'To nie wygląda jak prawidłowy URL.',
   server: 'Coś poszło nie tak. Spróbuj ponownie.',
   no_access: 'Dodawanie przepisów wymaga kodu dostępu.',
+  rate_limited: 'Za dużo przepisów naraz. Spróbuj później, za kilka minut.',
 }
 
 const FIELD_ID = 'recipe-link'

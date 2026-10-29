@@ -6,6 +6,7 @@ vi.mock('server-only', () => ({}))
 import { NextRequest } from 'next/server'
 import { triggerRecipeExtraction } from './actions'
 import { NO_FULL_ACCESS } from '@/lib/full-access'
+import { EXTRACTION_RATE_LIMITED } from '@/lib/extraction-rate-limit'
 import { POST } from './route'
 
 function share(url: string) {
@@ -28,6 +29,15 @@ describe('POST /share — Web Share Target errors', () => {
 
     expect(res.status).toBe(303)
     expect(res.headers.get('location')).toBe('https://zapiszprzepis.pl/dodaj?add_error=no_access')
+  })
+
+  it('sends a user over the extraction cap to /dodaj with the try-later message (E02-S11-T04)', async () => {
+    vi.mocked(triggerRecipeExtraction).mockRejectedValue(new Error(EXTRACTION_RATE_LIMITED))
+
+    const res = await POST(share('https://example.com/tiramisu'))
+
+    expect(res.status).toBe(303)
+    expect(res.headers.get('location')).toBe('https://zapiszprzepis.pl/dodaj?add_error=rate_limited')
   })
 
   it('still sends a guest to login', async () => {

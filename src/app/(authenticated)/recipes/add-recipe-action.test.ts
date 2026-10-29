@@ -12,12 +12,14 @@ vi.mock('@/inngest/client', () => ({ inngest: { send: vi.fn() } }))
 vi.mock('@/lib/recipe-dedup', () => ({ findExistingRecipeForUrl: vi.fn() }))
 vi.mock('@/lib/intake-favorite', () => ({ favoriteExistingRecipe: vi.fn() }))
 vi.mock('@/lib/full-access', () => ({ getFullAccess: vi.fn().mockResolvedValue(true), NO_FULL_ACCESS: 'No full access' }))
+vi.mock('@/lib/extraction-rate-limit', () => ({ extractionAllowed: vi.fn().mockResolvedValue(true), EXTRACTION_RATE_LIMITED: 'Extraction rate limited' }))
 
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { inngest } from '@/inngest/client'
 import { findExistingRecipeForUrl } from '@/lib/recipe-dedup'
 import { favoriteExistingRecipe } from '@/lib/intake-favorite'
 import { getFullAccess } from '@/lib/full-access'
+import { extractionAllowed } from '@/lib/extraction-rate-limit'
 import { addRecipeFromUrl } from './add-recipe-action'
 
 const URL_IN = 'https://example.com/tiramisu'
@@ -107,5 +109,41 @@ describe('addRecipeFromUrl — full-access gate (E01-S11)', () => {
 
     await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /login')
     expect(getFullAccess).not.toHaveBeenCalled()
+  })
+})
+
+describe('addRecipeFromUrl — per-account extraction cap (E02-S11-T04)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getFullAccess).mockResolvedValue(true)
+    vi.mocked(findExistingRecipeForUrl).mockResolvedValue({ status: 'new', normalizedUrl: URL_IN })
+  })
+
+  it('over the cap: asks to try later, with no share row and no event', async () => {
+    const from = vi.fn()
+    vi.mocked(createSupabaseServerClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from,
+    } as any)
+    vi.mocked(extractionAllowed).mockResolvedValueOnce(false)
+
+    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /dodaj?add_error=rate_limited')
+
+    expect(extractionAllowed).toHaveBeenCalledWith('user-1')
+    expect(from).not.toHaveBeenCalled()
+    expect(inngest.send).not.toHaveBeenCalled()
+  })
+
+  it('under the cap: queues the extraction as before', async () => {
+    const query: any = { insert: () => query, select: () => query, single: async () => ({ data: { id: 3 }, error: null }) }
+    vi.mocked(createSupabaseServerClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from: () => query,
+    } as any)
+    vi.mocked(extractionAllowed).mockResolvedValueOnce(true)
+
+    await expect(addRecipeFromUrl(form(URL_IN))).rejects.toThrow('REDIRECT /recipes?shared=1')
+
+    expect(inngest.send).toHaveBeenCalledTimes(1)
   })
 })
