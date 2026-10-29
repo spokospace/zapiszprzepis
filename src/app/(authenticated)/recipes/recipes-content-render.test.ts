@@ -25,13 +25,14 @@ function card(n: number) {
     source_type: 'web_blog' as const,
     source_url: null,
     source_author: null,
+    hidden_at: null as string | null,
   }
 }
 
-function render(more: { href: string; count: number } | null, total = 30, favoriteIds = new Set<number>()) {
+function render(more: { href: string; count: number } | null, total = 30, favoriteIds = new Set<number>(), recipes = [card(1), card(2)]) {
   return renderToStaticMarkup(
     createElement(RecipesContent, {
-      recipes: [card(1), card(2)],
+      recipes,
       favoriteIds,
       showSharedToast: false,
       total,
@@ -72,5 +73,16 @@ describe('RecipesContent favorite heart (#401)', () => {
     const html = render(null)
     expect(html).not.toContain('data-favorited="none"')
     expect((html.match(/data-favorited="false"/g) ?? []).length).toBe(2)
+  })
+})
+
+describe('RecipesContent — a recipe staff hid', () => {
+  it('shows „Przepis jest niedostępny” instead of the card, with no title and no link', () => {
+    const hidden = { ...card(2), title: 'Tajny sernik', hidden_at: '2026-10-29T10:00:00Z' }
+    const html = render(null, 2, new Set(), [card(1), hidden])
+    expect(html).toContain('Przepis jest niedostępny')
+    expect(html).not.toContain('Tajny sernik')
+    expect(html).not.toContain('/przepis/p2')
+    expect(html).toContain('/przepis/p1')
   })
 })

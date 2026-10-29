@@ -19,6 +19,7 @@ export const STAFF_PERMISSIONS = [
   'recipes.read',
   'recipes.hide',
   'recipes.delete',
+  'recipes.restore',
   'recipes.merge',
   'recipes.taxonomy',
   'recipes.edit',

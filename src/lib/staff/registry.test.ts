@@ -16,14 +16,14 @@ describe('staff registry', () => {
     for (const r of STAFF_RESOURCES) expect(r.path.startsWith('/admin/')).toBe(true)
   })
 
-  it('permission matrix: a moderator sees users and imports, never roles, access codes or the audit log', () => {
+  it('permission matrix: a moderator sees users, imports and recipes, never roles, access codes or the audit log', () => {
     const moderator = parsePermissions(['users.read', 'imports.read', 'imports.retry', 'recipes.read'])
-    expect(visibleResources(moderator).map((r) => r.name)).toEqual(['users', 'imports'])
+    expect(visibleResources(moderator).map((r) => r.name)).toEqual(['users', 'imports', 'recipes'])
   })
 
-  it('permission matrix: an admin sees every Phase 1 resource', () => {
+  it('permission matrix: an admin sees every resource', () => {
     const admin = parsePermissions(STAFF_PERMISSIONS)
-    expect(visibleResources(admin).map((r) => r.name)).toEqual(['users', 'imports', 'access', 'roles', 'audit'])
+    expect(visibleResources(admin).map((r) => r.name)).toEqual(['users', 'imports', 'recipes', 'access', 'roles', 'audit'])
   })
 
   it('shows no resource to someone with no permissions', () => {
@@ -41,5 +41,24 @@ describe('staff registry', () => {
   it('marks account deletion, blocking and role changes as destructive', () => {
     const destructive = STAFF_RESOURCES.flatMap((r) => r.operations.filter((o) => o.destructive).map((o) => `${r.name}.${o.name}`))
     expect(destructive).toEqual(expect.arrayContaining(['users.block', 'users.delete', 'roles.set_role']))
+  })
+
+  it('recipe operations ask for the permission that matches them', () => {
+    const recipes = STAFF_RESOURCES.find((r) => r.name === 'recipes')!
+    const byName = Object.fromEntries(recipes.operations.map((o) => [o.name, o]))
+    expect(byName.hide.permission).toBe('recipes.hide')
+    expect(byName.unhide.permission).toBe('recipes.hide')
+    expect(byName.delete.permission).toBe('recipes.delete')
+    expect(byName.restore.permission).toBe('recipes.restore')
+    expect(byName.merge.permission).toBe('recipes.merge')
+    expect(byName.set_taxonomy.permission).toBe('recipes.taxonomy')
+    expect(recipes.operations.filter((o) => o.destructive).map((o) => o.name)).toEqual(['delete', 'merge', 'unmerge'])
+  })
+
+  it('a reader with only recipes.read sees the list and none of its buttons', () => {
+    const reader = parsePermissions(['recipes.read'])
+    const recipes = STAFF_RESOURCES.find((r) => r.name === 'recipes')!
+    expect(visibleResources(reader).map((r) => r.name)).toEqual(['recipes'])
+    expect(recipes.operations.some((op) => canRun(reader, op))).toBe(false)
   })
 })

@@ -17,6 +17,10 @@ export const STAFF_ERRORS = {
   dispatch_failed: 'Nie udało się uruchomić przetwarzania. Import wrócił na listę błędów.',
   too_many_tokens: 'Masz już 10 aktywnych tokenów. Unieważnij któryś, zanim utworzysz nowy.',
   invalid_input: 'Dane są niepoprawne.',
+  invalid_redirect: 'Przekierowanie musi prowadzić do widocznego przepisu. Sprawdź adres przepisu.',
+  canonical_hidden: 'Przepis główny jest ukryty. Najpierw go odkryj.',
+  slug_taken: 'Adres tego przepisu zajął już inny przepis.',
+  restore_conflict: 'Nie da się przywrócić: link źródłowy albo konto autora jest już zajęte lub usunięte.',
   confirm_mismatch: 'Potwierdzenie się nie zgadza. Nic nie zmieniono.',
   unknown: 'Nie udało się. Spróbuj ponownie.',
 } as const

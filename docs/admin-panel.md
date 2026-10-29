@@ -1,4 +1,4 @@
-# Admin panel — owner runbook (Phase 1)
+# Admin panel — owner runbook (Phases 1–2)
 
 `/admin` is the staff panel: users, the import queue, access codes, roles and the audit log. Spec:
 `.ai/specs/2026-10-28-admin-panel-roles-moderation-mcp.md`. Recipe moderation (Phase 2), editing (Phase 3) and
@@ -61,6 +61,47 @@ until then).
 The Worker upload must stay under 3 MiB gzipped (free plan). `pnpm measure:worker` reads the figure after
 `pnpm exec opennextjs-cloudflare build`; the OpenNext build needs Linux or WSL (Windows fails creating symlinks).
 Baseline before the panel: 2320 KiB gzipped (see the script header for the figure after each phase).
+
+## Phase 2 — recipe moderation (`/admin/przepisy`)
+
+Permissions are the ones Phase 1 seeded (plus `recipes.restore`, admin only, seeded by Phase 2): `recipes.read` opens the list, `recipes.hide`,
+`recipes.delete`, `recipes.merge` and `recipes.taxonomy` gate the buttons (admin holds all of them; a moderator holds all but `recipes.restore`).
+
+### Deploying Phase 2 (after Phase 1 is applied)
+
+Apply in order, one at a time, from the Supabase SQL editor — **only after you have read them**; none has been
+applied anywhere. `20261028160000_public_author_gender_neutral` must already be applied (the first migration
+restates the `public_recipes` definition that one leaves).
+
+1. `20261029100000_admin_recipe_hiding` — `hidden_*` columns, the filter on `public_recipes` / `recipe_gallery_images` / `dish_versions`, the extended `assert_public_view_boundary()`, staff read policy, list / get / hide / unhide.
+2. `20261029110000_admin_recipe_delete_restore` — archive table, delete (optional redirect) and restore.
+3. `20261029120000_admin_recipe_merge_unmerge` — merge (wraps `collapse_recipe_group`) and unmerge.
+4. `20261029130000_admin_recipe_taxonomy` — category and tags.
+
+Each ends with a grants assertion. Deploying the app before them is harmless to guests; `/admin/przepisy` then
+shows an error until the functions exist. Deploy order in practice: migrations 1–4, then the app.
+`supabase/tests/admin_recipe_moderation_guards.sql` checks the behaviour on a scratch database (rolls back).
+Regenerate `src/lib/supabase.types.ts` afterwards; Phase 2 calls the new functions untyped until then.
+
+### Things to know
+
+- **Hide** is one click and reversible. Guests, search, the sitemap, `llms.txt`, the `.md` mirror, the home page,
+  similar recipes and `/u/<name>` stop returning the recipe at once (cache purged on the spot). The owner and
+  everybody who favorited it see „Przepis jest niedostępny” in „Moje przepisy” / „Ulubione” and at the recipe's
+  URL; staff see the recipe with a „Ukryty” banner. The „mine” and „favorites” search scopes omit hidden recipes.
+- **Delete** archives the whole row first and removes the favorites with it; **restore** (list page, „Usunięte przez
+  zespół”) brings back the row under the same id and slug but **not** the favorites. A redirect target must be a
+  visible recipe; without one the old URL answers 404. Restore needs its own permission, `recipes.restore`, seeded for
+  admin only (migration 2); moderators can delete but not restore.
+- **Merge** needs a visible canonical recipe; losers' URLs redirect to it. **Unmerge** is *not*
+  `restore_recipe_merge`: that function refuses to run while the global unique indexes on the source link exist
+  (and they do). `admin_unmerge_as` undoes the same log, and a restored duplicate comes back **without its source
+  link** whenever the canonical recipe still holds it (the unique index allows one owner per link); the audit row
+  lists the fields dropped.
+- A hidden recipe whose link someone shares again is, by the intake's dedup, added to that person's favorites and
+  shows to them as unavailable.
+- Offline copies in a visitor's service worker (network-first for `/przepis/*`) can outlive a hide until they go
+  online again.
 
 ## MCP: run the panel's operations from Claude Code (Phase 4)
 

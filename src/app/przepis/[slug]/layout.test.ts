@@ -10,12 +10,14 @@ vi.mock('next/navigation', () => ({
     throw new Error(`NEXT_REDIRECT ${url}`)
   }),
 }))
+vi.mock('@/lib/hidden-recipe', () => ({ resolveHiddenRecipe: vi.fn().mockResolvedValue(null) }))
 vi.mock('./merged-redirect', () => ({ findMergedRecipeSlug: vi.fn().mockResolvedValue(null) }))
 
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getPublicRecipe, type PublicRecipe } from '@/lib/recipe-cache'
 import { notFound } from 'next/navigation'
 import { findMergedRecipeSlug } from './merged-redirect'
+import { resolveHiddenRecipe } from '@/lib/hidden-recipe'
 import RecipeLayout from './layout'
 
 /**
@@ -67,5 +69,40 @@ describe('przepis/[slug] layout', () => {
     mockRecipes([], { message: 'boom' })
     await expect(render('zupa')).rejects.toThrow('NEXT_NOT_FOUND')
     expect(findMergedRecipeSlug).not.toHaveBeenCalled()
+  })
+
+  describe('a recipe staff hid', () => {
+    /** A signed-in visitor for whom the public read comes back empty. */
+    function signedIn() {
+      vi.mocked(getPublicRecipe).mockResolvedValue(null)
+      vi.mocked(getCurrentUser).mockResolvedValue({ id: 'user-a' } as never)
+      vi.mocked(createSupabaseServerClient).mockResolvedValue({
+        from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }) }),
+      } as never)
+    }
+
+    it('renders the page for the owner or a favoriter ("unavailable"), without looking for a merge', async () => {
+      signedIn()
+      vi.mocked(resolveHiddenRecipe).mockResolvedValueOnce({ kind: 'unavailable' })
+      await expect(render('sernik')).resolves.toBe('page')
+      expect(notFound).not.toHaveBeenCalled()
+      expect(findMergedRecipeSlug).not.toHaveBeenCalled()
+    })
+
+    it('renders the page for staff, who get the recipe itself', async () => {
+      signedIn()
+      vi.mocked(resolveHiddenRecipe).mockResolvedValueOnce({
+        kind: 'staff',
+        recipe: { id: 9, slug: 'sernik' } as PublicRecipe,
+        hiddenReason: null,
+        staffRecipeId: 9,
+      })
+      await expect(render('sernik')).resolves.toBe('page')
+    })
+
+    it('answers 404 to a signed-in stranger, as to a guest', async () => {
+      signedIn()
+      await expect(render('sernik')).rejects.toThrow('NEXT_NOT_FOUND')
+    })
   })
 })

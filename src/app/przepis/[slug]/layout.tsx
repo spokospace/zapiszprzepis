@@ -22,7 +22,9 @@ export default async function RecipeLayout({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const { recipe, error } = await loadRecipe(slug)
+  const { recipe, error, hidden } = await loadRecipe(slug)
+  // A hidden recipe its owner or a favoriter asks for renders the "unavailable" page, not a 404.
+  if (hidden?.kind === 'unavailable') return children
   if (error || !recipe) {
     if (error) console.error('[recipe] Query error:', error)
     const mergedInto = error ? null : await findMergedRecipeSlug(slug)

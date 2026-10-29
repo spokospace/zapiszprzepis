@@ -7,6 +7,7 @@ vi.mock('@/lib/supabase/server', () => ({
   getSignedInUser: vi.fn(),
 }))
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
+vi.mock('./actions', () => ({ removeUnavailableFavorite: vi.fn() }))
 vi.mock('@/app/components/recipe-list-snapshot', () => ({ RecipeListSnapshot: () => null }))
 vi.mock('@/app/components/recipe-card', () => ({
   TILE_SIZES_1_TO_3: '',
@@ -30,7 +31,7 @@ function card(n: number) {
   }
 }
 
-type Row = { recipe: ReturnType<typeof card> | null }
+type Row = { recipe_id?: number; recipe: ReturnType<typeof card> | null }
 
 /** A signed-in client whose `favorites` query answers `rows`, capturing the chain. */
 function mockFavorites(rows: Row[]) {
@@ -87,10 +88,24 @@ describe('ulubione page — one query (#231)', () => {
     expect(calls.order).toContainEqual(['created_at', { ascending: false }])
   })
 
-  it('keeps the query order and drops favorites whose recipe is gone', async () => {
-    const { html } = await render([{ recipe: card(3) }, { recipe: null }, { recipe: card(1) }])
+  it('keeps the query order; a recipe the view no longer holds shows as an unavailable row, not a card', async () => {
+    const { html } = await render([{ recipe: card(3) }, { recipe_id: 2, recipe: null }, { recipe: card(1) }])
     const slugs = [...html.matchAll(/\/przepis\/(p\d+)/g)].map((m) => m[1])
     expect(slugs).toEqual(['p3', 'p1'])
+    expect(html.match(/Przepis jest niedostępny/g)).toHaveLength(1)
+    expect(html).toContain('name="recipeId" value="2"')
+    expect(html).toContain('Usuń z ulubionych')
+  })
+
+  it('asks for the recipe_id of the favorite itself, since a hidden recipe embeds as null', async () => {
+    const { calls } = await render([{ recipe: card(1) }])
+    expect(calls.select[0]).toMatch(/^recipe_id, recipe:public_recipes\(/)
+  })
+
+  it('a list of only unavailable favorites is not the empty state', async () => {
+    const { html } = await render([{ recipe_id: 2, recipe: null }])
+    expect(html).toContain('Przepis jest niedostępny')
+    expect(html).not.toContain('Nie masz jeszcze ulubionych')
   })
 
   it('shows the empty state when there are no favorites', async () => {

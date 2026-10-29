@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getPublicRecipe, type PublicRecipe } from '@/lib/recipe-cache'
+import { resolveHiddenRecipe, type HiddenRecipeView } from '@/lib/hidden-recipe'
 
 /**
  * One guest-safe read of the recipe for this slug, shared by the layout,
@@ -14,6 +15,11 @@ import { getPublicRecipe, type PublicRecipe } from '@/lib/recipe-cache'
  * is the signed-in visitor owning that row (refresh/delete are the owner's; others
  * only read). A failed public read surfaces as `error` (logged by the caller before
  * a 404), never a cached empty result.
+ *
+ * A recipe staff hid is not in the public read. A signed-in visitor whose public read
+ * came back empty is checked once more (`hidden`): staff get the recipe itself with a
+ * banner, the owner and favoriters get an "unavailable" state, everybody else the 404.
+ * Guests never reach that check.
  */
 export const loadRecipe = cache(async (slug: string) => {
   const supabase = await createSupabaseServerClient()
@@ -28,5 +34,12 @@ export const loadRecipe = cache(async (slug: string) => {
       ? supabase.from('recipes').select('id').eq('slug', slug).eq('user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
-  return { recipe, error, isOwner: own?.id != null && recipe?.id === own.id, user }
+  const hidden: HiddenRecipeView | null = !recipe && !error && user ? await resolveHiddenRecipe(supabase, slug) : null
+  return {
+    recipe: hidden?.kind === 'staff' ? hidden.recipe : recipe,
+    error,
+    isOwner: own?.id != null && (hidden?.kind === 'staff' ? hidden.recipe.id : recipe?.id) === own.id,
+    user,
+    hidden,
+  }
 })

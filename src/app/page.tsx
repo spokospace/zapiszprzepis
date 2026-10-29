@@ -123,6 +123,8 @@ async function getMemberRows(supabase: ServerClient, userId: string, hasFullAcce
           .from('recipes')
           .select(MY_RECIPE_CARD_COLUMNS)
           .eq('user_id', userId)
+          // Recipes staff hid are not offered on the home page (their row lives in „Moje przepisy”).
+          .is('hidden_at', null)
           .order('created_at', { ascending: false })
           .order('id', { ascending: false })
           .limit(RECENT_LIMIT)

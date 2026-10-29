@@ -8,7 +8,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 **Surface:** `/`, `/recipes`, `/recipes/[slug]`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/confirm`, `/auth/callback`, `/share`, plus the query params links and bookmarks carry (`/recipes?category=…&tag=…&q=…`) and the flags the UI reads (`?add_error=empty|invalid_url|server`, `?duplicate=1|pending`, `?shared=1`, `/login?error=…`).
 
-**Admin panel (staff only, never indexed, 404 for anyone without a role):** `/admin`, `/admin/uzytkownicy`, `/admin/importy`, `/admin/dostep`, `/admin/role`, `/admin/dziennik`, `/admin/tokeny` and their `?ok=` / `?error=` result keys. Staff bookmark these.
+**Admin panel (staff only, never indexed, 404 for anyone without a role):** `/admin`, `/admin/uzytkownicy`, `/admin/importy`, `/admin/dostep`, `/admin/role`, `/admin/dziennik`, `/admin/przepisy` and `/admin/przepisy/<id>`, `/admin/tokeny` and their `?ok=` / `?error=` result keys. Staff bookmark these.
 
 **Breaking:** renaming or removing a path; changing how a recipe slug is derived for existing recipes (slugs are unique per user and stored); removing a query-param code the UI renders.
 
@@ -72,6 +72,8 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 **Breaking:** none for old rows, since they keep their text. A new message must be Polish and readable on its own; don't make the UI depend on parsing message text.
 
+**Admin panel additions (Phase 2 — recipe moderation):** `recipes.hidden_at` / `hidden_by` / `hidden_reason` (staff-only; `public_recipes` must never expose them and both public views keep `where hidden_at is null`, enforced by `assert_public_view_boundary()`), `dish_versions` filtering hidden recipes, the archive table `recipes_deleted_by_staff` (service-only), the policy `recipes_staff_select`, `recipe_hidden_for_viewer(text)`, and the functions `admin_{list,get}_recipe(s)`, `admin_{hide,unhide,delete,restore}_recipe`, `admin_list_deleted_recipes`, `admin_merge_recipes`, `admin_unmerge`, `admin_list_merges`, `admin_set_taxonomy` (+ `_as`), with the error codes `invalid_redirect`, `canonical_hidden`, `slug_taken`, `restore_conflict`. A URL of a recipe staff deleted with a redirect answers 301 to the target; a hidden recipe's URL answers 404 to guests and a 200 "niedostępny" page (noindex) to its owner and favoriters.
+
 ## 9. Staff MCP endpoint
 
 **Surface:** `POST /api/mcp` (MCP Streamable HTTP, JSON-RPC 2.0 subset: `initialize`, `ping`, `notifications/*`, `tools/list`, `tools/call`; one message per request, JSON responses, no sessions; `GET` and `DELETE` answer 405), authenticated by `Authorization: Bearer zpm_…`. Clients (Claude Code, `claude mcp add --transport http …`) are configured against it. Status codes: 401 for any bad token (unknown, revoked, expired, blocked account, no role; one identical body), 413 over 16 KiB, 429 over the per-address or per-token cap, 503 when the token cannot be checked. Tool failures are ordinary results with `isError: true`, in English. Also the `ratelimits` binding `MCP_LIMIT` and the `/api/mcp` entry in the `src/middleware.ts` allow-list.
@@ -94,7 +96,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 | `roles_set_role` (destructive) | `user_id`*, `role`*, `on`* |
 | `audit_list` | `resource`, `actor_id`, `from`, `to`, `limit`, `before_id` |
 
-Tools for later resources (recipes) join this table when their registry entries land.
+Recipe moderation (`/admin/przepisy`) is panel-only for now: its registry entry has no `mcp` blocks, so no `recipes_*` tool exists yet. They join this table when those blocks are added (the `admin_*_as` functions they would call already exist).
 
 **Breaking:** renaming or removing a tool or an argument, making an optional argument required, changing what a destructive tool's `confirm` must equal, changing the 401/429 semantics, accepting a token without re-reading the owner's roles and ban state, or reusing `MCP_LIMIT`'s `namespace_id` (`1003`) in another Worker of the account (bindings with the same id share counters).
 
