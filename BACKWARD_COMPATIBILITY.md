@@ -95,8 +95,17 @@ There is no public API and no versioned package; the contracts are URLs, payload
 | `roles_list` | none |
 | `roles_set_role` (destructive) | `user_id`*, `role`*, `on`* |
 | `audit_list` | `resource`, `actor_id`, `from`, `to`, `limit`, `before_id` |
+| `recipes_list` | `query`, `filter` (`all`, `hidden`, `visible`), `limit`, `after_created`, `after_id` |
+| `recipes_get` | `recipe_id`* |
+| `recipes_hide` | `recipe_id`*, `reason` |
+| `recipes_unhide` | `recipe_id`* |
+| `recipes_delete` (destructive) | `recipe_id`*, `redirect_to_slug` |
+| `recipes_restore` (admin only) | `recipe_id`* |
+| `recipes_merge` (destructive) | `canonical_id`*, `duplicate_ids`* (list of 1–20 distinct ids) |
+| `recipes_unmerge` (destructive) | `merge_id`* |
+| `recipes_set_taxonomy` | `recipe_id`*, `category`, `tags` (list, from the closed tag list, at most 6; `[]` clears) |
 
-Recipe moderation (`/admin/przepisy`) is panel-only for now: its registry entry has no `mcp` blocks, so no `recipes_*` tool exists yet. They join this table when those blocks are added (the `admin_*_as` functions they would call already exist).
+Argument lists are JSON arrays of distinct items; their bounds sit under `items` in the input schema. After a change the caches of the affected recipe pages are emptied, as in the panel.
 
 **Breaking:** renaming or removing a tool or an argument, making an optional argument required, changing what a destructive tool's `confirm` must equal, changing the 401/429 semantics, accepting a token without re-reading the owner's roles and ban state, or reusing `MCP_LIMIT`'s `namespace_id` (`1003`) in another Worker of the account (bindings with the same id share counters).
 
