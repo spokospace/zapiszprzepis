@@ -4,6 +4,8 @@ import { HOME_DESCRIPTION, HOME_TITLE } from "@/lib/home-meta";
 import { PWARegister } from "./components/pwa-register";
 import { SiteFooter } from "./components/site-footer";
 import { TextScaleApplier } from "./components/text-scale-applier";
+import { TimerProvider } from "./components/timer-provider";
+import { TimerCards } from "./components/timer-cards";
 
 export const metadata: Metadata = {
   title: HOME_TITLE,
@@ -51,7 +53,10 @@ export default function RootLayout({
       {/* Full width so section backgrounds (the home hero, the header border) reach the
           viewport edges; content stays centred at 1152 px via PageContainer (E01-S31 §4). */}
       <body className="min-h-full flex flex-col w-full">
-        {children}
+        <TimerProvider>
+          {children}
+          <TimerCards />
+        </TimerProvider>
         <SiteFooter />
         <PWARegister />
         {/* Applies the saved text-size level (zp-text-scale) app-wide by owning the

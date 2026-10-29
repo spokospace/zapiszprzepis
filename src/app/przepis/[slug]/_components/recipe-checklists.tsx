@@ -14,6 +14,8 @@ import type { GlossaryEntry } from '@/lib/ingredient-glossary'
 import { useStepPhotos } from './use-step-photos'
 import { IngredientGlossary } from './ingredient-glossary'
 import { RECIPE_SPLIT } from './recipe-split'
+import { StepTimerText } from './step-timer-text'
+import { KeepScreenOn } from './keep-screen-on'
 
 /** „Pokaż” / „Ukryj” — the two states of the step-photos toggle (ZMIANY §3). */
 const PHOTO_OPTIONS: [label: string, show: boolean][] = [
@@ -53,6 +55,9 @@ interface IngredientGroup {
 
 interface RecipeChecklistsProps {
   recipeId: number
+  /** Names the step timers started from this recipe's steps (#611). */
+  recipeSlug: string
+  recipeTitle: string
   ingredientGroups: IngredientGroup[]
   steps: string[]
   /** Archived image URL per step, index-aligned with `steps`; '' = that step has none (ZMIANY zdjęcia kroków). */
@@ -180,6 +185,8 @@ export function ingredientsResetRaw(state: Checklist): string | null {
  */
 export function RecipeChecklists({
   recipeId,
+  recipeSlug,
+  recipeTitle,
   ingredientGroups,
   steps,
   stepImages = [],
@@ -288,6 +295,7 @@ export function RecipeChecklists({
             <h2 id="steps-heading" className="min-w-0 text-[24px] font-bold text-ink">
               Przygotowanie
             </h2>
+            <KeepScreenOn />
             {showToggle && (
               <div role="group" aria-label="Zdjęcia kroków" className="flex items-center gap-2.5 print:hidden">
                 <span className="text-[17px] font-bold text-ink">Zdjęcia kroków</span>
@@ -369,7 +377,9 @@ export function RecipeChecklists({
                           )}
                           {done && <span className="text-[15px] font-bold text-success print:hidden">zrobiony</span>}
                         </p>
-                        <p className={`text-scalable leading-[1.6] ${done ? 'text-ink-muted line-through' : 'text-ink'}`}>{step}</p>
+                        <p className={`text-scalable leading-[1.6] ${done ? 'text-ink-muted line-through' : 'text-ink'}`}>
+                          <StepTimerText text={step} stepNumber={i + 1} recipeSlug={recipeSlug} recipeTitle={recipeTitle} />
+                        </p>
                         {/* Source photo under the step text, same <li>; 4:3, no layout jump (ZMIANY §2).
                             A tap opens the full-screen viewer, like a gallery photo. */}
                         {visibleStepImages[i] && (
