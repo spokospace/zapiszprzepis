@@ -232,9 +232,9 @@ export function AppMenu({
             <div className="pt-4" />
             {mine ? (
               <section aria-labelledby="app-menu-mine" className="pb-4">
-                <h3 id="app-menu-mine" className={SECTION_HEADING}>
+                <p id="app-menu-mine" className={SECTION_HEADING}>
                   Twoje konto
-                </h3>
+                </p>
                 <ul>
                   {mine.map((entry) => (
                     <li key={entry.key}>
@@ -272,9 +272,9 @@ export function AppMenu({
             )}
 
             <section aria-labelledby="app-menu-categories" className="border-t-2 border-border-card pt-4">
-              <h3 id="app-menu-categories" className={SECTION_HEADING}>
+              <p id="app-menu-categories" className={SECTION_HEADING}>
                 Wszystkie przepisy według kategorii
-              </h3>
+              </p>
               {/* No mid-word break: one column below 360 px (like the home CategoryGrid),
                   two from there up; 16 px + tight spacing keep the longest name ("Ciasteczka")
                   on one line even in the 330 px panel. At a large system font a long name
