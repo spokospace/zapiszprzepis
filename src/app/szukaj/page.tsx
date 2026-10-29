@@ -10,7 +10,7 @@ import { HomeSearch } from '@/app/components/home/home-search'
 import { SearchScopeSwitch } from '@/app/components/search/search-scope'
 import { SearchResults } from '@/app/components/search/search-results'
 import { SearchCategoryFilter, type CategoryOption } from '@/app/components/search/search-category-filter'
-import { WebSearchFallback } from '@/app/components/search/web-search-fallback'
+import { SearchTabs } from '@/app/components/search/search-tabs'
 import { CategoryGrid } from '@/app/components/home/category-grid'
 import { SearchScreenBar } from './_components/search-screen-bar'
 import { RecentSearchList, RecordRecentSearch } from './_components/recent-searches'
@@ -33,8 +33,8 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 /**
  * The one recipe search (E01-S05), public: a guest searches everyone's recipes,
  * a signed-in user can narrow it to "Moje" or "Ulubione". Matching runs in the
- * search_recipes RPC. The results can be narrowed to one category, and every
- * list ends with a web search (E01-S22, C2/A3). Below lg it is a full screen of its
+ * search_recipes RPC. The results can be narrowed to one category (E01-S22, C2) and
+ * sit in the „W serwisie” tab beside an on-demand „Na blogach” search (E01-S30). Below lg it is a full screen of its
  * own (handoff v8 screen 4, E01-S26): „✕ Zamknij” instead of the app header, recent
  * searches and categories before a query, and quick-search chips above the keyboard.
  */
@@ -71,7 +71,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
           <HomeSearch key={q} id="search-page-field" defaultValue={q} scope={scope} autoFocus={!q} compact />
           <SearchSuggestions key={`s-${q}`} fieldId="search-page-field" initialValue={q} />
         </div>
-        {user && <SearchScopeSwitch q={q} scope={scope} />}
+        {/* With results, „Szukaj w:” moves into the „W serwisie” tab (E01-S30). */}
+        {user && !(q && 'rows' in outcome) && <SearchScopeSwitch q={q} scope={scope} />}
         {!q ? (
           <>
             <p className="text-[19px] text-ink-soft">
@@ -87,16 +88,27 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             Wyszukiwanie chwilowo nie działa. Spróbuj za chwilę.
           </p>
         ) : (
-          <>
-            <SearchCategoryFilter options={categoryOptions} selected={category}>
-              <p role="status" className="text-[19px] text-ink">
-                <strong>
-                  {outcome.total} {recipesNoun(outcome.total)}
-                </strong>{' '}
-                dla „{q}”
-              </p>
-            </SearchCategoryFilter>
-            {rows.length > 0 && (
+          <SearchTabs
+            key={q}
+            q={q}
+            localCount={`${outcome.total} ${recipesNoun(outcome.total)}`}
+            hasLocalResults={rows.length > 0}
+            isAuthenticated={Boolean(user)}
+            hasFullAccess={hasFullAccess}
+          >
+            {user && <SearchScopeSwitch q={q} scope={scope} />}
+            {/* Kept with no matches while a category filter is on, so it can be undone. */}
+            {(rows.length > 0 || category) && (
+              <SearchCategoryFilter options={categoryOptions} selected={category}>
+                <p role="status" className="text-[19px] text-ink">
+                  <strong>
+                    {outcome.total} {recipesNoun(outcome.total)}
+                  </strong>{' '}
+                  dla „{q}”
+                </p>
+              </SearchCategoryFilter>
+            )}
+            {rows.length > 0 ? (
               <SearchResults
                 q={q}
                 scope={scope}
@@ -106,9 +118,17 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                 total={outcome.total}
                 favoriteIds={user ? (favoriteIds ?? new Set()) : null}
               />
+            ) : (
+              <div>
+                <h2 id="no-results-heading" className="text-[22px] font-bold break-words text-ink">
+                  Nie mamy jeszcze przepisu „{q}”
+                </h2>
+                <p className="mt-1 text-[17px] text-ink-soft">
+                  Sprawdź pisownię albo wpisz jeden składnik, np. „dynia”.
+                </p>
+              </div>
             )}
-            <WebSearchFallback q={q} isAuthenticated={Boolean(user)} hasFullAccess={hasFullAccess} hasResults={rows.length > 0} />
-          </>
+          </SearchTabs>
         )}
       </PageContainer>
       <QuickSearchBar key={q} fieldId="search-page-field" initialValue={q} isAuthenticated={Boolean(user)} />

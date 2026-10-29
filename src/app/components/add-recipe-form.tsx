@@ -68,7 +68,7 @@ export function ExaResultsPanel({ results, onClose }: { results: ExaResult[]; on
                   >
                     Otwórz stronę ↗
                   </a>
-                  {result.alreadySaved ? (
+                  {result.existing?.owner === 'own' ? (
                     <span className="shrink-0 text-sm text-green-600 font-medium">Już zapisany</span>
                   ) : (
                     <form action={addRecipeFromUrl}>

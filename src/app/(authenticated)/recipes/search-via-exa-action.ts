@@ -4,12 +4,18 @@ import { requireUser } from '@/lib/supabase/server'
 import { getExaApiKey } from '@/lib/env'
 import { exaSearchAllowed } from '@/lib/exa-rate-limit'
 import { TRUSTED_RECIPE_DOMAINS } from '@/lib/recipe-source-domains'
+import { classifyExisting, findPublicRecipeBySourceUrl, findRecipeBySourceUrl } from '@/lib/recipe-dedup'
+import { normalizeUrl } from '@/lib/url-normalize'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+/** The recipe a found link already is in the app: the user's own, or anyone else's (one recipe per link). */
+export type ExistingRecipe = { owner: 'own' | 'other'; slug: string }
 
 export type ExaResult = {
   url: string
   title: string
   highlights?: string[]
-  alreadySaved: boolean
+  existing: ExistingRecipe | null
 }
 
 export type ExaSearchResponse =
@@ -24,6 +30,27 @@ type ExaApiResult = {
 
 type ExaApiResponse = {
   results: ExaApiResult[]
+}
+
+/**
+ * Whether a found link is already a recipe here, checked against every user's
+ * recipes (global dedup, E01-S30) under the same normalized key the intake uses.
+ * A failed lookup only loses the hint: the result still shows, and a save goes
+ * through addRecipeFromUrl's own dedup.
+ */
+async function existingRecipe(supabase: SupabaseClient, userId: string, url: string): Promise<ExistingRecipe | null> {
+  try {
+    const key = normalizeUrl(url)
+    const own = await findRecipeBySourceUrl(supabase, userId, key)
+    const other = own ? null : await findPublicRecipeBySourceUrl(supabase, key)
+    const owner = classifyExisting({ ownMatch: own != null, globalMatch: other != null })
+    if (owner === 'own' && own) return { owner, slug: own.slug }
+    if (owner === 'other' && other) return { owner, slug: other.slug }
+    return null
+  } catch (err) {
+    console.error('[searchViaExa] existing-recipe lookup failed', err)
+    return null
+  }
 }
 
 /** A dish or ingredient name fits easily; a longer string is cut before the paid call. */
@@ -71,25 +98,15 @@ export async function searchViaExa(rawQuery: string): Promise<ExaSearchResponse>
 
     const data: ExaApiResponse = await res.json()
     const rawResults = data.results ?? []
-    const urls = rawResults.map((r) => r.url)
 
-    if (urls.length === 0) return { results: [] }
-
-    const { data: savedRows, error: savedRowsError } = await supabase
-      .from('recipes')
-      .select('source_url')
-      .eq('user_id', userId)
-      .in('source_url', urls)
-    if (savedRowsError) console.error('[searchViaExa] savedRows query failed', savedRowsError)
-
-    const savedUrls = new Set((savedRows ?? []).map((r) => r.source_url))
-
-    const results: ExaResult[] = rawResults.map((r) => ({
-      url: r.url,
-      title: r.title,
-      highlights: r.highlights,
-      alreadySaved: savedUrls.has(r.url),
-    }))
+    const results: ExaResult[] = await Promise.all(
+      rawResults.map(async (r) => ({
+        url: r.url,
+        title: r.title,
+        highlights: r.highlights,
+        existing: await existingRecipe(supabase, userId, r.url),
+      })),
+    )
 
     return { results }
   } catch (err) {
