@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseStepDuration } from '@/lib/step-duration'
+import { locateStepDuration, parseStepDuration } from '@/lib/step-duration'
 
 describe('parseStepDuration', () => {
   it('reads a single duration in minutes', () => {
@@ -27,5 +27,19 @@ describe('parseStepDuration', () => {
   it('ignores zero and inverted ranges', () => {
     expect(parseStepDuration('Czekaj 0 minut.')).toBeNull()
     expect(parseStepDuration('Czekaj 15–12 minut.')).toBeNull()
+  })
+})
+
+describe('locateStepDuration', () => {
+  it('returns the matched span so the step text can wrap it in a button', () => {
+    expect(locateStepDuration('Piecz 12–15 minut, sprawdź.')).toEqual({
+      duration: { min: 12, addMin: 3 },
+      text: '12–15 minut',
+      index: 6,
+    })
+  })
+
+  it('returns null when there is nothing to time', () => {
+    expect(locateStepDuration('Wymieszaj.')).toBeNull()
   })
 })
