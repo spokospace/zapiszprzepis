@@ -81,7 +81,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
   // /reset-password is intentionally excluded: after /auth/confirm verifies the
   // email link the user is authenticated, so it must be reachable while logged in.
   const isAuthPage = pathname === '/login' || pathname.startsWith('/login/')
-    || pathname === '/signup' || pathname.startsWith('/signup/')
+    || pathname === '/rejestracja' || pathname.startsWith('/rejestracja/')
     || pathname === '/forgot-password' || pathname.startsWith('/forgot-password/')
 
   if (isAuthPage) {

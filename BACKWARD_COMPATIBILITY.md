@@ -6,7 +6,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 ## 1. User-facing URLs
 
-**Surface:** `/`, `/recipes`, `/recipes/[slug]`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/confirm`, `/auth/callback`, `/share`, plus the query params links and bookmarks carry (`/recipes?category=…&tag=…&q=…`) and the flags the UI reads (`?add_error=empty|invalid_url|server`, `?duplicate=1|pending`, `?shared=1`, `/login?error=…`).
+**Surface:** `/`, `/recipes`, `/recipes/[slug]`, `/login`, `/rejestracja` (was `/signup`, which now 308-redirects here, query string kept), `/forgot-password`, `/reset-password`, `/auth/confirm`, `/auth/callback`, `/share`, plus the query params links and bookmarks carry (`/recipes?category=…&tag=…&q=…`) and the flags the UI reads (`?add_error=empty|invalid_url|server`, `?duplicate=1|pending`, `?shared=1`, `/login?error=…`).
 
 **Admin panel (staff only, never indexed, 404 for anyone without a role):** `/admin`, `/admin/uzytkownicy`, `/admin/importy`, `/admin/dostep`, `/admin/role`, `/admin/dziennik`, `/admin/przepisy` and `/admin/przepisy/<id>`, `/admin/tokeny` and their `?ok=` / `?error=` result keys. Staff bookmark these.
 

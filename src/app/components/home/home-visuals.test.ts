@@ -47,7 +47,7 @@ describe('GuestCta (E01-S20)', () => {
     expect(html).toContain('border-t border-ink')
     expect(html).not.toContain('bg-surface-dark')
     expect(html).toContain('Zapisuj przepisy z linku i zbieraj ulubione')
-    expect(html).toMatch(/href="\/signup"[^>]*>Załóż konto</)
+    expect(html).toMatch(/href="\/rejestracja"[^>]*>Załóż konto</)
     expect(html).toMatch(/href="\/login"[^>]*>Zaloguj się</)
   })
 })

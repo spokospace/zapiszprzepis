@@ -10,7 +10,7 @@ export function LogoIcon({ className = 'h-10 w-10' }: { className?: string }) {
 }
 
 /**
- * The standalone logo on the auth screens (3a /login, /signup): not a link, so it
+ * The standalone logo on the auth screens (3a /login, /rejestracja): not a link, so it
  * carries one accessible name, „Zapisz Przepis”, as the old image's alt did.
  */
 export function BrandLogo() {

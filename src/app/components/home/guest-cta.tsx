@@ -15,7 +15,7 @@ export function GuestCta() {
         Po zalogowaniu dodasz własne przepisy, zobaczysz galerię zdjęć i zapiszesz ulubione.
       </p>
       <div className="mt-4 flex flex-col gap-2.5 min-[360px]:flex-row lg:max-w-[480px]">
-        <Link href="/signup" className={`${buttonClasses('primary', 'lg')} flex-1 no-underline!`}>
+        <Link href="/rejestracja" className={`${buttonClasses('primary', 'lg')} flex-1 no-underline!`}>
           Załóż konto
         </Link>
         <Link href="/login" className={`${buttonClasses('outline', 'lg')} flex-1 no-underline!`}>

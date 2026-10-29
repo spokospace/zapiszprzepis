@@ -5,7 +5,7 @@ vi.mock('./signup-form', () => ({ SignUpForm: () => null }))
 
 import SignUpPage from './page'
 
-describe('/signup logo (laid out like screen 3a, #331)', () => {
+describe('/rejestracja logo (laid out like screen 3a, #331)', () => {
   it('shows the shared icon + "Zapisz Przepis" logo with one accessible name, not the old lettering', async () => {
     const html = renderToStaticMarkup(await SignUpPage({ searchParams: Promise.resolve({}) }))
     const logo = html.match(/<div role="img" aria-label="Zapisz Przepis"[^>]*>.*?Przepis<\/span><\/span><\/div>/)?.[0] ?? ''

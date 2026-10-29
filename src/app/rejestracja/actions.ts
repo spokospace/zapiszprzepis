@@ -22,11 +22,11 @@ export async function signUp(formData: FormData): Promise<void> {
   const encodedEmail = encodeURIComponent(email)
 
   if (!EMAIL_RE.test(email)) {
-    redirect(`/signup?error=invalid_email&email=${encodedEmail}`)
+    redirect(`/rejestracja?error=invalid_email&email=${encodedEmail}`)
   }
 
   if (!isOpenRegistration() && inviteCode !== getInviteCode()) {
-    redirect(`/signup?error=invalid_code&email=${encodedEmail}`)
+    redirect(`/rejestracja?error=invalid_code&email=${encodedEmail}`)
   }
 
   const supabase = await createSupabaseServerClient()
@@ -42,11 +42,11 @@ export async function signUp(formData: FormData): Promise<void> {
 
   if (error) {
     if (error.status === 429 || error.code === 'over_email_send_rate_limit') {
-      redirect(`/signup?error=cooldown&email=${encodedEmail}`)
+      redirect(`/rejestracja?error=cooldown&email=${encodedEmail}`)
     }
     console.error('signUp signInWithOtp failed', { code: error.code, status: error.status })
-    redirect(`/signup?error=unknown&email=${encodedEmail}`)
+    redirect(`/rejestracja?error=unknown&email=${encodedEmail}`)
   }
 
-  redirect(`/signup?sent=1&email=${encodedEmail}`)
+  redirect(`/rejestracja?sent=1&email=${encodedEmail}`)
 }

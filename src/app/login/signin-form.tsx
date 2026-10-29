@@ -221,7 +221,7 @@ export function SignInForm({ error, email, sent, success, next }: SignInFormProp
             <a href="/forgot-password" className="inline-flex min-h-[48px] items-center font-bold text-ink">
               Zapomniałem hasła
             </a>
-            <a href="/signup" className="inline-flex min-h-[48px] items-center text-ink-soft hover:text-ink">
+            <a href="/rejestracja" className="inline-flex min-h-[48px] items-center text-ink-soft hover:text-ink">
               Rejestracja
             </a>
           </div>

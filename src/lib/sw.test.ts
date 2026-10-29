@@ -212,7 +212,8 @@ describe('sw.js stays in sync with the app', () => {
   it.each([
     '/', '/szukaj', '/wyswietlanie', '/regulamin', '/polityka-prywatnosci', '/usuwanie-danych',
     '/przepis/sernik', '/przepisy/ciasta', '/u/kasia',
-    '/ulubione', '/powiadomienia', '/settings', '/recipes', '/dodaj', '/witaj', '/login', '/signup',
+    '/ulubione', '/powiadomienia', '/settings', '/recipes', '/dodaj', '/witaj', '/login',
+    '/rejestracja', '/signup',
   ])('treats %s as public exactly when middleware does', (path) => {
     const sw = loadWorker()
     expect(sw.routeFor(request(path)) === 'public-page').toBe(isPublicRoute(path))
