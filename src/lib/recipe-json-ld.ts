@@ -3,8 +3,9 @@ import { parseSteps } from '@/lib/steps'
 import { buildFallbackMetaDescription, tagLabel } from '@/lib/recipe-tags'
 import { categoryLabel, type RecipeCategory } from '@/lib/recipe-categories'
 import { servingsCount } from '@/lib/servings'
-import { recipePath } from '@/lib/routes'
+import { categoryPath, recipePath } from '@/lib/routes'
 import { coverImageSrc } from '@/lib/recipe-image-archive'
+import { SITE_NAME } from '@/lib/site'
 
 /**
  * The guest-safe recipe fields the schema.org/Recipe JSON-LD needs — a subset of
@@ -30,6 +31,8 @@ export interface RecipeForJsonLd {
   /** The original recipe's author at the source — the Recipe's real author, not
    *  the platform user who added it (a curator, not the creator). */
   source_author?: string | null
+  /** The original page the recipe was saved from; null for a page-less recipe. */
+  source_url?: string | null
   created_at: string
   /** coalesce(updated_at, created_at); falls back to created_at when absent. */
   last_modified?: string | null
@@ -97,6 +100,8 @@ export function buildRecipeJsonLd(recipe: RecipeForJsonLd, siteUrl: string): Rec
   const totalTime = isoDuration(recipe.total_time_minutes)
 
   const author = recipe.source_author?.trim()
+  // The original page, credited even when the source names no author.
+  const basedOn = recipe.source_url && /^https?:\/\//i.test(recipe.source_url) ? recipe.source_url : null
   const keywords = (recipe.tags ?? []).map(tagLabel).filter(Boolean).join(', ')
   // Only an archived Storage cover, never a legacy external link (the image_url
   // invariant) — the markup must not point crawlers at a third-party host.
@@ -116,6 +121,7 @@ export function buildRecipeJsonLd(recipe: RecipeForJsonLd, siteUrl: string): Rec
     datePublished: recipe.created_at,
     dateModified: recipe.last_modified ?? recipe.created_at,
     ...(author ? { author: { '@type': 'Person', name: author } } : {}),
+    ...(basedOn ? { isBasedOn: basedOn } : {}),
     ...(keywords ? { keywords } : {}),
     ...(recipe.servings ? { recipeYield: servingsCount(recipe.servings) } : {}),
     ...(prepTime ? { prepTime } : {}),
@@ -123,6 +129,26 @@ export function buildRecipeJsonLd(recipe: RecipeForJsonLd, siteUrl: string): Rec
     ...(totalTime ? { totalTime } : {}),
     ...(ingredients.length ? { recipeIngredient: ingredients } : {}),
     ...(steps.length ? { recipeInstructions: steps.map((text) => ({ '@type': 'HowToStep', text })) } : {}),
+  }
+}
+
+/**
+ * schema.org/BreadcrumbList: home › category › recipe. Starts at home, not the
+ * visible "Przepisy" (/szukaj), because search is noindex.
+ */
+export function buildRecipeBreadcrumbJsonLd(
+  recipe: Pick<RecipeForJsonLd, 'title' | 'category'>,
+  siteUrl: string,
+): Record<string, unknown> {
+  const crumbs = [
+    { name: SITE_NAME, item: `${siteUrl}/` },
+    { name: categoryLabel(recipe.category), item: `${siteUrl}${categoryPath(recipe.category)}` },
+    { name: recipe.title },
+  ]
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((crumb, i) => ({ '@type': 'ListItem', position: i + 1, ...crumb })),
   }
 }
 

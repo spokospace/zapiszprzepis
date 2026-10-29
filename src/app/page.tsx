@@ -26,7 +26,8 @@ import { ADD_RECIPE_PATH } from '@/lib/routes'
 import type { ListKey } from '@/lib/recipe-list-context'
 import type { Metadata } from 'next'
 import { getSiteUrl } from '@/lib/site-url'
-import { homeMetadata } from '@/lib/home-meta'
+import { homeMetadata, homeWebSiteJsonLd } from '@/lib/home-meta'
+import { serializeJsonLd } from '@/lib/recipe-json-ld'
 
 type SearchParams = Promise<{ fav_added?: string; tab?: string }>
 
@@ -84,8 +85,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     />
   ) : null
 
+  // schema.org/WebSite: where Google reads the site name it shows above a result.
+  const webSiteJsonLd = serializeJsonLd(homeWebSiteJsonLd(await getSiteUrl()))
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: webSiteJsonLd }} />
       <AppHeader failedShares={failedShares} isAuthenticated={Boolean(user)} menu={menu} />
       <main className="min-h-screen bg-white pb-10">
         {user && memberRows ? (
