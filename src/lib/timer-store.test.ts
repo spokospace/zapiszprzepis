@@ -3,6 +3,7 @@ import {
   TIMERS_STORAGE_KEY,
   endTimer,
   extendTimer,
+  formatClock,
   hasEnded,
   loadTimers,
   parseTimers,
@@ -57,6 +58,16 @@ describe('timer reducers', () => {
     const state = startTimer([], base, 1_000, 0)
     expect(pauseTimer(pauseTimer(state, 'a', 500), 'a', 600)[0].remaining).toBe(500)
     expect(resumeTimer(state, 'a', 500)).toEqual(state)
+  })
+})
+
+describe('formatClock', () => {
+  it('shows mm:ss, rounds up, and switches to h:mm:ss from one hour', () => {
+    expect(formatClock(0)).toBe('00:00')
+    expect(formatClock(1)).toBe('00:01')
+    expect(formatClock(754_000)).toBe('12:34')
+    expect(formatClock(3_600_000)).toBe('1:00:00')
+    expect(formatClock(-5)).toBe('00:00')
   })
 })
 
