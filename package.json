@@ -13,6 +13,7 @@
     "refresh:recipe-times": "node --env-file=.env.local --import tsx scripts/refresh-recipe-times.ts",
     "archive:recipe-images": "node --env-file=.env.local --import tsx scripts/archive-recipe-images.ts",
     "backfill:recipe-tags": "node --env-file=.env.local --import tsx scripts/backfill-recipe-tags.ts",
+    "backfill:stale-tags": "node --env-file=.env.local --import tsx scripts/backfill-stale-tags.ts",
     "generate:meta-migration": "node --env-file=.env.local --import tsx scripts/generate-meta-description-migration.ts",
     "backfill:source-urls": "node --env-file=.env.local --import tsx scripts/backfill-source-urls.ts",
     "backfill:source-fingerprints": "node --env-file=.env.local --import tsx scripts/backfill-source-fingerprints.ts",
