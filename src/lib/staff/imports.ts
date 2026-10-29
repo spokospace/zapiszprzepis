@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { detectSourceType } from '@/lib/detect-source-type'
+import type { FinishContext, ServiceReply } from './mcp/types'
 import { UUID_RE } from './users'
 
 export const IMPORT_FILTERS = ['problem', 'failed', 'pending', 'completed', 'all'] as const
@@ -131,4 +132,29 @@ export function buildExtractEvent(payload: RetryPayload) {
       userId: payload.userId,
     },
   }
+}
+
+/**
+ * The second half of an MCP retry, same as the panel's server action: the function
+ * has already validated, reset the share and audited; this sends the event. If the
+ * send fails the share goes back to `failed` so it stays on the list.
+ */
+export async function finishImportRetry(ctx: FinishContext): Promise<ServiceReply> {
+  const payload = parseRetryPayload(ctx.result)
+  if (!payload) return { ok: false, code: 'unknown' }
+  try {
+    // Loaded on demand: the Inngest client is only needed when a retry is sent.
+    const { inngest } = await import('@/inngest/client')
+    await inngest.send(buildExtractEvent(payload))
+  } catch (err) {
+    console.error('[staff] Failed to re-trigger extraction:', err)
+    await ctx.rpc('admin_import_dispatch_failed_as', {
+      p_actor: ctx.actorId,
+      p_share: payload.shareId,
+      p_via: 'mcp',
+      p_token_id: ctx.tokenId,
+    })
+    return { ok: false, code: 'dispatch_failed' }
+  }
+  return { ok: true, data: { share_id: payload.shareId, status: 'pending', dispatched: true } }
 }

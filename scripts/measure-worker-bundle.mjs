@@ -19,6 +19,7 @@
 // Baseline before the admin panel (master at 7511317, 2026-10-28): 10852 KiB raw,
 // 2320 KiB gzipped, 752 KiB below the limit. Each admin phase re-measures and a
 // regression past the budget blocks its PR.
+// After Phase 4 (MCP, 2026-10-29): 10904 KiB raw, 2320 KiB gzipped, 752 KiB below the limit.
 import { spawnSync } from 'node:child_process'
 
 // The hard limit is 3 MiB (3072 KiB); the default budget keeps ~5 % headroom so a

@@ -15,6 +15,7 @@ export const STAFF_ERRORS = {
   unknown_role: 'Nie ma takiej roli.',
   not_retryable: 'Ten import nie wymaga ponowienia albo ktoś już go ponowił.',
   dispatch_failed: 'Nie udało się uruchomić przetwarzania. Import wrócił na listę błędów.',
+  too_many_tokens: 'Masz już 10 aktywnych tokenów. Unieważnij któryś, zanim utworzysz nowy.',
   invalid_input: 'Dane są niepoprawne.',
   confirm_mismatch: 'Potwierdzenie się nie zgadza. Nic nie zmieniono.',
   unknown: 'Nie udało się. Spróbuj ponownie.',

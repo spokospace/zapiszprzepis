@@ -5,7 +5,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare'
 type RateLimiter = { limit(options: { key: string }): Promise<{ success: boolean }> }
 
 /** Bindings declared under `ratelimits` in wrangler.jsonc. */
-export type RateLimitBinding = 'EXA_SEARCH_LIMIT' | 'EXTRACTION_LIMIT'
+export type RateLimitBinding = 'EXA_SEARCH_LIMIT' | 'EXTRACTION_LIMIT' | 'MCP_LIMIT'
 
 /**
  * Is `key` still under the cap of the `binding` limiter? Fails open: under

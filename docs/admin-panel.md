@@ -61,3 +61,62 @@ until then).
 The Worker upload must stay under 3 MiB gzipped (free plan). `pnpm measure:worker` reads the figure after
 `pnpm exec opennextjs-cloudflare build`; the OpenNext build needs Linux or WSL (Windows fails creating symlinks).
 Baseline before the panel: 2320 KiB gzipped (see the script header for the figure after each phase).
+
+## MCP: run the panel's operations from Claude Code (Phase 4)
+
+`POST https://zapiszprzepis.pl/api/mcp` exposes the same operations as the panel as MCP tools, under **your own account
+and role**. A moderator's token lists and runs only moderator tools; an admin's lists everything the panel offers. The
+tools are generated from `src/lib/staff/registry.ts`, so a resource added there (recipes in Phases 2 and 3) appears
+without MCP code. The tool and argument names are a contract: see `BACKWARD_COMPATIBILITY.md` §9.
+
+### Connect
+
+1. In the panel open **Moje tokeny** (`/admin/tokeny`), name the token ("laptop") and pick how long it lives (default 90
+   days). The token is shown **once**. Only its SHA-256 is stored; there is no way to read it again.
+2. Run the command the screen prints (it has your token filled in):
+
+   ```bash
+   claude mcp add --transport http zapiszprzepis https://zapiszprzepis.pl/api/mcp --header "Authorization: Bearer <token>"
+   ```
+
+   The token is a password: keep it out of git, chat and screenshots. `claude mcp add` stores it in your Claude Code
+   config; use `--scope user` so it does not land in a project's `.mcp.json`.
+3. A lost or leaked token: **Unieważnij** it on the same screen (works at once) and make a new one. At most 10 tokens
+   can be active per account.
+
+### What a token can and cannot do
+
+- It carries no role. Every call reads your roles and ban state from the database, so removing your role or blocking
+  your account disables all your tokens immediately, with no cache to wait out. Deleting the account deletes the tokens.
+- A token cannot create or revoke tokens; only a signed-in panel session can.
+- **Destructive tools** (`users_block`, `users_delete`, `access_set_full_access`, `roles_set_role`) refuse to run unless
+  called with `confirm: "<operation>"` (`"block"`, `"delete"`, `"set_full_access"`, `"set_role"`). Every change also
+  takes `dry_run: true`: it checks the arguments and your permission, shows the record as it is now and writes
+  nothing. Database rules such as "last admin" are checked only on a real run.
+- Errors come back as ordinary tool results (`isError`), in English.
+- **Audit:** every call is recorded with `via = 'mcp'` and the token id. Changes are written inside the same
+  transaction as the change; reads, previews and refused calls (a moderator forcing an admin tool) are recorded by the
+  endpoint with `after.outcome` = `read`, `dry_run` or `denied`. A read that cannot be recorded is not served.
+  Calls rejected for bad arguments or a missing `confirm` run nothing and are not recorded.
+- `access_create_code` returns the new code in the tool result, which lands in the Claude Code transcript. Treat that
+  transcript like the code itself.
+
+### Limits
+
+16 KiB per request, one JSON-RPC message per request, results cut at 60,000 characters, 60 calls a minute per token
+and per client address (the `MCP_LIMIT` Workers rate-limit binding, which **must exist in Cloudflare before the code
+that declares it is deployed**, like `EXA_SEARCH_LIMIT`). The limiter fails open if the binding is missing, so check
+that it is there.
+
+### Deploying Phase 4
+
+1. Create the `MCP_LIMIT` rate-limit namespace (id `1003`, 60 per 60 s) in Cloudflare.
+2. Apply `supabase/migrations/20261030100000_staff_tokens.sql` from the SQL editor (it needs the Phase 1 migrations).
+   It ends with an assertion call that fails the migration if a grant is wrong.
+3. Merge to `master`. Deployed before step 2 the endpoint answers 503 (it cannot check tokens) and the tokens page
+   shows an error; nothing else changes.
+
+Optional, on a scratch database only, never production: `supabase/tests/staff_tokens_guards.sql` (rolls back; run it
+with `psql -v ON_ERROR_STOP=1 -f`). It was also run in pglite with `auth` stubbed.
+
+After applying, regenerate `src/lib/supabase.types.ts`; the token screen calls its functions untyped until then.

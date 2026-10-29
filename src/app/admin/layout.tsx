@@ -35,6 +35,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                 {r.label}
               </Link>
             ))}
+            {staff.permissions.has('tokens.own') && (
+              <Link
+                href="/admin/tokeny"
+                className="min-h-touch inline-flex items-center px-2 text-ink-soft underline-offset-4 hover:text-action-hover hover:underline"
+              >
+                Moje tokeny
+              </Link>
+            )}
           </nav>
           <Link
             href="/"

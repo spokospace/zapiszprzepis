@@ -1,3 +1,5 @@
+import { finishImportRetry } from './imports'
+import type { ReadTool, ToolArg, WriteTool } from './mcp/types'
 import type { StaffPermission } from './permissions'
 
 /**
@@ -13,6 +15,10 @@ export interface StaffOperation {
   label: string
   permission: StaffPermission
   destructive: boolean
+  /**
+   * How the MCP exposes it as the tool `<resource>_<operation>`. Absent: panel only.
+   */
+  mcp?: WriteTool
 }
 
 export interface StaffResource {
@@ -23,7 +29,21 @@ export interface StaffResource {
   /** What it takes to open the resource at all. */
   permission: StaffPermission
   operations: readonly StaffOperation[]
+  /**
+   * The read tools `<resource>_list` and `<resource>_get`, gated by `permission`.
+   * Absent: the resource has no MCP reads.
+   */
+  mcp?: { list?: ReadTool; get?: ReadTool }
 }
+
+// Arguments several tools share. The MCP names are a contract; the `param` is the SQL name.
+const arg = {
+  userId: { name: 'user_id', param: 'p_user', type: 'uuid', description: 'Account id (uuid).', required: true },
+  limit: (max: number, what: string): ToolArg => ({
+    name: 'limit', param: 'p_limit', type: 'integer', min: 1, max, description: `How many ${what} to return (1-${max}).`,
+  }),
+  beforeId: { name: 'before_id', param: 'p_before_id', type: 'integer', min: 1, description: 'Return only rows with an id below this one (paging: pass the smallest id of the previous page).' },
+} satisfies Record<string, ToolArg | ((...a: never[]) => ToolArg)>
 
 export const STAFF_RESOURCES: readonly StaffResource[] = [
   {
@@ -32,17 +52,66 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
     path: '/admin/uzytkownicy',
     permission: 'users.read',
     operations: [
-      { name: 'block', label: 'Zablokuj konto', permission: 'users.block', destructive: true },
-      { name: 'unblock', label: 'Odblokuj konto', permission: 'users.block', destructive: false },
-      { name: 'delete', label: 'Usuń konto i dane', permission: 'users.delete', destructive: true },
+      {
+        name: 'block', label: 'Zablokuj konto', permission: 'users.block', destructive: true,
+        mcp: {
+          description: 'Block an account: it cannot sign in or refresh its session and its sessions are ended. Data stays. Refused for yourself and for staff accounts.',
+          rpc: 'admin_block_user_as', target: 'user_id',
+          args: [arg.userId, { name: 'reason', param: 'p_reason', type: 'string', maxLength: 200, description: 'Why (kept in the audit log).' }],
+        },
+      },
+      {
+        name: 'unblock', label: 'Odblokuj konto', permission: 'users.block', destructive: false,
+        mcp: { description: 'Lift a block from an account.', rpc: 'admin_unblock_user_as', target: 'user_id', args: [arg.userId] },
+      },
+      {
+        name: 'delete', label: 'Usuń konto i dane', permission: 'users.delete', destructive: true,
+        mcp: {
+          description: 'Permanently delete an account and its personal data. Recipes others favorited are handed to the oldest favoriter. Cannot be undone. Refused for yourself and for staff accounts.',
+          rpc: 'admin_delete_user_as', target: 'user_id', args: [arg.userId],
+        },
+      },
     ],
+    mcp: {
+      list: {
+        description: 'List accounts, newest first. E-mail is null (and not searchable) unless you hold users.read_email.',
+        rpc: 'admin_list_users_as',
+        args: [
+          { name: 'query', param: 'p_query', type: 'string', maxLength: 100, description: 'Search by username or display name (and e-mail when permitted).' },
+          arg.limit(50, 'accounts'),
+          { name: 'after_created', param: 'p_after_created', type: 'timestamp', description: 'Paging: created_at of the last row of the previous page.' },
+          { name: 'after_id', param: 'p_after_id', type: 'uuid', description: 'Paging: user_id of the last row of the previous page.' },
+        ],
+      },
+      get: { description: 'Get one account.', rpc: 'admin_get_user_as', args: [arg.userId] },
+    },
   },
   {
     name: 'imports',
     label: 'Kolejka importów',
     path: '/admin/importy',
     permission: 'imports.read',
-    operations: [{ name: 'retry', label: 'Ponów import', permission: 'imports.retry', destructive: false }],
+    operations: [
+      {
+        name: 'retry', label: 'Ponów import', permission: 'imports.retry', destructive: false,
+        mcp: {
+          description: 'Run a failed or stuck recipe import again, as if its sharer had retried.',
+          rpc: 'admin_retry_import_as', finish: finishImportRetry,
+          args: [{ name: 'share_id', param: 'p_share', type: 'integer', min: 1, required: true, description: 'Import (share) id from imports_list.' }],
+        },
+      },
+    ],
+    mcp: {
+      list: {
+        description: 'List recipe imports, newest first. Default filter: problem (failed or stuck).',
+        rpc: 'admin_list_imports_as',
+        args: [
+          { name: 'status', param: 'p_status', type: 'string', values: ['problem', 'failed', 'pending', 'completed', 'all'], description: 'Which imports to list.' },
+          arg.limit(50, 'imports'),
+          arg.beforeId,
+        ],
+      },
+    },
   },
   {
     name: 'access',
@@ -50,16 +119,57 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
     path: '/admin/dostep',
     permission: 'access.manage',
     operations: [
-      { name: 'create_code', label: 'Utwórz kod', permission: 'access.manage', destructive: false },
-      { name: 'set_full_access', label: 'Zmień pełny dostęp', permission: 'access.manage', destructive: true },
+      {
+        name: 'create_code', label: 'Utwórz kod', permission: 'access.manage', destructive: false,
+        mcp: {
+          description: 'Create an access code. The code is generated by the database and appears only in this result; it cannot be read again.',
+          rpc: 'admin_create_access_code_as',
+          args: [
+            { name: 'note', param: 'p_note', type: 'string', maxLength: 200, description: 'Who or what it is for.' },
+            { name: 'max_uses', param: 'p_max_uses', type: 'integer', min: 1, max: 1000, description: 'How many times it can be used (default 1).' },
+            { name: 'expires_at', param: 'p_expires_at', type: 'timestamp', description: 'ISO 8601 expiry; omit for none.' },
+          ],
+        },
+      },
+      {
+        name: 'set_full_access', label: 'Zmień pełny dostęp', permission: 'access.manage', destructive: true,
+        mcp: {
+          description: 'Grant or revoke full access (the paid-feature gate) for one account.',
+          rpc: 'admin_set_full_access_as', target: 'user_id',
+          args: [arg.userId, { name: 'on', param: 'p_on', type: 'boolean', required: true, description: 'true grants, false revokes.' }],
+        },
+      },
     ],
+    mcp: {
+      list: {
+        description: 'List access codes with their use counts and state. The codes themselves are never stored, so never shown.',
+        rpc: 'admin_list_access_codes_as',
+        args: [arg.limit(100, 'codes')],
+      },
+    },
   },
   {
     name: 'roles',
     label: 'Role',
     path: '/admin/role',
     permission: 'roles.manage',
-    operations: [{ name: 'set_role', label: 'Zmień rolę', permission: 'roles.manage', destructive: true }],
+    operations: [
+      {
+        name: 'set_role', label: 'Zmień rolę', permission: 'roles.manage', destructive: true,
+        mcp: {
+          description: 'Grant or remove a staff role on an account. You cannot change your own roles and the last admin cannot be removed.',
+          rpc: 'admin_set_role_as', target: 'user_id',
+          args: [
+            arg.userId,
+            { name: 'role', param: 'p_role', type: 'string', maxLength: 32, required: true, description: 'Role name, e.g. admin or moderator.' },
+            { name: 'on', param: 'p_on', type: 'boolean', required: true, description: 'true grants, false removes.' },
+          ],
+        },
+      },
+    ],
+    mcp: {
+      list: { description: 'List the accounts that hold a staff role, with their roles.', rpc: 'admin_list_staff_as', args: [] },
+    },
   },
   {
     name: 'audit',
@@ -67,6 +177,20 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
     path: '/admin/dziennik',
     permission: 'audit.read',
     operations: [],
+    mcp: {
+      list: {
+        description: 'List audit log rows, newest first. via is panel or mcp; calls that were refused or only previewed carry after.outcome.',
+        rpc: 'admin_list_audit_as',
+        args: [
+          { name: 'resource', param: 'p_resource', type: 'string', maxLength: 40, description: 'Only this resource (users, imports, access, roles, tokens...).' },
+          { name: 'actor_id', param: 'p_filter_actor', type: 'uuid', description: 'Only changes made by this account.' },
+          { name: 'from', param: 'p_from', type: 'timestamp', description: 'ISO 8601 lower bound.' },
+          { name: 'to', param: 'p_to', type: 'timestamp', description: 'ISO 8601 upper bound.' },
+          arg.limit(100, 'rows'),
+          arg.beforeId,
+        ],
+      },
+    },
   },
 ]
 
