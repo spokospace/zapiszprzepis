@@ -19,6 +19,7 @@ import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { recipesNoun } from '@/app/components/app-menu-model'
 import { buttonClasses } from '@/app/components/ui/button'
 import { TagFilter, type TagChip } from './_components/tag-filter'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 
 type Params = Promise<{ kategoria: string }>
 type SearchParams = Promise<{ tag?: string | string[]; strona?: string | string[] }>
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   // A per-category 1200×630 social card (public/og/categories/<value>.jpg).
   const ogImage = `${siteUrl}${categoryOgImagePath(category)}`
   return {
-    title: `${title} · Zapisz Przepis`,
+    title: `${title} · ${SITE_NAME}`,
     description,
     // Tag/page variants must not compete with the bare category URL.
     // The .md alternate (#363) advertises the AI-citable Markdown listing.
@@ -49,7 +50,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       description,
       type: 'website',
       url: canonical,
-      images: [{ url: ogImage, width: 1200, height: 630, alt: `${title} · Zapisz Przepis` }],
+      ...OG_SITE,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: `${title} · ${SITE_NAME}` }],
     },
     twitter: { card: 'summary_large_image', title, description, images: [ogImage] },
   }
