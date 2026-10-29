@@ -11,12 +11,13 @@ import { PageContainer } from '@/app/components/page-container'
 import { buttonClasses } from '@/app/components/ui/button'
 import { recipesNoun } from '@/app/components/app-menu-model'
 import type { Database } from '@/lib/supabase.types'
-import type { MyRecipeCard } from '@/lib/my-recipes'
+import type { OwnRecipeCard } from '@/lib/my-recipes'
+import { UnavailableRecipeTile } from '@/app/components/unavailable-recipe-tile'
 
 type RecipeCategory = Database['public']['Enums']['recipe_category']
 
 interface RecipesContentProps {
-  recipes: MyRecipeCard[]
+  recipes: OwnRecipeCard[]
   /** Which of `recipes` the signed-in owner has favorited, for the tile heart (E01-S06). */
   favoriteIds: Set<number>
   showSharedToast: boolean
@@ -126,11 +127,15 @@ export function RecipesContent({
                   listKey="moje"
                   label="Moje przepisy"
                   href={listHref}
-                  items={recipes.map((r) => ({ slug: r.slug, title: r.title }))}
+                  items={recipes.filter((r) => !r.hidden_at).map((r) => ({ slug: r.slug, title: r.title }))}
                 />
                 {recipes.map((recipe, i) => (
                   // scroll-mt clears the sticky header when „Pokaż kolejne” jumps here.
                   <div key={recipe.id} id={`wynik-${i + 1}`} className="scroll-mt-28">
+                    {recipe.hidden_at ? (
+                      // Hidden by staff: the row stays, so the owner sees where it went (no title, no link).
+                      <UnavailableRecipeTile />
+                    ) : (
                     <RecipeCard
                       from="moje"
                       slug={recipe.slug}
@@ -143,6 +148,7 @@ export function RecipesContent({
                       sourceAuthor={recipe.source_author}
                       favorite={{ recipeId: recipe.id, favorited: favoriteIds.has(recipe.id), isAuthenticated: true }}
                     />
+                    )}
                   </div>
                 ))}
               </div>

@@ -2,11 +2,11 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient, getSignedInUser } from '@/lib/supabase/server'
 import { RecipesContent } from './recipes-content'
 import {
-  MY_RECIPE_CARD_COLUMNS,
+  MY_OWN_RECIPE_COLUMNS,
   MY_RECIPES_MAX_PAGE,
   MY_RECIPES_PAGE_SIZE,
   myRecipesHref,
-  type MyRecipeCard,
+  type OwnRecipeCard,
 } from '@/lib/my-recipes'
 import { parsePageParam } from '@/lib/category-tags'
 import { getFavoriteIds } from '@/lib/favorites'
@@ -59,7 +59,7 @@ export default async function RecipesPage({
 
   let filteredQuery = supabase
     .from('recipes')
-    .select(MY_RECIPE_CARD_COLUMNS, { count: 'exact' })
+    .select(MY_OWN_RECIPE_COLUMNS, { count: 'exact' })
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })
 
@@ -89,7 +89,7 @@ export default async function RecipesPage({
   // Failed extractions surface in the header notification bell (see the
   // authenticated layout + getFailedShares), not inline on this page.
 
-  const filteredRecipes: MyRecipeCard[] = recipes ?? []
+  const filteredRecipes = (recipes ?? []) as unknown as OwnRecipeCard[]
   const total = count ?? filteredRecipes.length
   const remaining = total - filteredRecipes.length
 

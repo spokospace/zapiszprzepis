@@ -16,6 +16,10 @@ export const STAFF_ERRORS = {
   not_retryable: 'Ten import nie wymaga ponowienia albo ktoś już go ponowił.',
   dispatch_failed: 'Nie udało się uruchomić przetwarzania. Import wrócił na listę błędów.',
   invalid_input: 'Dane są niepoprawne.',
+  invalid_redirect: 'Przekierowanie musi prowadzić do widocznego przepisu. Sprawdź adres przepisu.',
+  canonical_hidden: 'Przepis główny jest ukryty. Najpierw go odkryj.',
+  slug_taken: 'Adres tego przepisu zajął już inny przepis.',
+  restore_conflict: 'Nie da się przywrócić: link źródłowy albo konto autora jest już zajęte lub usunięte.',
   confirm_mismatch: 'Potwierdzenie się nie zgadza. Nic nie zmieniono.',
   unknown: 'Nie udało się. Spróbuj ponownie.',
 } as const

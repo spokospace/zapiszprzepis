@@ -8,7 +8,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 **Surface:** `/`, `/recipes`, `/recipes/[slug]`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/auth/confirm`, `/auth/callback`, `/share`, plus the query params links and bookmarks carry (`/recipes?category=…&tag=…&q=…`) and the flags the UI reads (`?add_error=empty|invalid_url|server`, `?duplicate=1|pending`, `?shared=1`, `/login?error=…`).
 
-**Admin panel (staff only, never indexed, 404 for anyone without a role):** `/admin`, `/admin/uzytkownicy`, `/admin/importy`, `/admin/dostep`, `/admin/role`, `/admin/dziennik` and their `?ok=` / `?error=` result keys. Staff bookmark these.
+**Admin panel (staff only, never indexed, 404 for anyone without a role):** `/admin`, `/admin/uzytkownicy`, `/admin/importy`, `/admin/dostep`, `/admin/role`, `/admin/dziennik`, `/admin/przepisy` and `/admin/przepisy/<id>` and their `?ok=` / `?error=` result keys. Staff bookmark these.
 
 **Breaking:** renaming or removing a path; changing how a recipe slug is derived for existing recipes (slugs are unique per user and stored); removing a query-param code the UI renders.
 
@@ -69,3 +69,5 @@ There is no public API and no versioned package; the contracts are URLs, payload
 **Surface:** `recipe_shares.error_message`, displayed verbatim in the notification bell.
 
 **Breaking:** none for old rows, since they keep their text. A new message must be Polish and readable on its own; don't make the UI depend on parsing message text.
+
+**Admin panel additions (Phase 2 — recipe moderation):** `recipes.hidden_at` / `hidden_by` / `hidden_reason` (staff-only; `public_recipes` must never expose them and both public views keep `where hidden_at is null`, enforced by `assert_public_view_boundary()`), `dish_versions` filtering hidden recipes, the archive table `recipes_deleted_by_staff` (service-only), the policy `recipes_staff_select`, `recipe_hidden_for_viewer(text)`, and the functions `admin_{list,get}_recipe(s)`, `admin_{hide,unhide,delete,restore}_recipe`, `admin_list_deleted_recipes`, `admin_merge_recipes`, `admin_unmerge`, `admin_list_merges`, `admin_set_taxonomy` (+ `_as`), with the error codes `invalid_redirect`, `canonical_hidden`, `slug_taken`, `restore_conflict`. A URL of a recipe staff deleted with a redirect answers 301 to the target; a hidden recipe's URL answers 404 to guests and a 200 "niedostępny" page (noindex) to its owner and favoriters.

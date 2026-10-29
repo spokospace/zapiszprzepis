@@ -16,6 +16,7 @@ import { findGlossaryTerms } from '@/lib/ingredient-glossary'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { RecipeActions } from './_components/recipe-actions'
+import { StaffHiddenBanner, UnavailableRecipe } from './_components/hidden-notice'
 import { RecipeChecklists } from './_components/recipe-checklists'
 import { RecipeListBar, RecipeListNav } from './_components/recipe-list-bar'
 import { LockedGallery } from './_components/locked-gallery'
@@ -32,7 +33,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   // Crawlers and link-preview bots are anonymous, so the metadata describes what
   // a guest sees; meta_description falls back to a self-derived sentence.
-  const { recipe } = await loadRecipe(slug)
+  const { recipe, hidden } = await loadRecipe(slug)
+  // A hidden recipe (staff view or the owner's "unavailable" page) stays out of every index.
+  if (hidden) return { title: 'Przepis niedostępny', robots: { index: false, follow: false } }
   if (!recipe) return { title: 'Przepis', description: 'Szczegóły przepisu' }
 
   return recipeMetadata(recipe, await getSiteUrl())
@@ -61,7 +64,9 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   const { slug } = await params
   const { duplicate, refreshing, refresh_error, in_favorites, delete_error, from, wersje } = await searchParams
 
-  const { recipe: typedRecipe, error, isOwner, user } = await loadRecipe(slug)
+  const { recipe: typedRecipe, error, isOwner, user, hidden } = await loadRecipe(slug)
+
+  if (hidden?.kind === 'unavailable') return <UnavailableRecipe />
 
   if (error || !typedRecipe) {
     if (error) console.error('[recipe] Query error:', error)
@@ -132,6 +137,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     // From lg the list row sits right under the category bar (handoff 2026-10-28: a small
     // gap above it, 12 px to the hero), so the top padding shrinks there.
     <main className="min-h-screen bg-white py-6 sm:py-8 lg:pt-2">
+      {hidden?.kind === 'staff' && <StaffHiddenBanner reason={hidden.hiddenReason} recipeId={hidden.staffRecipeId} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
       {duplicate === '1' && (

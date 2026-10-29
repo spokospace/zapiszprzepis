@@ -6,6 +6,9 @@ import { PageContainer } from '@/app/components/page-container'
 import { RecipeCard, TILE_SIZES_1_TO_3 } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import type { RecipeSource } from '@/lib/recipe-source'
+import { UnavailableRecipeTile } from '@/app/components/unavailable-recipe-tile'
+import { removeUnavailableFavorite } from './actions'
+import { buttonClasses } from '@/app/components/ui/button'
 
 export const metadata: Metadata = { title: 'Ulubione · Zapisz Przepis' }
 
@@ -31,31 +34,32 @@ export default async function FavoritesPage() {
 
   const supabase = await createSupabaseServerClient()
   // One round trip: favorites are private (owner-only RLS), and the recipe for each
-  // is embedded from the guest-safe view, which covers everyone's recipes, not just
+  // is embedded from the guest-safe view, which leaves out a recipe staff hid: that favorite
+  // embeds as null and shows as an "unavailable" row, which covers everyone's recipes, not just
   // the user's own. The FK favorites.recipe_id → recipes(id) lets PostgREST embed
   // public_recipes (a plain view over recipes) through it (#231).
   const { data: favorites } = await supabase
     .from('favorites')
     .select(
-      'recipe:public_recipes(id, slug, title, image_url, category, description, source_type, source_url, source_author)',
+      'recipe_id, recipe:public_recipes(id, slug, title, image_url, category, description, source_type, source_url, source_author)',
     )
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     // favorites.recipe_id → recipes(id) is many-to-one, so `recipe` is a single
     // row (or null), not a list; override the array embed PostgREST-js infers for
     // a view relationship absent from the generated types.
-    .returns<{ recipe: FavoriteCard | null }[]>()
+    .returns<{ recipe_id: number; recipe: FavoriteCard | null }[]>()
 
-  // Newest-first order comes from the query; drop any favorite whose recipe is gone.
-  const recipes = (favorites ?? [])
-    .map((f) => f.recipe)
-    .filter((r): r is FavoriteCard => Boolean(r))
+  // Newest-first order comes from the query. A favorite whose recipe is not in the view is
+  // hidden (a deleted recipe takes its favorites with it), so it stays as an "unavailable" row.
+  const entries = favorites ?? []
+  const recipes = entries.map((f) => f.recipe).filter((r): r is FavoriteCard => Boolean(r))
 
   return (
     <main className="min-h-screen bg-white">
       <PageContainer className="py-6 sm:py-12">
         <h1 className="mb-6 text-2xl font-bold text-ink">Ulubione</h1>
-        {recipes.length === 0 ? (
+        {entries.length === 0 ? (
           <p className="max-w-prose text-[18px] text-ink-soft">
             Nie masz jeszcze ulubionych przepisów. Otwórz przepis i kliknij „Dodaj do ulubionych”.
           </p>
@@ -68,7 +72,20 @@ export default async function FavoritesPage() {
               href="/ulubione"
               items={recipes.map((r) => ({ slug: r.slug, title: r.title }))}
             />
-            {recipes.map((r) => (
+            {entries.map(({ recipe_id, recipe: r }) =>
+              !r ? (
+                <UnavailableRecipeTile
+                  key={`hidden-${recipe_id}`}
+                  action={
+                    <form action={removeUnavailableFavorite}>
+                      <input type="hidden" name="recipeId" value={recipe_id} />
+                      <button type="submit" className={buttonClasses('outline', 'md')}>
+                        Usuń z ulubionych
+                      </button>
+                    </form>
+                  }
+                />
+              ) : (
               <RecipeCard
                 key={r.id}
                 from="fav"
@@ -83,7 +100,8 @@ export default async function FavoritesPage() {
                 favorite={{ recipeId: r.id, favorited: true, isAuthenticated: true }}
                 sizes={TILE_SIZES_1_TO_3}
               />
-            ))}
+              ),
+            )}
           </div>
         )}
       </PageContainer>

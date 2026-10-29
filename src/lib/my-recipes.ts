@@ -13,6 +13,17 @@ export type MyRecipeCard = Pick<
 /** The columns behind MyRecipeCard, for the page's select. */
 export const MY_RECIPE_CARD_COLUMNS = 'id, slug, title, image_url, category, description, source_type, source_url, source_author'
 
+/**
+ * The columns of the owner's own list, which adds `hidden_at`: a recipe staff hid stays
+ * in „Moje przepisy” as an "unavailable" row (admin panel, Phase 2). Typed `string` on
+ * purpose: `hidden_at` is not in the generated types until the migration is applied and
+ * they are regenerated, and a literal would make the typed client reject the select.
+ */
+export const MY_OWN_RECIPE_COLUMNS: string = `${MY_RECIPE_CARD_COLUMNS}, hidden_at`
+
+/** A card of the owner's list; `hidden_at` is set when staff hid the recipe. */
+export type OwnRecipeCard = MyRecipeCard & { hidden_at: string | null }
+
 /** „Pokaż kolejne” step on „Moje przepisy” (#230): fills the 1/2/3-column grid evenly. */
 export const MY_RECIPES_PAGE_SIZE = 24
 

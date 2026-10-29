@@ -4,8 +4,12 @@ import { mergedRecipeSlug } from './merged-recipe-redirect'
 type Row = Record<string, unknown>
 
 /** A client over two tables, answering .eq(column, value) filters with the first matching row. */
-function makeClient(tables: { merged?: Row[]; recipes?: Row[] }) {
-  const rows: Record<string, Row[]> = { recipes_merged_duplicates: tables.merged ?? [], public_recipes: tables.recipes ?? [] }
+function makeClient(tables: { merged?: Row[]; recipes?: Row[]; deleted?: Row[] }) {
+  const rows: Record<string, Row[]> = {
+    recipes_merged_duplicates: tables.merged ?? [],
+    public_recipes: tables.recipes ?? [],
+    recipes_deleted_by_staff: tables.deleted ?? [],
+  }
   const from = (table: string) => {
     const filters: [string, unknown][] = []
     const chain: Record<string, unknown> = {
@@ -48,5 +52,35 @@ describe('mergedRecipeSlug — where a merged duplicate’s link lands', () => {
   it('gives null for a slug never merged, or one whose recipe is gone', async () => {
     expect(await mergedRecipeSlug(makeClient({}), 'nie-ma')).toBeNull()
     expect(await mergedRecipeSlug(makeClient({ merged: [{ id: 1, slug: 'x', canonical_id: 9 }] }), 'x')).toBeNull()
+  })
+})
+
+describe('mergedRecipeSlug — a recipe staff deleted with a redirect', () => {
+  const deleted = [{ slug: 'zupa-stara', redirect_to_slug: 'zupa' }]
+
+  it('lands on the redirect target', async () => {
+    const client = makeClient({ deleted, recipes: [{ id: 1, slug: 'zupa' }] })
+
+    expect(await mergedRecipeSlug(client, 'zupa-stara')).toBe('zupa')
+  })
+
+  it('is a 404 (null) when the target is hidden, since public_recipes no longer holds it', async () => {
+    expect(await mergedRecipeSlug(makeClient({ deleted, recipes: [] }), 'zupa-stara')).toBeNull()
+  })
+
+  it('is a 404 (null) for a delete without a redirect', async () => {
+    const client = makeClient({ deleted: [{ slug: 'zupa-stara', redirect_to_slug: null }], recipes: [{ id: 1, slug: 'zupa' }] })
+
+    expect(await mergedRecipeSlug(client, 'zupa-stara')).toBeNull()
+  })
+
+  it('follows a target that was folded into another recipe afterwards', async () => {
+    const client = makeClient({
+      deleted,
+      merged: [{ id: 7, slug: 'zupa', canonical_id: 8 }],
+      recipes: [{ id: 8, slug: 'zupa-glowna' }],
+    })
+
+    expect(await mergedRecipeSlug(client, 'zupa-stara')).toBe('zupa-glowna')
   })
 })

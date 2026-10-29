@@ -33,7 +33,8 @@ describe('gender privacy in migrations', () => {
   it('the latest public_recipes view reads nothing about gender', () => {
     const defining = files.filter((f) => /create or replace view public\.public_recipes/i.test(sql(f))).sort()
     const latest = defining.at(-1)!
-    expect(latest).toBe('20261028160000_public_author_gender_neutral.sql')
+    // 20261029100000 restates the same view with the hidden-recipe filter (admin panel, Phase 2).
+    expect(latest).toBe('20261029100000_admin_recipe_hiding.sql')
     const m = sql(latest)
     const view = m.slice(m.indexOf('create or replace view public.public_recipes'), m.indexOf('comment on view'))
     expect(view).toMatch(/null::text as author_gender_form/)

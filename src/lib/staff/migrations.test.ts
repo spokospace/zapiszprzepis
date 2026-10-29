@@ -9,6 +9,9 @@ import { join } from 'node:path'
 const DIR = join(process.cwd(), 'supabase', 'migrations')
 const ADMIN_MIGRATION = /^2026102[89]\d{6}_(staff|admin)_.*\.sql$/
 
+// The guest read contract: the public catalog view and the dish-versions function stay anon-callable.
+const PUBLIC_CONTRACT_GRANTS = /^grant\s+(select\s+on\s+public\.public_recipes|execute\s+on\s+function\s+public\.dish_versions\(bigint\))\s+to\s+anon,\s*authenticated;$/i
+
 const files = readdirSync(DIR).filter((f) => ADMIN_MIGRATION.test(f))
 const sql = (name: string) => readFileSync(join(DIR, name), 'utf8')
 
@@ -74,7 +77,9 @@ describe('admin panel migrations', () => {
       it('never grants a staff table or function to anon', () => {
         for (const stmt of text.match(/grant\s+[^;]+;/gi) ?? []) {
           if (/\bto\b[^;]*\banon\b/i.test(stmt)) {
-            // The only allowed anon grant would be a deliberate public function; none exists in Phase 1.
+            // The only allowed anon grants are re-statements of the public read contract that a
+            // Phase 2 migration has to repeat after replacing the object (the hiding filter).
+            if (PUBLIC_CONTRACT_GRANTS.test(stmt)) continue
             expect.fail(`grants to anon: ${stmt}`)
           }
         }
