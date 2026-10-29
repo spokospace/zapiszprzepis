@@ -21,7 +21,8 @@ import { expect, test, type Page } from '@playwright/test'
  *   E2E_PORT=7733 pnpm test:skeleton   (project `skeleton`, not part of test:reflow)
  */
 
-const WIDTHS = [1024, 1280, 1440, 1920]
+// Phone, tablet (one column, the cover bleeds on the phone) and the desktop widths.
+const WIDTHS = [360, 390, 768, 1024, 1280, 1440, 1920]
 /** Pixels of slack for x, width and the top offset. */
 const TOL = 2
 /** The header height may differ by this share: the skeleton cannot know the recipe's text. */

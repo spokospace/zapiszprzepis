@@ -56,12 +56,12 @@ export default function RecipeLoading() {
             </div>
 
             <div>
-              {/* Title: 32 px, 48 px from lg (a 50 px line). */}
-              <Line box="mb-2 lg:h-[50px]">
-                <SkeletonBar className="h-9 w-3/4 lg:h-10" />
+              {/* Title: 32 px (a 37 px line), 48 px from lg (a 50 px line). */}
+              <Line box="mb-2 h-[37px] lg:h-[50px]">
+                <SkeletonBar className="h-8 w-3/4 lg:h-10" />
               </Line>
-              {/* Subtitle. */}
-              <Line box="mb-3 lg:h-[29px]">
+              {/* Subtitle: a 29 px line at every width. */}
+              <Line box="mb-3 h-[29px]">
                 <SkeletonBar className="h-5 w-1/2" />
               </Line>
               {/* "Dodane przez …": the initial's circle and the line. */}
@@ -91,9 +91,11 @@ export default function RecipeLoading() {
               </div>
               {/* The actions: "Zacznij gotować" and "Zapisz", then print / share. */}
               <div className="mt-6 flex flex-col gap-3">
+                {/* Stacked below 480 px, side by side from there: the flex shares apply to the
+                    row only, because in a column `flex-1` has a 0 basis and collapses the height. */}
                 <div className="flex flex-col gap-3 min-[480px]:flex-row">
-                  <SkeletonBar className="h-[60px] min-w-0 flex-[2] rounded-pill" />
-                  <SkeletonBar className="h-[60px] min-w-0 flex-1 rounded-pill" />
+                  <SkeletonBar className="h-[60px] min-w-0 min-[480px]:flex-[2] rounded-pill" />
+                  <SkeletonBar className="h-[60px] min-w-0 min-[480px]:flex-1 rounded-pill" />
                 </div>
                 <div className="flex h-12 items-center gap-6 px-3">
                   <SkeletonBar className="h-5 w-20" />
