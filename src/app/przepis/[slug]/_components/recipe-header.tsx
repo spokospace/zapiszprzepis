@@ -10,6 +10,7 @@ import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { SourceBadge } from '@/app/components/source-badge'
 import { NoPhoto } from '@/app/components/no-photo'
 import { RecipePhotos } from './recipe-photos'
+import { RECIPE_HEADER_GRID } from './recipe-split'
 
 export interface RecipeHeaderData {
   title: string
@@ -167,7 +168,7 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions 
   const sourceBadge = <SourceBadge kind={source.kind} text={source.text} href={recipe.source_url} variant="recipe" />
 
   return (
-    <header className="mb-10 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-10">
+    <header className={RECIPE_HEADER_GRID}>
       {cover ? (
         <RecipePhotos cover={cover} title={recipe.title} images={galleryImages} badge={sourceBadge} />
       ) : (

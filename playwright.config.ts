@@ -9,6 +9,8 @@ const baseURL = `http://localhost:${port}`
 const REFLOW = /reflow\.spec\.ts/
 const PHONE = /(menu-drawer|system-font)\.spec\.ts/
 const LAYOUT = /(recipe-layout|recipe-list-bar)\.spec\.ts/
+// Needs a production server (see the spec): `next dev` does not prefetch loading.tsx.
+const SKELETON = /recipe-skeleton\.spec\.ts/
 const IMAGE_ALLOWLIST = /image-optimizer-allowlist\.spec\.ts/
 
 export default defineConfig({
@@ -29,7 +31,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: [REFLOW, PHONE, LAYOUT, IMAGE_ALLOWLIST],
+      testIgnore: [REFLOW, PHONE, LAYOUT, SKELETON, IMAGE_ALLOWLIST],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json',
@@ -67,6 +69,14 @@ export default defineConfig({
     {
       name: 'layout',
       testMatch: LAYOUT,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // Loading skeleton vs the page it loads into (#637). Run on its own against a
+    // production build: `pnpm build && E2E_PORT=7733 pnpm exec next start -p 7733`, then
+    // `E2E_PORT=7733 pnpm test:skeleton`. Guest-only, no sign-in.
+    {
+      name: 'skeleton',
+      testMatch: SKELETON,
       use: { ...devices['Desktop Chrome'] },
     },
   ],
