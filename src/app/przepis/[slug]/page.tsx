@@ -23,6 +23,7 @@ import { LockedGallery } from './_components/locked-gallery'
 import { SimilarRecipes } from './_components/similar-recipes'
 import { DishVersionsBar } from './_components/dish-versions-bar'
 import { DishVersions } from './_components/dish-versions'
+import { RECIPE_MAIN, RECIPE_TOP_ROW } from './_components/recipe-split'
 import { parseVersionsSort, type DishVersionRow } from '@/lib/dish-versions'
 import { getFavoriteIds } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
@@ -136,7 +137,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   return (
     // From lg the list row sits right under the category bar (handoff 2026-10-28: a small
     // gap above it, 12 px to the hero), so the top padding shrinks there.
-    <main className="min-h-screen bg-white py-6 sm:py-8 lg:pt-2">
+    <main className={RECIPE_MAIN}>
       {hidden?.kind === 'staff' && <StaffHiddenBanner reason={hidden.hiddenReason} recipeId={hidden.staffRecipeId} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
@@ -170,7 +171,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             "Przepisy › {Kategoria} › {Przepis}" on the right. From lg only; below lg the
             header carries the back link (C3). The list bar stays mounted at every width,
             because it also feeds that back link. */}
-        <div className="lg:mb-3 lg:flex lg:min-h-[44px] lg:items-center lg:gap-6 print:hidden">
+        <div className={`${RECIPE_TOP_ROW} print:hidden`}>
           <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
           <RecipeBreadcrumbs category={typedRecipe.category} title={typedRecipe.title} className="hidden lg:ml-auto lg:block" />
         </div>
