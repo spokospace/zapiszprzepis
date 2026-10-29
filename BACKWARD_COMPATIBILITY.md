@@ -96,6 +96,6 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 Tools for later resources (recipes) join this table when their registry entries land.
 
-**Breaking:** renaming or removing a tool or an argument, making an optional argument required, changing what a destructive tool's `confirm` must equal, changing the 401/429 semantics, accepting a token without re-reading the owner's roles and ban state, or shipping the code that declares `MCP_LIMIT` before the namespace exists in Cloudflare (wrangler refuses a binding to a missing resource, as in §6).
+**Breaking:** renaming or removing a tool or an argument, making an optional argument required, changing what a destructive tool's `confirm` must equal, changing the 401/429 semantics, accepting a token without re-reading the owner's roles and ban state, or reusing `MCP_LIMIT`'s `namespace_id` (`1003`) in another Worker of the account (bindings with the same id share counters).
 
-**Required path:** add new tools and optional arguments only; keep the old tool as an alias for one release when renaming; create the rate-limit namespace in Cloudflare before merging.
+**Required path:** add new tools and optional arguments only; keep the old tool as an alias for one release when renaming. The rate-limit binding needs no Cloudflare resource, only a `namespace_id` unique in the account.
