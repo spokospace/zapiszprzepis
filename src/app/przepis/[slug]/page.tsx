@@ -1,16 +1,15 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { buildFallbackMetaDescription } from '@/lib/recipe-tags'
 import { Toast } from '@/app/components/toast'
 import { PageContainer } from '@/app/components/page-container'
 import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
-import { buildRecipeJsonLd, serializeJsonLd } from '@/lib/recipe-json-ld'
-import { coverImageSrc } from '@/lib/recipe-image-archive'
+import { buildRecipeBreadcrumbJsonLd, buildRecipeJsonLd, serializeJsonLd } from '@/lib/recipe-json-ld'
 import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
+import { recipeMetadata } from './recipe-metadata'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps, visibleStepImages } from '@/lib/steps'
 import { findGlossaryTerms } from '@/lib/ingredient-glossary'
@@ -36,32 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { recipe } = await loadRecipe(slug)
   if (!recipe) return { title: 'Przepis', description: 'Szczegóły przepisu' }
 
-  const description = recipe.meta_description ?? buildFallbackMetaDescription(recipe)
-  // og:image/twitter only from an archived Storage cover — never a legacy external
-  // link (the image_url invariant), so no third-party URL lands in the page's meta.
-  const cover = coverImageSrc(recipe.image_url)
-  const images = cover ? [cover] : undefined
-  const canonical = `${await getSiteUrl()}${recipePath(recipe.slug)}`
-  return {
-    title: recipe.title,
-    description,
-    // ?from= list-context variants (E01-S07) must not compete with the canonical URL.
-    // Absolute: the root layout sets no metadataBase, so a relative canonical would
-    // resolve against Next's localhost fallback in production.
-    // The .md alternate (#363) advertises the AI-citable Markdown rendering.
-    alternates: { canonical, types: { 'text/markdown': `${canonical}.md` } },
-    openGraph: {
-      title: recipe.title,
-      description,
-      type: 'article',
-      ...(images ? { images } : {}),
-    },
-    twitter: {
-      card: images ? 'summary_large_image' : 'summary',
-      title: recipe.title,
-      description,
-    },
-  }
+  return recipeMetadata(recipe, await getSiteUrl())
 }
 
 interface RecipeDetailPageProps {
@@ -152,12 +126,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // (no gallery, no step photos): Googlebot is anonymous, so the markup must match
   // what an anonymous visitor sees. No rating/nutrition — we store neither.
   const recipeJsonLd = serializeJsonLd(buildRecipeJsonLd(typedRecipe, siteUrl))
+  const breadcrumbJsonLd = serializeJsonLd(buildRecipeBreadcrumbJsonLd(typedRecipe, siteUrl))
 
   return (
     // From lg the list row sits right under the category bar (handoff 2026-10-28: a small
     // gap above it, 12 px to the hero), so the top padding shrinks there.
     <main className="min-h-screen bg-white py-6 sm:py-8 lg:pt-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
       {duplicate === '1' && (
         <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
       )}

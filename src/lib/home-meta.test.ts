@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HOME_DESCRIPTION, HOME_TITLE, homeMetadata } from './home-meta'
+import { HOME_DESCRIPTION, HOME_TITLE, homeMetadata, homeWebSiteJsonLd } from './home-meta'
 
 const SITE_URL = 'https://zapiszprzepis.pl'
 
@@ -14,6 +14,8 @@ describe('homeMetadata', () => {
     // `type: 'website'` is narrowed away from the base Metadata type.
     expect((og as { type?: string })?.type).toBe('website')
     expect(og?.url).toBe(SITE_URL)
+    expect(og?.siteName).toBe('Zapisz Przepis')
+    expect(og?.locale).toBe('pl_PL')
   })
 
   it('uses an absolute 1200×630 og:image under the given origin', () => {
@@ -34,5 +36,18 @@ describe('homeMetadata', () => {
     const images = twitter?.images as string[]
     expect(images[0]).toBe(`${SITE_URL}/og/home.jpg`)
     expect(images[0]).toMatch(/^https:\/\//)
+  })
+})
+
+describe('homeWebSiteJsonLd', () => {
+  it('names the site for Google, with no retired search box', () => {
+    expect(homeWebSiteJsonLd(SITE_URL)).toEqual({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Zapisz Przepis',
+      url: 'https://zapiszprzepis.pl/',
+      description: HOME_DESCRIPTION,
+      inLanguage: 'pl-PL',
+    })
   })
 })

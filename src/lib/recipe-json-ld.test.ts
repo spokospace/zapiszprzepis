@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildRecipeJsonLd, serializeJsonLd, type RecipeForJsonLd } from './recipe-json-ld'
+import { buildRecipeBreadcrumbJsonLd, buildRecipeJsonLd, serializeJsonLd, type RecipeForJsonLd } from './recipe-json-ld'
 
 const SITE = 'https://zapiszprzepis.pl'
 
@@ -21,6 +21,7 @@ const base: RecipeForJsonLd = {
   category: 'desery',
   tags: ['z-twarogiem', 'kruche'],
   source_author: 'Ania Gotuje',
+  source_url: 'https://aniagotuje.pl/przepis/sernik-krakowski',
   created_at: '2026-01-02T10:00:00.000Z',
   last_modified: '2026-03-04T12:00:00.000Z',
 }
@@ -154,10 +155,42 @@ describe('buildRecipeJsonLd', () => {
     expect(buildRecipeJsonLd({ ...base, image_url: null }, SITE).image).toBeUndefined()
   })
 
+  it('links the original page as isBasedOn, also when the source names no author', () => {
+    expect(buildRecipeJsonLd(base, SITE).isBasedOn).toBe('https://aniagotuje.pl/przepis/sernik-krakowski')
+    expect(buildRecipeJsonLd({ ...base, source_author: null }, SITE).isBasedOn).toBe(base.source_url)
+  })
+
+  it('emits no isBasedOn for a page-less recipe or a non-web source', () => {
+    expect(buildRecipeJsonLd({ ...base, source_url: null }, SITE).isBasedOn).toBeUndefined()
+    expect(buildRecipeJsonLd({ ...base, source_url: 'javascript:alert(1)' }, SITE).isBasedOn).toBeUndefined()
+  })
+
   it('drops empty ingredient and step lists instead of emitting empty arrays', () => {
     const ld = buildRecipeJsonLd({ ...base, ingredients: [], steps: [] }, SITE)
     expect(ld.recipeIngredient).toBeUndefined()
     expect(ld.recipeInstructions).toBeUndefined()
+  })
+})
+
+describe('buildRecipeBreadcrumbJsonLd', () => {
+  const ld = buildRecipeBreadcrumbJsonLd(base, SITE)
+  const items = ld.itemListElement as Array<Record<string, unknown>>
+
+  it('is a schema.org BreadcrumbList', () => {
+    expect(ld['@context']).toBe('https://schema.org')
+    expect(ld['@type']).toBe('BreadcrumbList')
+  })
+
+  it('runs home › category › recipe, numbered from 1', () => {
+    expect(items).toEqual([
+      { '@type': 'ListItem', position: 1, name: 'Zapisz Przepis', item: 'https://zapiszprzepis.pl/' },
+      { '@type': 'ListItem', position: 2, name: 'Desery', item: 'https://zapiszprzepis.pl/przepisy/desery' },
+      { '@type': 'ListItem', position: 3, name: 'Sernik krakowski' },
+    ])
+  })
+
+  it('never lists the noindex search page', () => {
+    expect(JSON.stringify(ld)).not.toContain('/szukaj')
   })
 })
 
