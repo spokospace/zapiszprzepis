@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from 'vitest'
+import { sha256Hex } from './sha256'
 import {
   isPrivateUrl,
   archiveImage,
@@ -10,6 +11,7 @@ import {
   coverImage,
   jsonLdImage,
   archiveGallery,
+  type ArchivedCover,
   removeGallery,
   removeImages,
   removeRecipeImages,
@@ -48,17 +50,31 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
     return { supabase: { storage: { from: () => bucket } } as any, bucket, files }
   }
 
-  /** fetch answering a JPEG for the URLs in `ok` and a 404 for the rest. */
-  function stubFetch(ok: string[]) {
+  /**
+   * fetch answering a JPEG for the URLs in `ok` and a 404 for the rest. The
+   * bytes are the URL itself unless `bytesOf` says otherwise, so a test can
+   * give two URLs the same file.
+   */
+  function stubFetch(ok: string[], bytesOf: (url: string) => string = (url) => url) {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) =>
         ok.includes(url)
-          ? { ok: true, headers: new Headers({ 'content-type': 'image/jpeg' }), arrayBuffer: async () => new ArrayBuffer(10) }
+          ? {
+              ok: true,
+              headers: new Headers({ 'content-type': 'image/jpeg' }),
+              arrayBuffer: async () => new TextEncoder().encode(bytesOf(url)).buffer,
+            }
           : { ok: false, status: 404, headers: new Headers() },
       ),
     )
   }
+
+  /** The archived cover; its bytes, as stubFetch serves them, are 'cover'. */
+  let cover: ArchivedCover
+  beforeAll(async () => {
+    cover = { url: COVER, hash: await sha256Hex('cover') }
+  })
 
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -69,7 +85,7 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
     const { supabase, bucket, files } = makeStorage(['0.jpg', '1.jpg'])
     stubFetch([])
 
-    const result = await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], COVER)
+    const result = await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], cover)
 
     expect(result).toBeNull()
     expect(bucket.remove).not.toHaveBeenCalled()
@@ -81,7 +97,7 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
     const { supabase, bucket, files } = makeStorage(['0.jpg', '1.jpg'])
     stubFetch(['https://cdn.example/b.jpg'])
 
-    const result = await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], COVER)
+    const result = await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], cover)
 
     expect(result).toEqual([COVER, `${PUBLIC}user-1/7/100-1.jpg`])
     expect(bucket.remove).toHaveBeenCalledWith(['user-1/7/0.jpg', 'user-1/7/1.jpg'])
@@ -98,6 +114,34 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
     expect(files.size).toBe(0)
   })
 
+  it('stores a file once: a copy of the cover and a copy of an earlier photo are skipped', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(36 * 36) // run id "100"
+    const { supabase, bucket } = makeStorage([])
+    const bytes: Record<string, string> = {
+      'https://cdn.example/a.jpg': 'cover', // the cover under another URL
+      'https://cdn.example/b.jpg': 'soup',
+      'https://cdn.example/c.jpg': 'soup', // the same soup, uploaded twice
+      'https://cdn.example/d.jpg': 'cake',
+    }
+    stubFetch(Object.keys(bytes), (url) => bytes[url])
+
+    const result = await archiveGallery(supabase, 'user-1', 7, [COVER, ...Object.keys(bytes)], cover)
+
+    expect(result).toEqual([COVER, `${PUBLIC}user-1/7/100-2.jpg`, `${PUBLIC}user-1/7/100-4.jpg`])
+    expect(bucket.upload.mock.calls.map((call) => call[0])).toEqual(['user-1/7/100-2.jpg', 'user-1/7/100-4.jpg'])
+  })
+
+  it('leaves no gallery when every other photo is the cover again (rogale-francuskie)', async () => {
+    const { supabase, bucket, files } = makeStorage(['0.jpg'])
+    stubFetch(['https://cdn.example/a.jpg'], () => 'cover')
+
+    const result = await archiveGallery(supabase, 'user-1', 7, [COVER, 'https://cdn.example/a.jpg'], cover)
+
+    expect(result).toEqual([])
+    expect(bucket.upload).not.toHaveBeenCalled()
+    expect(files.size).toBe(0)
+  })
+
   it('never removes the step photos stored in the same folder', async () => {
     // A refresh re-archives the gallery and the step photos in parallel; the
     // gallery cleanup used to delete step-<n> files, leaving step_images dead.
@@ -105,7 +149,7 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
     const { supabase, files } = makeStorage(['0.jpg', 'step-0.jpg', 'step-1.jpg'])
     stubFetch(['https://cdn.example/b.jpg'])
 
-    await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], COVER)
+    await archiveGallery(supabase, 'user-1', 7, ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'], cover)
 
     expect([...files].sort()).toEqual(['user-1/7/100-1.jpg', 'user-1/7/step-0.jpg', 'user-1/7/step-1.jpg'])
   })
