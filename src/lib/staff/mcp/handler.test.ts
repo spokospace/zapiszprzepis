@@ -9,6 +9,8 @@ import type { ServiceReply } from './types'
 
 const send = vi.fn()
 vi.mock('@/inngest/client', () => ({ inngest: { send: (...a: unknown[]) => send(...a) } }))
+const revalidateRecipeCaches = vi.fn()
+vi.mock('@/lib/recipe-cache', () => ({ revalidateRecipeCaches: (...a: unknown[]) => revalidateRecipeCaches(...a) }))
 
 const ADMIN = '11111111-1111-4111-8111-111111111111'
 const MOD = '22222222-2222-4222-8222-222222222222'
@@ -172,8 +174,8 @@ describe('mcp tools/list', () => {
     return (body.result.tools as { name: string }[]).map((t) => t.name)
   }
 
-  it('shows a moderator only users (read), imports and nothing administrative', async () => {
-    expect(await names(raw(2))).toEqual(['users_list', 'users_get', 'imports_list', 'imports_retry'])
+  it('shows a moderator only users (read), imports, recipes (read) and nothing administrative', async () => {
+    expect(await names(raw(2))).toEqual(['users_list', 'users_get', 'imports_list', 'imports_retry', 'recipes_list', 'recipes_get'])
   })
 
   it('shows an admin every tool, named <resource>_<verb>', async () => {
@@ -391,5 +393,53 @@ describe('the endpoint holds no per-resource code', () => {
     allowed.add('admin_import_dispatch_failed_as')
     for (const [fn] of rpc.mock.calls) expect(allowed.has(fn as string), fn as string).toBe(true)
     expect(rpc.mock.calls.length).toBeGreaterThan(10)
+  })
+})
+
+describe('mcp tools/call: recipes', () => {
+  beforeEach(() => revalidateRecipeCaches.mockReset())
+
+  it('merges through the _as function as the token owner, then empties the caches of every page it touched', async () => {
+    const merged = { merge_id: '3f2b8a52-5b0c-4d8e-9a55-0c1d2e3f4a5b', canonical_slug: 'sernik', loser_slugs: ['sernik-2'] }
+    const { service, rpc } = makeService(TOKENS, { admin_merge_recipes_as: { ok: true, data: merged } })
+    const r = await result(await handleMcp(post(call('recipes_merge', { canonical_id: 5, duplicate_ids: [6], confirm: 'merge' })), service))
+    expect(r.isError).toBe(false)
+    expect(JSON.parse(text(r))).toEqual(merged)
+    expect(rpc).toHaveBeenCalledWith('admin_merge_recipes_as', {
+      p_actor: ADMIN, p_canonical: 5, p_losers: [6], p_via: 'mcp', p_token_id: 1,
+    })
+    expect(revalidateRecipeCaches.mock.calls.map((c) => c[0])).toEqual(['sernik', 'sernik-2'])
+  })
+
+  it('asks for confirm before a merge and changes nothing without it', async () => {
+    const { service, rpc } = makeService(TOKENS)
+    const r = await result(await handleMcp(post(call('recipes_merge', { canonical_id: 5, duplicate_ids: [6] })), service))
+    expect(r.isError).toBe(true)
+    expect(rpc).not.toHaveBeenCalledWith('admin_merge_recipes_as', expect.anything())
+  })
+
+  it('previews a hide with the recipe as it is now and writes nothing', async () => {
+    const row = { recipe_id: 5, slug: 'zupa', hidden_at: null }
+    const { service, rpc } = makeService(TOKENS, { admin_get_recipe_as: { ok: true, data: [row] } })
+    const r = await result(await handleMcp(post(call('recipes_hide', { recipe_id: 5, dry_run: true })), service))
+    expect(JSON.parse(text(r))).toMatchObject({ dry_run: true, changed: false, current: row })
+    expect(rpc).toHaveBeenCalledWith('admin_get_recipe_as', { p_actor: ADMIN, p_recipe: 5 })
+    expect(rpc).not.toHaveBeenCalledWith('admin_hide_recipe_as', expect.anything())
+    expect(revalidateRecipeCaches).not.toHaveBeenCalled()
+  })
+
+  it('refuses a moderator without recipes.hide, whatever they send', async () => {
+    const { service, rpc } = makeService(TOKENS)
+    const r = await result(await handleMcp(post(call('recipes_hide', { recipe_id: 5 }), raw(2)), service))
+    expect(r.isError).toBe(true)
+    expect(text(r)).toContain('recipes.hide')
+    expect(rpc).not.toHaveBeenCalledWith('admin_hide_recipe_as', expect.anything())
+  })
+
+  it('does not empty any cache when the database refuses the change', async () => {
+    const { service } = makeService(TOKENS, { admin_hide_recipe_as: { ok: false, code: 'not_found' } })
+    const r = await result(await handleMcp(post(call('recipes_hide', { recipe_id: 5 })), service))
+    expect(r.isError).toBe(true)
+    expect(revalidateRecipeCaches).not.toHaveBeenCalled()
   })
 })

@@ -107,8 +107,10 @@ Regenerate `src/lib/supabase.types.ts` afterwards; Phase 2 calls the new functio
 
 `POST https://zapiszprzepis.pl/api/mcp` exposes the same operations as the panel as MCP tools, under **your own account
 and role**. A moderator's token lists and runs only moderator tools; an admin's lists everything the panel offers. The
-tools are generated from `src/lib/staff/registry.ts`, so a resource added there (recipes in Phases 2 and 3) appears
-without MCP code. The tool and argument names are a contract: see `BACKWARD_COMPATIBILITY.md` §9.
+tools are generated from `src/lib/staff/registry.ts`, so a resource added there appears without MCP code. Recipe
+moderation is there: `recipes_list`, `recipes_get`, `recipes_hide`, `recipes_unhide`, `recipes_delete`, `recipes_restore`,
+`recipes_merge`, `recipes_unmerge` and `recipes_set_taxonomy`, each under the permission of its panel button. A change
+empties the page caches of the recipes it touched, the way the panel does (`src/lib/staff/recipe-finish.ts`). The tool and argument names are a contract: see `BACKWARD_COMPATIBILITY.md` §9.
 
 ### Connect
 

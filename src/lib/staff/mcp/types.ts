@@ -7,7 +7,7 @@ import type { StaffErrorCode } from '../errors'
  * names are a contract (BACKWARD_COMPATIBILITY.md §9), so rename nothing here
  * casually.
  */
-export type ToolArgType = 'string' | 'integer' | 'boolean' | 'uuid' | 'timestamp'
+export type ToolArgType = 'string' | 'integer' | 'boolean' | 'uuid' | 'timestamp' | 'integer_list' | 'string_list'
 
 export interface ToolArg {
   /** The name the MCP client sees. */
@@ -18,13 +18,16 @@ export interface ToolArg {
   /** English, for the model. */
   description: string
   required?: boolean
-  /** Bounds for `integer`. */
+  /** Bounds for `integer` (and for each item of an `integer_list`). */
   min?: number
   max?: number
-  /** Upper bound for `string`. */
+  /** Upper bound for `string` (and for each item of a `string_list`). */
   maxLength?: number
-  /** Allowed values for `string`. */
+  /** Allowed values for `string` (and for each item of a `string_list`). */
   values?: readonly string[]
+  /** Length bounds for the two list types. Items must be distinct. */
+  minItems?: number
+  maxItems?: number
 }
 
 export type ServiceReply = { ok: true; data: unknown } | { ok: false; code: StaffErrorCode }

@@ -24,14 +24,22 @@ const TYPE_SCHEMA: Record<ToolArg['type'], Record<string, unknown>> = {
   boolean: { type: 'boolean' },
   uuid: { type: 'string', format: 'uuid' },
   timestamp: { type: 'string', format: 'date-time' },
+  integer_list: { type: 'array', items: { type: 'integer' }, uniqueItems: true },
+  string_list: { type: 'array', items: { type: 'string' }, uniqueItems: true },
 }
 
 function argSchema(a: ToolArg): Record<string, unknown> {
   const schema: Record<string, unknown> = { ...TYPE_SCHEMA[a.type], description: a.description }
-  if (a.min !== undefined) schema.minimum = a.min
-  if (a.max !== undefined) schema.maximum = a.max
-  if (a.maxLength !== undefined) schema.maxLength = a.maxLength
-  if (a.values) schema.enum = [...a.values]
+  const bounds: Record<string, unknown> = {}
+  if (a.min !== undefined) bounds.minimum = a.min
+  if (a.max !== undefined) bounds.maximum = a.max
+  if (a.maxLength !== undefined) bounds.maxLength = a.maxLength
+  if (a.values) bounds.enum = [...a.values]
+  // On a list the bounds describe its elements (under `items`); its own length uses minItems/maxItems.
+  if (a.type === 'integer_list' || a.type === 'string_list') schema.items = { ...(schema.items as object), ...bounds }
+  else Object.assign(schema, bounds)
+  if (a.minItems !== undefined) schema.minItems = a.minItems
+  if (a.maxItems !== undefined) schema.maxItems = a.maxItems
   return schema
 }
 
@@ -98,6 +106,18 @@ export type ParsedArgs =
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}([Tt ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-]\d{2}:?\d{2})?)?$/
 
+function checkList(a: ToolArg, v: unknown, item: ToolArg['type']): string | null {
+  if (!Array.isArray(v)) return 'must be a list'
+  if (a.minItems !== undefined && v.length < a.minItems) return `must have at least ${a.minItems} items`
+  if (a.maxItems !== undefined && v.length > a.maxItems) return `must have at most ${a.maxItems} items`
+  if (new Set(v).size !== v.length) return 'must not repeat an item'
+  for (const one of v) {
+    const issue = checkValue({ ...a, type: item }, one)
+    if (issue) return `has an item that ${issue}`
+  }
+  return null
+}
+
 function checkValue(a: ToolArg, v: unknown): string | null {
   switch (a.type) {
     case 'boolean':
@@ -107,6 +127,10 @@ function checkValue(a: ToolArg, v: unknown): string | null {
       if (a.min !== undefined && v < a.min) return `must be at least ${a.min}`
       if (a.max !== undefined && v > a.max) return `must be at most ${a.max}`
       return null
+    case 'integer_list':
+      return checkList(a, v, 'integer')
+    case 'string_list':
+      return checkList(a, v, 'string')
     case 'uuid':
       return typeof v === 'string' && UUID_RE.test(v) ? null : 'must be a uuid'
     case 'timestamp':
