@@ -37,6 +37,19 @@ Po każdym buildzie `master` (Workers Builds) i po każdej zmianie zmiennej albo
 - Sekret zmieniaj, gdy żaden build nie trwa, i od razu po nim zrób Retry buildu `master` + `pnpm smoke:prod`.
 - Dowolny adres jako argument: `pnpm smoke:prod https://<version>-zapiszprzepis.<subdomain>.workers.dev`.
 
+## Skeleton (`loading.tsx`) zawsze zgadza się z układem strony
+
+Każdy ekran, który ma `loading.tsx` (przepis `przepis/[slug]`, lista `recipes`, `ulubione`), ma skeleton o **tym samym układzie** co strona po wczytaniu: te same kolumny, szerokości, odstępy i przesunięcie od góry, na każdej szerokości (telefon, tablet, desktop). Zmiana układu strony i zmiana jej skeletona to **jeden PR**, nigdy „skeleton później”.
+
+**Dlaczego:** 2026-10-29 skeleton przepisu był ręczną kopią układu i został w tyle po #604 (nagłówek `1fr | 1.6fr` zamieniony na dwie równe kolumny): na desktopie zdjęcie miało 400 px zamiast 524, treść zaczynała się 32 px wyżej, a po wczytaniu cała strona skakała (#637, #638). Na telefonie przyciski w skeletonie zapadały się do zera wysokości.
+
+**Jak stosować:**
+- Układ (kolumny, odstępy, ramka zdjęcia, stałe wysokości) trzymaj w jednym miejscu, które czytają i strona, i skeleton: dla przepisu to `src/app/przepis/[slug]/_components/recipe-split.ts`. Nie kopiuj klas ręcznie do `loading.tsx`. Nowy ekran ze skeletonem robi to samo (plik ze stałymi obok strony).
+- Dodajesz, usuwasz albo przesuwasz blok na stronie (nowy wiersz, nowy przycisk, zmiana wysokości linii) → w tym samym PR dodaj, usuń albo przesuń odpowiadający mu wiersz w `loading.tsx`.
+- Sprawdzaj pomiarem, nie okiem: `e2e/recipe-skeleton.spec.ts` trzyma żądanie RSC, mierzy skeleton i stronę przy 360–1920 px i porównuje kolumny, szerokości, odsunięcie od góry i zdjęcie. Wymaga builda produkcyjnego (w `next dev` linki nie są prefetchowane i skeleton się nie pokazuje): `pnpm build && E2E_PORT=7733 pnpm exec next start -p 7733`, potem `E2E_PORT=7733 pnpm test:skeleton`. Skeleton innego ekranu dostaje taki sam test.
+- Wysokości zależne od danych (długość opisu, liczba składników, box „inne wersje”) mogą się różnić; kolumny i odsunięcia nie.
+- Skeleton nie ma `flex-1` / `flex-[n]` w kolumnie (w kolumnie `flex-1` ma bazę 0 i zapada wysokość): proporcje szerokości dawaj tylko dla układu w wierszu.
+
 ## Przebudowa (epik E01) — zasady projektowe: WCAG, czytelność, model
 
 Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelność; grupa docelowa obejmuje osoby starsze). Backlog: `.ai/specs/backlog-przebudowa.md`. Tokeny i prymitywy: `src/app/globals.css` + `src/app/components/ui/`.
