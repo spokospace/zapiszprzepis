@@ -74,9 +74,9 @@ No `product-brief.md` exists for this area, so no Non-goal, Business rule, or De
 
 | # | Question | Chosen answer | Rationale | Status |
 |---|---|---|---|---|
-| Q1 | Where is the card generated? | Phase 0 spike decides: `sharp` in the deployed Inngest runtime, else a Cloudflare image transform if the account has one, else stop and ask. | The runtime is unverified, so the choice cannot be made without the spike. | ⚠ NEEDS HUMAN CONFIRMATION (runtime and account capability) |
+| Q1 | Where is the card generated? | Phase 0 spike decides: `sharp` in the deployed Inngest runtime, else a Cloudflare image transform if the account has one, else stop and ask. | The runtime is unverified, so the choice cannot be made without the spike. | Procedure confirmed by owner; runtime answer comes from the Phase 0 spike |
 | Q2 | Backfill for existing recipes? | One-off batch Inngest function after Phase 1. No lazy generation on request. | A batch is reviewable and reversible. Lazy generation would move cost onto the public page. | Default, not blocking |
-| Q4 | Crop default | Centre (50/50) | Most predictable, and matches the category cards. | ⚠ NEEDS HUMAN CONFIRMATION (a centred crop may cut dish details on tall photos) |
+| Q4 | Crop default | Centre (50/50) | Most predictable, and matches the category cards. | Confirmed by owner |
 | Q5 | Original cover format | Unchanged | Scope: on-page photos are a non-goal. | Default |
 
 The admin focal point question (previously Q3) moved to its own spec: `2026-10-29-og-social-card-admin-focal-point.md`.
