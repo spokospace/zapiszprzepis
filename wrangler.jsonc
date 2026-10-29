@@ -28,6 +28,21 @@
     {
       "binding": "BACKUPS",
       "bucket_name": "zapiszprzepis-backups"
+    },
+    // Phase 2 guest-read cache (#445, #545): OpenNext's incremental cache. The bucket
+    // must exist before deploying (owner step 1 of the Phase 2 runbook, 10085 otherwise).
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "zapiszprzepis-inc-cache"
+    }
+  ],
+  // Phase 2 tag cache (#445, #545): D1 database for revalidateTag. The database_id comes
+  // from `wrangler d1 create zapiszprzepis-tag-cache --location weur` (owner step 2.1).
+  "d1_databases": [
+    {
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_name": "zapiszprzepis-tag-cache",
+      "database_id": "638091d6-ea47-4dd2-a326-6daa09d5ff2a"
     }
   ],
   // Per-account cap on the paid Exa web search (src/lib/exa-rate-limit.ts):
