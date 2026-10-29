@@ -46,7 +46,7 @@ export function LegalList({ children }: { children: ReactNode }) {
 }
 
 /**
- * Links to the three legal pages, for /signup and the legal pages themselves.
+ * Links to the three legal pages, for /rejestracja and the legal pages themselves.
  * /login (3a) has its own one-line footer built from the same path constants.
  *
  * Hidden from `lg` up, where the global {@link SiteFooter} (also `lg`-only) carries

@@ -45,7 +45,7 @@ export async function signInWithEmail(formData: FormData): Promise<void> {
 
   // shouldCreateUser:false closes the registration backdoor — the login
   // magic-link no longer provisions brand-new accounts. Existing users still
-  // get their link; new accounts must go through /signup with an invite code.
+  // get their link; new accounts must go through /rejestracja with an invite code.
   // `next` rides inside the email link; /auth/confirm re-validates it.
   const { error } = await supabase.auth.signInWithOtp({
     email,

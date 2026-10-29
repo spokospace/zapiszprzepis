@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: imageRemotePatterns(process.env.NEXT_PUBLIC_SUPABASE_URL),
   },
+  // The sign-up page moved to its Polish slug. The old path keeps answering with a
+  // redirect (query string included), per BACKWARD_COMPATIBILITY.md.
+  async redirects() {
+    return [{ source: "/signup", destination: "/rejestracja", permanent: true }]
+  },
 }
 
 initOpenNextCloudflareForDev()

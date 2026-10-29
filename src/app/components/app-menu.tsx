@@ -279,7 +279,7 @@ export function AppMenu({
                   <Link href="/login" onClick={close} className={`${buttonClasses('primary', 'lg')} w-full`}>
                     Zaloguj się
                   </Link>
-                  <Link href="/signup" onClick={close} className={`${buttonClasses('outline', 'lg')} w-full`}>
+                  <Link href="/rejestracja" onClick={close} className={`${buttonClasses('outline', 'lg')} w-full`}>
                     Załóż konto
                   </Link>
                 </div>
