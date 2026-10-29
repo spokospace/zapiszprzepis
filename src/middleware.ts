@@ -64,6 +64,13 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     return response
   }
 
+  // Staff MCP endpoint: authenticated by a personal bearer token (staff_tokens), not
+  // a Supabase session, so a client with no cookies must reach it. The route resolves
+  // the token to an account and its roles on every request.
+  if (pathname === '/api/mcp') {
+    return response
+  }
+
   // Dev-only QA sign-in: it opens the session itself, so a guest must reach it.
   // The route answers 404 outside an opted-in dev server.
   if (pathname === '/api/dev/login') {

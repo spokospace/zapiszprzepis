@@ -113,6 +113,19 @@ describe('middleware — dev-only QA sign-in /api/dev/login', () => {
   })
 })
 
+describe('middleware — staff MCP endpoint /api/mcp', () => {
+  it('lets a client with no session cookie reach it (it authenticates by bearer token)', async () => {
+    const res = await middleware(new NextRequest('http://localhost/api/mcp', { method: 'POST' }))
+    expect(res.headers.get('location')).toBeNull()
+    expect(res.status).toBe(200)
+  })
+
+  it('does not open any other /api path to guests', async () => {
+    const res = await middleware(get('/api/mcp-other'))
+    expect(res.headers.get('location')).toContain('/login')
+  })
+})
+
 // #376: gender is optional — no signed-in user is detoured to /witaj, and the
 // cookie that remembered the old check is expired.
 describe('middleware — no gender detour', () => {
