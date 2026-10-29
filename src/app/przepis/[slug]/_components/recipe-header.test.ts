@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { RecipeBreadcrumbs, RecipeHeader, authorInitial, eyebrowParts, type RecipeHeaderData } from './recipe-header'
+import { RecipeBreadcrumbs, RecipeHeader, authorInitial, type RecipeHeaderData } from './recipe-header'
 
 const BASE: RecipeHeaderData = {
   title: 'Zupa krem z dyni',
@@ -54,19 +54,11 @@ describe('RecipeHeader author line (E01-S23; handoff 2026-10-28)', () => {
   })
 })
 
-describe('RecipeHeader label over the title (handoff 2026-10-28)', () => {
-  it('joins the category and up to two tags', () => {
-    expect(eyebrowParts('pieczywo', ['drozdzowe'])[0]).toBe('Pieczywo')
-    expect(eyebrowParts('zupy', ['a', 'b', 'c'])).toHaveLength(3)
-    expect(eyebrowParts('zupy', null)).toEqual(['Zupy'])
-  })
-
-  it('leaves out a tag that repeats the category', () => {
-    expect(eyebrowParts('zupy', ['Zupy'])).toEqual(['Zupy'])
-  })
-
-  it('renders above the title in uppercase accent text, 16 px', () => {
-    expect(render({})).toMatch(/<p class="mb-2 text-\[16px\] font-bold uppercase tracking-\[0\.06em\] text-action-text">Zupy<\/p><h1/)
+describe('RecipeHeader title (owner, 2026-10-29)', () => {
+  it('opens the text column with the title, no label over it', () => {
+    const html = render({})
+    expect(html).toMatch(/<div><h1 /)
+    expect(html).not.toContain('uppercase')
   })
 
   it('takes the first letter of the name, upper-cased', () => {
@@ -123,12 +115,12 @@ describe('RecipeHeader order and layout (handoff 2026-10-28)', () => {
     expect(html).toContain('class="relative aspect-[4/3]"')
   })
 
-  it('reads: label, title, subtitle, author, description, times, actions, versions', () => {
+  it('reads: title, subtitle, author, description, times, actions, versions', () => {
     const html = render(
       { description: 'ze smalcem', meta_description: 'Opis przepisu.', total_time_minutes: 45 },
       { actions: createElement('div', { id: 'actions' }), versionsBar: createElement('div', { id: 'versions' }) },
     )
-    const order = ['>Zupy</p><h1', '</h1>', 'ze smalcem', 'Dodane przez', 'Opis przepisu.', 'Czas i porcje', 'id="actions"', 'id="versions"']
+    const order = ['<div><h1', '</h1>', 'ze smalcem', 'Dodane przez', 'Opis przepisu.', 'Czas i porcje', 'id="actions"', 'id="versions"']
     const positions = order.map((s) => html.indexOf(s))
     expect(positions.every((p) => p >= 0)).toBe(true)
     expect([...positions].sort((a, b) => a - b)).toEqual(positions)

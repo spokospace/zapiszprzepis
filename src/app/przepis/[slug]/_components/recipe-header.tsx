@@ -4,7 +4,6 @@ import { Clock, Flame, Timer, Utensils, type LucideIcon } from 'lucide-react'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { formatSource, type RecipeSource } from '@/lib/recipe-source'
 import { recipeTimeStats } from '@/lib/recipe-meta'
-import { tagLabel } from '@/lib/recipe-tags'
 import { servingsCount } from '@/lib/servings'
 import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
@@ -19,8 +18,6 @@ export interface RecipeHeaderData {
   meta_description: string | null
   image_url: string | null
   category: string
-  /** The recipe's tags (closed list); the first ones join the category over the title. */
-  tags?: string[] | null
   prep_time_minutes: number | null
   cook_time_minutes: number | null
   total_time_minutes: number | null
@@ -75,16 +72,6 @@ export function timeStripItems(r: RecipeHeaderData): TimeStripItem[] {
   }))
   if (r.servings != null) items.push({ key: 'yield', label: 'Wychodzi', value: servingsCount(r.servings), estimated: false })
   return items
-}
-
-/**
- * The label over the title (handoff 2026-10-28): the category, then up to two tags,
- * "Pieczywo · Drożdżowe". A tag that only repeats the category is left out.
- */
-export function eyebrowParts(category: string, tags: string[] | null | undefined): string[] {
-  const first = categoryLabel(category)
-  const rest = (tags ?? []).map(tagLabel).filter((label) => label.toLowerCase() !== first.toLowerCase())
-  return [first, ...rest.slice(0, 2)]
 }
 
 /** The author's initial for the avatar circle; "?" never shows, a missing name renders no line. */
@@ -168,7 +155,7 @@ function TimeStrip({ items }: { items: TimeStripItem[] }) {
 
 /**
  * The recipe page header (E01-S07, S07b; handoff 2026-10-28): two equal columns from lg —
- * the photos | the label over the title, title, subtitle, who added it and the source,
+ * the photos | the title, subtitle, who added it and the source,
  * description, time strip, actions and the versions box. One column below lg, photos
  * first. The list position and the breadcrumbs sit in a row above it (the page renders
  * it); the tags render at the bottom of the page, in "Ten przepis jest" (E01-S16).
@@ -198,9 +185,8 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions 
       )}
 
       <div>
-        <p className="mb-2 text-[16px] font-bold uppercase tracking-[0.06em] text-action-text">
-          {eyebrowParts(recipe.category, recipe.tags).join(' · ')}
-        </p>
+        {/* No label over the title (owner, 2026-10-29): the breadcrumbs above already
+            name the category, and the tags sit at the bottom of the page. */}
         <h1 className="mb-2 text-[32px] leading-[1.15] font-bold text-ink lg:text-[48px] lg:leading-[1.05] lg:font-extrabold">
           {recipe.title}
         </h1>
