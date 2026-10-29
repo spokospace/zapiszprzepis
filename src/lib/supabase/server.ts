@@ -3,7 +3,8 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
-import { checkUser, SessionCheckError } from './user-check'
+import { getCachedJwks } from './jwks-cache'
+import { checkClaims, checkUser, SessionCheckError } from './user-check'
 
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies()
@@ -40,8 +41,8 @@ export async function createSupabaseServerClient() {
 }
 
 /**
- * The session check for this render. Wrapped in React `cache()` so a layout and
- * its page share ONE Auth round trip per render instead of each calling getUser().
+ * The full session check for this render (a getUser() round trip to the Auth
+ * server), for requireUser(). Wrapped in React `cache()` so one render shares it.
  */
 const checkCurrentUser = cache(async () => {
   const supabase = await createSupabaseServerClient()
@@ -49,20 +50,31 @@ const checkCurrentUser = cache(async () => {
 })
 
 /**
- * The signed-in user, or null for a guest (E01-S02 public routes). A check that
- * could not decide renders the public page as for a guest; it is logged.
+ * The read-side session check for this render: the access token is verified locally
+ * (getClaims), so a layout and its page cost no Auth round trip. Wrapped in React
+ * `cache()` so they still share one check.
+ */
+const checkCurrentClaims = cache(async () => {
+  const supabase = await createSupabaseServerClient()
+  return checkClaims(supabase, 'server', await getCachedJwks(SUPABASE_URL))
+})
+
+/**
+ * The signed-in user's id, or null for a guest (E01-S02 public routes). A check that
+ * could not decide renders the public page as for a guest; it is logged. For reads:
+ * a session revoked on another device still shows until its access token expires.
  */
 export async function getCurrentUser() {
-  return (await checkCurrentUser()).user
+  return (await checkCurrentClaims()).user
 }
 
 /**
- * For a screen behind login: the user, or null for a real guest (the caller sends
- * them to /login). A check that could not decide throws SessionCheckError, so the
- * visitor gets the error page with a retry instead of being logged out.
+ * For a screen behind login: the user's id, or null for a real guest (the caller
+ * sends them to /login). A check that could not decide throws SessionCheckError, so
+ * the visitor gets the error page with a retry instead of being logged out.
  */
 export async function getSignedInUser() {
-  const { user, transient } = await checkCurrentUser()
+  const { user, transient } = await checkCurrentClaims()
   if (!user && transient) throw new SessionCheckError()
   return user
 }
