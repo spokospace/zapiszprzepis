@@ -53,6 +53,11 @@ export function detectSourceLanguage(text: string): SourceLanguage {
   return pl > en ? 'pl' : 'foreign'
 }
 
+/** Any Cyrillic letter: Belarusian, Russian or Ukrainian, never Polish (recipe 1102). */
+export function hasCyrillic(text: string): boolean {
+  return /\p{Script=Cyrillic}/u.test(text)
+}
+
 /** Ingredient fields a foreign source adds to the JSON schema; the model follows
  *  the schema line where it skipped a rule bullet (1 of 3 runs). */
 export const FOREIGN_INGREDIENT_FIELDS = '"source": "the ingredient line exactly as the source writes it, untranslated", '

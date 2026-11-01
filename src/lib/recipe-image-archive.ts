@@ -689,7 +689,7 @@ const NOISE_SECTION_WORDS = new Set([
   'ecomm', 'discount',
   'related', 'similar', 'recommended', 'popular',
   'comment', 'comments', 'author', 'sidebar', 'widget', 'newsletter',
-  'printfriendly',
+  'printfriendly', 'footer',
 ])
 const SECTION_OPEN_RE = /<(div|section|aside|nav|footer|ul|ol|li|figure|a|ins|span)\b[^>]*>/gi
 const CLASS_OR_ID_RE = /\b(?:class|id)=["']([^"']*)["']/gi
