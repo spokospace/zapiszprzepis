@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectSourceLanguage, localizeForeignIngredients } from './source-language'
+import { detectSourceLanguage, hasCyrillic, localizeForeignIngredients } from './source-language'
 
 describe('localizeForeignIngredients (#524 follow-up)', () => {
   const SOURCE = '1/2 pound pasta\n⅔ cup grated manchego\n1/2 teaspoon dried basil\n2 tablespoons cilantro\n1 stick butter'
@@ -61,5 +61,20 @@ describe('detectSourceLanguage (#524)', () => {
   it('treats empty text as foreign', () => {
     expect(detectSourceLanguage('')).toBe('foreign')
     expect(detectSourceLanguage('<img src="x.jpg">')).toBe('foreign')
+  })
+
+  it('reads a Belarusian page (Cyrillic, no Polish letters) as foreign, so it gets the localization rules', () => {
+    expect(detectSourceLanguage('Нарэзаць вяндліну, цыбулю, сыр і памідор тонка. Змяшаць маянэз і гарчыцу, каб атрымаўся соус.')).toBe('foreign')
+  })
+})
+
+describe('hasCyrillic (recipe 1102)', () => {
+  it('finds Belarusian, Russian and Ukrainian letters', () => {
+    expect(hasCyrillic('Запечаныя сэндвічы')).toBe(true)
+    expect(hasCyrillic('Борщ')).toBe(true)
+  })
+
+  it('passes a Polish recipe, diacritics included', () => {
+    expect(hasCyrillic('Zapiekane kanapki z szynką, serem i pomidorem — łyżka musztardy')).toBe(false)
   })
 })

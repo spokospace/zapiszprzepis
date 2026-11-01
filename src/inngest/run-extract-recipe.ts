@@ -41,11 +41,21 @@ import {
   FOREIGN_EXTRACTION_MODEL,
   FOREIGN_INGREDIENT_FIELDS,
   FOREIGN_SOURCE_RULES,
+  hasCyrillic,
   localizeForeignIngredients,
 } from '@/lib/source-language'
 import { readerScrape, type ReaderPage } from '@/lib/jina-reader'
 import { fetchPublicHtml } from '@/lib/public-fetch'
 import type { Database } from '@/lib/supabase.types'
+
+/**
+ * A Polish recipe has no Cyrillic. A model that hands a Belarusian or Russian
+ * source back in its own language (slushna.by, recipe 1102) would save it
+ * untranslated, so the attempt fails and the visitor can retry.
+ */
+function assertPolishOutput(parsed: RecipeData): void {
+  if (hasCyrillic(JSON.stringify([parsed.title, parsed.steps, parsed.ingredients]))) throw new Error(LLM_NOT_POLISH)
+}
 
 /**
  * The share repeats a saved recipe, so no copy is made. The user's own: link
@@ -94,6 +104,7 @@ const FB_CAPTION_NO_RECIPE =
   'Opis tego posta na Facebooku nie zawiera przepisu (przepis jest pewnie tylko w filmie) — skopiuj składniki ręcznie albo podaj link do bloga'
 const LLM_UNREADABLE =
   'Nie udało się odczytać przepisu z odpowiedzi modelu — spróbuj ponownie'
+const LLM_NOT_POLISH = 'Model zwrócił przepis w języku źródła, nie po polsku — spróbuj ponownie'
 const UNREADABLE_PAGE =
   'Scraped page had no readable recipe content (possible Google Translate interstitial or render failure)'
 // Shown when a shared YouTube link yielded no recipe AND the video won't embed
@@ -693,6 +704,7 @@ Rules:
         throw new Error(LLM_UNREADABLE)
       }
 
+      assertPolishOutput(parsed)
       // recipes.category is a strict enum: one off-list value fails the insert
       // and throws the whole extraction away.
       const { category, coerced } = toRecipeCategory(parsed.category)

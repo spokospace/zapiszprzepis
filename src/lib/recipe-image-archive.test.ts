@@ -491,6 +491,21 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
   const PAGE = 'https://aniagotuje.pl/przepis/ciastka-maslane-z-marmolada'
   const CDN = 'https://cdn.aniagotuje.com'
 
+  it("drops a site-wide award certificate in the page footer (slushna.by, recipe 1102)", () => {
+    // The footer block holds a Belarusian contest diploma; it has no size and
+    // no noise class of its own, so only the footer wrapper marks it as page furniture.
+    const html = `
+      <img src="https://bel.24health.by/wp-content/uploads/2023/08/IMG_4130-scaled.webp" alt="Сэндвічы" width="500" height="375">
+      <div class="row down-footer-block ">
+        <div class="image-sert col-md-2">
+          <figure><img src="https://slushna.by/wp-content/themes/belzdorovie/img/optimize/diplom_slushna.webp" alt="diplom_poznay"></figure>
+        </div>
+      </div>`
+    expect(pickGalleryImages(html, 'https://slushna.by/dva-varyyanty-zapechanyx-sendvichau-pakrokavy-recept')).toEqual([
+      'https://bel.24health.by/wp-content/uploads/2023/08/IMG_4130-scaled.webp',
+    ])
+  })
+
   it("keeps the post's photos and drops badges, other recipes and readers' photos (aniagotuje)", () => {
     // Trimmed from Firecrawl's main-content html of the page: the author badge,
     // the hero (declared 1×1, though the file is 1000px), step photos, cards
