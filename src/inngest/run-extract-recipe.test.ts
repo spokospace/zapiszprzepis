@@ -83,6 +83,7 @@ function makeSupabaseMock() {
     chain.select = vi.fn().mockReturnValue(chain)
     chain.eq = vi.fn().mockReturnValue(chain)
     chain.neq = vi.fn().mockReturnValue(chain)
+    chain.is = vi.fn().mockReturnValue(chain)
     chain.order = vi.fn().mockReturnValue(chain)
     chain.limit = vi.fn().mockReturnValue(chain)
     chain.like = vi.fn().mockReturnValue(chain)
@@ -1673,14 +1674,16 @@ describe('runExtractRecipe — recipe gallery', () => {
     const result = await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any, deferImages: true })
 
     expect(archiveRecipeImages).not.toHaveBeenCalled()
-    expect(result.images).toEqual({
-      recipeId: 7,
-      userId: 'user-1',
-      cover: 'https://blog.example/a/ciasto-1080x1440.jpg',
-      gallery: ['https://blog.example/a/ciasto-1080x1440.jpg', 'https://blog.example/a/krok-1080x1440.jpg'],
-      stepSources: [null, null],
-      replace: false,
-    })
+    expect(result.images).toEqual([
+      {
+        recipeId: 7,
+        userId: 'user-1',
+        cover: 'https://blog.example/a/ciasto-1080x1440.jpg',
+        gallery: ['https://blog.example/a/ciasto-1080x1440.jpg', 'https://blog.example/a/krok-1080x1440.jpg'],
+        stepSources: [null, null],
+        replace: false,
+      },
+    ])
     expect(mock.didUpdate('recipe_shares', { status: 'completed' })).toBe(true)
   })
 
@@ -2180,25 +2183,62 @@ describe('runExtractRecipe — several recipes on one page', () => {
     })
 
     expect(mock.insertArgsAll('recipes')).toHaveLength(1)
-    expect(mock.insertArgs('recipes')).toMatchObject({ title: 'Naleśniki' })
+    expect(mock.insertArgs('recipes')).toMatchObject({ title: 'Naleśniki', source_key: null })
     expect(logged(log, 'several recipes')).toBeUndefined()
     log.mockRestore()
   })
 
-  it('stores the first of two dishes and logs the second', async () => {
+  it('stores each of two dishes from one link as its own row, keyed by position', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 42 }, error: null })
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    mock.queue('recipes', { data: { id: 43 }, error: null })
 
-    await runExtractRecipe(BASE_EVENT, {
+    const result = await runExtractRecipe(BASE_EVENT, {
       fetch: makeFetchMock({ openaiContent: answer(dish('Sałatka z rzodkwi'), dish('Smażaniki')) }),
       supabase: mock.supabase as any,
     })
 
-    expect(mock.insertArgsAll('recipes')).toHaveLength(1)
-    expect(mock.insertArgs('recipes')).toMatchObject({ title: 'Sałatka z rzodkwi' })
-    expect(logged(log, 'several recipes')?.[1]).toEqual(['Smażaniki'])
-    log.mockRestore()
+    const inserts = mock.insertArgsAll('recipes')
+    expect(inserts).toHaveLength(2)
+    expect(inserts).toMatchObject([
+      { title: 'Sałatka z rzodkwi', source_url: BASE_EVENT.sharedUrl, source_key: '0' },
+      { title: 'Smażaniki', source_url: BASE_EVENT.sharedUrl, source_key: '1' },
+    ])
+    // The share points at the first dish; the second is its own recipe.
+    expect(result).toMatchObject({ recipeId: 42, title: 'Sałatka z rzodkwi' })
+    expect(mock.didUpdate('recipe_shares', { recipe_id: 42, status: 'completed' })).toBe(true)
+  })
+
+  it('re-extracting the same link links each dish to its own row instead of inserting again', async () => {
+    const mock = makeSupabaseMock()
+    // Each insert hits the (source_url, source_key) index; the lookup then finds that dish's row.
+    mock.queue('recipes', { data: null, error: { message: 'duplicate key value violates unique constraint "recipes_source_url_key_uniq"' } })
+    mock.queue('recipes', { data: { id: 40, user_id: 'user-1', title: 'Sałatka z rzodkwi', category: 'salatki' }, error: null })
+    mock.queue('recipes', { data: null, error: { message: 'duplicate key value violates unique constraint "recipes_source_url_key_uniq"' } })
+    mock.queue('recipes', { data: { id: 41, user_id: 'user-1', title: 'Smażaniki', category: 'sniadania' }, error: null })
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: answer(dish('Sałatka z rzodkwi'), dish('Smażaniki')) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgsAll('recipes').map((args) => args.source_key)).toEqual(['0', '1'])
+    expect(mock.didUpdate('recipe_shares', { recipe_id: 40, status: 'completed' })).toBe(true)
+    expect(result).toMatchObject({ recipeId: 40 })
+  })
+
+  it('hands back the photos of each dish saved from the link, one job per row', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queue('recipes', { data: { id: 43 }, error: null })
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: answer(dish('Sałatka z rzodkwi'), dish('Smażaniki')) }),
+      supabase: mock.supabase as any,
+      deferImages: true,
+    })
+
+    expect(result.images?.map((job) => job.recipeId)).toEqual([42, 43])
   })
 
   it('keeps the variants and ingredient sections of one dish in one entry', async () => {
@@ -2244,9 +2284,9 @@ describe('runExtractRecipe — several recipes on one page', () => {
     expect(mock.didInsert('recipes')).toBe(false)
   })
 
-  it('reads at most 10 dishes and logs the rest as dropped', async () => {
+  it('stores at most 10 dishes and logs the rest as dropped', async () => {
     const mock = makeSupabaseMock()
-    mock.queue('recipes', { data: { id: 42 }, error: null })
+    for (let id = 40; id < 50; id++) mock.queue('recipes', { data: { id }, error: null })
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
     const recipes = Array.from({ length: 12 }, (_, i) => dish(`Danie ${i + 1}`))
 
@@ -2255,11 +2295,11 @@ describe('runExtractRecipe — several recipes on one page', () => {
       supabase: mock.supabase as any,
     })
 
-    expect(mock.insertArgs('recipes')).toMatchObject({ title: 'Danie 1' })
+    const titles = mock.insertArgsAll('recipes').map((args) => args.title)
+    expect(titles).toHaveLength(10)
+    expect(titles[0]).toBe('Danie 1')
+    expect(titles).not.toContain('Danie 11')
     expect(logged(log, 'dropped')?.[0]).toContain('2 of 12 recipe entries dropped')
-    const rest = logged(log, 'several recipes')?.[1] as string[]
-    expect(rest).toHaveLength(9)
-    expect(rest).not.toContain('Danie 11')
     log.mockRestore()
   })
 })

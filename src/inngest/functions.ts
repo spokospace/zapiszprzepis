@@ -7,7 +7,6 @@ import {
   storeCoverAndGallery,
   storeStepImages,
   type ExtractRecipeEvent,
-  type RecipeImageJob,
 } from './run-extract-recipe'
 
 /** The slice of Inngest's `step` tool the job uses, so a test can drive it. */
@@ -34,10 +33,12 @@ export async function extractRecipeJob({ event, step }: { event: { data: unknown
   // revalidateTag has Next's context.
   await step.run('revalidate-recipe-caches', () => revalidateRecipeCaches())
   if (images) {
-    const job = images as RecipeImageJob
-    await step.run('archive-cover-gallery', () => storeCoverAndGallery(supabase, job))
-    await step.run('archive-step-images', () => storeStepImages(supabase, job))
-    // The archived cover and step photos replace the source URLs on the row.
+    // One job per recipe the link saved (several dishes of one page, phase 2).
+    for (const [i, job] of images.entries()) {
+      await step.run(`archive-cover-gallery-${i}`, () => storeCoverAndGallery(supabase, job))
+      await step.run(`archive-step-images-${i}`, () => storeStepImages(supabase, job))
+    }
+    // The archived cover and step photos replace the source URLs on the rows.
     await step.run('revalidate-recipe-caches-after-images', () => revalidateRecipeCaches())
   }
   return result

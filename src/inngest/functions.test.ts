@@ -33,7 +33,7 @@ beforeEach(() => vi.clearAllMocks())
 
 describe('extractRecipeJob — cache invalidation (#445)', () => {
   it('purges the recipe caches right after the extraction, then again after the photos are archived', async () => {
-    vi.mocked(runExtractRecipe).mockResolvedValue({ ...RESULT, images: IMAGES })
+    vi.mocked(runExtractRecipe).mockResolvedValue({ ...RESULT, images: [IMAGES] })
     const step = fakeStep()
 
     const result = await extractRecipeJob({ event: EVENT, step })
@@ -41,8 +41,8 @@ describe('extractRecipeJob — cache invalidation (#445)', () => {
     expect(step.ids).toEqual([
       'extract',
       'revalidate-recipe-caches',
-      'archive-cover-gallery',
-      'archive-step-images',
+      'archive-cover-gallery-0',
+      'archive-step-images-0',
       'revalidate-recipe-caches-after-images',
     ])
     expect(revalidateRecipeCaches).toHaveBeenCalledTimes(2)

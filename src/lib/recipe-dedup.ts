@@ -31,6 +31,17 @@ export function matchKey<Q extends { eq(column: string, value: string): Q; like(
   return pattern ? query.like(column, pattern) : query.eq(column, key)
 }
 
+/**
+ * Narrow a query to one dish of a page: the dish under `sourceKey`, or the page's single recipe (null key).
+ * Every lookup on (source_url, source_key) or (source_fingerprint, source_key) goes through here.
+ */
+export function withSourceKey<Q extends { eq(column: string, value: string): Q; is(column: string, value: null): Q }>(
+  query: Q,
+  sourceKey: string | null,
+): Q {
+  return sourceKey == null ? query.is('source_key', null) : query.eq('source_key', sourceKey)
+}
+
 type SavedRecipe = { id: number; slug: string; title: string; category: string; user_id: string }
 
 /** The columns a SavedRecipe is read from — shared by the by-URL, by-fingerprint and by-ingredient lookups. */
@@ -298,14 +309,20 @@ export async function findRecipeByYoutubeId(
   return data
 }
 
-/** The recipe saved from the same author text (see fingerprintText): the user's own when `userId` is given, else anyone's. */
+/**
+ * The recipe saved from the same author text (see fingerprintText): the user's own when `userId` is given, else anyone's.
+ * `sourceKey` narrows it to one dish of that page (null: the page's single recipe); left out, any dish of the page counts.
+ */
 export async function findRecipeBySourceFingerprint(
   supabase: SupabaseClient,
   userId: string | null,
   fingerprint: string,
+  sourceKey?: string | null,
 ): Promise<SavedRecipe | null> {
   const query = supabase.from('recipes').select(SAVED_RECIPE_COLUMNS)
-  const { data } = await (userId ? query.eq('user_id', userId) : query)
+  const owned = userId ? query.eq('user_id', userId) : query
+  const scoped = sourceKey === undefined ? owned : withSourceKey(owned, sourceKey)
+  const { data } = await scoped
     .eq('source_fingerprint', fingerprint)
     .limit(1)
     .maybeSingle()

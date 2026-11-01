@@ -3,6 +3,7 @@ import {
   classifyExisting,
   findExistingRecipeForUrl,
   findRecipeByYoutubeId,
+  findRecipeBySourceFingerprint,
   findSameRecipe,
   ingredientFingerprint,
   ingredientKey,
@@ -384,5 +385,41 @@ describe('findRecipeByYoutubeId — the same film under another link', () => {
     } as never
 
     await expect(findRecipeByYoutubeId(failing, 'dQw4w9WgXcQ', { fromVideo: true })).rejects.toThrow('YouTube lookup failed: timeout')
+  })
+})
+
+describe("findRecipeBySourceFingerprint — one dish of a page", () => {
+  // Records the filters a lookup applies; resolves to no row.
+  function recorder() {
+    const filters: string[] = []
+    const chain: Record<string, unknown> = {}
+    for (const method of ["select", "eq", "is", "limit"]) {
+      chain[method] = (...args: unknown[]) => {
+        filters.push([method, ...args.map(String)].join(" "))
+        return chain
+      }
+    }
+    chain.maybeSingle = async () => ({ data: null, error: null })
+    return { client: { from: () => chain } as any, filters }
+  }
+
+  it("matches any dish of the page when no key is given", async () => {
+    const { client, filters } = recorder()
+    await findRecipeBySourceFingerprint(client, null, "fp")
+    expect(filters).not.toContain("eq source_key 1")
+    expect(filters.some((f) => f.includes("source_key"))).toBe(false)
+  })
+
+  it("matches only the dish with that key", async () => {
+    const { client, filters } = recorder()
+    await findRecipeBySourceFingerprint(client, null, "fp", "1")
+    expect(filters).toContain("eq source_key 1")
+  })
+
+  it("matches only the single-recipe row (null key) when the link has one dish", async () => {
+    const { client, filters } = recorder()
+    await findRecipeBySourceFingerprint(client, "user-1", "fp", null)
+    expect(filters).toContain("is source_key null")
+    expect(filters).toContain("eq user_id user-1")
   })
 })
