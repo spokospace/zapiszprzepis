@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectSourceLanguage, hasCyrillic, localizeForeignIngredients } from './source-language'
+import { detectSourceLanguage, FOREIGN_SOURCE_RULES, hasCyrillic, localizeForeignIngredients } from './source-language'
 
 describe('localizeForeignIngredients (#524 follow-up)', () => {
   const SOURCE = '1/2 pound pasta\n⅔ cup grated manchego\n1/2 teaspoon dried basil\n2 tablespoons cilantro\n1 stick butter'
@@ -71,6 +71,17 @@ describe('detectSourceLanguage (#524)', () => {
     // The word count read the page as Polish: two Latin "i" and no English word.
     const page = 'Сайт выкарыстоўвае файлы cookie для забеспячэння зручнасці карыстальнікаў. Нарэзаць вяндліну, цыбулю, сыр і памідор. i w'
     expect(detectSourceLanguage(page)).toBe('foreign')
+  })
+})
+
+describe('FOREIGN_SOURCE_RULES dish names', () => {
+  it('asks for the Polish name of a transliterated dish (belyashi → bielasze, not belysze)', () => {
+    expect(FOREIGN_SOURCE_RULES).toContain('"bielasze"')
+    expect(FOREIGN_SOURCE_RULES).toContain('never "belysze"')
+  })
+
+  it('maps dranik to placki ziemniaczane', () => {
+    expect(FOREIGN_SOURCE_RULES).toContain('"dranik"/"draniki" → "placki ziemniaczane"')
   })
 })
 
