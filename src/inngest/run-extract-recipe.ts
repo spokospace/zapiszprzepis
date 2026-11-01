@@ -64,6 +64,7 @@ function assertPolishOutput(parsed: RecipeData): void {
 
 /** The ingredients without their `source` line, which a translation must not touch. */
 function sourcelessIngredients(parsed: RecipeData): RecipeData['ingredients'] {
+  if (!Array.isArray(parsed.ingredients)) return []
   return parsed.ingredients.map((ing) => {
     const rest: Record<string, unknown> = { ...ing }
     delete rest.source
@@ -275,6 +276,17 @@ interface RecipeData {
   /** Which of the three times the model estimated rather than read from the source (#188). */
   estimatedTimes?: unknown
   servings?: number | null
+}
+
+/** A page's recipes past this many are not read (spec D2, catalogue pages). */
+const MAX_RECIPES_PER_LINK = 10
+
+/** The entries of a model answer. A bare object with no `recipes` list reads as one entry. */
+function recipeEntries(payload: unknown): RecipeData[] {
+  if (payload == null || typeof payload !== 'object') return []
+  const { recipes } = payload as { recipes?: unknown }
+  const list: unknown[] = Array.isArray(recipes) ? recipes : [payload]
+  return list.filter((entry): entry is RecipeData => entry != null && typeof entry === 'object')
 }
 
 const TIME_FIELDS = ['prepTimeMinutes', 'cookTimeMinutes', 'totalTimeMinutes'] as const
@@ -658,7 +670,8 @@ export async function runExtractRecipe(
     // sets: written before "title", it makes the model settle what the dish is
     // first, which a model without reasoning otherwise skips ("White Pizza Dip"
     // → „Dip z białą pizzą”). It rides along in the parsed object, unread.
-    async function extractWithLlm(transcript?: string): Promise<RecipeData> {
+    // Returns the first usable recipe on the page, or null. The rest are logged.
+    async function extractWithLlm(transcript?: string): Promise<RecipeData | null> {
       // A foreign source gets the localization rules and a stronger model (#524);
       // a Polish one keeps the prompt and model it always had.
       const foreignSource = detectSourceLanguage(sourceText(transcript)) === 'foreign'
@@ -674,7 +687,8 @@ export async function runExtractRecipe(
             {
               role: 'system',
               content: `You are a recipe extraction expert. Extract recipe information from user-provided content.
-Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
+Return ONLY valid JSON (no markdown, no explanations) with this exact structure, one object per recipe on the page:
+{"recipes": [
 {
   "dishKind": "what the dish IS, 1–3 Polish words, decided before the title (\"dip\", \"zapiekanka makaronowa\", \"spód do pizzy\")",
   "title": "Recipe title in Polish, built around that dish",
@@ -690,8 +704,10 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
   "estimatedTimes": ["names of the time fields you estimated"],
   "servings": integer or null
 }
+]}
 Rules:
-- The page often includes navigation, related/popular posts widgets, comments and ads. Focus ONLY on the PRIMARY recipe — usually the post-body content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
+- The page often includes navigation, related/popular posts widgets, comments and ads. Focus on the recipes of the post body — usually the content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
+- Several dishes: a post may give more than one recipe (a holiday menu, a breakfast set, "5 quick dinners"). Return one entry per distinct dish, in the order the page gives them, at most 10. Keep one dish in one entry: its variants (e.g. "z bulwą" / "z kiełbasą") and its ingredient sections stay together in that entry. Advice, tips and "sekrety" sections (e.g. how to boil potatoes for a salad) are not entries. A page with no recipe returns {"recipes": []}.
 - Ingredient sections: many recipes split ingredients into named parts (e.g. "Podmłoda", "Ciasto właściwe", "Masa waniliowa", "Masa truskawkowa", "Spód", "Krem", "Dodatkowo"). When the source groups ingredients under such a heading, set "section" to that heading (in Polish, keep it short) for every ingredient in that group, preserving the source order so groups stay contiguous. If the ingredients are a single ungrouped list, use an empty string for "section" on every ingredient.
 - Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml) and keep the precise metric value in "amount"/"unit".
 - Alternative measure ("alt"): ONLY a quantity in a HOUSEHOLD unit that the source states next to the precise amount — szklanki, łyżki, łyżeczki, kostki, garście, plasterki. Copy it VERBATIM, keeping the source's own wording: "3 szklanki", "około 1,5 szklanki", "do 1/3 szklanki", "3/4 kostki". Never add, drop or reword an approximation like "około"/"ok." the source did not use (source "3 szklanki" → "3 szklanki", NOT "około 3 szklanki"). Keep the precise figure in "amount"/"unit"; for a US household measure you convert to metric (e.g. "1 cup flour"), keep the metric in "amount"/"unit" and the stated cups/sticks/spoons in "alt".
@@ -756,42 +772,59 @@ Rules:
 
       // JSON mode should rule out a ```json fence, but strip one anyway: a
       // parser error is not something to show in the bell.
-      let parsed: RecipeData
+      let payload: unknown
       try {
-        parsed = JSON.parse(content.trim().replace(/^```(?:json)?\s*|\s*```$/g, '')) as RecipeData
+        payload = JSON.parse(content.trim().replace(/^```(?:json)?\s*|\s*```$/g, ''))
       } catch {
         throw new Error(LLM_UNREADABLE)
       }
 
-      if (hasCyrillicOutput(parsed)) parsed = await translateToPolish(parsed)
-      assertPolishOutput(parsed)
-      // recipes.category is a strict enum: one off-list value fails the insert
-      // and throws the whole extraction away.
-      const { category, coerced } = toRecipeCategory(parsed.category)
-      if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
-      // A missing method comes back as null as often as []; the gate below
-      // and the steps column both want the list. Steps now arrive as
-      // {text, image}; split them so `steps` stays a string[] (its many
-      // consumers and the column) and the per-step images ride alongside.
-      // servings must fit the column (1–99) or it fails the insert.
-      // Ingredients without a string name are dropped (dedup trims `name`), and
-      // a time the int columns cannot take ("15-20", 37.5) becomes null (#381).
-      const { steps, images: stepImages } = splitLlmSteps(parsed.steps)
-      const ingredients = toIngredients(parsed.ingredients)
-      return {
-        ...parsed,
-        ingredients: foreignSource
-          ? localizeForeignIngredients(ingredients, sourceText(transcript))
-          : ingredients,
-        // A step copied as written keeps its ounces and °F (see us-units).
-        steps: steps.map(metricUnits),
-        stepImages,
-        category,
-        servings: toServings(parsed.servings),
-        prepTimeMinutes: toMinutes(parsed.prepTimeMinutes),
-        cookTimeMinutes: toMinutes(parsed.cookTimeMinutes),
-        totalTimeMinutes: toMinutes(parsed.totalTimeMinutes),
+      // Each entry is one dish, cleaned up the way the single recipe always was.
+      async function toRecipe(entry: RecipeData): Promise<RecipeData> {
+        const parsed = hasCyrillicOutput(entry) ? await translateToPolish(entry) : entry
+        assertPolishOutput(parsed)
+        // recipes.category is a strict enum: one off-list value fails the insert
+        // and throws the whole extraction away.
+        const { category, coerced } = toRecipeCategory(parsed.category)
+        if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
+        // A missing method comes back as null as often as []; the gate below
+        // and the steps column both want the list. Steps now arrive as
+        // {text, image}; split them so `steps` stays a string[] (its many
+        // consumers and the column) and the per-step images ride alongside.
+        // servings must fit the column (1–99) or it fails the insert.
+        // Ingredients without a string name are dropped (dedup trims `name`), and
+        // a time the int columns cannot take ("15-20", 37.5) becomes null (#381).
+        const { steps, images: stepImages } = splitLlmSteps(parsed.steps)
+        const ingredients = toIngredients(parsed.ingredients)
+        return {
+          ...parsed,
+          ingredients: foreignSource
+            ? localizeForeignIngredients(ingredients, sourceText(transcript))
+            : ingredients,
+          // A step copied as written keeps its ounces and °F (see us-units).
+          steps: steps.map(metricUnits),
+          stepImages,
+          category,
+          servings: toServings(parsed.servings),
+          prepTimeMinutes: toMinutes(parsed.prepTimeMinutes),
+          cookTimeMinutes: toMinutes(parsed.cookTimeMinutes),
+          totalTimeMinutes: toMinutes(parsed.totalTimeMinutes),
+        }
       }
+
+      const validated = await Promise.all(recipeEntries(payload).map(toRecipe))
+      const usable = validated.filter((recipe) => isExtractedRecipeUsable(recipe, { stepsOptional: true }))
+      // With none usable, keep the first so the gates after this call word the
+      // failure exactly as they did for a single recipe.
+      const kept = (usable.length > 0 ? usable : validated.slice(0, 1)).slice(0, MAX_RECIPES_PER_LINK)
+      if (kept.length < validated.length) {
+        console.log(`[extract-recipe] ${validated.length - kept.length} of ${validated.length} recipe entries dropped (unusable or over ${MAX_RECIPES_PER_LINK})`)
+      }
+      // Only the first is stored for now (spec phase 1); the rest are logged.
+      if (kept.length > 1) {
+        console.log('[extract-recipe] several recipes on the page; storing the first, not yet the rest:', kept.slice(1).map((recipe) => recipe.title))
+      }
+      return kept[0] ?? null
     }
 
     // The user's other recipes, for the labelling pass below; read while the

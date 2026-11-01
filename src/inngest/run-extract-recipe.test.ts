@@ -2156,3 +2156,110 @@ describe('runExtractRecipe — dish classification (E01-S21)', () => {
     expect(mock.didUpdate('recipes', { dish: 'naleśniki' })).toBe(true)
   })
 })
+
+describe('runExtractRecipe — several recipes on one page', () => {
+  const MAIN_INGREDIENT = [{ name: 'Mąka', amount: '200', unit: 'g', section: '' }]
+  const dish = (title: string, ingredients: Array<Record<string, string>> = MAIN_INGREDIENT) => ({
+    title,
+    ingredients,
+    steps: ['Wymieszaj składniki', 'Smaż na patelni'],
+    category: 'sniadania',
+  })
+  const answer = (...recipes: unknown[]) => JSON.stringify({ recipes })
+  const logged = (log: { mock: { calls: unknown[][] } }, text: string) =>
+    log.mock.calls.find(([message]) => String(message).includes(text))
+
+  it('stores a single recipe in the list shape as it always was', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: answer(dish('Naleśniki')) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgsAll('recipes')).toHaveLength(1)
+    expect(mock.insertArgs('recipes')).toMatchObject({ title: 'Naleśniki' })
+    expect(logged(log, 'several recipes')).toBeUndefined()
+    log.mockRestore()
+  })
+
+  it('stores the first of two dishes and logs the second', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: answer(dish('Sałatka z rzodkwi'), dish('Smażaniki')) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgsAll('recipes')).toHaveLength(1)
+    expect(mock.insertArgs('recipes')).toMatchObject({ title: 'Sałatka z rzodkwi' })
+    expect(logged(log, 'several recipes')?.[1]).toEqual(['Smażaniki'])
+    log.mockRestore()
+  })
+
+  it('keeps the variants and ingredient sections of one dish in one entry', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    const ingredients = [
+      { name: 'Ziemniaki', amount: '500', unit: 'g', section: 'Z bulwą' },
+      { name: 'Kiełbasa', amount: '150', unit: 'g', section: 'Z kiełbasą' },
+      { name: 'Mąka', amount: '100', unit: 'g', section: 'Ciasto' },
+    ]
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: answer(dish('Smażaniki', ingredients)) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgsAll('recipes')).toHaveLength(1)
+    expect(mock.insertArgs('recipes').ingredients.map((i: { section: string }) => i.section)).toEqual(['Z bulwą', 'Z kiełbasą', 'Ciasto'])
+  })
+
+  it('drops an entry with no usable ingredients and stores the next dish', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: answer(dish('Pusty wpis', []), dish('Sernik')) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgsAll('recipes')).toHaveLength(1)
+    expect(mock.insertArgs('recipes')).toMatchObject({ title: 'Sernik' })
+  })
+
+  it('fails with the no-usable-recipe reason when no entry is usable', async () => {
+    const mock = makeSupabaseMock()
+
+    await expect(
+      runExtractRecipe(BASE_EVENT, {
+        fetch: makeFetchMock({ openaiContent: answer(dish('Pusty A', []), dish('Pusty B', [])) }),
+        supabase: mock.supabase as any,
+      }),
+    ).rejects.toThrow('no usable recipe')
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+
+  it('reads at most 10 dishes and logs the rest as dropped', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const recipes = Array.from({ length: 12 }, (_, i) => dish(`Danie ${i + 1}`))
+
+    await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({ openaiContent: answer(...recipes) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgs('recipes')).toMatchObject({ title: 'Danie 1' })
+    expect(logged(log, 'dropped')?.[0]).toContain('2 of 12 recipe entries dropped')
+    const rest = logged(log, 'several recipes')?.[1] as string[]
+    expect(rest).toHaveLength(9)
+    expect(rest).not.toContain('Danie 11')
+    log.mockRestore()
+  })
+})
