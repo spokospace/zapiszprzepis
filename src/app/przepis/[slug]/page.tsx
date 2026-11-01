@@ -29,6 +29,8 @@ import { getFavoriteIds } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
+import { formatSource } from '@/lib/recipe-source'
+import { PostSiblings, type PostSibling } from './_components/post-siblings'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -81,15 +83,20 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // a dish — until the #298 backfill lands, dish is null everywhere, so no call
   // is made and no bar/section renders (empty-data state).
   const supabase = await createSupabaseServerClient()
-  const [categoryContext, gallery, favorite, dishVersionsResult] = await Promise.all([
+  const [categoryContext, gallery, favorite, dishVersionsResult, siblingsResult] = await Promise.all([
     loadCategoryContext(supabase, typedRecipe),
     user ? supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle() : null,
     user
       ? supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle()
       : null,
     typedRecipe.dish ? supabase.rpc('dish_versions', { p_recipe_id: typedRecipe.id }) : null,
+    // The other dishes saved from this link (E01 multi-recipe, phase 4). A link with one dish has none.
+    typedRecipe.source_url
+      ? supabase.from('public_recipes').select('id, slug, title').eq('source_url', typedRecipe.source_url).neq('id', typedRecipe.id)
+      : null,
   ])
   const galleryImages: string[] = gallery?.data?.image_urls ?? []
+  const siblings = (siblingsResult?.data ?? []) as PostSibling[]
   const isFavorite = Boolean(favorite?.data)
   const galleryCount = typedRecipe.gallery_count ?? 0
 
@@ -247,6 +254,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             All of it is screen-only — a printout stops at the recipe itself. */}
         <div className="print:hidden">
           <RecipeListNav slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+
+          {typedRecipe.source_url && (
+            <PostSiblings
+              sourceUrl={typedRecipe.source_url}
+              sourceName={formatSource(typedRecipe.source_type, typedRecipe.source_url, typedRecipe.source_author).text}
+              siblings={siblings}
+            />
+          )}
 
           <DishVersions
             versions={versions}
