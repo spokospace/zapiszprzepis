@@ -25,6 +25,8 @@ export const FOREIGN_EXTRACTION_MODEL = EXTRACTION_MODEL
 // Polish text runs ~6–8% diacritic letters; an English page with a Polish word or
 // two stays far below this.
 const PL_DIACRITIC_SHARE = 0.015
+// Share of Cyrillic letters that makes a text Belarusian, Russian or Ukrainian.
+const CYRILLIC_SHARE = 0.2
 const SAMPLE_CHARS = 8000
 
 const PL_WORDS = new Set(['i', 'w', 'z', 'na', 'się', 'do', 'oraz', 'jest', 'ze', 'po', 'od', 'dla', 'lub', 'aby', 'też', 'albo', 'ok'])
@@ -40,6 +42,10 @@ export function detectSourceLanguage(text: string): SourceLanguage {
   // Nothing to read: treat it as foreign — the extra rules are harmless on
   // Polish text, a missed translation is not.
   if (letters === 0) return 'foreign'
+  // A Cyrillic page is never Polish, whatever stray Latin words it holds: a
+  // Belarusian recipe with one "i" (recipe 1102) counted as Polish by word count.
+  const cyrillic = sample.match(/\p{Script=Cyrillic}/gu)?.length ?? 0
+  if (cyrillic / letters >= CYRILLIC_SHARE) return 'foreign'
   const diacritics = sample.match(/[ąćęłńóśźż]/g)?.length ?? 0
   if (diacritics / letters >= PL_DIACRITIC_SHARE) return 'pl'
   // Polish typed without diacritics ("ciasto z jablkami") still uses its own
@@ -51,6 +57,11 @@ export function detectSourceLanguage(text: string): SourceLanguage {
     else if (EN_WORDS.has(word)) en++
   }
   return pl > en ? 'pl' : 'foreign'
+}
+
+/** Any Cyrillic letter: Belarusian, Russian or Ukrainian, never Polish (recipe 1102). */
+export function hasCyrillic(text: string): boolean {
+  return /\p{Script=Cyrillic}/u.test(text)
 }
 
 /** Ingredient fields a foreign source adds to the JSON schema; the model follows
