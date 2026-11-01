@@ -79,6 +79,10 @@ describe('FOREIGN_SOURCE_RULES dish names', () => {
     expect(FOREIGN_SOURCE_RULES).toContain('"bielasze"')
     expect(FOREIGN_SOURCE_RULES).toContain('never "belysze"')
   })
+
+  it('maps dranik to placki ziemniaczane', () => {
+    expect(FOREIGN_SOURCE_RULES).toContain('"dranik"/"draniki" → "placki ziemniaczane"')
+  })
 })
 
 describe('hasCyrillic (recipe 1102)', () => {
