@@ -81,7 +81,10 @@ function makeSupabaseMock() {
       return chain
     })
     chain.select = vi.fn().mockReturnValue(chain)
-    chain.eq = vi.fn().mockReturnValue(chain)
+    chain.eq = vi.fn().mockImplementation((column: string, value: unknown) => {
+      calls.push({ table, op: 'eq', args: [column, value] })
+      return chain
+    })
     chain.neq = vi.fn().mockReturnValue(chain)
     chain.is = vi.fn().mockReturnValue(chain)
     chain.order = vi.fn().mockReturnValue(chain)
@@ -136,6 +139,8 @@ function makeSupabaseMock() {
     insertArgs: (table: string) => calls.find(c => c.table === table && c.op === 'insert')?.args,
     insertArgsAll: (table: string) => calls.filter(c => c.table === table && c.op === 'insert').map(c => c.args),
     updateArgs: (table: string) => calls.filter(c => c.table === table && c.op === 'update').map(c => c.args),
+    /** The [column, value] pairs filtered on for this table, in call order. */
+    filtersFor: (table: string) => calls.filter(c => c.table === table && c.op === 'eq').map(c => c.args),
     didUpdate: (table: string, partial?: Record<string, any>) =>
       calls.some(c => {
         if (c.table !== table || c.op !== 'update') return false
@@ -2301,5 +2306,60 @@ describe('runExtractRecipe — several recipes on one page', () => {
     expect(titles).not.toContain('Danie 11')
     expect(logged(log, 'dropped')?.[0]).toContain('2 of 12 recipe entries dropped')
     log.mockRestore()
+  })
+})
+
+describe('runExtractRecipe — refresh by row id on a link with several dishes', () => {
+  const dish = (title: string) => ({
+    title,
+    ingredients: [{ name: 'Mąka', amount: '200', unit: 'g', section: '' }],
+    steps: ['Wymieszaj składniki', 'Smaż na patelni'],
+    category: 'sniadania',
+  })
+  const answer = (...recipes: unknown[]) => JSON.stringify({ recipes })
+
+  it('rewrites only the row it names: its own dish, found by its source_key', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { source_key: '1' }, error: null })
+    mock.queue('recipes', { data: { id: 43 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true, recipeId: 43 }, {
+      fetch: makeFetchMock({ openaiContent: answer(dish('Sałatka z rzodkwi'), dish('Smażaniki')) }),
+      supabase: mock.supabase as any,
+    })
+
+    expect(mock.insertArgsAll('recipes')).toHaveLength(0)
+    // The dish write is the one carrying the title; the later update is the image archive.
+    const dishWrites = mock.updateArgs('recipes').filter((args) => 'title' in args)
+    expect(dishWrites).toHaveLength(1)
+    expect(dishWrites[0]).toMatchObject({ title: 'Smażaniki' })
+    expect(mock.filtersFor('recipes')).toContainEqual(['id', 43])
+    expect(mock.filtersFor('recipes')).not.toContainEqual(['source_url', BASE_EVENT.sharedUrl])
+  })
+
+  it('fails without writing when the row\'s dish is no longer on the page', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { source_key: '5' }, error: null })
+
+    await expect(
+      runExtractRecipe({ ...BASE_EVENT, force: true, recipeId: 43 }, {
+        fetch: makeFetchMock({ openaiContent: answer(dish('Sałatka z rzodkwi'), dish('Smażaniki')) }),
+        supabase: mock.supabase as any,
+      }),
+    ).rejects.toThrow('no longer on the page')
+    expect(mock.updateArgs('recipes')).toHaveLength(0)
+    expect(mock.didInsert('recipes')).toBe(false)
+  })
+
+  it('fails when the row named does not exist for this user', async () => {
+    const mock = makeSupabaseMock()
+
+    await expect(
+      runExtractRecipe({ ...BASE_EVENT, force: true, recipeId: 43 }, {
+        fetch: makeFetchMock({ openaiContent: answer(dish('Sałatka z rzodkwi')) }),
+        supabase: mock.supabase as any,
+      }),
+    ).rejects.toThrow('recipe not found')
+    expect(mock.updateArgs('recipes')).toHaveLength(0)
   })
 })

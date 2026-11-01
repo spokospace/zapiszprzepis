@@ -29,7 +29,7 @@ async function main() {
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const inngest = new Inngest({ id: 'zapiszprzepis', eventKey: inngestEventKey })
 
-  const { data: recipes, error } = await supabase.from('recipes').select('slug, user_id, source_url').in('slug', slugs)
+  const { data: recipes, error } = await supabase.from('recipes').select('id, slug, user_id, source_url').in('slug', slugs)
   if (error) {
     console.error(`✗ Query failed: ${error.message}`)
     process.exit(1)
@@ -47,7 +47,7 @@ async function main() {
     }
     console.log(`${values.run ? '→' : '·'} ${r.slug}  (${r.source_url})`)
     if (!values.run) continue
-    const shareId = await queueRecipeRefresh(supabase, (data) => inngest.send({ name: 'recipe/extract', data }), { userId: r.user_id, sourceUrl: r.source_url })
+    const shareId = await queueRecipeRefresh(supabase, (data) => inngest.send({ name: 'recipe/extract', data }), { userId: r.user_id, sourceUrl: r.source_url, recipeId: r.id })
     if (shareId == null) console.error(`✗ ${r.slug}: share insert failed`)
     await new Promise((resolve) => setTimeout(resolve, everySeconds * 1000))
   }

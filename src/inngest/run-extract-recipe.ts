@@ -182,6 +182,10 @@ export interface ExtractRecipeEvent {
   // Force refresh: overwrite the existing recipe for this source_url in place
   // (the "Odśwież przepis" action) instead of insert / gap-fill.
   force?: boolean
+  // The row a refresh overwrites. Only that dish is rewritten, found by the row's
+  // source_key. Without it (events queued before this field), a refresh takes the
+  // link's single-dish row.
+  recipeId?: number
 }
 
 export interface RunExtractRecipeDeps {
@@ -328,6 +332,7 @@ export async function runExtractRecipe(
     userId,
     sourceType = 'facebook_text',
     force: forceRefresh = false,
+    recipeId: refreshRecipeId,
   } = event
   const { fetch, supabase, deferImages = false } = deps
 
@@ -902,8 +907,28 @@ Rules:
           : 'Extracted content has no usable recipe (title present but no ingredients or steps)',
       )
     }
-    // A refresh updates the one row a link has, so it takes the first dish only.
-    const dishes = forceRefresh ? storable.slice(0, 1) : storable
+    // Each entry is one dish and the source_key its row carries. A refresh overwrites
+    // one row, so it takes one dish: the row's own, found by its key (its position in
+    // the list; the page may have changed since). A row with no key takes the first dish.
+    let dishes: Array<{ dish: RecipeData; sourceKey: string | null }>
+    if (!forceRefresh) {
+      dishes = storable.map((dish, index) => ({ dish, sourceKey: storable.length > 1 ? String(index) : null }))
+    } else {
+      let sourceKey: string | null = null
+      if (refreshRecipeId != null) {
+        const { data: target } = await supabase
+          .from('recipes')
+          .select('source_key')
+          .eq('id', refreshRecipeId)
+          .eq('user_id', userId)
+          .maybeSingle()
+        if (!target) throw new Error('Refresh failed: recipe not found')
+        sourceKey = target.source_key
+      }
+      const dish = storable[sourceKey == null ? 0 : Number(sourceKey)]
+      if (!dish) throw new Error('Refresh failed: this dish is no longer on the page')
+      dishes = [{ dish, sourceKey }]
+    }
 
     // The owner's recipes (for the labelling note) and the dish vocabulary (E01-S21, so
     // classifyDish reuses a name already in use). Read once, on the first dish that
@@ -929,7 +954,7 @@ Rules:
 
     // The page's JSON-LD servings are page-wide, so they speak for one dish only:
     // a link with several dishes keeps each dish's own count.
-    const pageServings = dishes.length > 1 ? null : (jsonLdServings(html) ?? jsonLdServings(embedHtml) ?? null)
+    const pageServings = storable.length > 1 ? null : (jsonLdServings(html) ?? jsonLdServings(embedHtml) ?? null)
     const pageHowToImages = jsonLdHowToStepImages(html, sourceUrl ?? undefined)
 
     // Stores one dish of the link (E01 multi-recipe, phase 2). A link with
@@ -1032,23 +1057,22 @@ Rules:
       // gap-fills, so it can never replace already-populated fields. We keep
       // the existing slug so the recipe URL stays stable.
       if (forceRefresh) {
-        // A refresh must not regroup a reviewed recipe, including a reviewed null
-        // (an owner override): write the dish columns only when this row was never
-        // classified (dish_classified_at is null). Skip the pre-read entirely when
-        // the classification produced nothing to write.
+        // The row a refresh overwrites: the one the action named, or, from an older
+        // event, the link's single-dish row. A refresh must not regroup a reviewed
+        // recipe, including a reviewed null (an owner override): write the dish
+        // columns only when this row was never classified (dish_classified_at is
+        // null). Skip the pre-read entirely when the classification produced nothing
+        // to write.
         let refreshDishColumns: Record<string, string | null> = {}
         if (Object.keys(dishColumns).length > 0) {
-          const { data: existingDish } = await supabase
-            .from('recipes')
-            .select('dish_classified_at')
-            .eq('user_id', userId)
-            .eq('source_url', sharedUrl)
-            .is('source_key', null)
-            .maybeSingle()
+          const { data: existingDish } = await (refreshRecipeId != null
+            ? supabase.from('recipes').select('dish_classified_at').eq('user_id', userId).eq('id', refreshRecipeId)
+            : supabase.from('recipes').select('dish_classified_at').eq('user_id', userId).eq('source_url', sharedUrl).is('source_key', null)
+          ).maybeSingle()
           if (existingDish?.dish_classified_at == null) refreshDishColumns = dishColumns
         }
 
-        const { data: refreshed, error: refreshError } = await supabase
+        const refreshQuery = supabase
           .from('recipes')
           .update({
             title,
@@ -1074,8 +1098,10 @@ Rules:
             extracted_at: new Date().toISOString(),
           })
           .eq('user_id', userId)
-          .eq('source_url', sharedUrl)
-          .is('source_key', null)
+        const { data: refreshed, error: refreshError } = await (refreshRecipeId != null
+          ? refreshQuery.eq('id', refreshRecipeId)
+          : refreshQuery.eq('source_url', sharedUrl).is('source_key', null)
+        )
           .select('id')
           .single()
 
@@ -1290,8 +1316,8 @@ Rules:
     // Every dish of the link, in page order. Each row is written and gap-filled on
     // its own; the share points at the first dish that is saved here.
     const outcomes: DishOutcome[] = []
-    for (const [index, dish] of dishes.entries()) {
-      outcomes.push(await storeRecipe(dish, dishes.length > 1 ? String(index) : null))
+    for (const { dish, sourceKey } of dishes) {
+      outcomes.push(await storeRecipe(dish, sourceKey))
     }
     const saved = outcomes.flatMap((outcome) => (outcome.kind === 'saved' ? [outcome] : []))
     const [first] = outcomes
