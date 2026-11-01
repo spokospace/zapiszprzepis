@@ -61,6 +61,15 @@ function assertPolishOutput(parsed: RecipeData): void {
   if (hasCyrillicOutput(parsed)) throw new Error(LLM_NOT_POLISH)
 }
 
+/** The ingredients without their `source` line, which a translation must not touch. */
+function sourcelessIngredients(parsed: RecipeData): RecipeData['ingredients'] {
+  return parsed.ingredients.map((ing) => {
+    const rest: Record<string, unknown> = { ...ing }
+    delete rest.source
+    return rest as RecipeData['ingredients'][number]
+  })
+}
+
 /**
  * Second pass for an extraction that came back in the source's language
  * (recipe 1102: the full prompt kept the Belarusian text). A short request that
@@ -81,7 +90,8 @@ export async function translateToPolish(parsed: RecipeData): Promise<RecipeData>
           role: 'system',
           content: 'Translate every text value of this recipe JSON into Polish, as a Polish cookbook would. Keep the same keys, structure, numbers and units. Return only the JSON object.',
         },
-        { role: 'user', content: JSON.stringify({ title: parsed.title, steps: parsed.steps, ingredients: parsed.ingredients }) },
+        // `source` (the ingredient line as written) stays verbatim: it is not sent.
+        { role: 'user', content: JSON.stringify({ title: parsed.title, steps: parsed.steps, ingredients: sourcelessIngredients(parsed) }) },
       ],
       temperature: 0.3,
       response_format: { type: 'json_object' },
@@ -91,11 +101,14 @@ export async function translateToPolish(parsed: RecipeData): Promise<RecipeData>
   if (!openaiResponse.ok) return parsed
   try {
     const translated = JSON.parse((await openaiResponse.json()).choices?.[0]?.message?.content ?? '')
+    const sources = (parsed.ingredients as Array<{ source?: string }>).map((ing) => ing.source)
     return {
       ...parsed,
       title: translated.title ?? parsed.title,
       steps: translated.steps ?? parsed.steps,
-      ingredients: translated.ingredients ?? parsed.ingredients,
+      ingredients: translated.ingredients
+        ? translated.ingredients.map((ing: object, i: number) => ({ ...ing, source: sources[i] }))
+        : parsed.ingredients,
     }
   } catch {
     return parsed
