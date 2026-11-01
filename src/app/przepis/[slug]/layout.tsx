@@ -11,8 +11,9 @@ import { findMergedRecipeSlug } from './merged-redirect'
  * (React cache()), so this adds no query. In-app navigation still shows the skeleton
  * at once: a prefetch renders this layout ahead of the click.
  *
- * A link to a duplicate since folded into another recipe redirects there
- * (308) instead — decided here for the same reason, before streaming starts.
+ * A link to a duplicate since folded into another recipe, or to a slug since
+ * renamed, redirects there (308) instead — decided here for the same reason,
+ * before streaming starts.
  */
 export default async function RecipeLayout({
   children,
