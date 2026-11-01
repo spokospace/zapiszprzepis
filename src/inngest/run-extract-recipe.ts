@@ -43,6 +43,7 @@ import {
   FOREIGN_SOURCE_RULES,
   hasCyrillic,
   localizeForeignIngredients,
+  POLISH_DISH_NAME_RULE,
 } from '@/lib/source-language'
 import { readerScrape, type ReaderPage } from '@/lib/jina-reader'
 import { fetchPublicHtml } from '@/lib/public-fetch'
@@ -89,7 +90,7 @@ export async function translateToPolish(parsed: RecipeData): Promise<RecipeData>
       messages: [
         {
           role: 'system',
-          content: 'Translate every text value of this recipe JSON into Polish, as a Polish cookbook would. Keep the same keys, structure, numbers and units. Return only the JSON object.',
+          content: `Translate every text value of this recipe JSON into Polish, as a Polish cookbook would. ${POLISH_DISH_NAME_RULE} Keep the same keys, structure, numbers and units. Return only the JSON object.`,
         },
         // `source` (the ingredient line as written) stays verbatim: it is not sent.
         { role: 'user', content: JSON.stringify({ title: parsed.title, steps: parsed.steps, ingredients: sourcelessIngredients(parsed) }) },
