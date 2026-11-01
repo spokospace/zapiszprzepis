@@ -53,8 +53,53 @@ import type { Database } from '@/lib/supabase.types'
  * source back in its own language (slushna.by, recipe 1102) would save it
  * untranslated, so the attempt fails and the visitor can retry.
  */
+function hasCyrillicOutput(parsed: RecipeData): boolean {
+  return hasCyrillic(JSON.stringify([parsed.title, parsed.steps, parsed.ingredients]))
+}
+
 function assertPolishOutput(parsed: RecipeData): void {
-  if (hasCyrillic(JSON.stringify([parsed.title, parsed.steps, parsed.ingredients]))) throw new Error(LLM_NOT_POLISH)
+  if (hasCyrillicOutput(parsed)) throw new Error(LLM_NOT_POLISH)
+}
+
+/**
+ * Second pass for an extraction that came back in the source's language
+ * (recipe 1102: the full prompt kept the Belarusian text). A short request that
+ * only translates the text values, so the long prompt cannot crowd the rule out.
+ * Falls back to the first answer when the second one fails.
+ */
+export async function translateToPolish(parsed: RecipeData): Promise<RecipeData> {
+  const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: FOREIGN_EXTRACTION_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: 'Translate every text value of this recipe JSON into Polish, as a Polish cookbook would. Keep the same keys, structure, numbers and units. Return only the JSON object.',
+        },
+        { role: 'user', content: JSON.stringify({ title: parsed.title, steps: parsed.steps, ingredients: parsed.ingredients }) },
+      ],
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    }),
+    signal: AbortSignal.timeout(60_000),
+  })
+  if (!openaiResponse.ok) return parsed
+  try {
+    const translated = JSON.parse((await openaiResponse.json()).choices?.[0]?.message?.content ?? '')
+    return {
+      ...parsed,
+      title: translated.title ?? parsed.title,
+      steps: translated.steps ?? parsed.steps,
+      ingredients: translated.ingredients ?? parsed.ingredients,
+    }
+  } catch {
+    return parsed
+  }
 }
 
 /**
@@ -704,6 +749,7 @@ Rules:
         throw new Error(LLM_UNREADABLE)
       }
 
+      if (hasCyrillicOutput(parsed)) parsed = await translateToPolish(parsed)
       assertPolishOutput(parsed)
       // recipes.category is a strict enum: one off-list value fails the insert
       // and throws the whole extraction away.
