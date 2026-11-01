@@ -54,7 +54,8 @@ import type { Database } from '@/lib/supabase.types'
  * untranslated, so the attempt fails and the visitor can retry.
  */
 function hasCyrillicOutput(parsed: RecipeData): boolean {
-  return hasCyrillic(JSON.stringify([parsed.title, parsed.steps, parsed.ingredients]))
+  // `source` is the ingredient line as written, so it is Cyrillic by design.
+  return hasCyrillic(JSON.stringify([parsed.title, parsed.steps, sourcelessIngredients(parsed)]))
 }
 
 function assertPolishOutput(parsed: RecipeData): void {
