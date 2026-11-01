@@ -4,11 +4,12 @@ import { mergedRecipeSlug } from './merged-recipe-redirect'
 type Row = Record<string, unknown>
 
 /** A client over two tables, answering .eq(column, value) filters with the first matching row. */
-function makeClient(tables: { merged?: Row[]; recipes?: Row[]; deleted?: Row[] }) {
+function makeClient(tables: { merged?: Row[]; recipes?: Row[]; deleted?: Row[]; renamed?: Row[] }) {
   const rows: Record<string, Row[]> = {
     recipes_merged_duplicates: tables.merged ?? [],
     public_recipes: tables.recipes ?? [],
     recipes_deleted_by_staff: tables.deleted ?? [],
+    recipe_slug_rename_log: tables.renamed ?? [],
   }
   const from = (table: string) => {
     const filters: [string, unknown][] = []
@@ -82,5 +83,44 @@ describe('mergedRecipeSlug — a recipe staff deleted with a redirect', () => {
     })
 
     expect(await mergedRecipeSlug(client, 'zupa-stara')).toBe('zupa-glowna')
+  })
+})
+
+describe('mergedRecipeSlug — a recipe whose slug was renamed', () => {
+  it('lands on the recipe under its current slug', async () => {
+    const client = makeClient({
+      renamed: [{ recipe_id: 1103, old_slug: 'soczyste-belysze', new_slug: 'soczyste-bielasze' }],
+      recipes: [{ id: 1103, slug: 'soczyste-bielasze' }],
+    })
+
+    expect(await mergedRecipeSlug(client, 'soczyste-belysze')).toBe('soczyste-bielasze')
+  })
+
+  it('lands on the latest slug after a second rename', async () => {
+    const client = makeClient({
+      renamed: [
+        { recipe_id: 1104, old_slug: 'rulon-z-dranika-z-miesem-mielonym', new_slug: 'rolada-z-placka' },
+        { recipe_id: 1104, old_slug: 'rolada-z-placka', new_slug: 'rulon-z-plackow-ziemniaczanych-z-farszem' },
+      ],
+      recipes: [{ id: 1104, slug: 'rulon-z-plackow-ziemniaczanych-z-farszem' }],
+    })
+
+    expect(await mergedRecipeSlug(client, 'rulon-z-dranika-z-miesem-mielonym')).toBe('rulon-z-plackow-ziemniaczanych-z-farszem')
+  })
+
+  it('follows a renamed recipe folded into another one since', async () => {
+    const client = makeClient({
+      renamed: [{ recipe_id: 5, old_slug: 'placki-stare', new_slug: 'placki-nowe' }],
+      merged: [{ id: 5, slug: 'placki-nowe', canonical_id: 6 }],
+      recipes: [{ id: 6, slug: 'placki' }],
+    })
+
+    expect(await mergedRecipeSlug(client, 'placki-stare')).toBe('placki')
+  })
+
+  it('is a 404 (null) when the renamed recipe is hidden', async () => {
+    const client = makeClient({ renamed: [{ recipe_id: 9, old_slug: 'stary', new_slug: 'nowy' }] })
+
+    expect(await mergedRecipeSlug(client, 'stary')).toBeNull()
   })
 })
