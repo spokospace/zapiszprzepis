@@ -15,6 +15,7 @@ import { parseSteps, visibleStepImages } from '@/lib/steps'
 import { findGlossaryTerms } from '@/lib/ingredient-glossary'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
+import { TrackView } from '@/app/components/track-view'
 import { RecipeActions } from './_components/recipe-actions'
 import { StaffHiddenBanner, UnavailableRecipe } from './_components/hidden-notice'
 import { RecipeChecklists } from './_components/recipe-checklists'
@@ -145,6 +146,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     // From lg the list row sits right under the category bar (handoff 2026-10-28: a small
     // gap above it, 12 px to the hero), so the top padding shrinks there.
     <main className={RECIPE_MAIN}>
+      <TrackView event="recipe_view" subject={typedRecipe.slug} />
       {hidden?.kind === 'staff' && <StaffHiddenBanner reason={hidden.hiddenReason} recipeId={hidden.staffRecipeId} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
@@ -200,6 +202,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           actions={
             <RecipeActions
               recipeId={typedRecipe.id}
+              recipeSlug={typedRecipe.slug}
               isFavorite={isFavorite}
               isAuthenticated={Boolean(user)}
               title={typedRecipe.title}

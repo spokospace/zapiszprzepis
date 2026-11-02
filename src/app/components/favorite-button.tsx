@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Heart } from 'lucide-react'
+import { track } from '@/lib/analytics/track'
 import { addFavorite, removeFavorite } from '@/app/favorites/actions'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
@@ -9,6 +10,8 @@ import { stripSearchParam } from '@/lib/strip-search-param'
 
 interface FavoriteButtonProps {
   recipeId: number
+  /** The recipe's slug, the subject of the `favorite_add` usage count. */
+  recipeSlug?: string
   /** Server truth at render time; the client override layers on top of it. */
   initialFavorited: boolean
   isAuthenticated: boolean
@@ -136,6 +139,7 @@ export function FavoriteAddedNotice({ recipeId }: { recipeId: number }) {
  */
 export function FavoriteButton({
   recipeId,
+  recipeSlug,
   initialFavorited,
   isAuthenticated,
   size = 'full',
@@ -161,6 +165,7 @@ export function FavoriteButton({
         setError(true)
       } else if (next) {
         setToast(true)
+        if (recipeSlug) track('favorite_add', recipeSlug)
       }
     })
   }

@@ -11,6 +11,7 @@ import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
 import { categoryOgImagePath } from '@/lib/category-og'
+import { TrackView } from '@/app/components/track-view'
 import { PageContainer } from '@/app/components/page-container'
 import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { ListLink } from '@/app/components/list-link'
@@ -131,6 +132,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
 
   return (
     <main className="min-h-screen bg-surface">
+      <TrackView event="category_view" subject={category} />
       <PageContainer className="flex flex-col gap-4 py-6 sm:py-12">
         <header className="flex items-center gap-3">
           <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-pill bg-surface-accent text-action-text">
