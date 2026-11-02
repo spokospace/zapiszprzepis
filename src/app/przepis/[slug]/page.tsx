@@ -146,7 +146,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     // From lg the list row sits right under the category bar (handoff 2026-10-28: a small
     // gap above it, 12 px to the hero), so the top padding shrinks there.
     <main className={RECIPE_MAIN}>
-      <TrackView event="recipe_view" subject={typedRecipe.slug} />
+      {!hidden && <TrackView event="recipe_view" subject={typedRecipe.slug} />}
       {hidden?.kind === 'staff' && <StaffHiddenBanner reason={hidden.hiddenReason} recipeId={hidden.staffRecipeId} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />

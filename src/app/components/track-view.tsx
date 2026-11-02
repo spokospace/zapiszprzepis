@@ -10,10 +10,12 @@ import { track } from '@/lib/analytics/track'
  * counting twice.
  */
 export function TrackView({ event, subject }: { event: UsageEvent; subject: string }) {
-  const sent = useRef(false)
+  // Keyed on the pair, so a reuse without remount (another slug) still counts the new view.
+  const sent = useRef<string | null>(null)
   useEffect(() => {
-    if (sent.current) return
-    sent.current = true
+    const key = `${event}:${subject}`
+    if (sent.current === key) return
+    sent.current = key
     track(event, subject)
   }, [event, subject])
   return null

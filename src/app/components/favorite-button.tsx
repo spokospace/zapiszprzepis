@@ -109,15 +109,18 @@ function FavoriteToast({ show, onUndo }: { show: boolean; onUndo: () => void }) 
  * The toast after a guest heart's login, on a page that has no heart for the
  * recipe (the signed-in home: the guest home's card hearts return there).
  */
-export function FavoriteAddedNotice({ recipeId }: { recipeId: number }) {
+export function FavoriteAddedNotice({ recipeId, recipeSlug }: { recipeId: number; recipeSlug?: string | null }) {
   const [toast, setToast] = useState(false)
   const hide = useCallback(() => setToast(false), [])
   useToastTimeout(toast, hide)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (claimFavoriteAdded(recipeId)) setToast(true)
-  }, [recipeId])
+    if (claimFavoriteAdded(recipeId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setToast(true)
+      if (recipeSlug) track('favorite_add', recipeSlug)
+    }
+  }, [recipeId, recipeSlug])
 
   return (
     <FavoriteToast
@@ -172,9 +175,13 @@ export function FavoriteButton({
 
   // A one-shot read of the address bar after hydration (the server render cannot see it).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (isAuthenticated && claimFavoriteAdded(recipeId)) setToast(true)
-  }, [isAuthenticated, recipeId])
+    if (isAuthenticated && claimFavoriteAdded(recipeId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setToast(true)
+      // The add happened server-side at login; this claim is its one client-side trace.
+      if (recipeSlug) track('favorite_add', recipeSlug)
+    }
+  }, [isAuthenticated, recipeId, recipeSlug])
 
   const hideToast = useCallback(() => setToast(false), [])
   useToastTimeout(toast, hideToast)
