@@ -294,6 +294,23 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
       },
     },
   },
+  {
+    name: 'search',
+    label: 'Wyszukiwania Google',
+    path: '/admin/wyszukiwania',
+    permission: 'analytics.read',
+    operations: [],
+    mcp: {
+      get: {
+        description:
+          'Google Search Console report for the last N days (Warsaw days, today included), synced once a day: the top 50 search queries and the top 50 site pages (path, recipe title when the path is a public recipe) with clicks, impressions and impression-weighted average position. last_day is the newest synced day (Google lags 2-3 days); empty before the first sync.',
+        rpc: 'admin_search_summary_as',
+        args: [
+          { name: 'days', param: 'p_days', type: 'integer', min: 1, max: 366, description: 'Window length in days, today included (1-366, default 28).' },
+        ],
+      },
+    },
+  },
 ]
 
 /** The resources this staff member may open, in navigation order. */

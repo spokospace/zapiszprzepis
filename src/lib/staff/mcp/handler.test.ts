@@ -281,6 +281,15 @@ describe('mcp tools/call: reads', () => {
     expect(rpc).not.toHaveBeenCalledWith('admin_usage_summary_as', expect.anything())
   })
 
+  it('serves the Search Console summary to an admin as search_get, passing the window as p_days', async () => {
+    const summary = { days: 28, since: '2026-10-06', last_day: null, queries: [], pages: [] }
+    const { service, rpc } = makeService(TOKENS, { admin_search_summary_as: { ok: true, data: summary } })
+    const r = await result(await handleMcp(post(call('search_get', { days: 28 })), service))
+    expect(r.isError).toBe(false)
+    expect(JSON.parse(text(r))).toEqual(summary)
+    expect(rpc).toHaveBeenCalledWith('admin_search_summary_as', { p_actor: ADMIN, p_days: 28 })
+  })
+
   it('does not serve a read it could not record', async () => {
     const { service } = makeService(TOKENS, { admin_list_imports_as: { ok: true, data: [{ share_id: 1 }] }, staff_audit: { ok: false, code: 'unknown' } })
     const r = await result(await handleMcp(post(call('imports_list')), service))
