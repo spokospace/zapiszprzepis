@@ -68,8 +68,8 @@ export function mapAuditRow(raw: unknown): AuditEntry | null {
   }
 }
 
-/** The resources the filter offers: everything the registry knows. */
-export const AUDIT_RESOURCES: readonly string[] = STAFF_RESOURCES.map((r) => r.name)
+/** The resources the filter offers: those that can change something. Read-only ones (no operations) are never audited. */
+export const AUDIT_RESOURCES: readonly string[] = STAFF_RESOURCES.filter((r) => r.operations.length > 0).map((r) => r.name)
 
 export interface AuditFilters {
   resource: string | null
