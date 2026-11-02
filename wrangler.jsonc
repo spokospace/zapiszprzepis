@@ -75,10 +75,13 @@
     "NEXT_PUBLIC_SUPABASE_URL": "https://wvrlgddgdddwmgzbvtij.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2",
     // First-party usage counter (.ai/specs/2026-10-30-first-party-usage-analytics.md).
-    // "1" turns on both the browser beacon and the /api/e writer. Keep "0" until the
-    // owner has approved the privacy-policy wording (spec Q8).
-    "NEXT_PUBLIC_USAGE_ANALYTICS": "0",
-    "NEXT_PUBLIC_SITE_URL":"https://zapiszprzepis.pl",
+    // "1" turns on both the browser beacon and the /api/e writer; on since the owner
+    // approved the privacy-policy wording (2026-11-02). NEXT_PUBLIC_* values are inlined
+    // at `next build`, so the same value must also be set as a Workers Builds build
+    // variable (dashboard → Settings → Build → Variables and secrets); this runtime
+    // copy alone does not switch the bundled code.
+    "NEXT_PUBLIC_USAGE_ANALYTICS": "1",
+    "NEXT_PUBLIC_SITE_URL": "https://zapiszprzepis.pl",
     // OAuth sign-in buttons on /login (E01-S12): parseOAuthProviders reads this
     // comma-separated list; a listed name shows its button and lets the server
     // action use it. Facebook is enabled now that the Meta app is published Live

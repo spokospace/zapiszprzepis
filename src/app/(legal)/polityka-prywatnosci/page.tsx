@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <LegalPage title="Polityka prywatności">
+    <LegalPage title="Polityka prywatności" effective="2 listopada 2026">
       <p>
         Tu w prostych słowach wyjaśniamy, jakie dane zbiera serwis Zapisz Przepis (zapiszprzepis.pl), po co nam one są,
         gdzie je trzymamy i co możesz z nimi zrobić. Zbieramy tylko to, co serwisowi naprawdę jest potrzebne do
@@ -155,7 +155,7 @@ export default function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="cookies" title="6. Pliki cookie i pamięć przeglądarki">
+      <LegalSection id="cookies" title="6. Pliki cookie, pamięć przeglądarki i statystyki">
         <LegalList>
           <li>
             <strong>Ciasteczko logowania</strong> — po zalogowaniu zapisujemy na Twoim urządzeniu mały plik
@@ -171,8 +171,23 @@ export default function PrivacyPolicyPage() {
             <strong>Aplikacja na telefonie</strong> — przeglądarka trzyma kopię plików serwisu i ostatnio otwieranych
             stron, żeby działał szybciej i nawet bez zasięgu. Ta kopia zostaje na Twoim urządzeniu.
           </li>
+          <li>
+            <strong>Anonimowe statystyki</strong> — liczymy, ile razy otwierane są przepisy i kategorie oraz jak często
+            ktoś korzysta z minutnika, wydruku albo dodaje przepis do ulubionych. Zapisujemy tylko dzienne sumy, na
+            przykład „sernik — 120 otwarć 2 listopada”. Nie używamy do tego ciasteczek ani pamięci przeglądarki, nie
+            zapisujemy adresu IP ani niczego, po czym dałoby się rozpoznać Ciebie lub Twoje urządzenie, i nie
+            przekazujemy tych liczb nikomu. Adres IP służy tylko przez chwilę do ochrony przed zalewaniem serwisu
+            sztucznym ruchem i nie jest nigdzie zapisywany.
+          </li>
+          <li>
+            <strong>Wyszukiwarka Google</strong> — z Google Search Console pobieramy zbiorcze zestawienie, jakie frazy i
+            strony prowadzą do nas z wyszukiwarki. To dane przygotowane przez Google, bez informacji o osobach.
+          </li>
         </LegalList>
-        <p>Nie używamy ciasteczek reklamowych ani narzędzi, które śledzą ruch na stronie.</p>
+        <p>
+          Nie używamy ciasteczek reklamowych ani narzędzi, które śledzą Cię między stronami albo kolejnymi wizytami
+          (takich jak Google Analytics).
+        </p>
       </LegalSection>
 
       <LegalSection id="jak-dlugo" title="7. Jak długo przechowujemy dane">

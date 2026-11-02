@@ -19,9 +19,10 @@ The table has RLS on and no policy; only `service_role` can touch it.
 
 ## Enabling
 
-Set `NEXT_PUBLIC_USAGE_ANALYTICS=1` (it is `0` today, so nothing is collected). It is a build-time `NEXT_PUBLIC_` variable: change it
-in the Worker's build variables and let the `master` build run, then `pnpm smoke:prod`. Collection starts from that deploy; earlier
-days stay empty.
+On since 2026-11-02, after the owner approved the privacy-policy wording (section 6). `NEXT_PUBLIC_USAGE_ANALYTICS=1` is a build-time
+`NEXT_PUBLIC_` variable, so it lives in two places that must agree: the Worker's **build** variables (dashboard → Settings → Build →
+Variables and secrets), which the browser beacon and the bundled server code read, and `vars` in `wrangler.jsonc`. To switch it off,
+set both to `0`, let the `master` build run, then `pnpm smoke:prod`. Days before the switch stay empty.
 
 ## Where to look
 
