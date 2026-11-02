@@ -74,4 +74,4 @@ jobs:
       # Cloudflare login; the script fails above its budget (2900 KiB, about 5 %
       # under the 3072 KiB free-plan limit).
       - name: Worker size check
-        run: pnpm measure:worker
+        run: pnpm measure:worker --budget-kib 2000
