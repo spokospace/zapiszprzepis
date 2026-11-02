@@ -25,6 +25,10 @@ describe('middleware config.matcher — crawler endpoints bypass the gate', () =
     expect(re.test('/.well-known/ai-catalog.json')).toBe(false)
     expect(re.test('/.well-known/ard.json')).toBe(false)
   })
+  it('does NOT match /api/e, the anonymous usage counter (no session check per event)', () => {
+    expect(re.test('/api/e')).toBe(false)
+    expect(re.test('/api/events')).toBe(true)
+  })
   it('still matches app pages that must pass through the gate', () => {
     expect(re.test('/przepisy/obiady')).toBe(true)
     expect(re.test('/ulubione')).toBe(true)

@@ -153,6 +153,8 @@ export const config = {
     // (#546) are crawler endpoints served by their own routes; exclude them so
     // an anonymous crawler isn't bounced to /login.
     // (The `.md` alternates are NOT excluded — they rely on middleware's rewrite.)
-    '/((?!_next/static|_next/image|robots\\.txt|sitemap\\.xml|llms\\.txt|\\.well-known/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
+    // /api/e is the anonymous usage counter: it must not run a session check per
+    // event (CPU) and must never see the auth cookie the browser attaches.
+    '/((?!_next/static|_next/image|api/e$|robots\\.txt|sitemap\\.xml|llms\\.txt|\\.well-known/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
   ],
 }
