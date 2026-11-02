@@ -8,6 +8,8 @@
  *   keep-alive — Supabase pauses free-tier projects after a week without database
  *                activity, which takes the whole app down until someone clicks
  *                Resume in the dashboard.
+ *   search     — runs with keep-alive: copies the Google Search Console report into
+ *                search_console_daily (syncSearchConsole).
  *   backup     — the free plan includes no backups, so the recipes exist in exactly
  *                one place. This copies them to R2 daily.
  *
@@ -24,7 +26,7 @@
  * after a build, so nothing here can be, and it is kept as thin as possible.
  */
 import handler from './.open-next/worker.js'
-import { backupToR2, keepDatabaseAwake, type CronEnv } from './src/lib/worker-cron'
+import { backupToR2, keepDatabaseAwake, syncSearchConsole, type CronEnv } from './src/lib/worker-cron'
 import { serveImage } from './src/lib/image-cache'
 
 const KEEP_ALIVE_CRON = '0 4 * * *'
@@ -69,6 +71,7 @@ const worker = {
         return
       case KEEP_ALIVE_CRON:
         ctx.waitUntil(keepDatabaseAwake(env))
+        ctx.waitUntil(syncSearchConsole(env))
         return
       default:
         console.error(`scheduled: no handler for cron "${controller.cron}"`)

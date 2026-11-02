@@ -5,6 +5,17 @@
 // Nothing here may import `server-only` or anything Next-specific: this code is
 // bundled into the Worker entrypoint, outside the Next.js request path.
 
+import {
+  accessToken,
+  fetchReport,
+  parseServiceAccount,
+  retentionCutoff,
+  SEARCH_DIMENSIONS,
+  syncDays,
+  toDailyRows,
+  type Fetch,
+} from './search-console'
+
 // PostgREST caps a response at max_rows (1000 by default). Paging is not about
 // today's volume — it is about the backup not silently truncating later.
 const PAGE_SIZE = 1000
@@ -26,13 +37,15 @@ export type CronEnv = {
   SUPABASE_SERVICE_ROLE_KEY?: string
   // R2 binding from wrangler.jsonc; absent until the bucket exists.
   BACKUPS?: R2Bucket
+  // Google service-account key file (JSON) for Search Console; set with `wrangler secret put`.
+  GSC_SERVICE_ACCOUNT_JSON?: string
 }
 
 function restHeaders(key: string): Record<string, string> {
   return { apikey: key, Authorization: `Bearer ${key}` }
 }
 
-function restBase(env: CronEnv): string {
+function restBase(env: Pick<CronEnv, 'NEXT_PUBLIC_SUPABASE_URL'>): string {
   return env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, '')
 }
 
@@ -109,5 +122,56 @@ export async function backupToR2(env: CronEnv): Promise<void> {
     console.log(`backup: wrote ${objectKey} (${counts})`)
   } catch (e) {
     console.error(`backup: failed — ${e instanceof Error ? e.message : String(e)}`)
+  }
+}
+
+/**
+ * Copies the Google Search Console report into public.search_console_daily: for each
+ * of the last SYNC_DAYS days, the top queries and the top pages (one request per day
+ * and dimension, run in parallel), upserted by (day, dimension, key) so Google's late
+ * numbers overwrite the early ones. Then drops rows past RETENTION_DAYS.
+ *
+ * Never throws: a failed sync must not take the scheduled run down with it; the log
+ * line is the alert.
+ */
+export async function syncSearchConsole(env: CronEnv, fetchFn: Fetch = fetch, now = new Date()): Promise<void> {
+  const account = parseServiceAccount(env.GSC_SERVICE_ACCOUNT_JSON)
+  const key = env.SUPABASE_SERVICE_ROLE_KEY
+  if (!account || !key) {
+    console.error('search-console: skipped — GSC_SERVICE_ACCOUNT_JSON or SUPABASE_SERVICE_ROLE_KEY is missing or invalid')
+    return
+  }
+
+  try {
+    const token = await accessToken(account, fetchFn, Math.floor(now.getTime() / 1000))
+    const days = syncDays(now)
+    const reports = await Promise.all(
+      days.flatMap((day) =>
+        SEARCH_DIMENSIONS.map(async (dimension) => toDailyRows(await fetchReport(token, dimension, day, fetchFn), dimension, day)),
+      ),
+    )
+    const rows = reports.flat()
+
+    const table = `${restBase(env)}/rest/v1/search_console_daily`
+    const upsert = await fetchFn(`${table}?on_conflict=day,dimension,key`, {
+      method: 'POST',
+      headers: {
+        ...restHeaders(key),
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify(rows),
+    })
+    if (!upsert.ok) throw new Error(`upsert: Supabase responded ${upsert.status}`)
+
+    const prune = await fetchFn(`${table}?day=lt.${retentionCutoff(now)}`, {
+      method: 'DELETE',
+      headers: { ...restHeaders(key), Prefer: 'return=minimal' },
+    })
+    if (!prune.ok) throw new Error(`prune: Supabase responded ${prune.status}`)
+
+    console.log(`search-console: ${days[0]}..${days[days.length - 1]}, ${rows.length} rows`)
+  } catch (e) {
+    console.error(`search-console: failed — ${e instanceof Error ? e.message : String(e)}`)
   }
 }
