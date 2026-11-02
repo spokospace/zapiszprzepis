@@ -33,7 +33,7 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
 
   const { data: recipe } = await supabase
     .from('recipes')
-    .select('source_url')
+    .select('id, source_url')
     .eq('slug', slug)
     .eq('user_id', user.id)
     .single()
@@ -48,7 +48,8 @@ export async function refreshRecipe(formData: FormData): Promise<void> {
     redirect(`${recipePath(slug)}?refresh_error=rate_limited`)
   }
 
-  await queueRecipeRefresh(supabase, sendRecipeExtract, { userId: user.id, sourceUrl: recipe.source_url })
+  // By row id: a link with several dishes shares one source_url, and only this row is rewritten.
+  await queueRecipeRefresh(supabase, sendRecipeExtract, { userId: user.id, sourceUrl: recipe.source_url, recipeId: recipe.id })
 
   redirect(`${recipePath(slug)}?refreshing=1`)
 }

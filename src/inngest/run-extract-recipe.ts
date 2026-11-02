@@ -65,6 +65,7 @@ function assertPolishOutput(parsed: RecipeData): void {
 
 /** The ingredients without their `source` line, which a translation must not touch. */
 function sourcelessIngredients(parsed: RecipeData): RecipeData['ingredients'] {
+  if (!Array.isArray(parsed.ingredients)) return []
   return parsed.ingredients.map((ing) => {
     const rest: Record<string, unknown> = { ...ing }
     delete rest.source
@@ -182,6 +183,10 @@ export interface ExtractRecipeEvent {
   // Force refresh: overwrite the existing recipe for this source_url in place
   // (the "Odśwież przepis" action) instead of insert / gap-fill.
   force?: boolean
+  // The row a refresh overwrites. Only that dish is rewritten, found by the row's
+  // source_key. Without it (events queued before this field), a refresh takes the
+  // link's single-dish row.
+  recipeId?: number
 }
 
 export interface RunExtractRecipeDeps {
@@ -213,9 +218,14 @@ export interface ExtractRecipeResult {
   title: string
   category: string
   status: string
-  /** Set only with `deferImages`, when the run saved a recipe that has photos to archive. */
-  images?: RecipeImageJob
+  /** Set only with `deferImages`: one job per recipe this run saved that has photos to archive. */
+  images?: RecipeImageJob[]
 }
+
+/** What one dish of the link came to: saved here (with its photos to archive), or already saved. */
+type DishOutcome =
+  | { kind: 'saved'; result: ExtractRecipeResult; job: RecipeImageJob | null }
+  | { kind: 'linked'; existing: { id: number; title: string; category: string; user_id: string } }
 
 async function updateRecipe(
   supabase: SupabaseClient,
@@ -278,6 +288,17 @@ interface RecipeData {
   servings?: number | null
 }
 
+/** A page's recipes past this many are not read (spec D2, catalogue pages). */
+const MAX_RECIPES_PER_LINK = 10
+
+/** The entries of a model answer. A bare object with no `recipes` list reads as one entry. */
+function recipeEntries(payload: unknown): RecipeData[] {
+  if (payload == null || typeof payload !== 'object') return []
+  const { recipes } = payload as { recipes?: unknown }
+  const list: unknown[] = Array.isArray(recipes) ? recipes : [payload]
+  return list.filter((entry): entry is RecipeData => entry != null && typeof entry === 'object')
+}
+
 const TIME_FIELDS = ['prepTimeMinutes', 'cookTimeMinutes', 'totalTimeMinutes'] as const
 type TimeField = (typeof TIME_FIELDS)[number]
 
@@ -312,15 +333,9 @@ export async function runExtractRecipe(
     userId,
     sourceType = 'facebook_text',
     force: forceRefresh = false,
+    recipeId: refreshRecipeId,
   } = event
   const { fetch, supabase, deferImages = false } = deps
-
-  // The saved recipe's photos: archived here, or handed back with `deferImages`.
-  async function withImages<R extends ExtractRecipeResult>(result: R, job: RecipeImageJob): Promise<R> {
-    if (deferImages) return { ...result, images: job }
-    await storeRecipeImages(supabase, job)
-    return result
-  }
 
   async function firecrawlScrape(options: ReturnType<typeof buildFirecrawlOptions>) {
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
@@ -659,7 +674,10 @@ export async function runExtractRecipe(
     // sets: written before "title", it makes the model settle what the dish is
     // first, which a model without reasoning otherwise skips ("White Pizza Dip"
     // → „Dip z białą pizzą”). It rides along in the parsed object, unread.
-    async function extractWithLlm(transcript?: string): Promise<RecipeData> {
+    // Returns the dishes of the page in page order, usable ones only. With none
+    // usable, the first entry alone, so the gates below word the failure as they
+    // did for a single recipe.
+    async function extractWithLlm(transcript?: string): Promise<RecipeData[]> {
       // A foreign source gets the localization rules and a stronger model (#524);
       // a Polish one keeps the prompt and model it always had.
       const foreignSource = detectSourceLanguage(sourceText(transcript)) === 'foreign'
@@ -675,7 +693,8 @@ export async function runExtractRecipe(
             {
               role: 'system',
               content: `You are a recipe extraction expert. Extract recipe information from user-provided content.
-Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
+Return ONLY valid JSON (no markdown, no explanations) with this exact structure, one object per recipe on the page:
+{"recipes": [
 {
   "dishKind": "what the dish IS, 1–3 Polish words, decided before the title (\"dip\", \"zapiekanka makaronowa\", \"spód do pizzy\")",
   "title": "Recipe title in Polish, built around that dish",
@@ -691,8 +710,10 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure:
   "estimatedTimes": ["names of the time fields you estimated"],
   "servings": integer or null
 }
+]}
 Rules:
-- The page often includes navigation, related/popular posts widgets, comments and ads. Focus ONLY on the PRIMARY recipe — usually the post-body content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
+- The page often includes navigation, related/popular posts widgets, comments and ads. Focus on the recipes of the post body — usually the content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
+- Several dishes: a post may give more than one recipe (a holiday menu, a breakfast set, "5 quick dinners"). Return one entry per distinct dish, in the order the page gives them, at most 10. Keep one dish in one entry: its variants (e.g. "z bulwą" / "z kiełbasą") and its ingredient sections stay together in that entry. Advice, tips and "sekrety" sections (e.g. how to boil potatoes for a salad) are not entries. A page with no recipe returns {"recipes": []}.
 - Ingredient sections: many recipes split ingredients into named parts (e.g. "Podmłoda", "Ciasto właściwe", "Masa waniliowa", "Masa truskawkowa", "Spód", "Krem", "Dodatkowo"). When the source groups ingredients under such a heading, set "section" to that heading (in Polish, keep it short) for every ingredient in that group, preserving the source order so groups stay contiguous. If the ingredients are a single ungrouped list, use an empty string for "section" on every ingredient.
 - Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml) and keep the precise metric value in "amount"/"unit".
 - Alternative measure ("alt"): ONLY a quantity in a HOUSEHOLD unit that the source states next to the precise amount — szklanki, łyżki, łyżeczki, kostki, garście, plasterki. Copy it VERBATIM, keeping the source's own wording: "3 szklanki", "około 1,5 szklanki", "do 1/3 szklanki", "3/4 kostki". Never add, drop or reword an approximation like "około"/"ok." the source did not use (source "3 szklanki" → "3 szklanki", NOT "około 3 szklanki"). Keep the precise figure in "amount"/"unit"; for a US household measure you convert to metric (e.g. "1 cup flour"), keep the metric in "amount"/"unit" and the stated cups/sticks/spoons in "alt".
@@ -757,42 +778,55 @@ Rules:
 
       // JSON mode should rule out a ```json fence, but strip one anyway: a
       // parser error is not something to show in the bell.
-      let parsed: RecipeData
+      let payload: unknown
       try {
-        parsed = JSON.parse(content.trim().replace(/^```(?:json)?\s*|\s*```$/g, '')) as RecipeData
+        payload = JSON.parse(content.trim().replace(/^```(?:json)?\s*|\s*```$/g, ''))
       } catch {
         throw new Error(LLM_UNREADABLE)
       }
 
-      if (hasCyrillicOutput(parsed)) parsed = await translateToPolish(parsed)
-      assertPolishOutput(parsed)
-      // recipes.category is a strict enum: one off-list value fails the insert
-      // and throws the whole extraction away.
-      const { category, coerced } = toRecipeCategory(parsed.category)
-      if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
-      // A missing method comes back as null as often as []; the gate below
-      // and the steps column both want the list. Steps now arrive as
-      // {text, image}; split them so `steps` stays a string[] (its many
-      // consumers and the column) and the per-step images ride alongside.
-      // servings must fit the column (1–99) or it fails the insert.
-      // Ingredients without a string name are dropped (dedup trims `name`), and
-      // a time the int columns cannot take ("15-20", 37.5) becomes null (#381).
-      const { steps, images: stepImages } = splitLlmSteps(parsed.steps)
-      const ingredients = toIngredients(parsed.ingredients)
-      return {
-        ...parsed,
-        ingredients: foreignSource
-          ? localizeForeignIngredients(ingredients, sourceText(transcript))
-          : ingredients,
-        // A step copied as written keeps its ounces and °F (see us-units).
-        steps: steps.map(metricUnits),
-        stepImages,
-        category,
-        servings: toServings(parsed.servings),
-        prepTimeMinutes: toMinutes(parsed.prepTimeMinutes),
-        cookTimeMinutes: toMinutes(parsed.cookTimeMinutes),
-        totalTimeMinutes: toMinutes(parsed.totalTimeMinutes),
+      // Each entry is one dish, cleaned up the way the single recipe always was.
+      async function toRecipe(entry: RecipeData): Promise<RecipeData> {
+        const parsed = hasCyrillicOutput(entry) ? await translateToPolish(entry) : entry
+        assertPolishOutput(parsed)
+        // recipes.category is a strict enum: one off-list value fails the insert
+        // and throws the whole extraction away.
+        const { category, coerced } = toRecipeCategory(parsed.category)
+        if (coerced) console.warn('[extract-recipe] unknown category from LLM, using inne:', parsed.category)
+        // A missing method comes back as null as often as []; the gate below
+        // and the steps column both want the list. Steps now arrive as
+        // {text, image}; split them so `steps` stays a string[] (its many
+        // consumers and the column) and the per-step images ride alongside.
+        // servings must fit the column (1–99) or it fails the insert.
+        // Ingredients without a string name are dropped (dedup trims `name`), and
+        // a time the int columns cannot take ("15-20", 37.5) becomes null (#381).
+        const { steps, images: stepImages } = splitLlmSteps(parsed.steps)
+        const ingredients = toIngredients(parsed.ingredients)
+        return {
+          ...parsed,
+          ingredients: foreignSource
+            ? localizeForeignIngredients(ingredients, sourceText(transcript))
+            : ingredients,
+          // A step copied as written keeps its ounces and °F (see us-units).
+          steps: steps.map(metricUnits),
+          stepImages,
+          category,
+          servings: toServings(parsed.servings),
+          prepTimeMinutes: toMinutes(parsed.prepTimeMinutes),
+          cookTimeMinutes: toMinutes(parsed.cookTimeMinutes),
+          totalTimeMinutes: toMinutes(parsed.totalTimeMinutes),
+        }
       }
+
+      const validated = await Promise.all(recipeEntries(payload).map(toRecipe))
+      const usable = validated.filter((recipe) => isExtractedRecipeUsable(recipe, { stepsOptional: true }))
+      // With none usable, keep the first so the gates after this call word the
+      // failure exactly as they did for a single recipe.
+      const kept = (usable.length > 0 ? usable : validated.slice(0, 1)).slice(0, MAX_RECIPES_PER_LINK)
+      if (kept.length < validated.length) {
+        console.log(`[extract-recipe] ${validated.length - kept.length} of ${validated.length} recipe entries dropped (unusable or over ${MAX_RECIPES_PER_LINK})`)
+      }
+      return kept
     }
 
     // The user's other recipes, for the labelling pass below; read while the
@@ -808,19 +842,20 @@ Rules:
     // reuse a name already in use instead of coining a near-synonym.
     const dishVocabularyQuery = supabase.rpc('dish_vocabulary')
 
-    let recipeJSON = inputIsJunk ? null : await extractWithLlm()
+    let recipes = inputIsJunk ? [] : await extractWithLlm()
+    const hasUsable = (dishes: RecipeData[]) => dishes.some((dish) => isExtractedRecipeUsable(dish))
 
     // YouTube second pass: the description is where channels paste the
     // recipe, so it is tried first and alone. Only when it yields no usable
     // recipe — no ingredients, or no steps — fetch the captions and run the
     // extraction again with the spoken video in front of the LLM. Costs two
     // fetches and one more OpenAI call, and only for videos that need it.
-    if (canTryTranscript && (recipeJSON == null || !isExtractedRecipeUsable(recipeJSON))) {
-      const fromDescription = recipeJSON
+    if (canTryTranscript && !hasUsable(recipes)) {
+      const fromDescription = recipes
       const transcript = await fetchYoutubeTranscript(youtubeId, { fetch })
       if (transcript) {
         console.log('[extract-recipe] description had no recipe; retrying with transcript for', youtubeId)
-        recipeJSON = await extractWithLlm(transcript)
+        recipes = await extractWithLlm(transcript)
       } else {
         console.warn('[extract-recipe] no transcript available for', youtubeId)
       }
@@ -829,11 +864,10 @@ Rules:
       // beats whatever the LLM made of them; the method is in the video, which
       // the recipe page embeds.
       if (
-        (recipeJSON == null || !isExtractedRecipeUsable(recipeJSON)) &&
-        fromDescription != null &&
-        isExtractedRecipeUsable(fromDescription, { stepsOptional: true })
+        !hasUsable(recipes) &&
+        fromDescription.some((dish) => isExtractedRecipeUsable(dish, { stepsOptional: true }))
       ) {
-        recipeJSON = fromDescription
+        recipes = fromDescription
       }
     }
 
@@ -847,389 +881,464 @@ Rules:
     // anything to the LLM. When its video also won't embed, that is almost
     // always because it is private — say so; otherwise word it like any other
     // unreadable page.
-    if (recipeJSON == null) {
+    if (recipes.length === 0) {
       throw new Error(sourceType === 'youtube' && embeddableYoutubeId == null ? YOUTUBE_UNAVAILABLE : UNREADABLE_PAGE)
-    }
-
-    if (!recipeJSON.title || typeof recipeJSON.title !== 'string') {
-      throw new Error(
-        fromPostCaption ? FB_CAPTION_NO_RECIPE : 'No recipe title extracted — source page may not contain a recipe',
-      )
     }
 
     // Output-side gate (Risk 2): reject body-less recipes before any DB write.
     // Catches the case where the LLM returns a valid title but empty ingredients
-    // or steps — the title-only check above doesn't catch this. A video (a
+    // or steps — the title-only check below doesn't catch this. A video (a
     // Facebook post's caption, a YouTube description) may list only the
     // ingredients and show the method on screen; no retry will find steps the
-    // author never wrote down.
+    // author never wrote down. Each dish of the page passes the gate on its own.
     const methodMayBeOnScreen = fromPostCaption || sourceType === 'youtube'
-    if (!isExtractedRecipeUsable(recipeJSON, { stepsOptional: methodMayBeOnScreen })) {
+    const storable = recipes.filter(
+      (dish) => Boolean(dish.title) && typeof dish.title === 'string' && isExtractedRecipeUsable(dish, { stepsOptional: methodMayBeOnScreen }),
+    )
+    if (storable.length === 0) {
+      // The first dish says why, as it did when a page had one recipe.
+      if (!recipes[0].title || typeof recipes[0].title !== 'string') {
+        throw new Error(
+          fromPostCaption ? FB_CAPTION_NO_RECIPE : 'No recipe title extracted — source page may not contain a recipe',
+        )
+      }
       throw new Error(
         fromPostCaption
           ? FB_CAPTION_NO_RECIPE
           : 'Extracted content has no usable recipe (title present but no ingredients or steps)',
       )
     }
-
-    // The same recipe saved before from another post — its author published
-    // it twice — by this user or anyone else. Link this share to it rather
-    // than keep a "-2" copy; checked before the labelling call, which it makes
-    // unnecessary.
+    // Each entry is one dish and the source_key its row carries. A refresh overwrites
+    // one row, so it takes one dish: the row's own, found by its key (its position in
+    // the list; the page may have changed since). A row with no key takes the first dish.
+    let dishes: Array<{ dish: RecipeData; sourceKey: string | null }>
     if (!forceRefresh) {
-      // The author gates the near-identical-ingredients tier of findSameRecipe
-      // (the #639/#894 reposted-shortbread case); resolved here from the probe
-      // that already ran alongside the LLM, so this awaits nothing new.
-      const author = await sourceAuthorPromise
-      const same = await findSameRecipe(supabase, null, { ...recipeJSON, author }, userId)
-      if (same) {
-        console.log('[extract-recipe] same recipe already saved from another post:', same.slug)
-        return await linkToSaved(same)
-      }
-    }
-
-    const timesEstimated = timesAreEstimated(recipeJSON)
-    const estimatedTimes = estimatedTimeFields(recipeJSON)
-    // The page's own JSON-LD recipeYield is read deterministically and beats the
-    // LLM's reading of the text; the full-page embed scan keeps the <script>
-    // blocks a main-content scrape may drop.
-    const servings = jsonLdServings(html) ?? jsonLdServings(embedHtml) ?? recipeJSON.servings
-
-    // Per-step photos (ZMIANA zdjęcia kroków): the LLM's in-content pick per step,
-    // kept only when the URL really is in the page, filled from the page's
-    // schema.org HowToStep images where they line up. Archived once the row exists.
-    const stepImageSources = buildStepImageSources({
-      steps: recipeJSON.steps,
-      llmImages: recipeJSON.stepImages ?? [],
-      howToImages: jsonLdHowToStepImages(html, sourceUrl ?? undefined),
-      // The markdown too: the LLM may take a step's photo from there (a reader
-      // page pairs each `![…](url)` with its step, inside the slice it reads).
-      html: `${html}\n${embedHtml}\n${markdown}`,
-      pageUrl: sourceUrl ?? undefined,
-      coverUrl: ogImage,
-    })
-
-    // Title casing, the distinguishing note and the tags, judged against the
-    // user's own recipes (minus this one, on a refresh) so the note tells
-    // same-titled ones apart. The dish vocabulary is read alongside.
-    const [{ data: existingRecipes }, vocabularyResult] = await Promise.all([existingRecipesQuery, dishVocabularyQuery])
-    // An errored RPC (migration not applied, grant missing) yields an empty
-    // vocabulary that looks like the legitimate bootstrap state, so the classifier
-    // could coin a synonym and stamp it. Log it so the two cases are told apart.
-    if (vocabularyResult.error) {
-      console.warn('[extract-recipe] dish_vocabulary RPC failed; classifying without existing names:', vocabularyResult.error)
-    }
-    const vocabulary = (vocabularyResult.data ?? []) as DishVocabularyEntry[]
-    // A truncated vocabulary would silently split dish groups; the RPC returns
-    // one row per dish, well under PostgREST's row cap today. Warn (never fail a
-    // save) if it ever approaches it.
-    if (vocabulary.length >= 1000) {
-      console.warn('[extract-recipe] dish vocabulary near the PostgREST row cap:', vocabulary.length)
-    }
-
-    // Labelling and the dish classification (E01-S21) run in parallel over the
-    // same extracted recipe; the variant note needs the dish, so it comes after.
-    const deps = { fetch, apiKey: process.env.OPENAI_API_KEY }
-    const [labels, dishResult] = await Promise.all([
-      labelRecipe(
-        recipeJSON,
-        (existingRecipes ?? []).filter((r) => r.source_url !== sourceUrl && r.source_url !== sharedUrl),
-        deps,
-      ),
-      classifyDish(recipeJSON, vocabulary, deps),
-    ])
-    const { title, description, metaDescription, tags } = labels
-
-    // The variant note: only for a classified dish, told apart from its (≤12)
-    // siblings. Siblings read via the service client (recipes is owner-only RLS).
-    let variantNote: string | null = null
-    if (dishResult.dish) {
-      const { data: siblings } = await supabase
-        .from('recipes')
-        .select('title, ingredients, variant_note')
-        .eq('dish', dishResult.dish)
-        .limit(12)
-      variantNote = await writeVariantNote(
-        { dish: dishResult.dish, title: recipeJSON.title, ingredients: recipeJSON.ingredients, steps: recipeJSON.steps },
-        (siblings ?? []) as VariantNoteSibling[],
-        deps,
-      )
-    }
-
-    // The four dish columns to write — only when the classification call
-    // SUCCEEDED (even a successful null, which records the review). A failed call
-    // leaves them null for a later #298 re-run (`where dish_classified_at is null`).
-    const dishColumns: Record<string, string | null> = dishResult.classified
-      ? {
-          dish: dishResult.dish,
-          dish_accusative: dishResult.dishAccusative,
-          variant_note: variantNote,
-          dish_classified_at: new Date().toISOString(),
-        }
-      : {}
-
-    const sourceAuthor = await sourceAuthorPromise
-    // The ingredient-set fingerprint persisted for the title-independent dedup
-    // (findSameRecipe above already read it to catch a near-simultaneous twin).
-    const ingredientFp = await ingredientFingerprint(recipeJSON.ingredients)
-
-    // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
-    // this (user, source_url) in place. The normal path below dedups and
-    // gap-fills, so it can never replace already-populated fields. We keep
-    // the existing slug so the recipe URL stays stable.
-    if (forceRefresh) {
-      // A refresh must not regroup a reviewed recipe, including a reviewed null
-      // (an owner override): write the dish columns only when this row was never
-      // classified (dish_classified_at is null). Skip the pre-read entirely when
-      // the classification produced nothing to write.
-      let refreshDishColumns: Record<string, string | null> = {}
-      if (Object.keys(dishColumns).length > 0) {
-        const { data: existingDish } = await supabase
+      dishes = storable.map((dish, index) => ({ dish, sourceKey: storable.length > 1 ? String(index) : null }))
+    } else {
+      let sourceKey: string | null = null
+      if (refreshRecipeId != null) {
+        const { data: target } = await supabase
           .from('recipes')
-          .select('dish_classified_at')
+          .select('source_key')
+          .eq('id', refreshRecipeId)
           .eq('user_id', userId)
-          .eq('source_url', sharedUrl)
           .maybeSingle()
-        if (existingDish?.dish_classified_at == null) refreshDishColumns = dishColumns
+        if (!target) throw new Error('Refresh failed: recipe not found')
+        sourceKey = target.source_key
       }
-
-      const { data: refreshed, error: refreshError } = await supabase
-        .from('recipes')
-        .update({
-          title,
-          ingredients: recipeJSON.ingredients,
-          steps: recipeJSON.steps,
-          category: recipeJSON.category,
-          description,
-          meta_description: metaDescription,
-          tags,
-          ingredient_fingerprint: ingredientFp,
-          source_type: sourceType,
-          // Found an embed this run: store it only when it still embeds, which
-          // clears a video that has since gone private; found none (the page
-          // lost the embed) keeps the old id. The author is kept the same way.
-          ...(youtubeId != null ? { youtube_id: embeddableYoutubeId } : {}),
-          ...(sourceAuthor != null ? { source_author: sourceAuthor } : {}),
-          prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
-          cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
-          total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
-          times_estimated: timesEstimated,
-          servings,
-          ...refreshDishColumns,
-          extracted_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId)
-        .eq('source_url', sharedUrl)
-        .select('id')
-        .single()
-
-      if (refreshError || !refreshed) {
-        throw new Error(`Refresh update failed: ${refreshError?.message ?? 'recipe not found'}`)
-      }
-
-      const { error: shareError } = await supabase
-        .from('recipe_shares')
-        .update({ recipe_id: refreshed.id, status: 'completed' })
-        .eq('id', shareId)
-      // Thrown, so the catch below fails the share rather than leaving it pending (#382).
-      if (shareError) throw new Error(`Share update failed: ${shareError.message}`)
-
-      // A refresh replaces the gallery outright and is how an existing recipe
-      // gains step photos from a better extraction (see storeCoverAndGallery).
-      // Not with an empty gallery read through Jina, though: a degraded scrape
-      // finding no photos is no sign the source lost them (#536).
-      const replace = gallery.length > 0 || !recipeReadViaReader
-      return await withImages(
-        { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' },
-        { recipeId: refreshed.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace },
-      )
+      const dish = storable[sourceKey == null ? 0 : Number(sourceKey)]
+      if (!dish) throw new Error('Refresh failed: this dish is no longer on the page')
+      dishes = [{ dish, sourceKey }]
     }
 
-    const baseSlug = recipeSlug(title)
-    // Per-user unique keys now; global ones once the existing duplicates are
-    // collapsed (E01-S03a) and the slug migration lands (E01-S03b). Both
-    // generations are matched below, so the deploy gap is covered: the per-user
-    // key names the user's own row, the global one the single row for that key,
-    // whoever owns it.
-    const SLUG_KEY = 'recipes_user_id_slug_key'
-    const GLOBAL_SLUG_KEY = 'recipes_slug_uniq'
-    const URL_KEY = 'recipes_user_source_url_uniq'
-    const GLOBAL_URL_KEY = 'recipes_source_url_uniq'
-    const FINGERPRINT_KEY = 'recipes_user_source_fingerprint_uniq'
-    const GLOBAL_FINGERPRINT_KEY = 'recipes_source_fingerprint_uniq'
-    // The numbered suffixes, then a few random ones: a title saved more than
-    // NUMBERED_SLUG_ATTEMPTS times still gets a slug instead of failing the share.
-    const MAX_ATTEMPTS = NUMBERED_SLUG_ATTEMPTS + 3
-
-    let recipe: { id: number } | null = null
-    // Set when this run saved a row whose photos it found: a new recipe, or a
-    // gap-filled one (whose stored photos the archived ones replace).
-    let imageJob: RecipeImageJob | null = null
-    let lastInsertError: { message: string } | null = null
-
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      const slug = recipeSlugCandidate(baseSlug, attempt)
-
-      const { data, error } = await supabase
-        .from('recipes')
-        .insert({
-          user_id: userId,
-          title,
-          slug,
-          description,
-          meta_description: metaDescription,
-          tags,
-          // Archive-first invariant: insert null, then the archive step below
-          // fills image_url with a Supabase URL (or leaves it null on failure).
-          image_url: null,
-          ingredients: recipeJSON.ingredients,
-          steps: recipeJSON.steps,
-          ingredient_fingerprint: ingredientFp,
-          source_type: sourceType,
-          source_url: sourceUrl,
-          source_fingerprint: sourceFingerprint,
-          source_author: sourceAuthor,
-          youtube_id: embeddableYoutubeId,
-          category: recipeJSON.category,
-          prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
-          cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
-          total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
-          times_estimated: timesEstimated,
-          servings,
-          ...dishColumns,
-          extracted_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single()
-
-      if (data) {
-        recipe = data
-        // The og:image, gallery and per-step photos are archived once the row
-        // exists; until then image_url stays null (NoPhoto placeholder).
-        imageJob = { recipeId: data.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: false }
-        break
-      } else {
-        lastInsertError = error
+    // The owner's recipes (for the labelling note) and the dish vocabulary (E01-S21, so
+    // classifyDish reuses a name already in use). Read once, on the first dish that
+    // needs them, and shared by the rest: the same for every dish of the link.
+    async function loadLinkReads() {
+      const [{ data: existingRecipes }, vocabularyResult] = await Promise.all([existingRecipesQuery, dishVocabularyQuery])
+      // An errored RPC (migration not applied, grant missing) yields an empty
+      // vocabulary that looks like the legitimate bootstrap state, so the classifier
+      // could coin a synonym and stamp it. Log it so the two cases are told apart.
+      if (vocabularyResult.error) {
+        console.warn('[extract-recipe] dish_vocabulary RPC failed; classifying without existing names:', vocabularyResult.error)
       }
+      const vocabulary = (vocabularyResult.data ?? []) as DishVocabularyEntry[]
+      // A truncated vocabulary would silently split dish groups; the RPC returns
+      // one row per dish, well under PostgREST's row cap today. Warn (never fail a
+      // save) if it ever approaches it.
+      if (vocabulary.length >= 1000) {
+        console.warn('[extract-recipe] dish vocabulary near the PostgREST row cap:', vocabulary.length)
+      }
+      return { existingRecipes, vocabulary }
+    }
+    let linkReads: ReturnType<typeof loadLinkReads> | undefined
 
-      // Fingerprint collision: a share of the same text from another post
-      // won the race. Link this share to that recipe — or, when it is someone
-      // else's, add it to the user's favorites.
-      const ownFingerprint = error?.message.includes(FINGERPRINT_KEY) ?? false
-      if (sourceFingerprint && (ownFingerprint || error?.message.includes(GLOBAL_FINGERPRINT_KEY))) {
-        const existing = await findRecipeBySourceFingerprint(supabase, ownFingerprint ? userId : null, sourceFingerprint)
-        if (existing) {
-          if (!ownFingerprint && existing.user_id !== userId) return await linkToSaved(existing)
-          recipe = { id: existing.id }
-          break
+    // The page's JSON-LD servings are page-wide, so they speak for one dish only:
+    // a link with several dishes keeps each dish's own count.
+    const pageServings = storable.length > 1 ? null : (jsonLdServings(html) ?? jsonLdServings(embedHtml) ?? null)
+    const pageHowToImages = jsonLdHowToStepImages(html, sourceUrl ?? undefined)
+
+    // Stores one dish of the link (E01 multi-recipe, phase 2). A link with
+    // several dishes keys each row by its position in the list, which follows
+    // the page's order (the titles are the LLM's own words, which change between
+    // runs); a link with one dish keeps the null key, so its row is the one a
+    // single-recipe link always had.
+    async function storeRecipe(recipeJSON: RecipeData, sourceKey: string | null): Promise<DishOutcome> {
+
+      // The same recipe saved before from another post — its author published
+      // it twice — by this user or anyone else. Link this share to it rather
+      // than keep a "-2" copy; checked before the labelling call, which it makes
+      // unnecessary.
+      if (!forceRefresh) {
+        // The author gates the near-identical-ingredients tier of findSameRecipe
+        // (the #639/#894 reposted-shortbread case); resolved here from the probe
+        // that already ran alongside the LLM, so this awaits nothing new.
+        const author = await sourceAuthorPromise
+        const same = await findSameRecipe(supabase, null, { ...recipeJSON, author }, userId)
+        if (same) {
+          console.log('[extract-recipe] same recipe already saved from another post:', same.slug)
+          return { kind: 'linked', existing: same }
         }
       }
 
-      // URL collision: a parallel share won the race, OR this is a refresh
-      // run for an already-stored recipe. Link this share to the existing
-      // recipe and gap-fill any null fields with newly extracted values
-      // (we never overwrite already-populated fields). Someone else's recipe
-      // is never gap-filled: it goes to the user's favorites untouched.
-      const ownUrl = error?.message.includes(URL_KEY) ?? false
-      if (ownUrl || error?.message.includes(GLOBAL_URL_KEY)) {
-        const existingQuery = supabase
+      const timesEstimated = timesAreEstimated(recipeJSON)
+      const estimatedTimes = estimatedTimeFields(recipeJSON)
+      // The page's own JSON-LD recipeYield is read deterministically and beats the
+      // LLM's reading of the text; the full-page embed scan keeps the <script>
+      // blocks a main-content scrape may drop.
+      const servings = pageServings ?? recipeJSON.servings
+
+      // Per-step photos (ZMIANA zdjęcia kroków): the LLM's in-content pick per step,
+      // kept only when the URL really is in the page, filled from the page's
+      // schema.org HowToStep images where they line up. Archived once the row exists.
+      const stepImageSources = buildStepImageSources({
+        steps: recipeJSON.steps,
+        llmImages: recipeJSON.stepImages ?? [],
+        howToImages: pageHowToImages,
+        // The markdown too: the LLM may take a step's photo from there (a reader
+        // page pairs each `![…](url)` with its step, inside the slice it reads).
+        html: `${html}\n${embedHtml}\n${markdown}`,
+        pageUrl: sourceUrl ?? undefined,
+        coverUrl: ogImage,
+      })
+
+      // Title casing, the distinguishing note and the tags, judged against the
+      // user's own recipes (minus this one, on a refresh) so the note tells
+      // same-titled ones apart. The dish vocabulary is read alongside.
+      const { existingRecipes, vocabulary } = await (linkReads ??= loadLinkReads())
+
+      // Labelling and the dish classification (E01-S21) run in parallel over the
+      // same extracted recipe; the variant note needs the dish, so it comes after.
+      const deps = { fetch, apiKey: process.env.OPENAI_API_KEY }
+      const [labels, dishResult] = await Promise.all([
+        labelRecipe(
+          recipeJSON,
+          (existingRecipes ?? []).filter((r) => r.source_url !== sourceUrl && r.source_url !== sharedUrl),
+          deps,
+        ),
+        classifyDish(recipeJSON, vocabulary, deps),
+      ])
+      const { title, description, metaDescription, tags } = labels
+
+      // The variant note: only for a classified dish, told apart from its (≤12)
+      // siblings. Siblings read via the service client (recipes is owner-only RLS).
+      let variantNote: string | null = null
+      if (dishResult.dish) {
+        const { data: siblings } = await supabase
           .from('recipes')
-          .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags, ingredient_fingerprint, dish_classified_at')
-        const { data: existing } = await (ownUrl ? existingQuery.eq('user_id', userId) : existingQuery)
-          .eq('source_url', sourceUrl)
+          .select('title, ingredients, variant_note')
+          .eq('dish', dishResult.dish)
+          .limit(12)
+        variantNote = await writeVariantNote(
+          { dish: dishResult.dish, title: recipeJSON.title, ingredients: recipeJSON.ingredients, steps: recipeJSON.steps },
+          (siblings ?? []) as VariantNoteSibling[],
+          deps,
+        )
+      }
+
+      // The four dish columns to write — only when the classification call
+      // SUCCEEDED (even a successful null, which records the review). A failed call
+      // leaves them null for a later #298 re-run (`where dish_classified_at is null`).
+      const dishColumns: Record<string, string | null> = dishResult.classified
+        ? {
+            dish: dishResult.dish,
+            dish_accusative: dishResult.dishAccusative,
+            variant_note: variantNote,
+            dish_classified_at: new Date().toISOString(),
+          }
+        : {}
+
+      const sourceAuthor = await sourceAuthorPromise
+      // The ingredient-set fingerprint persisted for the title-independent dedup
+      // (findSameRecipe above already read it to catch a near-simultaneous twin).
+      const ingredientFp = await ingredientFingerprint(recipeJSON.ingredients)
+
+      // Force refresh ("Odśwież przepis"): overwrite the existing recipe for
+      // this (user, source_url) in place. The normal path below dedups and
+      // gap-fills, so it can never replace already-populated fields. We keep
+      // the existing slug so the recipe URL stays stable.
+      if (forceRefresh) {
+        // The row a refresh overwrites: the one the action named, or, from an older
+        // event, the link's single-dish row. A refresh must not regroup a reviewed
+        // recipe, including a reviewed null (an owner override): write the dish
+        // columns only when this row was never classified (dish_classified_at is
+        // null). Skip the pre-read entirely when the classification produced nothing
+        // to write.
+        let refreshDishColumns: Record<string, string | null> = {}
+        if (Object.keys(dishColumns).length > 0) {
+          const { data: existingDish } = await (refreshRecipeId != null
+            ? supabase.from('recipes').select('dish_classified_at').eq('user_id', userId).eq('id', refreshRecipeId)
+            : supabase.from('recipes').select('dish_classified_at').eq('user_id', userId).eq('source_url', sharedUrl).is('source_key', null)
+          ).maybeSingle()
+          if (existingDish?.dish_classified_at == null) refreshDishColumns = dishColumns
+        }
+
+        const refreshQuery = supabase
+          .from('recipes')
+          .update({
+            title,
+            ingredients: recipeJSON.ingredients,
+            steps: recipeJSON.steps,
+            category: recipeJSON.category,
+            description,
+            meta_description: metaDescription,
+            tags,
+            ingredient_fingerprint: ingredientFp,
+            source_type: sourceType,
+            // Found an embed this run: store it only when it still embeds, which
+            // clears a video that has since gone private; found none (the page
+            // lost the embed) keeps the old id. The author is kept the same way.
+            ...(youtubeId != null ? { youtube_id: embeddableYoutubeId } : {}),
+            ...(sourceAuthor != null ? { source_author: sourceAuthor } : {}),
+            prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
+            cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
+            total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
+            times_estimated: timesEstimated,
+            servings,
+            ...refreshDishColumns,
+            extracted_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId)
+        const { data: refreshed, error: refreshError } = await (refreshRecipeId != null
+          ? refreshQuery.eq('id', refreshRecipeId)
+          : refreshQuery.eq('source_url', sharedUrl).is('source_key', null)
+        )
+          .select('id')
           .single()
 
-        if (existing && !ownUrl && existing.user_id !== userId) return await linkToSaved(existing)
+        if (refreshError || !refreshed) {
+          throw new Error(`Refresh update failed: ${refreshError?.message ?? 'recipe not found'}`)
+        }
 
-        if (existing) {
-          const gapFill: Database['public']['Tables']['recipes']['Update'] = {}
-          if (existing.prep_time_minutes == null && recipeJSON.prepTimeMinutes != null) {
-            gapFill.prep_time_minutes = recipeJSON.prepTimeMinutes
-          }
-          if (existing.cook_time_minutes == null && recipeJSON.cookTimeMinutes != null) {
-            gapFill.cook_time_minutes = recipeJSON.cookTimeMinutes
-          }
-          if (existing.total_time_minutes == null && recipeJSON.totalTimeMinutes != null) {
-            gapFill.total_time_minutes = recipeJSON.totalTimeMinutes
-          }
-          // A time filled in from an estimate makes the row's times estimated;
-          // stated times filled in (next to an earlier estimate, or next to an
-          // estimate that fills nothing) leave the flag (#188).
-          if (
-            (gapFill.prep_time_minutes != null && estimatedTimes.includes('prepTimeMinutes')) ||
-            (gapFill.cook_time_minutes != null && estimatedTimes.includes('cookTimeMinutes')) ||
-            (gapFill.total_time_minutes != null && estimatedTimes.includes('totalTimeMinutes'))
-          ) {
-            gapFill.times_estimated = true
-          }
-          if (existing.servings == null && servings != null) {
-            gapFill.servings = servings
-          }
-          if (existing.youtube_id == null && embeddableYoutubeId != null) {
-            gapFill.youtube_id = embeddableYoutubeId
-          }
-          if (existing.source_author == null && sourceAuthor != null) {
-            gapFill.source_author = sourceAuthor
-          }
-          if (existing.description == null && description != null) {
-            gapFill.description = description
-          }
-          if (existing.meta_description == null && metaDescription != null) {
-            gapFill.meta_description = metaDescription
-          }
-          if (!existing.tags?.length && tags.length > 0) {
-            gapFill.tags = tags
-          }
-          // Only backfill a missing fingerprint — gap-fill never rewrites the
-          // existing row's `ingredients`, so its stored fingerprint stays valid.
-          if (existing.ingredient_fingerprint == null && ingredientFp != null) {
-            gapFill.ingredient_fingerprint = ingredientFp
-          }
-          // Archive flow: an archived cover always overwrites image_url — even a
-          // legacy external link. That's how the backfill
-          // (scripts/backfill-archive-covers.ts, scripts/archive-recipe-images.ts)
-          // moves existing recipes onto Supabase Storage. A failed archive leaves
-          // the existing value alone (never writes a new external link). The
-          // gallery and step photos follow the same rule: archived photos replace
-          // whatever is there, which is how the backfill gives old recipes them.
-          imageJob = { recipeId: existing.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: false }
-
-          // Fill the dish columns only when this row was never classified (never
-          // overwrite a reviewed value), the same guard as a refresh.
-          const dishGapFill = existing.dish_classified_at == null ? dishColumns : {}
-          const merged = { ...gapFill, ...dishGapFill }
-          if (Object.keys(merged).length > 0) {
-            await supabase.from('recipes').update(merged).eq('id', existing.id)
-          }
-
-          recipe = { id: existing.id }
-          break
+        // A refresh replaces the gallery outright and is how an existing recipe
+        // gains step photos from a better extraction (see storeCoverAndGallery).
+        // Not with an empty gallery read through Jina, though: a degraded scrape
+        // finding no photos is no sign the source lost them (#536).
+        const replace = gallery.length > 0 || !recipeReadViaReader
+        return {
+          kind: 'saved',
+          result: { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' },
+          job: { recipeId: refreshed.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace },
         }
       }
 
-      // Slug collision against a different URL with the same title: retry with
-      // a `-2`, `-3`, … suffix, then a random one. Global (E01-S03b) or per-user,
-      // same handling — the retry lands the lowest free suffix because the DB
-      // rejects taken ones.
-      if (error?.message.includes(SLUG_KEY) || error?.message.includes(GLOBAL_SLUG_KEY)) continue
+      const baseSlug = recipeSlug(title)
+      // Per-user unique keys now; global ones once the existing duplicates are
+      // collapsed (E01-S03a) and the slug migration lands (E01-S03b). Both
+      // generations are matched below, so the deploy gap is covered: the per-user
+      // key names the user's own row, the global one the single row for that key,
+      // whoever owns it.
+      const SLUG_KEY = 'recipes_user_id_slug_key'
+      const GLOBAL_SLUG_KEY = 'recipes_slug_uniq'
+      const URL_KEY = 'recipes_user_source_url_uniq'
+      const GLOBAL_URL_KEY = 'recipes_source_url_uniq'
+      const KEYED_URL_KEY = 'recipes_source_url_key_uniq'
+      const FINGERPRINT_KEY = 'recipes_user_source_fingerprint_uniq'
+      const GLOBAL_FINGERPRINT_KEY = 'recipes_source_fingerprint_uniq'
+      const KEYED_FINGERPRINT_KEY = 'recipes_source_fingerprint_key_uniq'
+      // The numbered suffixes, then a few random ones: a title saved more than
+      // NUMBERED_SLUG_ATTEMPTS times still gets a slug instead of failing the share.
+      const MAX_ATTEMPTS = NUMBERED_SLUG_ATTEMPTS + 3
 
-      // Any other error is terminal.
-      break
+      let recipe: { id: number } | null = null
+      // Set when this run saved a row whose photos it found: a new recipe, or a
+      // gap-filled one (whose stored photos the archived ones replace).
+      let imageJob: RecipeImageJob | null = null
+      let lastInsertError: { message: string } | null = null
+
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const slug = recipeSlugCandidate(baseSlug, attempt)
+
+        const { data, error } = await supabase
+          .from('recipes')
+          .insert({
+            user_id: userId,
+            title,
+            slug,
+            description,
+            meta_description: metaDescription,
+            tags,
+            // Archive-first invariant: insert null, then the archive step below
+            // fills image_url with a Supabase URL (or leaves it null on failure).
+            image_url: null,
+            ingredients: recipeJSON.ingredients,
+            steps: recipeJSON.steps,
+            ingredient_fingerprint: ingredientFp,
+            source_type: sourceType,
+            source_url: sourceUrl,
+            source_key: sourceKey,
+            source_fingerprint: sourceFingerprint,
+            source_author: sourceAuthor,
+            youtube_id: embeddableYoutubeId,
+            category: recipeJSON.category,
+            prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
+            cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
+            total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
+            times_estimated: timesEstimated,
+            servings,
+            ...dishColumns,
+            extracted_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single()
+
+        if (data) {
+          recipe = data
+          // The og:image, gallery and per-step photos are archived once the row
+          // exists; until then image_url stays null (NoPhoto placeholder).
+          imageJob = { recipeId: data.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: false }
+          break
+        } else {
+          lastInsertError = error
+        }
+
+        // Fingerprint collision: a share of the same text from another post
+        // won the race. Link this share to that recipe — or, when it is someone
+        // else's, add it to the user's favorites.
+        const ownFingerprint = error?.message.includes(FINGERPRINT_KEY) ?? false
+        const sameFingerprint =
+          ownFingerprint || error?.message.includes(GLOBAL_FINGERPRINT_KEY) || error?.message.includes(KEYED_FINGERPRINT_KEY)
+        if (sourceFingerprint && sameFingerprint) {
+          const existing = await findRecipeBySourceFingerprint(
+            supabase,
+            ownFingerprint ? userId : null,
+            sourceFingerprint,
+            sourceKey,
+          )
+          if (existing) {
+            if (!ownFingerprint && existing.user_id !== userId) return { kind: 'linked', existing }
+            recipe = { id: existing.id }
+            break
+          }
+        }
+
+        // URL collision: a parallel share won the race, OR this is a refresh
+        // run for an already-stored recipe. Link this share to the existing
+        // recipe and gap-fill any null fields with newly extracted values
+        // (we never overwrite already-populated fields). Someone else's recipe
+        // is never gap-filled: it goes to the user's favorites untouched.
+        const ownUrl = error?.message.includes(URL_KEY) ?? false
+        if (ownUrl || error?.message.includes(GLOBAL_URL_KEY) || error?.message.includes(KEYED_URL_KEY)) {
+          const existingQuery = supabase
+            .from('recipes')
+            .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags, ingredient_fingerprint, dish_classified_at')
+          const byUrl = (ownUrl ? existingQuery.eq('user_id', userId) : existingQuery).eq('source_url', sourceUrl)
+          const { data: existing } = await (sourceKey == null ? byUrl.is('source_key', null) : byUrl.eq('source_key', sourceKey)).single()
+
+          if (existing && !ownUrl && existing.user_id !== userId) return { kind: 'linked', existing }
+
+          if (existing) {
+            const gapFill: Database['public']['Tables']['recipes']['Update'] = {}
+            if (existing.prep_time_minutes == null && recipeJSON.prepTimeMinutes != null) {
+              gapFill.prep_time_minutes = recipeJSON.prepTimeMinutes
+            }
+            if (existing.cook_time_minutes == null && recipeJSON.cookTimeMinutes != null) {
+              gapFill.cook_time_minutes = recipeJSON.cookTimeMinutes
+            }
+            if (existing.total_time_minutes == null && recipeJSON.totalTimeMinutes != null) {
+              gapFill.total_time_minutes = recipeJSON.totalTimeMinutes
+            }
+            // A time filled in from an estimate makes the row's times estimated;
+            // stated times filled in (next to an earlier estimate, or next to an
+            // estimate that fills nothing) leave the flag (#188).
+            if (
+              (gapFill.prep_time_minutes != null && estimatedTimes.includes('prepTimeMinutes')) ||
+              (gapFill.cook_time_minutes != null && estimatedTimes.includes('cookTimeMinutes')) ||
+              (gapFill.total_time_minutes != null && estimatedTimes.includes('totalTimeMinutes'))
+            ) {
+              gapFill.times_estimated = true
+            }
+            if (existing.servings == null && servings != null) {
+              gapFill.servings = servings
+            }
+            if (existing.youtube_id == null && embeddableYoutubeId != null) {
+              gapFill.youtube_id = embeddableYoutubeId
+            }
+            if (existing.source_author == null && sourceAuthor != null) {
+              gapFill.source_author = sourceAuthor
+            }
+            if (existing.description == null && description != null) {
+              gapFill.description = description
+            }
+            if (existing.meta_description == null && metaDescription != null) {
+              gapFill.meta_description = metaDescription
+            }
+            if (!existing.tags?.length && tags.length > 0) {
+              gapFill.tags = tags
+            }
+            // Only backfill a missing fingerprint — gap-fill never rewrites the
+            // existing row's `ingredients`, so its stored fingerprint stays valid.
+            if (existing.ingredient_fingerprint == null && ingredientFp != null) {
+              gapFill.ingredient_fingerprint = ingredientFp
+            }
+            // Archive flow: an archived cover always overwrites image_url — even a
+            // legacy external link. That's how the backfill
+            // (scripts/backfill-archive-covers.ts, scripts/archive-recipe-images.ts)
+            // moves existing recipes onto Supabase Storage. A failed archive leaves
+            // the existing value alone (never writes a new external link). The
+            // gallery and step photos follow the same rule: archived photos replace
+            // whatever is there, which is how the backfill gives old recipes them.
+            imageJob = { recipeId: existing.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: false }
+
+            // Fill the dish columns only when this row was never classified (never
+            // overwrite a reviewed value), the same guard as a refresh.
+            const dishGapFill = existing.dish_classified_at == null ? dishColumns : {}
+            const merged = { ...gapFill, ...dishGapFill }
+            if (Object.keys(merged).length > 0) {
+              await supabase.from('recipes').update(merged).eq('id', existing.id)
+            }
+
+            recipe = { id: existing.id }
+            break
+          }
+        }
+
+        // Slug collision against a different URL with the same title: retry with
+        // a `-2`, `-3`, … suffix, then a random one. Global (E01-S03b) or per-user,
+        // same handling — the retry lands the lowest free suffix because the DB
+        // rejects taken ones.
+        if (error?.message.includes(SLUG_KEY) || error?.message.includes(GLOBAL_SLUG_KEY)) continue
+
+        // Any other error is terminal.
+        break
+      }
+
+      if (!recipe) {
+        throw new Error(`Database insert failed: ${lastInsertError?.message ?? 'exhausted slug retry attempts'}`)
+      }
+
+      return {
+        kind: 'saved',
+        result: { recipeId: recipe.id, title, category: recipeJSON.category, status: 'completed' },
+        job: imageJob,
+      }
     }
 
-    if (!recipe) {
-      throw new Error(`Database insert failed: ${lastInsertError?.message ?? 'exhausted slug retry attempts'}`)
+    // Every dish of the link, in page order. Each row is written and gap-filled on
+    // its own; the share points at the first dish that is saved here.
+    const outcomes: DishOutcome[] = []
+    for (const { dish, sourceKey } of dishes) {
+      outcomes.push(await storeRecipe(dish, sourceKey))
     }
+    const saved = outcomes.flatMap((outcome) => (outcome.kind === 'saved' ? [outcome] : []))
+    const [first] = outcomes
+    // Every dish is already saved: this share repeats the first of them.
+    if (saved.length === 0 && first?.kind === 'linked') return await linkToSaved(first.existing)
+    const [head] = saved
+    if (!head) throw new Error('Database insert failed: no dish of the link was saved')
 
     const { error: shareError } = await supabase
       .from('recipe_shares')
-      .update({ recipe_id: recipe.id, status: 'completed' })
+      .update({ recipe_id: head.result.recipeId, status: 'completed' })
       .eq('id', shareId)
     // Thrown, so the catch below fails the share rather than leaving it pending (#382).
     if (shareError) throw new Error(`Share update failed: ${shareError.message}`)
 
-    const result = { recipeId: recipe.id, title, category: recipeJSON.category, status: 'completed' }
-    return imageJob ? await withImages(result, imageJob) : result
+    // The photos of every dish saved here: archived now, or handed back with `deferImages`.
+    const jobs = saved.flatMap((outcome) => (outcome.job ? [outcome.job] : []))
+    if (deferImages) return jobs.length > 0 ? { ...head.result, images: jobs } : head.result
+    for (const job of jobs) await storeRecipeImages(supabase, job)
+    return head.result
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
 
