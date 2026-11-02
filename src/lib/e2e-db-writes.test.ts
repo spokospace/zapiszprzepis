@@ -38,7 +38,8 @@ describe('dbWritesAllowed', () => {
 
 /** Labels of the add-recipe URL fields (/recipes and /dodaj). */
 const RECIPE_URL_FIELD = /(URL|Link do) przepisu/i
-const TEST_CALLEES = new Set(['test', 'test.only', 'test.fixme', 'test.fail', 'setup'])
+/** Playwright methods that type text into a field. */
+const TYPING = new Set(['fill', 'pressSequentially', 'type'])
 
 function literalText(node: ts.Node | undefined): string | undefined {
   return node && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) ? node.text : undefined
@@ -53,7 +54,7 @@ function submitsRecipe(call: ts.CallExpression, source: ts.SourceFile): boolean 
   const method = call.expression.name.text
   const arg = call.arguments[0]
   const text = literalText(arg)
-  if (method === 'fill') {
+  if (TYPING.has(method)) {
     if (text !== undefined) return /^https?:\/\//i.test(text.trim())
     return RECIPE_URL_FIELD.test(call.expression.expression.getText(source))
   }
@@ -61,18 +62,16 @@ function submitsRecipe(call: ts.CallExpression, source: ts.SourceFile): boolean 
   return false
 }
 
-/** The `test(...)` callback a node sits in, or undefined (a hook or a helper). */
-function enclosingTest(node: ts.Node, source: ts.SourceFile): ts.FunctionLikeDeclaration | undefined {
+/** The functions a node sits in, innermost first: a test callback, a hook or a helper. */
+function enclosingFunctions(node: ts.Node): ts.FunctionLikeDeclaration[] {
+  const functions: ts.FunctionLikeDeclaration[] = []
   for (let current = node.parent; current; current = current.parent) {
-    if (ts.isArrowFunction(current) || ts.isFunctionExpression(current)) {
-      const call = current.parent
-      if (call && ts.isCallExpression(call) && TEST_CALLEES.has(call.expression.getText(source))) return current
-    }
+    if (ts.isFunctionLike(current) && 'body' in current) functions.push(current as ts.FunctionLikeDeclaration)
   }
-  return undefined
+  return functions
 }
 
-/** True when the test body skips itself on `!dbWritesAllowed(...)` before the write. */
+/** True when the function skips the test on `!dbWritesAllowed(...)` before the write. */
 function guarded(body: ts.FunctionLikeDeclaration, before: number, source: ts.SourceFile): boolean {
   let found = false
   const visit = (node: ts.Node) => {
@@ -97,8 +96,8 @@ function unguardedSubmissions(name: string, code: string): number[] {
   const lines: number[] = []
   const visit = (node: ts.Node) => {
     if (ts.isCallExpression(node) && submitsRecipe(node, source)) {
-      const test = enclosingTest(node, source)
-      if (!test || !guarded(test, node.getStart(source), source)) {
+      const start = node.getStart(source)
+      if (!enclosingFunctions(node).some((fn) => guarded(fn, start, source))) {
         lines.push(source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1)
       }
     }
@@ -117,7 +116,8 @@ describe('e2e suite and the production database', () => {
   })
 
   it('guards every e2e test that submits a recipe', () => {
-    const files = readdirSync(E2E_DIR).filter((name) => /\.(spec|setup)\.ts$/.test(name))
+    // Specs, setup files and helper modules alike: a helper that adds a recipe needs the guard too.
+    const files = readdirSync(E2E_DIR).filter((name) => name.endsWith('.ts'))
     expect(files).toContain('add-recipe.spec.ts')
     const offenders = files.flatMap((name) =>
       unguardedSubmissions(name, readFileSync(E2E_DIR + name, 'utf8')).map((line) => `e2e/${name}:${line}`),
@@ -152,9 +152,14 @@ describe('e2e suite and the production database', () => {
       expect(unguardedSubmissions('a.ts', wrap(`await request.post('/share', { form: { url: 'x' } })`))).toEqual([2])
     })
 
-    it('flags a submission outside any test (a hook or a helper)', () => {
-      const code = `test.beforeEach(async ({ page }) => {\n  await page.getByLabel('URL przepisu').fill('https://x.pl/a')\n})\n`
-      expect(unguardedSubmissions('a.ts', code)).toEqual([2])
+    it('checks hooks and helper modules, and other ways of typing', () => {
+      const hook = `test.beforeEach(async ({ page }) => {\n  await page.getByLabel('URL przepisu').fill('https://x.pl/a')\n})\n`
+      expect(unguardedSubmissions('a.ts', hook)).toEqual([2])
+      const helper = `export async function addFromLink(page: Page, url: string) {\n  await page.getByLabel('Link do przepisu').fill(url)\n}\n`
+      expect(unguardedSubmissions('helper.ts', helper)).toEqual([2])
+      const guardedHelper = `export async function addFromLink(page: Page, url: string) {\n  ${GUARD}\n  await page.getByLabel('Link do przepisu').fill(url)\n}\n`
+      expect(unguardedSubmissions('helper.ts', guardedHelper)).toEqual([])
+      expect(unguardedSubmissions('a.ts', wrap(`await page.locator('input').pressSequentially('https://x.pl/a')`))).toEqual([2])
     })
   })
 })
