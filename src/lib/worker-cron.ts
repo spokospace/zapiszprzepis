@@ -128,8 +128,10 @@ export async function backupToR2(env: CronEnv): Promise<void> {
 /**
  * Copies the Google Search Console report into public.search_console_daily: for each
  * of the last SYNC_DAYS days, the top queries and the top pages (one request per day
- * and dimension, run in parallel), upserted by (day, dimension, key) so Google's late
- * numbers overwrite the early ones. Then drops rows past RETENTION_DAYS.
+ * and dimension, run in parallel). Only once every report is in, the refreshed days
+ * (and rows past RETENTION_DAYS) are deleted and the fresh rows inserted, so a key
+ * that fell out of a day's top list does not keep its old numbers. If the insert
+ * fails, those days stay empty until the next run fetches them again.
  *
  * Never throws: a failed sync must not take the scheduled run down with it; the log
  * line is the alert.
@@ -152,23 +154,23 @@ export async function syncSearchConsole(env: CronEnv, fetchFn: Fetch = fetch, no
     )
     const rows = reports.flat()
 
-    const table = `${restBase(env)}/rest/v1/search_console_daily`
-    const upsert = await fetchFn(`${table}?on_conflict=day,dimension,key`, {
-      method: 'POST',
-      headers: {
-        ...restHeaders(key),
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify(rows),
-    })
-    if (!upsert.ok) throw new Error(`upsert: Supabase responded ${upsert.status}`)
+    // An all-empty answer is far likelier to be lost access than five days without a
+    // single search, so keep what is stored rather than clearing it.
+    if (rows.length === 0) throw new Error('Google returned no rows for any day; nothing changed')
 
-    const prune = await fetchFn(`${table}?day=lt.${retentionCutoff(now)}`, {
+    const table = `${restBase(env)}/rest/v1/search_console_daily`
+    const clear = await fetchFn(`${table}?or=(day.lt.${retentionCutoff(now)},day.gte.${days[0]})`, {
       method: 'DELETE',
       headers: { ...restHeaders(key), Prefer: 'return=minimal' },
     })
-    if (!prune.ok) throw new Error(`prune: Supabase responded ${prune.status}`)
+    if (!clear.ok) throw new Error(`clear: Supabase responded ${clear.status}`)
+
+    const insert = await fetchFn(table, {
+      method: 'POST',
+      headers: { ...restHeaders(key), 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify(rows),
+    })
+    if (!insert.ok) throw new Error(`insert: Supabase responded ${insert.status}`)
 
     console.log(`search-console: ${days[0]}..${days[days.length - 1]}, ${rows.length} rows`)
   } catch (e) {

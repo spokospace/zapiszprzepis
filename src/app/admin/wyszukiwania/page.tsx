@@ -101,13 +101,18 @@ export default async function SearchConsolePage() {
   const staff = await requirePermission('analytics.read')
   const summaries = await Promise.all(SEARCH_WINDOWS.map((days) => loadSearchSummary(staff.supabase, days)))
   const lastDay = summaries.find((s) => s?.lastDay)?.lastDay ?? null
+  const loadFailed = summaries.some((s) => s === null)
+  let synced = 'Dane nie zostały jeszcze pobrane.'
+  if (lastDay) synced = `Ostatni pobrany dzień: ${formatDay(lastDay)}.`
+  else if (loadFailed) synced = 'Nie udało się sprawdzić, kiedy dane zostały pobrane.'
 
   return (
     <>
       <PageTitle>Wyszukiwania Google</PageTitle>
       <p className="mb-8 max-w-prose text-ink-soft">
         Dane z Google Search Console, pobierane raz dziennie. Google podaje je z opóźnieniem około 2–3 dni i pomija rzadkie
-        zapytania. {lastDay ? `Ostatni pobrany dzień: ${formatDay(lastDay)}.` : 'Dane nie zostały jeszcze pobrane.'}
+        zapytania. Sumy powstają z 500 najpopularniejszych zapytań i stron każdego dnia, więc przy bardzo dużym ruchu są
+        przybliżone. {synced}
       </p>
 
       {summaries.map((summary, i) =>

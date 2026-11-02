@@ -117,7 +117,7 @@ describe('syncSearchConsole', () => {
     expect(error).toHaveBeenCalledWith(expect.stringContaining('skipped'))
   })
 
-  it('asks Google for each day and dimension, upserts every row in one request, then prunes', async () => {
+  it('asks Google for each day and dimension, clears the refreshed and expired days, then inserts every row in one request', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
     const fetchFn = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.startsWith('https://oauth2')) return Response.json({ access_token: 'tok' })
@@ -146,15 +146,33 @@ describe('syncSearchConsole', () => {
 
     const db = fetchFn.mock.calls.filter(([u]) => u.startsWith('https://db.example'))
     expect(db.map(([u, i]) => `${i?.method} ${u}`)).toEqual([
-      'POST https://db.example/rest/v1/search_console_daily?on_conflict=day,dimension,key',
-      'DELETE https://db.example/rest/v1/search_console_daily?day=lt.2025-09-28',
+      'DELETE https://db.example/rest/v1/search_console_daily?or=(day.lt.2025-09-28,day.gte.2026-10-28)',
+      'POST https://db.example/rest/v1/search_console_daily',
     ])
-    const upsert = db[0][1]
-    expect((upsert?.headers as Record<string, string>).Authorization).toBe('Bearer service')
-    expect((upsert?.headers as Record<string, string>).Prefer).toContain('resolution=merge-duplicates')
-    const rows = JSON.parse(String(upsert?.body))
+    const insert = db[1][1]
+    expect((insert?.headers as Record<string, string>).Authorization).toBe('Bearer service')
+    const rows = JSON.parse(String(insert?.body))
     expect(rows).toHaveLength(10)
     expect(rows).toContainEqual({ day: '2026-11-01', dimension: 'page', key: '/przepis/sernik', clicks: 2, impressions: 7, position: 3 })
+  })
+
+  it('touches no stored rows when a Google report fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchFn = vi.fn(async (url: string) =>
+      url.startsWith('https://oauth2') ? Response.json({ access_token: 'tok' }) : new Response(null, { status: url.includes('searchAnalytics') ? 500 : 204 }),
+    )
+    await syncSearchConsole(env(), fetchFn, new Date('2026-11-02T04:00:00Z'))
+    expect(fetchFn.mock.calls.some(([u]) => u.startsWith('https://db.example'))).toBe(false)
+  })
+
+  it('keeps the stored rows when Google answers with no rows at all', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fetchFn = vi.fn(async (url: string) =>
+      url.startsWith('https://oauth2') ? Response.json({ access_token: 'tok' }) : Response.json({ rows: [] }),
+    )
+    await syncSearchConsole(env(), fetchFn, new Date('2026-11-02T04:00:00Z'))
+    expect(fetchFn.mock.calls.some(([u]) => u.startsWith('https://db.example'))).toBe(false)
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('no rows'))
   })
 
   it('logs and swallows a Google error instead of throwing', async () => {
