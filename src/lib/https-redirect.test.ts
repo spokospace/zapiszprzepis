@@ -20,6 +20,11 @@ describe('httpsRedirect (#645)', () => {
     expect(res?.headers.get('location')).toBe('https://zapiszprzepis.pl/przepis/x')
   })
 
+  it('drops a non-default HTTP port, so the redirect lands on the standard HTTPS port', () => {
+    const res = httpsRedirect(new Request('http://zapiszprzepis.pl:8080/przepis/x'), SITE_URL)
+    expect(res?.headers.get('location')).toBe('https://zapiszprzepis.pl/przepis/x')
+  })
+
   it('answers HEAD with a 301 and a POST with a 308, so the method is kept', () => {
     expect(httpsRedirect(new Request('http://zapiszprzepis.pl/', { method: 'HEAD' }), SITE_URL)?.status).toBe(301)
     expect(httpsRedirect(new Request('http://zapiszprzepis.pl/login', { method: 'POST' }), SITE_URL)?.status).toBe(308)
