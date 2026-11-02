@@ -10,6 +10,8 @@ import {
   RECIPE_FILTERS,
 } from '@/lib/staff/recipes'
 import { categoryLabel } from '@/lib/recipe-categories'
+import { coverImageSrc } from '@/lib/recipe-image-archive'
+import Image from 'next/image'
 import { Banner, buttonClass, buttonOutlineClass, fieldClass, formatWhen, PageTitle } from '../ui'
 import { restoreRecipe } from './actions'
 
@@ -82,6 +84,9 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
             <caption className="sr-only">Przepisy, od najnowszych</caption>
             <thead>
               <tr className="border-b-2 border-border-card-2">
+                <th scope="col" className="py-2 pr-4">
+                  <span className="sr-only">Zdjęcie</span>
+                </th>
                 <th scope="col" className="py-2 pr-4">Przepis</th>
                 <th scope="col" className="py-2 pr-4">Autor</th>
                 <th scope="col" className="py-2 pr-4">Kategoria</th>
@@ -91,24 +96,41 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
               </tr>
             </thead>
             <tbody>
-              {page.recipes.map((r) => (
-                <tr key={r.id} className="border-b border-border-card">
-                  <td className="py-2 pr-4">
-                    <Link
-                      href={`/admin/przepisy/${r.id}`}
-                      className="min-h-touch inline-flex items-center font-semibold underline underline-offset-4"
-                    >
-                      {r.title || r.slug}
-                    </Link>
-                    <span className="block break-all text-ink-soft">#{r.id} · {r.slug}</span>
-                  </td>
-                  <td className="py-2 pr-4">{r.ownerUsername ? `@${r.ownerUsername}` : '—'}</td>
-                  <td className="py-2 pr-4">{categoryLabel(r.category)}</td>
-                  <td className="py-2 pr-4">{formatWhen(r.createdAt)}</td>
-                  <td className="py-2 pr-4 text-right">{r.favoriteCount}</td>
-                  <td className="py-2">{r.hiddenAt ? <strong className="text-danger">Ukryty</strong> : 'Widoczny'}</td>
-                </tr>
-              ))}
+              {page.recipes.map((r) => {
+                const cover = coverImageSrc(r.imageUrl)
+                return (
+                  <tr key={r.id} className="border-b border-border-card">
+                    <td className="py-2 pr-4">
+                      {cover ? (
+                        <Image
+                          src={cover}
+                          alt=""
+                          width={96}
+                          height={72}
+                          sizes="96px"
+                          className="h-[72px] w-24 rounded-tile object-cover"
+                        />
+                      ) : (
+                        <span aria-hidden="true" className="block h-[72px] w-24 rounded-tile bg-border-card" />
+                      )}
+                    </td>
+                    <td className="py-2 pr-4">
+                      <Link
+                        href={`/admin/przepisy/${r.id}`}
+                        className="min-h-touch inline-flex items-center font-semibold underline underline-offset-4"
+                      >
+                        {r.title || r.slug}
+                      </Link>
+                      <span className="block break-all text-ink-soft">#{r.id} · {r.slug}</span>
+                    </td>
+                    <td className="py-2 pr-4">{r.ownerUsername ? `@${r.ownerUsername}` : '—'}</td>
+                    <td className="py-2 pr-4">{categoryLabel(r.category)}</td>
+                    <td className="py-2 pr-4">{formatWhen(r.createdAt)}</td>
+                    <td className="py-2 pr-4 text-right">{r.favoriteCount}</td>
+                    <td className="py-2">{r.hiddenAt ? <strong className="text-danger">Ukryty</strong> : 'Widoczny'}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
