@@ -1,0 +1,77 @@
+# Pre-merge check for every PR (and for master after the merge). Spec:
+# .ai/specs/2026-11-02-ci-pr-gate.md (#375).
+#
+# It runs the validation gate from SDLC.md, then builds the Worker exactly as
+# Workers Builds would and checks its upload size against the free-plan limit.
+# Deploying stays with Workers Builds on master; nothing here deploys.
+#
+# No production secrets: the workflow reads no `secrets.*`, and the Worker build
+# gets a placeholder Supabase project (nothing listening), so CI never reaches
+# the production database. The e2e and reflow suites are not run here: they
+# need a non-production database (E03).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # A new push to a PR supersedes the run in flight; master runs always finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+  WRANGLER_SEND_METRICS: 'false'
+
+jobs:
+  gate:
+    name: Typecheck, lint, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      # Version comes from the "packageManager" field in package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+
+  worker:
+    name: Worker build and size
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # src/lib/env.ts requires both at build time. A placeholder project keeps the
+      # build off the production database (the sitemap falls back to static entries).
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: https://zapiszprzepis.pl
+      # Same value as production (wrangler.jsonc), so the bundle that is measured
+      # keeps the analytics client code that production ships.
+      NEXT_PUBLIC_USAGE_ANALYTICS: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: OpenNext build
+        run: pnpm exec opennextjs-cloudflare build
+      # `wrangler deploy --dry-run` reports the gzipped upload size without a
+      # Cloudflare login; the script fails above its budget (2900 KiB, about 5 %
+      # under the 3072 KiB free-plan limit).
+      - name: Worker size check
+        run: pnpm measure:worker
