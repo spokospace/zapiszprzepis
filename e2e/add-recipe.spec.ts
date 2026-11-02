@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { dbWritesAllowed, DB_WRITES_SKIP_REASON } from './db-writes'
 
 test.describe('Add recipe form', () => {
   test.beforeEach(async ({ page }) => {
@@ -19,6 +20,8 @@ test.describe('Add recipe form', () => {
   })
 
   test('accepts valid URL and shows success toast', async ({ page }) => {
+    // Submitting a valid URL writes a recipe_shares row and starts an Inngest job.
+    test.skip(!dbWritesAllowed(process.env), DB_WRITES_SKIP_REASON)
     await page.getByLabel('URL przepisu').fill('https://example.com/przepis-testowy')
     await page.getByRole('button', { name: 'Dodaj przepis' }).click()
     await page.waitForURL('/recipes?shared=1')
