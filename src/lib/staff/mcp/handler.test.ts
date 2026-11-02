@@ -265,6 +265,22 @@ describe('mcp tools/call: reads', () => {
     expect(rpc).toHaveBeenCalledWith('staff_audit', expect.objectContaining({ p_actor: MOD, p_via: 'mcp', p_token_id: 2, p_operation: 'list', p_after: { outcome: 'read' } }))
   })
 
+  it('serves the usage summary to an admin as analytics_get, passing the window as p_days', async () => {
+    const summary = { days: 30, since: '2026-10-04', categories: [], recipes: [], orphan_views: 0, features: [] }
+    const { service, rpc } = makeService(TOKENS, { admin_usage_summary_as: { ok: true, data: summary } })
+    const r = await result(await handleMcp(post(call('analytics_get', { days: 30 })), service))
+    expect(r.isError).toBe(false)
+    expect(JSON.parse(text(r))).toEqual(summary)
+    expect(rpc).toHaveBeenCalledWith('admin_usage_summary_as', { p_actor: ADMIN, p_days: 30 })
+  })
+
+  it('refuses an out-of-range analytics window before calling the database', async () => {
+    const { service, rpc } = makeService(TOKENS)
+    const r = await result(await handleMcp(post(call('analytics_get', { days: 400 })), service))
+    expect(r.isError).toBe(true)
+    expect(rpc).not.toHaveBeenCalledWith('admin_usage_summary_as', expect.anything())
+  })
+
   it('serves the Search Console summary to an admin as search_get, passing the window as p_days', async () => {
     const summary = { days: 28, since: '2026-10-06', last_day: null, queries: [], pages: [] }
     const { service, rpc } = makeService(TOKENS, { admin_search_summary_as: { ok: true, data: summary } })

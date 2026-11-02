@@ -3,6 +3,7 @@ import { finishImportRetry } from './imports'
 import type { ReadTool, ToolArg, WriteTool } from './mcp/types'
 import type { StaffPermission } from './permissions'
 import { finishRecipeMerge, finishRecipeSlug } from './recipe-finish'
+import { MAX_USAGE_DAYS } from './usage'
 
 /**
  * One thing staff can do to a resource. The panel and (Phase 4) the MCP are both
@@ -282,6 +283,16 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
     path: '/admin/statystyki',
     permission: 'analytics.read',
     operations: [],
+    mcp: {
+      get: {
+        description:
+          'Anonymous usage counters for the last N days (Warsaw days, today included): category views with the number of public recipes per category, the 20 most viewed public recipes, feature counts (timer_start, print, favorite_add) and orphan_views (views of slugs that no longer match a public recipe). Counts are page events, not unique visitors; empty while collection is switched off.',
+        rpc: 'admin_usage_summary_as',
+        args: [
+          { name: 'days', param: 'p_days', type: 'integer', min: 1, max: MAX_USAGE_DAYS, description: `Window length in days, today included (1-${MAX_USAGE_DAYS}, default 7).` },
+        ],
+      },
+    },
   },
   {
     name: 'search',
