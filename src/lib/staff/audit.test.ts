@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { AUDIT_PAGE_SIZE, describePayload, listAudit, mapAuditRow, parseAuditFilters, sanitizePayload } from './audit'
+import { AUDIT_PAGE_SIZE, AUDIT_RESOURCES, describePayload, listAudit, mapAuditRow, parseAuditFilters, sanitizePayload } from './audit'
 
 const ACTOR = '3f2b8a52-5b0c-4d8e-9a55-0c1d2e3f4a5b'
 
@@ -86,5 +86,13 @@ describe('listAudit', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const rpc = vi.fn(async () => ({ data: null, error: { message: 'forbidden' } }))
     expect(await listAudit({ rpc } as never, { resource: null, actor: null, from: null, to: null, beforeId: null })).toBeNull()
+  })
+})
+
+describe('AUDIT_RESOURCES', () => {
+  it('offers resources that can change something and leaves out read-only ones', () => {
+    expect(AUDIT_RESOURCES).toContain('recipes')
+    expect(AUDIT_RESOURCES).not.toContain('analytics')
+    expect(AUDIT_RESOURCES).not.toContain('audit')
   })
 })

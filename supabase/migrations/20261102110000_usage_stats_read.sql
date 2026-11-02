@@ -30,11 +30,12 @@ set search_path = ''
 as $$
 declare
   n integer := greatest(1, least(coalesce(p_days, 7), 366));
-  since date := (now() at time zone 'Europe/Warsaw')::date - (greatest(1, least(coalesce(p_days, 7), 366)) - 1);
+  since date;
 begin
   if not public.staff_can(p_actor, 'analytics.read') then
     raise exception 'forbidden' using errcode = '42501';
   end if;
+  since := (now() at time zone 'Europe/Warsaw')::date - (n - 1);
 
   return jsonb_build_object(
     'days', n,
@@ -101,6 +102,31 @@ revoke all on function public.admin_usage_summary(integer) from public, anon, au
 grant execute on function public.admin_usage_summary_as(uuid, integer) to service_role;
 grant execute on function public.admin_usage_summary(integer) to authenticated;
 
+-- ── Assertions ──────────────────────────────────────────────────────────────
+create or replace function public.assert_admin_usage_grants()
+returns void
+language plpgsql
+stable
+set search_path = ''
+as $$
+begin
+  if has_function_privilege('anon', 'public.admin_usage_summary_as(uuid,integer)', 'execute')
+     or has_function_privilege('authenticated', 'public.admin_usage_summary_as(uuid,integer)', 'execute') then
+    raise exception 'admin usage grant check: admin_usage_summary_as is executable by an API role';
+  end if;
+  if has_function_privilege('anon', 'public.admin_usage_summary(integer)', 'execute') then
+    raise exception 'admin usage grant check: anon can execute admin_usage_summary';
+  end if;
+  if not has_function_privilege('authenticated', 'public.admin_usage_summary(integer)', 'execute') then
+    raise exception 'admin usage grant check: authenticated cannot execute admin_usage_summary';
+  end if;
+end;
+$$;
+
+revoke all on function public.assert_admin_usage_grants() from public, anon, authenticated;
+
+select public.assert_admin_usage_grants();
+
 -- ── Down (manual, owner-run) ────────────────────────────────────────────────
--- drop function public.admin_usage_summary(integer), public.admin_usage_summary_as(uuid, integer);
+-- drop function public.assert_admin_usage_grants(),public.admin_usage_summary(integer), public.admin_usage_summary_as(uuid, integer);
 -- delete from public.staff_role_permissions where permission = 'analytics.read';

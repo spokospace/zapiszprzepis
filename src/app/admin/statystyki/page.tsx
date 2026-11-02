@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { categoryLabel } from '@/lib/recipe-categories'
 import { requirePermission } from '@/lib/staff/context'
 import {
   FEATURE_EVENTS,
@@ -40,7 +42,7 @@ function Window({ summary }: { summary: UsageSummary }) {
                 <tbody>
                   {summary.categories.map((c) => (
                     <tr key={c.subject} className="border-b border-border-card">
-                      <td className="py-2 pr-4">{c.subject}</td>
+                      <td className="py-2 pr-4">{categoryLabel(c.subject)}</td>
                       <td className="py-2 pr-4 text-right">{formatCount(c.views)}</td>
                       <td className="py-2 text-right">{formatCount(c.recipes)}</td>
                     </tr>
@@ -86,9 +88,9 @@ function Window({ summary }: { summary: UsageSummary }) {
                   {summary.recipes.map((r) => (
                     <tr key={r.slug} className="border-b border-border-card">
                       <td className="py-2 pr-4 break-words">
-                        <a href={`/przepis/${r.slug}`} className="underline underline-offset-4">
+                        <Link href={`/przepis/${r.slug}`} className="underline underline-offset-4">
                           {r.title}
-                        </a>
+                        </Link>
                       </td>
                       <td className="py-2 text-right">{formatCount(r.views)}</td>
                     </tr>
