@@ -21,6 +21,9 @@
  * OpenNext's handler resizes through the IMAGES binding but caches nothing. The
  * logic lives in src/lib/image-cache.ts.
  *
+ * Before anything else, a plain-HTTP request to the site host is redirected to HTTPS
+ * (#645, src/lib/https-redirect.ts).
+ *
  * The jobs themselves live in src/lib/worker-cron.ts so they can be typechecked and
  * tested. This file is excluded from tsconfig: `./.open-next/worker.js` only exists
  * after a build, so nothing here can be, and it is kept as thin as possible.
@@ -28,6 +31,7 @@
 import handler from './.open-next/worker.js'
 import { backupToR2, keepDatabaseAwake, syncSearchConsole, type CronEnv } from './src/lib/worker-cron'
 import { serveImage } from './src/lib/image-cache'
+import { httpsRedirect } from './src/lib/https-redirect'
 
 const KEEP_ALIVE_CRON = '0 4 * * *'
 const BACKUP_CRON = '30 3 * * *'
@@ -40,13 +44,15 @@ type ExecutionCtx = {
   waitUntil(promise: Promise<unknown>): void
 }
 
-type FetchEnv = { NEXT_PUBLIC_SUPABASE_URL?: string }
+type FetchEnv = { NEXT_PUBLIC_SUPABASE_URL?: string; NEXT_PUBLIC_SITE_URL?: string }
 
 // Cloudflare's default Cache API store (not in the DOM lib types).
 declare const caches: { default: Parameters<typeof serveImage>[2] }
 
 const worker = {
   async fetch(request: Request, env: FetchEnv, ctx: ExecutionCtx): Promise<Response> {
+    const toHttps = httpsRedirect(request, env.NEXT_PUBLIC_SITE_URL)
+    if (toHttps) return toHttps
     const { pathname } = new URL(request.url)
     if (request.method === 'GET' && pathname === '/_next/image') {
       return serveImage(
