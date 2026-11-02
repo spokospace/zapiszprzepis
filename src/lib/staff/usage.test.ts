@@ -1,7 +1,51 @@
 import { describe, it, expect, vi } from 'vitest'
-import { formatCount, formatDay, isEmptySummary, loadUsageSummary, mapUsageSummary } from './usage'
+import {
+  formatCount,
+  formatDay,
+  isEmptySummary,
+  loadUsageSummary,
+  mapUsageSummary,
+  usageCsvFilename,
+  usageSummaryCsv,
+  type UsageSummary,
+} from './usage'
 import { parsePermissions } from './permissions'
 import { visibleResources } from './registry'
+
+describe('usageSummaryCsv', () => {
+  const summary: UsageSummary = {
+    days: 30,
+    since: '2026-10-04',
+    categories: [{ subject: 'zupy', views: 12, recipes: 30 }],
+    recipes: [
+      { slug: 'rosol', title: 'Rosół; "babci"', views: 9 },
+      { slug: 'formula', title: '=HYPERLINK("x")', views: 2 },
+    ],
+    orphanViews: 4,
+    features: { timer_start: 5, print: 3, favorite_add: 0 },
+  }
+  const lines = () => usageSummaryCsv(summary).replace(/^﻿/, '').trimEnd().split('\r\n')
+
+  it('starts with a BOM and a header, one row per category, recipe, feature and the orphan total', () => {
+    const csv = usageSummaryCsv(summary)
+    expect(csv.startsWith('﻿sekcja;klucz;nazwa;liczba;przepisow_w_kategorii\r\n')).toBe(true)
+    expect(lines()).toEqual([
+      'sekcja;klucz;nazwa;liczba;przepisow_w_kategorii',
+      'kategoria;zupy;Zupy;12;30',
+      'przepis;rosol;"Rosół; ""babci""";9;',
+      `przepis;formula;"'=HYPERLINK(""x"")";2;`,
+      'funkcja;timer_start;Uruchomienia minutnika;5;',
+      'funkcja;print;Wydruki przepisu;3;',
+      'funkcja;favorite_add;Dodania do ulubionych;0;',
+      'inne;orphan_views;Odsłony przepisów, których już nie ma pod tym adresem;4;',
+    ])
+  })
+
+  it('names the file after the window and its first day', () => {
+    expect(usageCsvFilename(summary)).toBe('statystyki-30-dni-od-2026-10-04.csv')
+    expect(usageCsvFilename({ ...summary, since: 'x"; evil' })).toBe('statystyki-30-dni-od-brak-daty.csv')
+  })
+})
 
 const doc = {
   days: 7,

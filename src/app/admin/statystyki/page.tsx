@@ -14,14 +14,24 @@ import {
 import { PageTitle } from '../ui'
 
 function Window({ summary }: { summary: UsageSummary }) {
+  const empty = isEmptySummary(summary)
   return (
     <section aria-labelledby={`okno-${summary.days}`} className="mb-10">
       <h2 id={`okno-${summary.days}`} className="mb-1 text-xl font-bold">
         Ostatnie {summary.days} dni
       </h2>
       <p className="mb-4 text-ink-soft">od {formatDay(summary.since)}</p>
+      {!empty && (
+        <a
+          href={`/admin/statystyki/csv?dni=${summary.days}`}
+          download
+          className="mb-4 inline-flex min-h-12 items-center underline underline-offset-4"
+        >
+          Pobierz CSV (ostatnie {summary.days} dni)
+        </a>
+      )}
 
-      {isEmptySummary(summary) ? (
+      {empty ? (
         <p>Brak danych w tym okresie.</p>
       ) : (
         <div className="grid gap-8 lg:grid-cols-2">
