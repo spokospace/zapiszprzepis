@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { track } from '@/lib/analytics/track'
 import {
   TIMERS_STORAGE_KEY,
   endTimer,
@@ -130,6 +131,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     const current = Date.now()
     setNow(current)
     update((state) => startTimer(state, { id: newId(), ...timer }, minutes * 60_000, current))
+    if (timer.recipeSlug) track('timer_start', timer.recipeSlug)
   }, [])
 
   const pause = useCallback((id: string) => {
