@@ -15,7 +15,7 @@
     "risk": ["risk-low", "risk-medium", "risk-high"]
   },
   "qaGate": false,
-  "ci": { "maxWaitMinutes": 15 },
+  "ci": { "maxWaitMinutes": 20 },
   "engine": { "loopStepThreshold": 20, "executorTier": "standard", "stepReview": "final" },
   "paths": {
     "runs": ".ai/runs",

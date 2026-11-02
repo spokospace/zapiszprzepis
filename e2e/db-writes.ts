@@ -3,8 +3,11 @@
 // recipe creates a `recipe_shares` row and starts a real Inngest job — may run only
 // against another project, and only when asked to (#375, audit A8).
 //
-// Opt in with E2E_DB_WRITES=1 while the dev server points at a non-production
-// project (a separate test database is planned in E03).
+// Opt in with E2E_DB_WRITES=1 and NEXT_PUBLIC_SUPABASE_URL (plus its anon key) set to a
+// non-production project in the shell that runs Playwright. With that flag Playwright
+// starts its own dev server from this environment instead of reusing one already
+// listening (playwright.config.ts). A separate test database is planned in E03.
+// src/lib/e2e-db-writes.test.ts fails when a test submits a recipe without this guard.
 
 /** Host of the production Supabase project (NEXT_PUBLIC_SUPABASE_URL in wrangler.jsonc). */
 export const PRODUCTION_SUPABASE_HOST = 'wvrlgddgdddwmgzbvtij.supabase.co'

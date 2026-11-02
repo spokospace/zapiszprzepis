@@ -21,8 +21,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  # A new push to a PR supersedes the run in flight; master runs always finish.
+  # One group per PR: a new push supersedes the run in flight. Every other run
+  # (master, manual) gets its own group per commit, so none is cancelled or
+  # dropped while queued behind a newer one.
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -33,7 +35,9 @@ jobs:
   gate:
     name: Typecheck, lint, unit tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A run takes about 1.5 minutes. Keep both timeouts under ci.maxWaitMinutes
+    # (.ai/agentic.config.json), so a stuck job ends before the merge skills stop waiting.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       # Version comes from the "packageManager" field in package.json.
@@ -50,7 +54,7 @@ jobs:
   worker:
     name: Worker build and size
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     env:
       # src/lib/env.ts requires both at build time. A placeholder project keeps the
       # build off the production database (the sitemap falls back to static entries).

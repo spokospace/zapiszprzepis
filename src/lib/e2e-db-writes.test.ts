@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { dbWritesAllowed, PRODUCTION_SUPABASE_HOST } from '../../e2e/db-writes'
 
@@ -33,6 +34,80 @@ describe('dbWritesAllowed', () => {
   })
 })
 
+// --- Static guard: every e2e test that submits a recipe must call the guard first. ---
+
+/** Labels of the add-recipe URL fields (/recipes and /dodaj). */
+const RECIPE_URL_FIELD = /(URL|Link do) przepisu/i
+const TEST_CALLEES = new Set(['test', 'test.only', 'test.fixme', 'test.fail', 'setup'])
+
+function literalText(node: ts.Node | undefined): string | undefined {
+  return node && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) ? node.text : undefined
+}
+
+/**
+ * A call that would add a recipe: typing a web address into any field, typing a
+ * non-literal value into an add-recipe URL field, or POSTing to the /share target.
+ */
+function submitsRecipe(call: ts.CallExpression, source: ts.SourceFile): boolean {
+  if (!ts.isPropertyAccessExpression(call.expression)) return false
+  const method = call.expression.name.text
+  const arg = call.arguments[0]
+  const text = literalText(arg)
+  if (method === 'fill') {
+    if (text !== undefined) return /^https?:\/\//i.test(text.trim())
+    return RECIPE_URL_FIELD.test(call.expression.expression.getText(source))
+  }
+  if (method === 'post') return text !== undefined && text.startsWith('/share')
+  return false
+}
+
+/** The `test(...)` callback a node sits in, or undefined (a hook or a helper). */
+function enclosingTest(node: ts.Node, source: ts.SourceFile): ts.FunctionLikeDeclaration | undefined {
+  for (let current = node.parent; current; current = current.parent) {
+    if (ts.isArrowFunction(current) || ts.isFunctionExpression(current)) {
+      const call = current.parent
+      if (call && ts.isCallExpression(call) && TEST_CALLEES.has(call.expression.getText(source))) return current
+    }
+  }
+  return undefined
+}
+
+/** True when the test body skips itself on `!dbWritesAllowed(...)` before the write. */
+function guarded(body: ts.FunctionLikeDeclaration, before: number, source: ts.SourceFile): boolean {
+  let found = false
+  const visit = (node: ts.Node) => {
+    if (found || node.getStart(source) >= before) return
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.getText(source) === 'test.skip' &&
+      node.arguments[0]?.getText(source).replace(/\s/g, '').startsWith('!dbWritesAllowed(')
+    ) {
+      found = true
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  if (body.body) visit(body.body)
+  return found
+}
+
+/** Line numbers of recipe submissions that are not behind the guard (comments never count). */
+function unguardedSubmissions(name: string, code: string): number[] {
+  const source = ts.createSourceFile(name, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  const lines: number[] = []
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && submitsRecipe(node, source)) {
+      const test = enclosingTest(node, source)
+      if (!test || !guarded(test, node.getStart(source), source)) {
+        lines.push(source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1)
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(source)
+  return lines
+}
+
 describe('e2e suite and the production database', () => {
   it('knows the production host that wrangler.jsonc deploys with', () => {
     const wrangler = readFileSync(new URL('wrangler.jsonc', ROOT), 'utf8')
@@ -41,16 +116,45 @@ describe('e2e suite and the production database', () => {
     expect(new URL(url!).hostname).toBe(PRODUCTION_SUPABASE_HOST)
   })
 
-  it('guards every spec that submits a recipe URL', () => {
-    const specs = readdirSync(E2E_DIR).filter((name) => name.endsWith('.spec.ts'))
-    const submitting = specs.filter((name) =>
-      /getByLabel\(\s*['"]URL przepisu['"]\s*\)\s*\.fill\(\s*['"]https?:/.test(readFileSync(E2E_DIR + name, 'utf8')),
+  it('guards every e2e test that submits a recipe', () => {
+    const files = readdirSync(E2E_DIR).filter((name) => /\.(spec|setup)\.ts$/.test(name))
+    expect(files).toContain('add-recipe.spec.ts')
+    const offenders = files.flatMap((name) =>
+      unguardedSubmissions(name, readFileSync(E2E_DIR + name, 'utf8')).map((line) => `e2e/${name}:${line}`),
     )
-    expect(submitting).toContain('add-recipe.spec.ts')
-    for (const name of submitting) {
-      expect(readFileSync(E2E_DIR + name, 'utf8'), `${name} submits a recipe URL without the dbWritesAllowed guard`).toMatch(
-        /test\.skip\(\s*!dbWritesAllowed\(/,
-      )
-    }
+    expect(offenders, 'add `test.skip(!dbWritesAllowed(process.env), DB_WRITES_SKIP_REASON)` first in each test').toEqual([])
+  })
+
+  describe('the scan itself', () => {
+    const wrap = (body: string) => `test('t', async ({ page }) => {\n${body}\n})\n`
+    const GUARD = 'test.skip(!dbWritesAllowed(process.env), DB_WRITES_SKIP_REASON)'
+
+    it('accepts a guarded submission and ignores non-URL input', () => {
+      expect(unguardedSubmissions('a.ts', wrap(`${GUARD}\nawait page.getByLabel('URL przepisu').fill('https://x.pl/a')`))).toEqual([])
+      expect(unguardedSubmissions('a.ts', wrap(`await page.getByLabel('URL przepisu').fill('to-nie-jest-url')`))).toEqual([])
+      expect(unguardedSubmissions('a.ts', wrap(`await page.locator('#email').fill(email)`))).toEqual([])
+    })
+
+    it('flags a second, unguarded test in a file that has a guarded one', () => {
+      const code = wrap(`${GUARD}\nawait page.getByLabel('URL przepisu').fill('https://x.pl/a')`) +
+        wrap(`await page.getByLabel('URL przepisu').fill('https://youtube.com/watch?v=1')`)
+      expect(unguardedSubmissions('a.ts', code)).toEqual([6])
+    })
+
+    it('does not count a commented-out guard or a guard placed after the write', () => {
+      expect(unguardedSubmissions('a.ts', wrap(`// ${GUARD}\nawait page.getByLabel('URL przepisu').fill('https://x.pl/a')`))).toEqual([3])
+      expect(unguardedSubmissions('a.ts', wrap(`await page.getByLabel('URL przepisu').fill('https://x.pl/a')\n${GUARD}`))).toEqual([2])
+    })
+
+    it('flags the /dodaj field with a variable URL, any field typed a web address, and a /share POST', () => {
+      expect(unguardedSubmissions('a.ts', wrap(`await page.getByLabel('Link do przepisu').fill(url)`))).toEqual([2])
+      expect(unguardedSubmissions('a.ts', wrap('await page.getByRole("textbox").fill(`https://x.pl/a`)'))).toEqual([2])
+      expect(unguardedSubmissions('a.ts', wrap(`await request.post('/share', { form: { url: 'x' } })`))).toEqual([2])
+    })
+
+    it('flags a submission outside any test (a hook or a helper)', () => {
+      const code = `test.beforeEach(async ({ page }) => {\n  await page.getByLabel('URL przepisu').fill('https://x.pl/a')\n})\n`
+      expect(unguardedSubmissions('a.ts', code)).toEqual([2])
+    })
   })
 })
