@@ -16,6 +16,7 @@ export const STAFF_PERMISSIONS = [
   'access.manage',
   'roles.manage',
   'audit.read',
+  'analytics.read',
   'recipes.read',
   'recipes.hide',
   'recipes.delete',

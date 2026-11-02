@@ -276,6 +276,13 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
       },
     },
   },
+  {
+    name: 'analytics',
+    label: 'Statystyki',
+    path: '/admin/statystyki',
+    permission: 'analytics.read',
+    operations: [],
+  },
 ]
 
 /** The resources this staff member may open, in navigation order. */
