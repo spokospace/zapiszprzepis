@@ -83,6 +83,9 @@ export default defineConfig({
   webServer: {
     command: `pnpm exec next dev -p ${port}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    // A run that may write to the database (E2E_DB_WRITES=1, see e2e/db-writes.ts)
+    // starts its own server with this run's environment. A server already listening
+    // was likely started from .env.local, i.e. against production, so a busy port fails the run.
+    reuseExistingServer: !process.env.CI && process.env.E2E_DB_WRITES !== '1',
   },
 })
