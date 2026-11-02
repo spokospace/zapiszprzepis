@@ -1,6 +1,7 @@
 'use client'
 
 import { Printer } from 'lucide-react'
+import { track } from '@/lib/analytics/track'
 
 /**
  * "Drukuj" in the recipe actions' second row, beside "Udostępnij" (A9). A quiet text
@@ -10,11 +11,14 @@ import { Printer } from 'lucide-react'
  * one good universal printout (owner decision 2026-10-25). The button itself is
  * `print:hidden` via the row it sits in.
  */
-export function PrintButton() {
+export function PrintButton({ recipeSlug }: { recipeSlug: string }) {
   return (
     <button
       type="button"
-      onClick={() => window.print()}
+      onClick={() => {
+        track('print', recipeSlug)
+        window.print()
+      }}
       className="inline-flex min-h-[48px] items-center gap-2 rounded-pill px-3 text-[17px] font-bold text-ink hover:bg-surface-3"
     >
       <Printer aria-hidden="true" className="h-5 w-5 shrink-0" />

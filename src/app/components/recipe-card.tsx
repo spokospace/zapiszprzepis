@@ -110,6 +110,7 @@ export function RecipeCard({
           <div className="absolute top-2 right-2 z-10">
             <FavoriteButton
               recipeId={favorite.recipeId}
+              recipeSlug={slug}
               initialFavorited={favorite.favorited}
               isAuthenticated={favorite.isAuthenticated}
               size="photo"

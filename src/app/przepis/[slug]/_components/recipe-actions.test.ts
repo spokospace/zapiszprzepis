@@ -9,6 +9,7 @@ import { RecipeActions } from './recipe-actions'
 
 const PROPS: Parameters<typeof RecipeActions>[0] = {
   recipeId: 7,
+  recipeSlug: 'zupa-krem-z-dyni',
   isFavorite: false,
   isAuthenticated: true,
   title: 'Zupa krem z dyni',

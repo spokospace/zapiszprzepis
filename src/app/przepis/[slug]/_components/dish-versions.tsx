@@ -151,6 +151,7 @@ function VersionRow({
         )}
         <FavoriteButton
           recipeId={v.id}
+          recipeSlug={v.slug}
           initialFavorited={favoriteIds?.has(v.id) ?? false}
           isAuthenticated={favoriteIds !== null}
           size="photo"

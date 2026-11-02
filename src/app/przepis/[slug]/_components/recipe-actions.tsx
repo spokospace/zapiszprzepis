@@ -5,6 +5,7 @@ import { CookingMode } from './cooking-mode'
 
 interface RecipeActionsProps {
   recipeId: number
+  recipeSlug: string
   isFavorite: boolean
   isAuthenticated: boolean
   title: string
@@ -24,7 +25,7 @@ interface RecipeActionsProps {
  * through the shared useStepPhotos preference. The whole block is `print:hidden` — none of
  * it belongs on paper.
  */
-export function RecipeActions({ recipeId, isFavorite, isAuthenticated, title, shareUrl, steps, stepImages }: RecipeActionsProps) {
+export function RecipeActions({ recipeId, recipeSlug, isFavorite, isAuthenticated, title, shareUrl, steps, stepImages }: RecipeActionsProps) {
   const hasSteps = steps.length > 0
   return (
     // No bottom margin: the header's own mb-8 is the gap to „Składniki” (#538).
@@ -38,11 +39,11 @@ export function RecipeActions({ recipeId, isFavorite, isAuthenticated, title, sh
           </div>
         )}
         <div className={hasSteps ? 'min-w-0 flex-1' : 'w-full'}>
-          <FavoriteButton recipeId={recipeId} initialFavorited={isFavorite} isAuthenticated={isAuthenticated} />
+          <FavoriteButton recipeId={recipeId} recipeSlug={recipeSlug} initialFavorited={isFavorite} isAuthenticated={isAuthenticated} />
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-1">
-        <PrintButton />
+        <PrintButton recipeSlug={recipeSlug} />
         <ShareButton title={title} url={shareUrl} />
       </div>
     </div>
