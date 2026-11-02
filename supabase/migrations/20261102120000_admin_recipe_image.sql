@@ -4,7 +4,16 @@
 -- so they pick the column up without changes. image_url is only ever a Supabase Storage URL
 -- or null (see run-extract-recipe.ts), so exposing it to staff leaks nothing new.
 
-alter type public.admin_recipe_row add attribute if not exists image_url text;
+-- ALTER TYPE ... ADD ATTRIBUTE has no IF NOT EXISTS, so guard it to keep the file re-runnable.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.attributes
+    where udt_schema = 'public' and udt_name = 'admin_recipe_row' and attribute_name = 'image_url'
+  ) then
+    alter type public.admin_recipe_row add attribute image_url text;
+  end if;
+end $$;
 
 -- Same body as 20261029100000_admin_recipe_hiding.sql, plus r.image_url as the last column.
 create or replace function public.admin_recipe_rows(
