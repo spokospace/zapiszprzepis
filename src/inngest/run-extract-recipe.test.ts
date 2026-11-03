@@ -2246,6 +2246,28 @@ describe('runExtractRecipe — several recipes on one page', () => {
     expect(result.images?.map((job) => job.recipeId)).toEqual([42, 43])
   })
 
+  it('gives each dish the photo from its own section, and none when the URL is not on the page', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queue('recipes', { data: { id: 43 }, error: null })
+    const radish = 'https://cdn.example.com/radish.jpg'
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({
+        firecrawlMarkdown: `Przepis na rzodkiew i smażaniki. ![](${radish}) `.repeat(30),
+        openaiContent: answer(
+          { ...dish('Sałatka z rzodkwi'), dishImage: radish },
+          { ...dish('Smażaniki'), dishImage: 'https://cdn.example.com/invented.jpg' },
+        ),
+      }),
+      supabase: mock.supabase as any,
+      deferImages: true,
+    })
+
+    expect(result.images?.map((job) => job.cover)).toEqual([radish, undefined])
+    expect(result.images?.map((job) => job.gallery)).toEqual([[], []])
+  })
+
   it('keeps the variants and ingredient sections of one dish in one entry', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 42 }, error: null })
