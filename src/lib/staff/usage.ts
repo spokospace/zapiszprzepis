@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { categoryLabel } from '@/lib/recipe-categories'
+import { addDays, byDay, count, fillDays, type DayValue } from './series'
 
 /** The windows the admin screen shows. */
 export const USAGE_WINDOWS = [7, 30] as const
@@ -26,11 +27,8 @@ export interface UsageSummary {
   orphanViews: number
   /** Always one entry per feature event, zero when nothing was counted. */
   features: Record<FeatureEvent, number>
-}
-
-const count = (v: unknown): number => {
-  const n = Number(v)
-  return Number.isFinite(n) && n >= 0 ? n : 0
+  /** One entry per day of the window, oldest first; zero on days with nothing counted. */
+  daily: { recipeViews: DayValue[]; categoryViews: DayValue[] }
 }
 
 /** The `admin_usage_summary` document, reduced to what the screen shows; null when it is not that document. */
@@ -46,8 +44,14 @@ export function mapUsageSummary(raw: unknown): UsageSummary | null {
     if ((FEATURE_EVENTS as readonly unknown[]).includes(f.event)) features[f.event as FeatureEvent] = count(f.count)
   }
 
+  const days = Number(r.days)
+  const daily = list(r.daily)
+  const until = addDays(r.since, days - 1) ?? ''
+  const eventSeries = (event: string) =>
+    fillDays(r.since as string, until, byDay(daily.filter((d) => d.event === event), (d) => count(d.count)))
+
   return {
-    days: Number(r.days),
+    days,
     since: r.since,
     categories: list(r.categories)
       .filter((c) => typeof c.subject === 'string')
@@ -57,6 +61,7 @@ export function mapUsageSummary(raw: unknown): UsageSummary | null {
       .map((c) => ({ slug: c.slug as string, title: typeof c.title === 'string' ? c.title : (c.slug as string), views: count(c.views) })),
     orphanViews: count(r.orphan_views),
     features,
+    daily: { recipeViews: eventSeries('recipe_view'), categoryViews: eventSeries('category_view') },
   }
 }
 
