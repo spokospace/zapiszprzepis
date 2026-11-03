@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { byDay, count, fillDays, type DayValue } from './series'
 
 /** The windows the admin screen shows. 28 days matches Search Console's own default. */
 export const SEARCH_WINDOWS = [7, 28] as const
@@ -17,11 +18,8 @@ export interface SearchSummary {
   lastDay: string | null
   queries: (SearchRow & { query: string })[]
   pages: (SearchRow & { path: string; title: string | null })[]
-}
-
-const count = (v: unknown): number => {
-  const n = Number(v)
-  return Number.isFinite(n) && n >= 0 ? n : 0
+  /** Site totals per day of the window, oldest first, up to the last synced day (Google lags 2-3 days). */
+  daily: { clicks: DayValue[]; impressions: DayValue[] }
 }
 
 const metrics = (r: Record<string, unknown>): SearchRow => ({
@@ -39,16 +37,27 @@ export function mapSearchSummary(raw: unknown): SearchSummary | null {
   const list = (v: unknown): Record<string, unknown>[] =>
     Array.isArray(v) ? v.filter((x): x is Record<string, unknown> => typeof x === 'object' && x !== null) : []
 
+  const days = Number(r.days)
+  const lastDay = typeof r.last_day === 'string' ? r.last_day : null
+  const daily = list(r.daily)
+  // Only synced days, from the first in the window (the RPC orders them) to the last:
+  // days without data are left off rather than drawn as zero. A synced day always has
+  // rows, even with no clicks.
+  const firstDay = typeof daily[0]?.day === 'string' ? daily[0].day : null
+  const series = (key: 'clicks' | 'impressions') =>
+    lastDay && firstDay ? fillDays(firstDay, lastDay, byDay(daily, (d) => count(d[key]))) : []
+
   return {
-    days: Number(r.days),
+    days,
     since: r.since,
-    lastDay: typeof r.last_day === 'string' ? r.last_day : null,
+    lastDay,
     queries: list(r.queries)
       .filter((q) => typeof q.query === 'string')
       .map((q) => ({ query: q.query as string, ...metrics(q) })),
     pages: list(r.pages)
       .filter((p) => typeof p.path === 'string')
       .map((p) => ({ path: p.path as string, title: typeof p.title === 'string' ? p.title : null, ...metrics(p) })),
+    daily: { clicks: series('clicks'), impressions: series('impressions') },
   }
 }
 
