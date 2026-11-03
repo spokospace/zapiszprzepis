@@ -279,6 +279,8 @@ interface RecipeData {
   stepImages?: (string | null)[]
   category: string
   imageUrl?: string
+  /** The dish's own photo in a page with several dishes, as the LLM copied it from the page. */
+  dishImage?: string | null
   prepTimeMinutes?: number | null
   cookTimeMinutes?: number | null
   totalTimeMinutes?: number | null
@@ -702,6 +704,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure,
       {${foreignSource ? FOREIGN_INGREDIENT_FIELDS : ''}"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
   ],
   "steps": [{"text": "Step 1 description", "image": "image URL from the content that shows THIS step, or null"}],
+  "dishImage": "URL of the photo of THIS dish, or null",
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
   "prepTimeMinutes": integer or null,
   "cookTimeMinutes": integer or null,
@@ -725,6 +728,7 @@ Rules:
 - Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast buns (drożdżówki, jagodzianki) stay "desery", rogaliki "ciasteczka".
 - Category: salads and slaws ("sałatka", "surówka", "coleslaw") are "salatki", not "przekaski" or "inne". Home preserves are "przetwory", not "inne": jams and marmalades ("dżem", "konfitura", "powidła", "marmolada"), pickled or fermented vegetables and mushrooms ("ogórki kiszone/marynowane", "kiszona kapusta", "pikle", "grzyby marynowane", "papryka konserwowa"), and homemade ketchups, chutneys and sauces put up in jars for winter ("do słoików", "na zimę"). But a marinade made to flavour meat before cooking ("marynata do kurczaka/karkówki/mięsa/drobiu") is NOT a preserve — it is "inne", not "przetwory".
 - Category: homemade syrups, tinctures and herbal remedies made for health ("syrop na odporność/na kaszel", "mikstura na zatoki", "napar prozdrowotny") are "syropy". Everyday drinks (lemoniada, herbata, kompot, soki, koktajle) stay "napoje".
+- dishImage: on a page with several dishes, the photo that shows THIS dish: the first image inside or right after its section. Use ONLY an image URL that appears verbatim in the provided Page HTML or Page markdown, copied EXACTLY. NEVER use the page's main/header photo, a logo, an avatar, an ad or a related-recipe thumbnail. When the dish has no photo of its own, or the page gives a single dish, return null.
 - Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
 - Title names the dish the way a menu would: not a question or how-to ("Jak zrobić domowe lody?" → "Domowe lody"), no praise words ("najlepszy", "pyszny", "idealny"), no first person ("moje", "mojej mamy") and no add-ons like "+ przepis na lukier". Proper names keep their capitals ("Prince Polo", "KFC", "Boże Narodzenie").
 - Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
@@ -981,6 +985,17 @@ Rules:
         }
       }
 
+      // A page with several dishes has one og:image for all of them (the post's
+      // header), so each dish takes the photo the LLM found in its own section,
+      // checked against the page; none found leaves the dish without a cover
+      // rather than with another dish's. Its gallery is just that cover.
+      const pageText = `${html}
+${embedHtml}
+${markdown}`
+      const dishImage = typeof recipeJSON.dishImage === 'string' ? recipeJSON.dishImage.trim() : ''
+      const cover = storable.length > 1 ? (dishImage && pageText.includes(dishImage) ? dishImage : undefined) : ogImage
+      const dishGallery = storable.length > 1 ? [] : gallery
+
       const timesEstimated = timesAreEstimated(recipeJSON)
       const estimatedTimes = estimatedTimeFields(recipeJSON)
       // The page's own JSON-LD recipeYield is read deterministically and beats the
@@ -999,7 +1014,7 @@ Rules:
         // page pairs each `![…](url)` with its step, inside the slice it reads).
         html: `${html}\n${embedHtml}\n${markdown}`,
         pageUrl: sourceUrl ?? undefined,
-        coverUrl: ogImage,
+        coverUrl: cover,
       })
 
       // Title casing, the distinguishing note and the tags, judged against the
@@ -1114,11 +1129,11 @@ Rules:
         // gains step photos from a better extraction (see storeCoverAndGallery).
         // Not with an empty gallery read through Jina, though: a degraded scrape
         // finding no photos is no sign the source lost them (#536).
-        const replace = gallery.length > 0 || !recipeReadViaReader
+        const replace = dishGallery.length > 0 || !recipeReadViaReader
         return {
           kind: 'saved',
           result: { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' },
-          job: { recipeId: refreshed.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace },
+          job: { recipeId: refreshed.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace },
         }
       }
 
@@ -1186,7 +1201,7 @@ Rules:
           recipe = data
           // The og:image, gallery and per-step photos are archived once the row
           // exists; until then image_url stays null (NoPhoto placeholder).
-          imageJob = { recipeId: data.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: false }
+          imageJob = { recipeId: data.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace: false }
           break
         } else {
           lastInsertError = error
@@ -1278,7 +1293,7 @@ Rules:
             // the existing value alone (never writes a new external link). The
             // gallery and step photos follow the same rule: archived photos replace
             // whatever is there, which is how the backfill gives old recipes them.
-            imageJob = { recipeId: existing.id, userId, cover: ogImage, gallery, stepSources: stepImageSources, replace: false }
+            imageJob = { recipeId: existing.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace: false }
 
             // Fill the dish columns only when this row was never classified (never
             // overwrite a reviewed value), the same guard as a refresh.
