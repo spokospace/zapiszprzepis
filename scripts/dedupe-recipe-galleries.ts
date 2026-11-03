@@ -15,14 +15,24 @@ import { sha256Hex } from '../src/lib/sha256'
  * NOTE: local dev points at the PRODUCTION Supabase DB — --apply writes real rows.
  */
 const PAGE = 1000
+const FETCH_TIMEOUT_MS = 15_000
+const MAX_BYTES = 10 * 1024 * 1024
 
 async function hashOfUrl(url: string): Promise<string | null> {
   try {
-    const response = await fetch(url)
-    return response.ok ? await sha256Hex(new Uint8Array(await response.arrayBuffer())) : null
+    const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    if (!response.ok) return null
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    // An unreadable photo is kept, so an oversize one is too.
+    return bytes.byteLength > MAX_BYTES ? null : await sha256Hex(bytes)
   } catch {
     return null
   }
+}
+
+/** A Postgres array literal, to match `image_urls` exactly as it was read. */
+function pgArrayLiteral(values: string[]): string {
+  return `{${values.map((v) => `"${v.replace(/(["\\])/g, '\\$1')}"`).join(',')}}`
 }
 
 async function main(): Promise<void> {
@@ -38,43 +48,67 @@ async function main(): Promise<void> {
   })
 
   let changed = 0
-  for (let from = 0; ; from += PAGE) {
+  const leftover: string[] = []
+  // Keyset pages: a fixed offset would skip rows as fixed galleries leave the filter.
+  for (let after = 0; ; ) {
     const { data, error } = await supabase
       .from('recipes')
-      .select('id, slug, image_urls')
+      .select('id, slug, image_url, image_urls')
       .not('image_urls', 'eq', '{}')
+      .gt('id', after)
       .order('id', { ascending: true })
-      .range(from, from + PAGE - 1)
+      .limit(PAGE)
     if (error) {
       console.error(`✗ Query failed: ${error.message}`)
       process.exit(1)
     }
-    for (const r of data ?? []) {
+    if (!data || data.length === 0) break
+    after = data[data.length - 1].id
+
+    for (const r of data) {
       const gallery = r.image_urls as string[]
       if (gallery.length < 2) continue
       const unique = await dedupeStoredGallery(gallery, hashOfUrl)
       if (unique.length === gallery.length) continue
 
-      // One photo left is the cover, already shown on its own.
-      const deduped = unique.length > 1 ? unique : []
-      const dropped = gallery.filter((url) => !unique.includes(url))
+      // A lone photo is dropped only when it is the cover, already shown on its own.
+      let deduped = unique
+      if (unique.length === 1) {
+        const [photoHash, coverHash] = await Promise.all([hashOfUrl(unique[0]), r.image_url ? hashOfUrl(r.image_url) : null])
+        if (photoHash != null && photoHash === coverHash) deduped = []
+      }
       changed++
-      console.log(`  #${r.id} ${r.slug}: ${gallery.length} → ${deduped.length} (drop ${dropped.length})`)
+      console.log(`  #${r.id} ${r.slug}: ${gallery.length} → ${deduped.length} (drop ${gallery.length - deduped.length})`)
       if (!apply) continue
 
-      const { error: updateError } = await supabase.from('recipes').update({ image_urls: deduped }).eq('id', r.id)
-      if (updateError) {
-        console.log(`  ✗ #${r.id}: update failed: ${updateError.message}`)
+      // Only if image_urls is still what was read: an extraction may have rewritten it since.
+      const { data: updated, error: updateError } = await supabase
+        .from('recipes')
+        .update({ image_urls: deduped })
+        .eq('id', r.id)
+        .eq('image_urls', pgArrayLiteral(gallery))
+        .select('id')
+      if (updateError || !updated?.length) {
+        console.log(`  ✗ #${r.id}: not updated (${updateError?.message ?? 'gallery changed since it was read'})`)
         continue
       }
-      // The cover is a file of its own; only files no longer referenced are removed.
-      const paths = dropped.map(extractStoragePath).filter((p): p is string => p != null)
-      await removeImages(supabase, paths, 'dedupe-recipe-galleries')
+      // Only the duplicates go; the cover's own file stays even when the gallery listed it.
+      const coverPath = r.image_url ? extractStoragePath(r.image_url) : null
+      const paths = gallery
+        .filter((url) => !deduped.includes(url))
+        .map(extractStoragePath)
+        .filter((p): p is string => p != null && p !== coverPath)
+      leftover.push(...(await removeImages(supabase, paths, 'dedupe-recipe-galleries')))
     }
-    if ((data?.length ?? 0) < PAGE) break
   }
 
-  console.log(changed === 0 ? '✓ No duplicate gallery photos.' : apply ? `\n✓ Done. Fixed ${changed}.` : `\nDry run — ${changed} recipe(s). Re-run with --apply.`)
+  if (changed === 0) console.log('✓ No duplicate gallery photos.')
+  else if (apply) console.log(`✓ Done. Fixed ${changed}.`)
+  else console.log(`Dry run — ${changed} recipe(s). Re-run with --apply.`)
+  if (leftover.length > 0) {
+    console.log(`${leftover.length} file(s) are no longer referenced but are still stored:`)
+    for (const path of leftover) console.log(`  ${path}`)
+  }
 }
 
 main().catch((err: Error) => {
