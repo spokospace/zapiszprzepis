@@ -8,6 +8,7 @@ import {
   pickGalleryImages,
   namesTheDish,
   buildGallery,
+  dedupeStoredGallery,
   coverImage,
   jsonLdImage,
   archiveGallery,
@@ -1027,5 +1028,22 @@ describe('namesTheDish', () => {
   it('does not match page chrome, or a word every recipe slug shares', () => {
     expect(isDish('https://blog.pl/wp-content/uploads/about-sm.jpg', 'Author in the kitchen')).toBe(false)
     expect(isDish('https://blog.pl/wp-content/uploads/domowe-logo.png', 'Przepis')).toBe(false)
+  })
+})
+
+describe('dedupeStoredGallery — a stored copy of the cover is dropped by content', () => {
+  const hashes: Record<string, string | null> = { cover: 'a', copy: 'a', other: 'b', broken: null }
+  const hashOf = async (url: string) => hashes[url]
+
+  it('keeps the first of equal photos, so the cover leads', async () => {
+    expect(await dedupeStoredGallery(['cover', 'other', 'copy'], hashOf)).toEqual(['cover', 'other'])
+  })
+
+  it('keeps a photo it cannot read', async () => {
+    expect(await dedupeStoredGallery(['cover', 'broken', 'copy'], hashOf)).toEqual(['cover', 'broken'])
+  })
+
+  it('returns the unique photos untouched', async () => {
+    expect(await dedupeStoredGallery(['cover', 'other'], hashOf)).toEqual(['cover', 'other'])
   })
 })

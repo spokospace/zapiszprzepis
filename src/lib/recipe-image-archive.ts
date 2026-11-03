@@ -1022,3 +1022,27 @@ export async function archiveRecipeImages(
       : []
   return { cover: archivedCover?.url ?? null, gallery: archivedGallery }
 }
+
+/**
+ * A stored gallery with each photo once, by content. Galleries archived before
+ * archiveGallery compared bytes hold the cover again as a second photo under
+ * another file name (domowy-syrop-na-odpornosc). `hashOf` returns a photo's
+ * content hash, or null when it cannot be read — such a photo is kept, since
+ * it is not proven a copy. The first of equal photos stays, so the cover leads.
+ * A caller stores a result of one photo as an empty gallery: that photo is
+ * already shown as the cover.
+ */
+export async function dedupeStoredGallery(
+  gallery: string[],
+  hashOf: (url: string) => Promise<string | null>,
+): Promise<string[]> {
+  const hashes = await Promise.all(gallery.map(hashOf))
+  const seen = new Set<string>()
+  return gallery.filter((_, i) => {
+    const hash = hashes[i]
+    if (hash == null) return true
+    if (seen.has(hash)) return false
+    seen.add(hash)
+    return true
+  })
+}
