@@ -6,6 +6,7 @@ import {
   archiveStepImages,
   buildGallery,
   coverImage,
+  findPageImage,
   jsonLdHowToStepImages,
   pickGalleryImages,
 } from '@/lib/recipe-image-archive'
@@ -992,8 +993,8 @@ Rules:
       const pageText = `${html}
 ${embedHtml}
 ${markdown}`
-      const dishImage = typeof recipeJSON.dishImage === 'string' ? recipeJSON.dishImage.trim() : ''
-      const cover = storable.length > 1 ? (dishImage && pageText.includes(dishImage) ? dishImage : undefined) : ogImage
+      const dishImage = typeof recipeJSON.dishImage === 'string' ? findPageImage(recipeJSON.dishImage, pageText) : undefined
+      const cover = storable.length > 1 ? dishImage : ogImage
       const dishGallery = storable.length > 1 ? [] : gallery
 
       const timesEstimated = timesAreEstimated(recipeJSON)
