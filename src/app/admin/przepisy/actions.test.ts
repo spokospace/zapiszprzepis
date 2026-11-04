@@ -191,8 +191,29 @@ describe('setTaxonomy', () => {
     expect(await redirectOf(setTaxonomy(form({ id: '5', category: 'zupy', tags: ['grill', 'szybkie'] })))).toBe(
       'REDIRECT /admin/przepisy/5?ok=taxonomy',
     )
-    expect(supabase.rpc).toHaveBeenCalledWith('admin_set_taxonomy', { p_recipe: 5, p_category: 'zupy', p_tags: ['grill', 'szybkie'] })
+    expect(supabase.rpc).toHaveBeenCalledWith('admin_set_taxonomy', {
+      p_recipe: 5,
+      p_category: 'zupy',
+      p_tags: ['grill', 'szybkie'],
+      p_extra_categories: [],
+    })
     expect(revalidateRecipeCaches).toHaveBeenCalledWith('zupa')
+  })
+
+  it('sends the extra categories, and refuses a third one before any call', async () => {
+    const supabase = staffWith('zupa')
+    await redirectOf(setTaxonomy(form({ id: '5', category: 'przekaski', tags: [], extra_categories: ['sniadania', 'salatki'] })))
+    expect(supabase.rpc).toHaveBeenCalledWith('admin_set_taxonomy', {
+      p_recipe: 5,
+      p_category: 'przekaski',
+      p_tags: [],
+      p_extra_categories: ['sniadania', 'salatki'],
+    })
+    vi.mocked(supabase.rpc).mockClear()
+    expect(
+      await redirectOf(setTaxonomy(form({ id: '5', category: 'przekaski', tags: [], extra_categories: ['sniadania', 'salatki', 'zupy'] }))),
+    ).toBe('REDIRECT /admin/przepisy/5?error=invalid_input')
+    expect(supabase.rpc).not.toHaveBeenCalled()
   })
 
   it('refuses a tag or category outside the closed lists before any call', async () => {

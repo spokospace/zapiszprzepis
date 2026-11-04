@@ -18,7 +18,7 @@ type Row = { slug: string; created_at: string; id: number; last_modified?: strin
  * window, then resolves to the matching slice. `undefinedColumn` makes the first
  * select that names last_modified fail like PostgREST 42703.
  */
-function makeSupabase(dataset: Row[], opts: { undefinedColumn?: boolean } = {}) {
+function makeSupabase(dataset: Row[], opts: { undefinedColumn?: boolean; orFilters?: string[] } = {}) {
   const from = (table: string) => {
     expect(table).toBe('public_recipes')
     let columns = ''
@@ -29,6 +29,10 @@ function makeSupabase(dataset: Row[], opts: { undefinedColumn?: boolean } = {}) 
         return builder
       },
       eq: () => builder,
+      or: (filter: string) => {
+        opts.orFilters?.push(filter)
+        return builder
+      },
       order: () => builder,
       range: (a: number, b: number) => {
         range = [a, b]
@@ -120,14 +124,20 @@ describe('listCanonicalRecipes', () => {
   })
 
   it('lists a category deduped oldest-wins, oldest-first', async () => {
+    const orFilters: string[] = []
     vi.mocked(createSupabaseServerClient).mockResolvedValue(
-      makeSupabase([
-        { slug: 'sernik', created_at: '2026-01-01T00:00:00Z', id: 1, title: 'Sernik (oldest)' },
-        { slug: 'sernik', created_at: '2026-02-01T00:00:00Z', id: 2, title: 'Sernik (dup)' },
-        { slug: 'szarlotka', created_at: '2026-03-01T00:00:00Z', id: 3, title: 'Szarlotka' },
-      ]) as never,
+      makeSupabase(
+        [
+          { slug: 'sernik', created_at: '2026-01-01T00:00:00Z', id: 1, title: 'Sernik (oldest)' },
+          { slug: 'sernik', created_at: '2026-02-01T00:00:00Z', id: 2, title: 'Sernik (dup)' },
+          { slug: 'szarlotka', created_at: '2026-03-01T00:00:00Z', id: 3, title: 'Szarlotka' },
+        ],
+        { orFilters },
+      ) as never,
     )
     const out = await listCanonicalRecipesByCategory('ciasta')
+    // Primary OR extra category (#689): a dish filed under another list still appears here.
+    expect(orFilters).toEqual(['category.eq.ciasta,extra_categories.cs.{ciasta}'])
     expect(out).toEqual([
       { slug: 'sernik', lastModified: '2026-01-01T00:00:00Z', title: 'Sernik (oldest)' },
       { slug: 'szarlotka', lastModified: '2026-03-01T00:00:00Z', title: 'Szarlotka' },

@@ -32,6 +32,7 @@ import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { buttonClasses } from '@/app/components/ui/button'
 import { chipClasses } from '@/app/components/ui/chip'
 import { recipesNoun } from '@/app/components/app-menu-model'
+import { whereInCategory } from '@/lib/category-membership'
 
 type Params = Promise<{ username: string }>
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>
@@ -71,11 +72,11 @@ const loadProfile = cache(async (username: string) => {
   // All of this person's recipes, two columns only: the total, the chip counts
   // and the oldest date. PostgREST caps one response at 1000 rows and the
   // biggest profile already has hundreds, so read it in pages.
-  const rows: { category: string | null; created_at: string }[] = []
+  const rows: { category: string | null; extra_categories: string[] | null; created_at: string }[] = []
   for (let from = 0; from < SUMMARY_MAX_ROWS; from += SUMMARY_BATCH) {
     const { data: batch, error: summaryError } = await supabase
       .from('public_recipes')
-      .select('category, created_at')
+      .select('category, extra_categories, created_at')
       .eq('author_username', username)
       .order('id', { ascending: true })
       .range(from, from + SUMMARY_BATCH - 1)
@@ -149,7 +150,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
         'id, slug, title, image_url, category, source_type, source_url, source_author, total_time_minutes, prep_time_minutes, cook_time_minutes',
       )
       .eq('author_username', username)
-    if (category) listQuery = listQuery.eq('category', category)
+    if (category) listQuery = whereInCategory(listQuery, category)
     // One row past the page tells us whether "Pokaż kolejne" is needed.
     const { data: list, error } = await listQuery
       .order('created_at', { ascending: false })

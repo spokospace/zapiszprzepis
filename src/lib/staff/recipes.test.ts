@@ -90,11 +90,11 @@ describe('parsers', () => {
 
 describe('parseTaxonomy', () => {
   it('accepts a known category with known tags', () => {
-    expect(parseTaxonomy('zupy', ['grill', 'szybkie'])).toEqual({ category: 'zupy', tags: ['grill', 'szybkie'] })
+    expect(parseTaxonomy('zupy', ['grill', 'szybkie'])).toEqual({ category: 'zupy', tags: ['grill', 'szybkie'], extraCategories: [] })
   })
 
   it('a blank category keeps the current one; a blank tag list clears the tags', () => {
-    expect(parseTaxonomy('', [])).toEqual({ category: null, tags: [] })
+    expect(parseTaxonomy('', [])).toEqual({ category: null, tags: [], extraCategories: [] })
   })
 
   it('refuses an unknown category, an unknown tag, a repeated tag turned seven, or too many tags', () => {
@@ -104,7 +104,21 @@ describe('parseTaxonomy', () => {
   })
 
   it('collapses a repeated tag', () => {
-    expect(parseTaxonomy('zupy', ['grill', 'grill'])).toEqual({ category: 'zupy', tags: ['grill'] })
+    expect(parseTaxonomy('zupy', ['grill', 'grill'])).toEqual({ category: 'zupy', tags: ['grill'], extraCategories: [] })
+  })
+
+  it('accepts up to two extra categories, repeated ones collapsed', () => {
+    expect(parseTaxonomy('przekaski', [], ['sniadania', 'salatki'])?.extraCategories).toEqual(['sniadania', 'salatki'])
+    expect(parseTaxonomy('przekaski', [], ['sniadania', 'sniadania'])?.extraCategories).toEqual(['sniadania'])
+  })
+
+  it('refuses a third extra category and an unknown one', () => {
+    expect(parseTaxonomy('przekaski', [], ['sniadania', 'salatki', 'zupy'])).toBeNull()
+    expect(parseTaxonomy('przekaski', [], ['kolacje'])).toBeNull()
+  })
+
+  it('drops the chosen primary from the extras instead of failing', () => {
+    expect(parseTaxonomy('sniadania', [], ['sniadania', 'salatki'])?.extraCategories).toEqual(['salatki'])
   })
 })
 

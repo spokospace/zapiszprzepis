@@ -1,4 +1,5 @@
 import { RECIPE_CATEGORIES, isRecipeCategory, type RecipeCategory } from '@/lib/recipe-categories'
+import { rowCategories, type CategoryMember } from '@/lib/category-membership'
 
 /** Recipes per "Pokaż kolejne" step on /u/{username} (E01-S14). */
 export const PROFILE_PAGE_SIZE = 12
@@ -41,11 +42,15 @@ export interface CategoryCount {
   count: number
 }
 
-/** Per-category recipe counts in RECIPE_CATEGORIES order, non-zero only; unknown values are dropped. */
-export function categoryCounts(rows: readonly { category: string | null }[]): CategoryCount[] {
+/**
+ * Per-category recipe counts in RECIPE_CATEGORIES order, non-zero only; unknown values are
+ * dropped. A recipe counts once in its primary and once in each extra category (#689), so the
+ * counts can add up to more than the number of rows.
+ */
+export function categoryCounts(rows: readonly CategoryMember[]): CategoryCount[] {
   const counts = new Map<string, number>()
-  for (const { category } of rows) {
-    if (category) counts.set(category, (counts.get(category) ?? 0) + 1)
+  for (const row of rows) {
+    for (const category of rowCategories(row)) counts.set(category, (counts.get(category) ?? 0) + 1)
   }
   return RECIPE_CATEGORIES.filter((c) => counts.has(c.value)).map((c) => ({ ...c, count: counts.get(c.value)! }))
 }
