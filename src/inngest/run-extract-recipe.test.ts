@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { runExtractRecipe } from '@/inngest/run-extract-recipe'
+import { runExtractRecipe, storeCoverAndGallery } from '@/inngest/run-extract-recipe'
 import { archiveImage, archiveRecipeImages } from '@/lib/recipe-image-archive'
 import { LABEL_MODEL } from '@/lib/recipe-labeling'
 import { EXTRACTION_MODEL, FOREIGN_EXTRACTION_MODEL } from '@/lib/source-language'
@@ -1684,6 +1684,7 @@ describe('runExtractRecipe — recipe gallery', () => {
         recipeId: 7,
         userId: 'user-1',
         cover: 'https://blog.example/a/ciasto-1080x1440.jpg',
+        coverFallback: 'https://example.com/a/ciasto-1080x1440.jpg',
         gallery: ['https://blog.example/a/ciasto-1080x1440.jpg', 'https://blog.example/a/krok-1080x1440.jpg'],
         stepSources: [null, null],
         replace: false,
@@ -1701,6 +1702,31 @@ describe('runExtractRecipe — recipe gallery', () => {
     await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch, supabase: mock.supabase as any })
 
     expect(recipeUpdates(mock)).toEqual([])
+  })
+})
+
+describe('storeCoverAndGallery — cover fallback on the page host', () => {
+  const ARCHIVED = 'https://supabase.example/storage/v1/object/public/recipe-images/u/7.jpg'
+  const job = { recipeId: 7, userId: 'u', cover: 'https://sister.by/a.jpg', coverFallback: 'https://blog.pl/a.jpg', gallery: [], stepSources: [], replace: false }
+
+  it('archives the page-host copy when the cover host refuses the download', async () => {
+    const mock = makeSupabaseMock()
+    vi.mocked(archiveRecipeImages).mockResolvedValueOnce({ cover: null, gallery: null })
+    vi.mocked(archiveImage).mockResolvedValueOnce(ARCHIVED)
+
+    await storeCoverAndGallery(mock.supabase as any, job)
+
+    expect(archiveImage).toHaveBeenCalledWith(expect.anything(), 'u', 7, 'https://blog.pl/a.jpg')
+    expect(mock.didUpdate('recipes', { image_url: ARCHIVED })).toBe(true)
+  })
+
+  it('leaves the stored cover alone when neither host archives', async () => {
+    const mock = makeSupabaseMock()
+    vi.mocked(archiveRecipeImages).mockResolvedValueOnce({ cover: null, gallery: null })
+
+    await storeCoverAndGallery(mock.supabase as any, job)
+
+    expect(mock.didUpdate('recipes')).toBe(false)
   })
 })
 
@@ -2244,6 +2270,92 @@ describe('runExtractRecipe — several recipes on one page', () => {
     })
 
     expect(result.images?.map((job) => job.recipeId)).toEqual([42, 43])
+  })
+
+  it('gives each dish the photo from its own section, and none when the URL is not on the page', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queue('recipes', { data: { id: 43 }, error: null })
+    const radish = 'https://cdn.example.com/radish.jpg'
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({
+        firecrawlMarkdown: `Przepis na rzodkiew. ![](${radish}) `.repeat(30),
+        openaiContent: answer(
+          { ...dish('Sałatka z rzodkwi'), dishImage: radish },
+          { ...dish('Smażaniki'), dishImage: 'https://cdn.example.com/invented.jpg' },
+        ),
+      }),
+      supabase: mock.supabase as any,
+      deferImages: true,
+    })
+
+    expect(result.images?.map((job) => job.cover)).toEqual([radish, undefined])
+    expect(result.images?.map((job) => job.gallery)).toEqual([[], []])
+  })
+
+  it('gives each dish the first body photo after its own heading on a page shaped like slushna.by', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queue('recipes', { data: { id: 43 }, error: null })
+    const fried = 'https://slushna.by/wp-content/uploads/smazaniki-kielbasa.jpg'
+    const salad = 'https://slushna.by/wp-content/uploads/salatka-rzodkiew.jpg'
+    const markdown = [
+      '## Smażaniki z kiełbasą',
+      '',
+      'Składniki: ziemniaki, kiełbasa, jajko.',
+      '',
+      `![](${fried})`,
+      '',
+      '## Sałatka z tartej rzodkwi z jajkiem',
+      '',
+      'Składniki: rzodkiew, jajko, śmietana.',
+      '',
+      `![](${salad})`,
+    ].join('\n')
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({
+        firecrawlMarkdown: markdown,
+        openaiContent: answer(dish('Smażaniki z kiełbasą'), dish('Sałatka z tartej rzodkwi z jajkiem')),
+      }),
+      supabase: mock.supabase as any,
+      deferImages: true,
+    })
+
+    expect(result.images?.map((job) => job.cover)).toEqual([fried, salad])
+  })
+
+  it('finds each dish photo on a page in another language by the name the page gives the dish', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queue('recipes', { data: { id: 43 }, error: null })
+    mock.queue('recipes', { data: { id: 44 }, error: null })
+    const salad = 'https://bel.24health.by/wp-content/uploads/2021/04/стравы-фота-3.jpg'
+    const fried = 'https://bel.24health.by/wp-content/uploads/2021/04/стравы-застаўка-2.jpg'
+    const potato = 'https://bel.24health.by/wp-content/uploads/2021/04/стравы-фота-4.jpg'
+    const markdown = [
+      '## Салата з цёртай рэдзькі з яйкам',
+      `![](${salad})`,
+      '## Смажанікі (смажанікі з каўбасой)',
+      `![](${fried})`,
+      `![Смажанікі з бульбы з падлівай](${potato})`,
+    ].join('\n\n')
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({
+        firecrawlMarkdown: markdown,
+        openaiContent: answer(
+          { ...dish('Sałatka z tartej rzodkwi z jajkiem'), sourceTitle: 'Салата з цёртай рэдзькі з яйкам' },
+          { ...dish('Smażaniki z kiełbasą'), sourceTitle: 'Смажанікі (смажанікі з каўбасой)' },
+          { ...dish('Smażaniki z ziemniaków z sosem'), sourceTitle: 'Смажанікі з бульбы з падлівай' },
+        ),
+      }),
+      supabase: mock.supabase as any,
+      deferImages: true,
+    })
+
+    expect(result.images?.map((job) => job.cover)).toEqual([salad, fried, potato])
   })
 
   it('keeps the variants and ingredient sections of one dish in one entry', async () => {

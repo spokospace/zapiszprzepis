@@ -23,6 +23,7 @@ describe('usageSummaryCsv', () => {
     ],
     orphanViews: 4,
     features: { timer_start: 5, print: 3, favorite_add: 0 },
+    daily: { recipeViews: [], categoryViews: [] },
   }
   const lines = () => usageSummaryCsv(summary).replace(/^﻿/, '').trimEnd().split('\r\n')
 
@@ -54,6 +55,12 @@ const doc = {
   recipes: [{ slug: 'rosol', title: 'Rosół', views: 9 }, { slug: 'x', views: 1 }],
   orphan_views: 4,
   features: [{ event: 'print', count: 3 }, { event: 'bogus', count: 99 }],
+  daily: [
+    { day: '2026-10-28', event: 'recipe_view', count: '5' },
+    { day: '2026-10-28', event: 'category_view', count: 2 },
+    { day: '2026-11-02', event: 'recipe_view', count: 4 },
+    { day: 7, event: 'recipe_view', count: 100 },
+  ],
 }
 
 describe('mapUsageSummary', () => {
@@ -65,6 +72,26 @@ describe('mapUsageSummary', () => {
       recipes: [{ slug: 'rosol', title: 'Rosół', views: 9 }, { slug: 'x', title: 'x', views: 1 }],
       orphanViews: 4,
       features: { timer_start: 0, print: 3, favorite_add: 0 },
+      daily: {
+        recipeViews: [
+          { day: '2026-10-27', value: 0 },
+          { day: '2026-10-28', value: 5 },
+          { day: '2026-10-29', value: 0 },
+          { day: '2026-10-30', value: 0 },
+          { day: '2026-10-31', value: 0 },
+          { day: '2026-11-01', value: 0 },
+          { day: '2026-11-02', value: 4 },
+        ],
+        categoryViews: [
+          { day: '2026-10-27', value: 0 },
+          { day: '2026-10-28', value: 2 },
+          { day: '2026-10-29', value: 0 },
+          { day: '2026-10-30', value: 0 },
+          { day: '2026-10-31', value: 0 },
+          { day: '2026-11-01', value: 0 },
+          { day: '2026-11-02', value: 0 },
+        ],
+      },
     })
   })
 

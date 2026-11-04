@@ -33,9 +33,23 @@ Po każdym buildzie `master` (Workers Builds) i po każdej zmianie zmiennej albo
 
 **Jak stosować:**
 - „Zrobione/wdrożone” piszesz dopiero po `✓` ze `pnpm smoke:prod` na produkcji (obok sprawdzenia samej zmiany).
-- Czerwony wynik: Cloudflare → Workers & Pages → zapiszprzepis → **Builds** → **Retry** przy ostatnim buildzie `master` (wgrywa kod i pliki razem; sekrety zostają), potem skrypt jeszcze raz. Agent nie ma dostępu do tego konta — poproś właściciela.
+- Czerwony wynik: Cloudflare → Workers & Pages → zapiszprzepis → **Builds** → **Retry** przy ostatnim buildzie `master` (wgrywa kod i pliki razem; sekrety zostają), potem skrypt jeszcze raz. Token projektu nie ma uprawnień do Builds, więc Retry idzie przez panel (patrz „Dostęp agenta do Cloudflare”).
 - Sekret zmieniaj, gdy żaden build nie trwa, i od razu po nim zrób Retry buildu `master` + `pnpm smoke:prod`.
 - Dowolny adres jako argument: `pnpm smoke:prod https://<version>-zapiszprzepis.<subdomain>.workers.dev`.
+
+## Dostęp agenta do Cloudflare
+
+Worker `zapiszprzepis` jest na koncie `7a4ca044…` (Szymon.spoko.space). Zanim napiszesz „nie mam dostępu”, uruchom `pnpm exec wrangler whoami` i pokaż wynik.
+
+**Dlaczego:** ta reguła przez dwa tygodnie twierdziła, że agent nie ma dostępu, choć token projektu działał, więc agenci odsyłali właściciela do panelu bez sprawdzenia (#566). Osobno wtyczka MCP Cloudflare, zalogowana na inne konto, utworzyła bazę D1 na złym koncie i wywaliła build (#636).
+
+**Jak stosować:**
+- **Wrangler + token projektu** (`CLOUDFLARE_API_TOKEN` i `CLOUDFLARE_ACCOUNT_ID` z `.claude/settings.local.json` głównego checkoutu): działają odczyty Workera (`deployments list`, `secret list`, `versions view`). Zapisu (`secret put`) nikt jeszcze nie sprawdził. Token nie ma uprawnień do Builds, R2 ani D1.
+- **Panel w Claude in Chrome** (zalogowany jako Szymon.spoko.space): to, czego token nie obejmuje, np. Retry buildu, logi Workers Builds, D1. Gdy sesja nie ma Chrome, poproś właściciela.
+- **Wtyczka MCP Cloudflare: nigdy w tym projekcie.** Jest zalogowana na konto cnk.one (`fff59bee…`), nie na konto Workera.
+- `wrangler whoami` pokazuje inne konto albo błąd 10000: sesja nie ma tokenu projektu. To nie znaczy, że dostępu nie ma. Przed każdym zapisem sprawdź, czy konto to `7a4ca044…`.
+- Deploy kodu tylko przez Workers Builds z `master`. Nie deployuj z tej maszyny.
+- `wrangler.jsonc` ma `vars` bez `keep_vars`, więc zwykła zmienna dodana w panelu znika przy najbliższym buildzie. Trwały przełącznik to wpis w `vars` (PR) albo sekret (`wrangler secret put`).
 
 ## Skeleton (`loading.tsx`) zawsze zgadza się z układem strony
 
