@@ -39,6 +39,12 @@ export type CronEnv = {
   BACKUPS?: R2Bucket
   // Google service-account key file (JSON) for Search Console; set with `wrangler secret put`.
   GSC_SERVICE_ACCOUNT_JSON?: string
+  // Second Inngest account's event key (#580 phase 3). When set, the failover
+  // watchdog re-sends stale pending shares to it; absent = failover off.
+  INNGEST_EVENT_KEY_2?: string
+  // Minutes a share may stay pending on the primary before the watchdog re-sends
+  // it to the secondary. Default 10; set as a Worker var to tune without a deploy.
+  INNGEST_FAILOVER_WINDOW_MINUTES?: string
 }
 
 function restHeaders(key: string): Record<string, string> {
@@ -175,5 +181,103 @@ export async function syncSearchConsole(env: CronEnv, fetchFn: Fetch = fetch, no
     console.log(`search-console: ${days[0]}..${days[days.length - 1]}, ${rows.length} rows`)
   } catch (e) {
     console.error(`search-console: failed — ${e instanceof Error ? e.message : String(e)}`)
+  }
+}
+
+/** Default minutes a share may stay pending on the primary before the re-send. */
+const DEFAULT_FAILOVER_WINDOW_MINUTES = 10
+
+/** Most shares re-sent in one watchdog run, so a backlog cannot stall the cron. */
+const FAILOVER_BATCH = 50
+
+/** Inngest's event API. The SDK POSTs here too; we call it directly (see below). */
+const INNGEST_EVENT_BASE_URL = 'https://inn.gs'
+
+type PendingShareRow = {
+  id: number
+  shared_url: string
+  share_intent: { title?: string | null; text?: string | null; sourceType?: string } | null
+  user_id: string
+}
+
+/**
+ * Throttle watchdog (#580 phase 3). A `recipe/extract` event can be accepted by
+ * the primary Inngest account while its run never starts — the account is over
+ * its plan limit. The send succeeded, so nothing failed over, and the share sits
+ * `pending`. This finds shares that went to the primary and have been pending
+ * longer than the window, and re-sends them to the secondary account by POSTing
+ * the event to Inngest's event API directly.
+ *
+ * Raw fetch, not the Inngest SDK: the SDK would bundle a second copy into the
+ * Worker (the size cap is tight), and it is no help anyway when the account it
+ * talks to is the one that is down. Runs from the Cloudflare cron, not an Inngest
+ * cron, for the same reason — the watchdog must not depend on the primary Inngest
+ * account, which is exactly what may be failing.
+ *
+ * Never throws: a failed watchdog must not take the scheduled run down; the log
+ * line is the alert. Needs the service role (it reads and updates every user's
+ * shares) and the secondary event key; absent either, it logs and skips.
+ */
+export async function failoverStalePendingShares(env: CronEnv, now: Date = new Date()): Promise<void> {
+  const eventKey = env.INNGEST_EVENT_KEY_2
+  const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY
+  if (!eventKey || !serviceKey) {
+    console.log('failover-watchdog: skipped — INNGEST_EVENT_KEY_2 or SUPABASE_SERVICE_ROLE_KEY is missing')
+    return
+  }
+
+  const windowMinutes = Number(env.INNGEST_FAILOVER_WINDOW_MINUTES) || DEFAULT_FAILOVER_WINDOW_MINUTES
+  const cutoff = new Date(now.getTime() - windowMinutes * 60_000).toISOString()
+  const base = restBase(env)
+
+  try {
+    const query =
+      `${base}/rest/v1/recipe_shares` +
+      `?status=eq.pending&inngest_account=eq.primary&created_at=lt.${encodeURIComponent(cutoff)}` +
+      `&select=id,shared_url,share_intent,user_id&order=created_at.asc&limit=${FAILOVER_BATCH}`
+    const res = await fetch(query, { headers: restHeaders(serviceKey) })
+    if (!res.ok) throw new Error(`candidate query: Supabase responded ${res.status}`)
+    const rows = (await res.json()) as PendingShareRow[]
+    if (rows.length === 0) {
+      console.log('failover-watchdog: no stale pending shares')
+      return
+    }
+
+    let failedOver = 0
+    for (const row of rows) {
+      const intent = row.share_intent ?? {}
+      const data = {
+        shareId: row.id,
+        sharedUrl: row.shared_url,
+        sharedTitle: intent.title ?? undefined,
+        sharedText: intent.text ?? undefined,
+        // Stored at send time; web_blog is the safe default for rows written
+        // before the source type was persisted — it runs the full scrape path.
+        sourceType: intent.sourceType ?? 'web_blog',
+        userId: row.user_id,
+      }
+      const sent = await fetch(`${INNGEST_EVENT_BASE_URL}/e/${eventKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([{ name: 'recipe/extract', data, ts: now.getTime() }]),
+      })
+      if (!sent.ok) {
+        console.error(`failover-watchdog: secondary send for share ${row.id} responded ${sent.status}`)
+        continue
+      }
+      // Mark it secondary so the next run does not re-send it. A failed update
+      // only means a harmless re-send next run — the idempotency guard stops a
+      // double extraction once either account completes the share.
+      const marked = await fetch(`${base}/rest/v1/recipe_shares?id=eq.${row.id}`, {
+        method: 'PATCH',
+        headers: { ...restHeaders(serviceKey), 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ inngest_account: 'secondary' }),
+      })
+      if (!marked.ok) console.error(`failover-watchdog: marking share ${row.id} secondary responded ${marked.status}`)
+      failedOver++
+    }
+    console.log(`failover-watchdog: re-sent ${failedOver}/${rows.length} stale pending shares to the secondary`)
+  } catch (e) {
+    console.error(`failover-watchdog: failed — ${e instanceof Error ? e.message : String(e)}`)
   }
 }

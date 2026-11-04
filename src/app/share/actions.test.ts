@@ -186,3 +186,35 @@ describe('triggerRecipeExtraction — per-account extraction cap (E02-S11-T04)',
     expect(extractionAllowed).not.toHaveBeenCalled()
   })
 })
+
+describe('triggerRecipeExtraction — records the accepting Inngest account (#580 phase 3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getFullAccess).mockResolvedValue(true)
+    vi.mocked(extractionAllowed).mockResolvedValue(true)
+  })
+
+  it('writes inngest_account on the share after a successful send', async () => {
+    const updateEq = vi.fn().mockResolvedValue({ data: null, error: null })
+    const updateFn = vi.fn().mockReturnValue({ eq: updateEq })
+    const mockSupabase = {
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from: vi.fn().mockImplementation(() => ({
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: { id: 7 }, error: null }),
+          }),
+        }),
+        update: updateFn,
+      })),
+    }
+    vi.mocked(createSupabaseServerClient).mockResolvedValue(mockSupabase as any)
+    vi.mocked(findExistingRecipeForUrl).mockResolvedValue({ status: 'new', normalizedUrl: 'https://example.com/recipe' })
+    vi.mocked(sendRecipeExtract).mockResolvedValue('secondary')
+
+    await triggerRecipeExtraction('https://example.com/recipe')
+
+    expect(updateFn).toHaveBeenCalledWith({ inngest_account: 'secondary' })
+    expect(updateEq).toHaveBeenCalledWith('id', 7)
+  })
+})

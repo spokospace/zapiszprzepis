@@ -348,6 +348,25 @@ export async function runExtractRecipe(
   } = event
   const { fetch, supabase, deferImages = false } = deps
 
+  // Idempotency guard (#580 phase 3). A failover can leave two runs for one
+  // share: the secondary that the watchdog re-sent, and the primary starting
+  // late after its throttle cleared. Whichever finishes first marks the share
+  // `completed`; a later run must not overwrite it, so it exits here as a no-op.
+  // A forced refresh ("Odśwież przepis") deliberately re-extracts a completed
+  // recipe, so it is never blocked. Best-effort: two runs still both in flight
+  // read `pending` and proceed, as they did before this guard.
+  if (!forceRefresh) {
+    const { data: priorShare } = await supabase
+      .from('recipe_shares')
+      .select('status, recipe_id')
+      .eq('id', shareId)
+      .maybeSingle()
+    if (priorShare?.status === 'completed') {
+      console.log('[extract-recipe] share', shareId, 'already completed; skipping duplicate run')
+      return { recipeId: priorShare.recipe_id ?? 0, title: '', category: '', status: 'duplicate' }
+    }
+  }
+
   async function firecrawlScrape(options: ReturnType<typeof buildFirecrawlOptions>) {
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',

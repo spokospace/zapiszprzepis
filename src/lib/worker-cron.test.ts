@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { backupToR2, keepDatabaseAwake, type CronEnv, type R2Bucket } from '@/lib/worker-cron'
+import { backupToR2, failoverStalePendingShares, keepDatabaseAwake, type CronEnv, type R2Bucket } from '@/lib/worker-cron'
 
 const SUPABASE_URL = 'https://project.supabase.co'
 
@@ -127,5 +127,72 @@ describe('backupToR2', () => {
       backupToR2(env({ SUPABASE_SERVICE_ROLE_KEY: 'service-key', BACKUPS: bucket })),
     ).resolves.toBeUndefined()
     expect(put).not.toHaveBeenCalled()
+  })
+})
+
+describe('failoverStalePendingShares (#580 phase 3)', () => {
+  function failoverEnv(overrides: Partial<CronEnv> = {}): CronEnv {
+    return env({ SUPABASE_SERVICE_ROLE_KEY: 'service-key', INNGEST_EVENT_KEY_2: 'evt-key-2', ...overrides })
+  }
+
+  it('skips when the secondary event key or the service role is missing', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(failoverStalePendingShares(env({ SUPABASE_SERVICE_ROLE_KEY: 'service-key' }))).resolves.toBeUndefined()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('re-sends a stale pending share to the secondary account and marks it secondary', async () => {
+    const calls: { url: string; init?: RequestInit }[] = []
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), init })
+      if (String(url).includes('inn.gs')) return Promise.resolve(jsonResponse({ status: 200, ids: ['e1'] }))
+      if (init?.method === 'PATCH') return Promise.resolve(jsonResponse(null))
+      // The candidate query (a GET, so no init.method).
+      return Promise.resolve(
+        jsonResponse([
+          { id: 7, shared_url: 'https://example.com/x', share_intent: { title: 'X', sourceType: 'youtube' }, user_id: 'u1' },
+        ]),
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await failoverStalePendingShares(failoverEnv())
+
+    const query = calls.find((c) => c.url.includes('/rest/v1/recipe_shares') && c.init?.method === undefined)
+    expect(query?.url).toContain('status=eq.pending')
+    expect(query?.url).toContain('inngest_account=eq.primary')
+
+    const send = calls.find((c) => c.url.includes('inn.gs'))
+    expect(send?.url).toContain('/e/evt-key-2')
+    expect(JSON.parse(String(send?.init?.body))[0]).toMatchObject({
+      name: 'recipe/extract',
+      data: { shareId: 7, sourceType: 'youtube', userId: 'u1' },
+    })
+
+    const patch = calls.find((c) => c.init?.method === 'PATCH')
+    expect(patch?.url).toContain('id=eq.7')
+    expect(JSON.parse(String(patch?.init?.body))).toEqual({ inngest_account: 'secondary' })
+  })
+
+  it('does not throw when the candidate query fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })))
+    await expect(failoverStalePendingShares(failoverEnv())).resolves.toBeUndefined()
+  })
+
+  it('uses the configured window to pick the cutoff', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2031-02-07T12:00:00Z'))
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        urls.push(String(url))
+        return Promise.resolve(jsonResponse([]))
+      }),
+    )
+    await failoverStalePendingShares(failoverEnv({ INNGEST_FAILOVER_WINDOW_MINUTES: '30' }))
+    // 30 minutes before 12:00 is 11:30.
+    expect(urls[0]).toContain(encodeURIComponent('2031-02-07T11:30:00.000Z'))
   })
 })
