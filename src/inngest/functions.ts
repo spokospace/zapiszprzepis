@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { inngest } from './client'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
+import { recordApiUsage } from '@/lib/api-usage'
 import { revalidateRecipeCaches } from '@/lib/recipe-cache'
 import {
   runExtractRecipe,
@@ -22,9 +23,13 @@ export async function extractRecipeJob({ event, step }: { event: { data: unknown
   // time budget, and Inngest retries a failed step alone. One invocation for
   // all of it ran out after uploading a photo-heavy page's images, before the
   // row got their URLs — and each of the retries redid the LLM extraction.
-  const { images, ...result } = (await step.run('extract', () =>
-    runExtractRecipe(event.data as ExtractRecipeEvent, { fetch, supabase, deferImages: true }),
-  )) as Awaited<ReturnType<typeof runExtractRecipe>>
+  const { images, ...result } = (await step.run('extract', () => {
+    // Inngest meters runs and steps, so count each attempt of the extract step (a
+    // retry counts again). Inside the step, not the handler: the handler body runs
+    // once per step of a run and would count the same run several times.
+    recordApiUsage(supabase, { service: 'inngest', model: 'extract-recipe' })
+    return runExtractRecipe(event.data as ExtractRecipeEvent, { fetch, supabase, deferImages: true })
+  })) as Awaited<ReturnType<typeof runExtractRecipe>>
   // The recipe row is written (inserted, refreshed or gap-filled) and the share is
   // complete, so the cached public lists and recipe pages must show it now, not
   // after the 120 s TTL (#445). A share that only settled on a saved recipe wrote

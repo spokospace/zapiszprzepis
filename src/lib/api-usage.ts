@@ -5,7 +5,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare'
 // Jina). One atomic RPC increment per call into api_usage_daily; read by the admin
 // page /admin/uzycie-api. Monitoring only: nothing here may fail or slow an extraction.
 
-export type ApiService = 'openai' | 'firecrawl' | 'jina'
+export type ApiService = 'openai' | 'firecrawl' | 'jina' | 'inngest'
 
 /** USD per 1M tokens, [input, output]. Estimates: a model missing here costs 0 and is still counted. */
 const OPENAI_PRICES: Record<string, readonly [number, number]> = {
