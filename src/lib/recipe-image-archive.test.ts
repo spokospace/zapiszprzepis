@@ -10,6 +10,7 @@ import {
   buildGallery,
   dedupeStoredGallery,
   findPageImage,
+  onPageHost,
   coverImage,
   jsonLdImage,
   archiveGallery,
@@ -694,6 +695,20 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
       'https://blogger.googleusercontent.com/img/b/R29v/AVvX/s1600/ciasto.jpg',
       'https://1.bp.blogspot.com/-abc/X/AAA/def/s1600/krok.jpg',
     ])
+  })
+})
+
+describe('onPageHost', () => {
+  it('moves a photo from another host to the page host, keeping the path', () => {
+    expect(onPageHost('https://cdn.sister.by/wp-content/uploads/a.jpg?x=1', 'https://slushna.by/post/')).toBe(
+      'https://slushna.by/wp-content/uploads/a.jpg?x=1',
+    )
+  })
+
+  it('is undefined when the photo is already on the page host or a URL is not http', () => {
+    expect(onPageHost('https://slushna.by/a.jpg', 'https://slushna.by/post/')).toBeUndefined()
+    expect(onPageHost('data:image/png;base64,AAAA', 'https://slushna.by/post/')).toBeUndefined()
+    expect(onPageHost('https://cdn.sister.by/a.jpg', 'not a url')).toBeUndefined()
   })
 })
 
