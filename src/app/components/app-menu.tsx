@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import Link, { useLinkStatus } from 'next/link'
+import { usePathname } from 'next/navigation'
 import { ALargeSmall, Bell, BookOpen, Heart, House, Lock, LogOut, Menu, Plus, Settings, Timer, X, type LucideIcon } from 'lucide-react'
 import { useTimers } from '@/app/components/timer-provider'
 import { MenuTimers } from '@/app/components/menu-timers'
@@ -13,7 +13,7 @@ import type { MenuSummary } from '@/lib/menu-summary'
 import type { NotificationBadge } from '@/lib/notification-badge'
 import { NotificationDot } from './notification-dot'
 import { SignOutForm } from './sign-out-form'
-import { buildMenuModel, menuPrefetchHrefs, newNotificationsNoun, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
+import { buildMenuModel, newNotificationsNoun, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
 
 const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
   'my-recipes': BookOpen,
@@ -40,12 +40,49 @@ function activeClasses(active: boolean): string {
   return active ? 'text-action-text border-l-4 border-action' : 'text-ink border-l-4 border-transparent'
 }
 
-function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: boolean; onNavigate: () => void }) {
+/**
+ * Instant feedback for a tap on a drawer row while its route is still loading: a spinner
+ * with a text equivalent, visible within a frame or two with no extra request. The rows
+ * sit in a closed <dialog>, so Next never prefetches them and a tap waits a network round
+ * trip before the route's loading.tsx can show (370-390 ms at 300 ms latency, much more
+ * on a poor mobile link). Prefetching on menu open was tried (#688) and did not help
+ * reliably: it adds a burst of dynamic requests and the tap can still queue behind them.
+ * Must be rendered inside the <Link>.
+ */
+function PendingMark({ className = '' }: { className?: string }) {
+  const { pending } = useLinkStatus()
+  if (!pending) return null
+  return (
+    <span role="status" className={`inline-flex shrink-0 items-center ${className}`}>
+      <span
+        aria-hidden="true"
+        className="h-6 w-6 rounded-full border-[3px] border-action border-t-transparent motion-safe:animate-spin"
+      />
+      <span className="sr-only">Otwieranie…</span>
+    </span>
+  )
+}
+
+/**
+ * A drawer row stays open until the route changes (the pathname effect closes it), so the
+ * PendingMark stays visible; a tap on the page already open changes nothing, so close then.
+ */
+function MineRow({
+  entry,
+  active,
+  onNavigate,
+  isCurrentPath,
+}: {
+  entry: MineEntry
+  active: boolean
+  onNavigate: () => void
+  isCurrentPath: boolean
+}) {
   const Icon = entry.locked ? Lock : MINE_ICONS[entry.key]
   return (
     <Link
       href={entry.href}
-      onClick={onNavigate}
+      onClick={isCurrentPath ? onNavigate : undefined}
       aria-current={active ? 'page' : undefined}
       // Menu rows are navigation chrome, shown without the global `a` underline
       // (#390): DRAWER_ROW opts out with no-underline!. The label keeps its own
@@ -72,6 +109,7 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
           </span>
         </>
       )}
+      <PendingMark className={entry.count === null ? 'ml-auto' : 'ml-2'} />
     </Link>
   )
 }
@@ -81,11 +119,20 @@ function MineRow({ entry, active, onNavigate }: { entry: MineEntry; active: bool
  * drawer at every width — the standalone bell is gone. A counter marks
  * "something new"; its text equivalent is in the row's accessible name.
  */
-function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBadge; active: boolean; onNavigate: () => void }) {
+function NotificationsRow({
+  badge,
+  active,
+  onNavigate,
+}: {
+  badge: NotificationBadge
+  active: boolean
+  onNavigate: () => void
+}) {
   return (
     <Link
       href={NOTIFICATIONS_PATH}
-      onClick={onNavigate}
+      // Stays open until the route changes (see MineRow); `active` means already on this page.
+      onClick={active ? onNavigate : undefined}
       aria-current={active ? 'page' : undefined}
       className={`${DRAWER_ROW} ${activeClasses(active)}`}
     >
@@ -109,6 +156,7 @@ function NotificationsRow({ badge, active, onNavigate }: { badge: NotificationBa
           </span>
         </>
       )}
+      <PendingMark className={badge.count > 0 ? 'ml-2' : 'ml-auto'} />
     </Link>
   )
 }
@@ -133,24 +181,11 @@ export function AppMenu({
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const pathname = usePathname()
-  const menuModel = buildMenuModel({ isAuthenticated, summary })
-  const { mine, showAccountFooter, displayPrefs } = menuModel
+  const { mine, showAccountFooter, displayPrefs } = buildMenuModel({ isAuthenticated, summary })
   const { runningCount } = useTimers()
-
-  const router = useRouter()
 
   function close() {
     dialogRef.current?.close()
-  }
-
-  // The rows below are <Link>s inside a closed <dialog>, which Next never prefetches on
-  // its own (observed on production: a tap on "Ulubione" sent a plain navigation and
-  // showed no skeleton until the server answered, ~1 round trip). Opening the menu
-  // warms the routes a tap is likely to hit, so their loading.tsx shows at once.
-  // Categories are left out: 12 routes would cost more than the tap saves.
-  function openMenu() {
-    dialogRef.current?.showModal()
-    for (const href of menuPrefetchHrefs(menuModel, Boolean(notifications))) router.prefetch(href)
   }
 
   // A navigation (including back/forward) should never leave the drawer open.
@@ -162,7 +197,7 @@ export function AppMenu({
     <>
       <button
         type="button"
-        onClick={openMenu}
+        onClick={() => dialogRef.current?.showModal()}
         aria-haspopup="dialog"
         aria-controls="app-menu"
         // Mobile 1c (E01-S19, #412): icon over a 16 px bold caption, at least 64x56.
@@ -270,6 +305,7 @@ export function AppMenu({
                         entry={entry}
                         // A locked "Dodaj" opens the 3c gate on /dodaj, not the add form: never mark it current.
                         active={!entry.locked && pathname === entry.href}
+                        isCurrentPath={pathname === entry.href}
                         onNavigate={close}
                       />
                     </li>

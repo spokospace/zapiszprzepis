@@ -33,6 +33,7 @@ import { looksUnextractable, isExtractedRecipeUsable } from '@/lib/content-quali
 import { articleHtml } from '@/lib/article-html'
 import { metricUnits } from '@/lib/us-units'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
+import { EXTRA_CATEGORIES_RULE, toExtraCategories } from '@/lib/extra-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
 import { STEP_CONTENT_RULE, STEP_FORM_RULE } from '@/lib/step-form'
 import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantNoteSibling } from '@/lib/recipe-dish'
@@ -296,6 +297,8 @@ interface RecipeData {
   /** One entry per step (index-aligned): the in-content image URL the LLM picked, or null. */
   stepImages?: (string | null)[]
   category: string
+  /** Further category lists the dish belongs in (#689), already coerced by toExtraCategories. */
+  extra_categories?: string[]
   imageUrl?: string
   /** The dish's own photo in a page with several dishes, as the LLM copied it from the page. */
   dishImage?: string | null
@@ -752,6 +755,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure,
   "sourceTitle": "the dish's name EXACTLY as the page writes it, or null",
   "dishImage": "URL of the photo of THIS dish, or null",
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
+  "extra_categories": ["0–2 more values from the same list, or an empty array"],
   "prepTimeMinutes": integer or null,
   "cookTimeMinutes": integer or null,
   "totalTimeMinutes": integer or null,
@@ -768,6 +772,7 @@ Rules:
 - Alternative measure ("alt"): ONLY a quantity in a HOUSEHOLD unit that the source states next to the precise amount — szklanki, łyżki, łyżeczki, kostki, garście, plasterki. Copy it VERBATIM, keeping the source's own wording: "3 szklanki", "około 1,5 szklanki", "do 1/3 szklanki", "3/4 kostki". Never add, drop or reword an approximation like "około"/"ok." the source did not use (source "3 szklanki" → "3 szklanki", NOT "około 3 szklanki"). Keep the precise figure in "amount"/"unit"; for a US household measure you convert to metric (e.g. "1 cup flour"), keep the metric in "amount"/"unit" and the stated cups/sticks/spoons in "alt".
 - "alt" is a measure, never a note — but never drop the note either. A size ("duże"), purpose ("do dekoracji", "do posypania"), packaging ("małe opakowanie"), brand, or preparation ("grubo starte") describes the ingredient, so keep it in "name" (e.g. name "orzechy włoskie do dekoracji", "marchewka grubo starta"), and leave "alt" empty — "alt" carries only a household measure.
 - Never calculate, estimate, guess or infer an "alt" from the metric amount or from your own knowledge. If the source gives only weight or volume with no household unit beside it (e.g. "300 g startej marchewki"), leave "alt" an empty string. A wrong or invented measure is worse than none.
+- ${EXTRA_CATEGORIES_RULE}
 - Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
 - prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
 - Category: cookies, biscuits, gingerbread cookies, macarons and crescent rolls ("ciasteczka", "herbatniki", "pierniczki", "makaroniki", "rogaliki", "faworki") are "ciasteczka". Cakes, tortes, cheesecakes, gingerbread cakes, sponge cakes and apple pies ("ciasto", "tort", "sernik", "piernik", "biszkopt", "szarlotka", "mazurek", "babka", named layer cakes like "Marysieńka", no-bake layer cakes "bez pieczenia") are "ciasta". Reserve "desery" for non-cake sweets only: sweet muffins and cupcakes ("babeczki", "muffiny"), ice cream, doughnuts ("pączki"), choux ("ptysie"), tiramisu, creams/mousses, jellies ("galaretka"), sweet yeast buns ("drożdżówki", "jagodzianki", "ślimaczki").
@@ -864,6 +869,8 @@ Rules:
           steps: steps.map(metricUnits),
           stepImages,
           category,
+          // Never fails the insert: unknown values, the primary, repeats and a third entry are dropped.
+          extra_categories: toExtraCategories((parsed as { extra_categories?: unknown }).extra_categories, category),
           servings: toServings(parsed.servings),
           prepTimeMinutes: toMinutes(parsed.prepTimeMinutes),
           cookTimeMinutes: toMinutes(parsed.cookTimeMinutes),
@@ -1148,7 +1155,10 @@ ${markdown}`
         ).maybeSingle()
         const refreshDishColumns: Record<string, string | null> =
           Object.keys(dishColumns).length > 0 && existingRow?.dish_classified_at == null ? dishColumns : {}
-        const refreshTaxonomyColumns = existingRow?.taxonomy_locked_at != null ? {} : { category: recipeJSON.category, tags }
+        const refreshTaxonomyColumns =
+          existingRow?.taxonomy_locked_at != null
+            ? {}
+            : { category: recipeJSON.category, tags, extra_categories: recipeJSON.extra_categories ?? [] }
 
         const refreshQuery = supabase
           .from('recipes')
@@ -1247,6 +1257,7 @@ ${markdown}`
             source_author: sourceAuthor,
             youtube_id: embeddableYoutubeId,
             category: recipeJSON.category,
+            extra_categories: recipeJSON.extra_categories ?? [],
             prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
             cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
             total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
