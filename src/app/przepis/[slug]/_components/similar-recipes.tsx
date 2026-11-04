@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Tag } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createSupabaseAnonClient } from '@/lib/supabase/anon'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { rankSimilar, sharedTagsCaption, similarHeading } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
@@ -17,6 +18,8 @@ interface SimilarRecipesProps {
   recipe: { id: number; category: string; tags: string[]; dish?: string | null }
   /** The signed-in viewer, for the hearts on the "Podobne" cards (A5); null for a guest. */
   userId: string | null
+  /** Spec A proof: read without cookies, so the route stays static. */
+  anon?: boolean
 }
 
 interface SimilarCard {
@@ -52,8 +55,8 @@ export function SimilarRecipes(props: SimilarRecipesProps) {
   )
 }
 
-async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
-  const supabase = await createSupabaseServerClient()
+async function SimilarRecipesSection({ recipe, userId, anon }: SimilarRecipesProps) {
+  const supabase = anon ? createSupabaseAnonClient() : await createSupabaseServerClient()
   // Same category, not this recipe, newest first. When the recipe has a dish,
   // its other versions are excluded here (they show in "Inne przepisy na …"),
   // keeping null-dish rows eligible.
