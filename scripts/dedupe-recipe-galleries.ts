@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
-import { dedupeStoredGallery, extractStoragePath, removeImages } from '../src/lib/recipe-image-archive'
+import { dedupeStoredGallery, extractStoragePath, isArchivedImageUrl, removeImages } from '../src/lib/recipe-image-archive'
 import { sha256Hex } from '../src/lib/sha256'
 
 /**
  * Drops gallery photos that are byte-for-byte copies of another photo of the
- * same recipe (usually the cover stored again as the second photo). New
+ * same recipe (usually the cover stored again as the second photo). The cover
+ * counts even when the gallery does not list it (recipe 848), as long as it
+ * is archived: a copy of a hotlinked cover may outlive the original. New
  * extractions already skip them; this cleans galleries archived before that.
  * Only image_urls and the duplicate files change — the cover stays.
  *
@@ -67,13 +69,15 @@ async function main(): Promise<void> {
 
     for (const r of data) {
       const gallery = r.image_urls as string[]
-      if (gallery.length < 2) continue
-      const unique = await dedupeStoredGallery(gallery, hashOfUrl)
+      const cover = r.image_url && isArchivedImageUrl(r.image_url) && !gallery.includes(r.image_url) ? r.image_url : null
+      if (gallery.length < 2 && !cover) continue
+      const compared = cover ? [cover, ...gallery] : gallery
+      const unique = (await dedupeStoredGallery(compared, hashOfUrl)).filter((url) => url !== cover)
       if (unique.length === gallery.length) continue
 
       // A lone photo is dropped only when it is the cover, already shown on its own.
       let deduped = unique
-      if (unique.length === 1) {
+      if (unique.length === 1 && !cover) {
         const [photoHash, coverHash] = await Promise.all([hashOfUrl(unique[0]), r.image_url ? hashOfUrl(r.image_url) : null])
         if (photoHash != null && photoHash === coverHash) deduped = []
       }
