@@ -7,6 +7,7 @@ import {
   buildGallery,
   coverImage,
   findPageImage,
+  imageAfterTitle,
   jsonLdHowToStepImages,
   pickGalleryImages,
 } from '@/lib/recipe-image-archive'
@@ -987,13 +988,17 @@ Rules:
       }
 
       // A page with several dishes has one og:image for all of them (the post's
-      // header), so each dish takes the photo the LLM found in its own section,
-      // checked against the page; none found leaves the dish without a cover
-      // rather than with another dish's. Its gallery is just that cover.
+      // header), so each dish takes the first photo in the body after its own
+      // heading, else the photo the LLM found in its section, checked against the
+      // page; none found leaves the dish without a cover rather than with another
+      // dish's. Its gallery is just that cover.
       const pageText = `${html}
 ${embedHtml}
 ${markdown}`
-      const dishImage = typeof recipeJSON.dishImage === 'string' ? findPageImage(recipeJSON.dishImage, pageText) : undefined
+      const dishTitles = storable.flatMap((dish) => (dish.title ? [dish.title] : []))
+      const bodyImage = storable.length > 1 && recipeJSON.title ? imageAfterTitle(recipeJSON.title, pageText, dishTitles) : undefined
+      const dishImage =
+        bodyImage ?? (typeof recipeJSON.dishImage === 'string' ? findPageImage(recipeJSON.dishImage, pageText) : undefined)
       const cover = storable.length > 1 ? dishImage : ogImage
       const dishGallery = storable.length > 1 ? [] : gallery
 

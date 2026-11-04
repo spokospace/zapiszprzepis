@@ -815,6 +815,34 @@ export function findPageImage(url: string, pageText: string): string | undefined
   return undefined
 }
 
+function indexOfTitle(pageText: string, title: string, from: number): number {
+  const pattern = new RegExp(title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+  pattern.lastIndex = from
+  return pattern.exec(pageText)?.index ?? -1
+}
+
+/**
+ * The first photo in the body that follows a dish's own heading, read from the
+ * page text: the span runs from the dish's first mention to the next dish's
+ * mention (or the end of the text), and its first <img> or markdown image is the
+ * cover. Undefined when the dish is not named in the text or its span has no
+ * photo. The URL is copied from the page, so it needs no further check.
+ */
+export function imageAfterTitle(title: string, pageText: string, otherTitles: string[]): string | undefined {
+  const start = indexOfTitle(pageText, title, 0)
+  if (start < 0) return undefined
+  let end = pageText.length
+  for (const other of otherTitles) {
+    if (other.trim() === title.trim()) continue
+    const at = indexOfTitle(pageText, other, start + 1)
+    if (at > start && at < end) end = at
+  }
+  const image = /<img\b[^>]*?\b(?:src|data-src)=["'](https?:\/\/[^"'\s>]+)["']|!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i.exec(
+    pageText.slice(start, end),
+  )
+  return image ? (image[1] ?? image[2]) : undefined
+}
+
 /**
  * The gallery to store: the cover first, then the other photos, each photo
  * once, at most GALLERY_LIMIT. Empty when there is nothing beyond the cover —

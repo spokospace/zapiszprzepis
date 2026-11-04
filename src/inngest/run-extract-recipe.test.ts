@@ -2254,7 +2254,7 @@ describe('runExtractRecipe — several recipes on one page', () => {
 
     const result = await runExtractRecipe(BASE_EVENT, {
       fetch: makeFetchMock({
-        firecrawlMarkdown: `Przepis na rzodkiew i smażaniki. ![](${radish}) `.repeat(30),
+        firecrawlMarkdown: `Przepis na rzodkiew. ![](${radish}) `.repeat(30),
         openaiContent: answer(
           { ...dish('Sałatka z rzodkwi'), dishImage: radish },
           { ...dish('Smażaniki'), dishImage: 'https://cdn.example.com/invented.jpg' },
@@ -2266,6 +2266,38 @@ describe('runExtractRecipe — several recipes on one page', () => {
 
     expect(result.images?.map((job) => job.cover)).toEqual([radish, undefined])
     expect(result.images?.map((job) => job.gallery)).toEqual([[], []])
+  })
+
+  it('gives each dish the first body photo after its own heading on a page shaped like slushna.by', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queue('recipes', { data: { id: 43 }, error: null })
+    const fried = 'https://slushna.by/wp-content/uploads/smazaniki-kielbasa.jpg'
+    const salad = 'https://slushna.by/wp-content/uploads/salatka-rzodkiew.jpg'
+    const markdown = [
+      '## Smażaniki z kiełbasą',
+      '',
+      'Składniki: ziemniaki, kiełbasa, jajko.',
+      '',
+      `![](${fried})`,
+      '',
+      '## Sałatka z tartej rzodkwi z jajkiem',
+      '',
+      'Składniki: rzodkiew, jajko, śmietana.',
+      '',
+      `![](${salad})`,
+    ].join('\n')
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({
+        firecrawlMarkdown: markdown,
+        openaiContent: answer(dish('Smażaniki z kiełbasą'), dish('Sałatka z tartej rzodkwi z jajkiem')),
+      }),
+      supabase: mock.supabase as any,
+      deferImages: true,
+    })
+
+    expect(result.images?.map((job) => job.cover)).toEqual([fried, salad])
   })
 
   it('keeps the variants and ingredient sections of one dish in one entry', async () => {
