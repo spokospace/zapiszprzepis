@@ -1,11 +1,11 @@
 /**
  * Edge cache for the public pages a guest sees, in front of the OpenNext handler.
  *
- * On the Workers Free plan (10 ms CPU per request) almost every request that reaches
- * Next.js ends in error 1102: a median invocation costs about 15 ms (#701). The cost is
- * the render itself, so the only reliable relief is not to run it. A guest sees the same
- * HTML as every other guest (two guest responses were byte-identical), so one render can
- * serve all of them from the Workers Cache API, a hit costing a lookup instead of a render.
+ * On the Workers Free plan (10 ms CPU per request) some requests that reach Next.js end in
+ * error 1102: about 6% over 24 h, far more under a burst, with a median of 13-15 ms CPU
+ * per invocation (#701). Two guest responses for one recipe were byte-identical, so a
+ * render can be reused for other guests through the Workers Cache API. Not yet measured:
+ * whether a hit in this Worker really stays under the limit, as it still loads the full bundle.
  *
  * Only requests that cannot carry a user are eligible: GET, no Supabase auth cookie, no
  * Authorization header, a public path. A signed-in request never reads or writes the
