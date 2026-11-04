@@ -18,7 +18,24 @@ describe('privacy policy — gender (#376)', () => {
   })
 
   it('shows the effective date of this version', () => {
-    expect(html).toContain('Obowiązuje od: 28 października 2026')
+    expect(html).toContain('Obowiązuje od: 2 listopada 2026')
+  })
+})
+
+// The anonymous usage counters (/api/e) and the Search Console sync are disclosed,
+// and the old "no tools that track traffic" promise is gone.
+describe('privacy policy — statistics', () => {
+  const html = renderToStaticMarkup(PrivacyPolicyPage())
+
+  it('describes the anonymous counters: daily totals, no cookies, no stored IP', () => {
+    expect(html).toContain('Anonimowe statystyki')
+    expect(html).toContain('Zapisujemy tylko dzienne sumy')
+    expect(html).toContain('nie jest nigdzie zapisywany')
+  })
+
+  it('mentions Search Console and no longer claims no traffic tools at all', () => {
+    expect(html).toContain('Google Search Console')
+    expect(html).not.toContain('narzędzi, które śledzą ruch na stronie')
   })
 })
 

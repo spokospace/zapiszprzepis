@@ -13,6 +13,7 @@
     "refresh:recipe-times": "node --env-file=.env.local --import tsx scripts/refresh-recipe-times.ts",
     "archive:recipe-images": "node --env-file=.env.local --import tsx scripts/archive-recipe-images.ts",
     "backfill:recipe-tags": "node --env-file=.env.local --import tsx scripts/backfill-recipe-tags.ts",
+    "backfill:stale-tags": "node --env-file=.env.local --import tsx scripts/backfill-stale-tags.ts",
     "generate:meta-migration": "node --env-file=.env.local --import tsx scripts/generate-meta-description-migration.ts",
     "backfill:source-urls": "node --env-file=.env.local --import tsx scripts/backfill-source-urls.ts",
     "backfill:source-fingerprints": "node --env-file=.env.local --import tsx scripts/backfill-source-fingerprints.ts",
@@ -44,34 +45,35 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:reflow": "playwright test --project=reflow --project=phone --project=layout --reporter=list"
+    "test:reflow": "playwright test --project=reflow --project=phone --project=layout --reporter=list",
+    "test:skeleton": "playwright test --project=skeleton --reporter=list"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.20.13",
+    "@opennextjs/cloudflare": "^1.20.15",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
-    "inngest": "^4.26.0",
-    "lucide-react": "^1.41.0",
-    "next": "16.4.3",
+    "inngest": "^4.26.2",
+    "lucide-react": "^1.66.0",
+    "next": "16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/postcss": "^4.3.4",
     "@types/node": "^26.0.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
-    "@vitest/ui": "^4.1.8",
+    "@vitest/ui": "^5.0.0",
     "dotenv": "^18.0.9",
-    "eslint": "^10.0.0",
-    "eslint-config-next": "16.4.3",
-    "supabase": "^2.116.0",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.13",
+    "eslint": "^10.14.0",
+    "eslint-config-next": "16.4.5",
+    "supabase": "^3.0.0",
+    "tailwindcss": "^4.3.4",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.8",
-    "wrangler": "^4.152.0"
+    "vitest": "^5.0.0",
+    "wrangler": "^4.156.2"
   }
 }

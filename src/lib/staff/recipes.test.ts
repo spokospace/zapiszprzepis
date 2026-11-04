@@ -32,7 +32,8 @@ const ROW = {
 
 describe('mapRecipeRow', () => {
   it('maps a row, reading bigint strings as numbers', () => {
-    expect(mapRecipeRow(ROW)).toMatchObject({ id: 12, slug: 'zupa', favoriteCount: 3, hiddenAt: null, ownerUsername: 'ania' })
+    expect(mapRecipeRow(ROW)).toMatchObject({ id: 12, slug: 'zupa', favoriteCount: 3, hiddenAt: null, ownerUsername: 'ania', imageUrl: null })
+    expect(mapRecipeRow({ ...ROW, image_url: 'https://cdn.example/u/12.jpg' })).toMatchObject({ imageUrl: 'https://cdn.example/u/12.jpg' })
   })
 
   it('keeps the hidden state and its reason', () => {

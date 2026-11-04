@@ -27,9 +27,11 @@ describe('FavoriteButton on a card photo', () => {
     expect(html).toContain('fill="currentColor"')
   })
 
-  it('sends a guest to log in from the same named heart', () => {
+  it('gives a guest the same named heart as a button, with no login link for crawlers to follow', () => {
     const html = heart({ size: 'photo', recipeTitle: 'Sernik', isAuthenticated: false })
-    expect(html).toMatch(/<a href="\/login\?[^"]*fav=7"[^>]*aria-label="Dodaj do ulubionych: Sernik"/)
+    expect(html).toMatch(/<button[^>]*type="button"[^>]*aria-label="Dodaj do ulubionych: Sernik"/)
+    expect(html).not.toContain('href=')
+    expect(html).not.toContain('fav=')
   })
 })
 
@@ -57,9 +59,10 @@ describe('FavoriteButton on the recipe page (handoff 2026-10-28)', () => {
     expect(html).toContain('aria-pressed="true"')
   })
 
-  it('gives a guest the same "Zapisz" as a login link', () => {
+  it('gives a guest the same "Zapisz" as a button, with no login link for crawlers to follow', () => {
     const html = heart({ isAuthenticated: false })
-    expect(html).toMatch(/<a href="\/login\?[^"]*fav=7"[^>]*>/)
+    expect(html).toMatch(/<button[^>]*type="button"[^>]*>/)
+    expect(html).not.toContain('href=')
     expect(html).toContain('Zapisz<span class="sr-only"> w ulubionych</span>')
   })
 })

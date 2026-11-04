@@ -20,10 +20,13 @@ const OG_IMAGE_PATH = '/og/home.jpg'
  * origin (from `getSiteUrl()`): the root layout sets no `metadataBase`, so a
  * relative og:image would not resolve for the scrapers that build link
  * previews. `summary_large_image` shows the 1200×630 card full-width.
+ * The canonical names the one homepage URL, so `?tab=` / `?fav_added=` variants and
+ * an http:// copy are not filed as duplicates without a canonical (#645).
  */
 export function homeMetadata(siteUrl: string): Metadata {
   const ogImage = `${siteUrl}${OG_IMAGE_PATH}`
   return {
+    alternates: { canonical: `${siteUrl}/` },
     openGraph: {
       title: HOME_TITLE,
       description: HOME_DESCRIPTION,

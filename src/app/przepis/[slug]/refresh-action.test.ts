@@ -78,6 +78,39 @@ describe('refreshRecipe — a share that could not be queued (#382)', () => {
 })
 
 
+describe('refreshRecipe — targets the row, not the source_url (multi-recipe links)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('sends the re-extraction with the row id, so only that dish is rewritten', async () => {
+    const recipesQuery: any = {
+      select: () => recipesQuery,
+      eq: () => recipesQuery,
+      single: async () => ({ data: { id: 7, source_url: 'https://example.com/menu' }, error: null }),
+    }
+    const sharesQuery: any = {
+      insert: () => sharesQuery,
+      select: () => sharesQuery,
+      single: async () => ({ data: { id: 5 }, error: null }),
+    }
+    vi.mocked(createSupabaseServerClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
+      from: (table: string) => (table === 'recipes' ? recipesQuery : sharesQuery),
+    } as any)
+    vi.mocked(getFullAccess).mockResolvedValue(true)
+    vi.mocked(sendRecipeExtract).mockResolvedValue(undefined)
+    const data = new FormData()
+    data.set('slug', 'salatka-z-rzodkwi')
+
+    await expect(refreshRecipe(data)).rejects.toThrow('REDIRECT /przepis/salatka-z-rzodkwi?refreshing=1')
+
+    expect(sendRecipeExtract).toHaveBeenCalledWith(
+      expect.objectContaining({ sharedUrl: 'https://example.com/menu', force: true, recipeId: 7 }),
+    )
+  })
+})
+
 describe('refreshRecipe — per-account extraction cap (E02-S11-T04)', () => {
   beforeEach(() => {
     vi.clearAllMocks()

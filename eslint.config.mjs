@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     ".claude/**",
     // OpenNext build output (git-ignored), same category as .next/**.
     ".open-next/**",
+    // Wrangler state and the dry-run bundle `pnpm measure:worker` writes (git-ignored).
+    ".wrangler/**",
     // Design handoff bundles (#266): third-party prototype runtime, reference only, never shipped.
     ".ai/design/**",
     // The same kind of bundle kept beside a spec (#593's support.js), plus spec mockups.

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Regulamin">
+    <LegalPage title="Regulamin" effective="28 października 2026">
       <LegalSection id="uslugodawca" title="1. Kto prowadzi serwis">
         <p>
           Serwis Zapisz Przepis (zapiszprzepis.pl) prowadzi SPOKO SPACE Szymon Berski,{' '}

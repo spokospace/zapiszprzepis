@@ -18,9 +18,10 @@ describe('createSupabaseAnonClient', () => {
   })
 
   it('reuses one client across calls (singleton per isolate)', () => {
-    createSupabaseAnonClient()
-    createSupabaseAnonClient()
-    // Still one construction despite three total calls across both tests.
-    expect(createClient).toHaveBeenCalledTimes(1)
+    const first = createSupabaseAnonClient()
+    const second = createSupabaseAnonClient()
+    // Same instance on every call; checked by identity, not by mock call count,
+    // because vitest clears mock history between tests.
+    expect(second).toBe(first)
   })
 })

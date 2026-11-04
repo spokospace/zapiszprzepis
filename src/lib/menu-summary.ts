@@ -1,5 +1,5 @@
 import 'server-only'
-import type { User } from '@supabase/supabase-js'
+import type { SessionUser } from '@/lib/supabase/user-check'
 import type { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getFullAccess } from '@/lib/full-access'
 
@@ -35,7 +35,7 @@ async function countOwnRows(
 }
 
 /** null for a guest: no "Moje" block, nothing to query. */
-export async function getMenuSummary(supabase: ServerClient, user: User | null): Promise<MenuSummary | null> {
+export async function getMenuSummary(supabase: ServerClient, user: SessionUser | null): Promise<MenuSummary | null> {
   if (!user) return null
   const [fullAccess, myRecipesCount, favoritesCount] = await Promise.all([
     getFullAccess(supabase),

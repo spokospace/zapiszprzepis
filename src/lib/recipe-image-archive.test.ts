@@ -8,6 +8,9 @@ import {
   pickGalleryImages,
   namesTheDish,
   buildGallery,
+  dedupeStoredGallery,
+  findPageImage,
+  onPageHost,
   coverImage,
   jsonLdImage,
   archiveGallery,
@@ -491,6 +494,21 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
   const PAGE = 'https://aniagotuje.pl/przepis/ciastka-maslane-z-marmolada'
   const CDN = 'https://cdn.aniagotuje.com'
 
+  it("drops a site-wide award certificate in the page footer (slushna.by, recipe 1102)", () => {
+    // The footer block holds a Belarusian contest diploma; it has no size and
+    // no noise class of its own, so only the footer wrapper marks it as page furniture.
+    const html = `
+      <img src="https://bel.24health.by/wp-content/uploads/2023/08/IMG_4130-scaled.webp" alt="Сэндвічы" width="500" height="375">
+      <div class="row down-footer-block ">
+        <div class="image-sert col-md-2">
+          <figure><img src="https://slushna.by/wp-content/themes/belzdorovie/img/optimize/diplom_slushna.webp" alt="diplom_poznay"></figure>
+        </div>
+      </div>`
+    expect(pickGalleryImages(html, 'https://slushna.by/dva-varyyanty-zapechanyx-sendvichau-pakrokavy-recept')).toEqual([
+      'https://bel.24health.by/wp-content/uploads/2023/08/IMG_4130-scaled.webp',
+    ])
+  })
+
   it("keeps the post's photos and drops badges, other recipes and readers' photos (aniagotuje)", () => {
     // Trimmed from Firecrawl's main-content html of the page: the author badge,
     // the hero (declared 1×1, though the file is 1000px), step photos, cards
@@ -677,6 +695,40 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
       'https://blogger.googleusercontent.com/img/b/R29v/AVvX/s1600/ciasto.jpg',
       'https://1.bp.blogspot.com/-abc/X/AAA/def/s1600/krok.jpg',
     ])
+  })
+})
+
+describe('onPageHost', () => {
+  it('moves a photo from another host to the page host, keeping the path', () => {
+    expect(onPageHost('https://cdn.sister.by/wp-content/uploads/a.jpg?x=1', 'https://slushna.by/post/')).toBe(
+      'https://slushna.by/wp-content/uploads/a.jpg?x=1',
+    )
+  })
+
+  it('is undefined when the photo is already on the page host or a URL is not http', () => {
+    expect(onPageHost('https://slushna.by/a.jpg', 'https://slushna.by/post/')).toBeUndefined()
+    expect(onPageHost('data:image/png;base64,AAAA', 'https://slushna.by/post/')).toBeUndefined()
+    expect(onPageHost('https://cdn.sister.by/a.jpg', 'not a url')).toBeUndefined()
+  })
+})
+
+describe('findPageImage', () => {
+  const RAW = 'https://cdn.example.com/uploads/стравы-фота-3.jpg'
+  const ENCODED = 'https://cdn.example.com/uploads/%D1%81%D1%82%D1%80%D0%B0%D0%B2%D1%8B-%D1%84%D0%BE%D1%82%D0%B0-3.jpg'
+
+  it('returns the URL as the page writes it, whichever spelling the model copied', () => {
+    expect(findPageImage(ENCODED, `<img src="${RAW}">`)).toBe(RAW)
+    expect(findPageImage(RAW, `![](${ENCODED})`)).toBe(ENCODED)
+  })
+
+  it('finds a plain URL inside markdown and HTML', () => {
+    expect(findPageImage('https://x.test/a.jpg', 'text ![alt](https://x.test/a.jpg) more')).toBe('https://x.test/a.jpg')
+  })
+
+  it('is undefined for a URL the page does not contain, or a non-http one', () => {
+    expect(findPageImage('https://x.test/invented.jpg', '<img src="https://x.test/a.jpg">')).toBeUndefined()
+    expect(findPageImage('/relative.jpg', 'src="/relative.jpg"')).toBeUndefined()
+    expect(findPageImage('', 'anything')).toBeUndefined()
   })
 })
 
@@ -1012,5 +1064,22 @@ describe('namesTheDish', () => {
   it('does not match page chrome, or a word every recipe slug shares', () => {
     expect(isDish('https://blog.pl/wp-content/uploads/about-sm.jpg', 'Author in the kitchen')).toBe(false)
     expect(isDish('https://blog.pl/wp-content/uploads/domowe-logo.png', 'Przepis')).toBe(false)
+  })
+})
+
+describe('dedupeStoredGallery — a stored copy of the cover is dropped by content', () => {
+  const hashes: Record<string, string | null> = { cover: 'a', copy: 'a', other: 'b', broken: null }
+  const hashOf = async (url: string) => hashes[url]
+
+  it('keeps the first of equal photos, so the cover leads', async () => {
+    expect(await dedupeStoredGallery(['cover', 'other', 'copy'], hashOf)).toEqual(['cover', 'other'])
+  })
+
+  it('keeps a photo it cannot read', async () => {
+    expect(await dedupeStoredGallery(['cover', 'broken', 'copy'], hashOf)).toEqual(['cover', 'broken'])
+  })
+
+  it('returns the unique photos untouched', async () => {
+    expect(await dedupeStoredGallery(['cover', 'other'], hashOf)).toEqual(['cover', 'other'])
   })
 })

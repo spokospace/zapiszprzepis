@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { usePathname } from 'next/navigation'
 import { Heart } from 'lucide-react'
+import { track } from '@/lib/analytics/track'
 import { addFavorite, removeFavorite } from '@/app/favorites/actions'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
@@ -10,6 +10,8 @@ import { stripSearchParam } from '@/lib/strip-search-param'
 
 interface FavoriteButtonProps {
   recipeId: number
+  /** The recipe's slug, the subject of the `favorite_add` usage count. */
+  recipeSlug?: string
   /** Server truth at render time; the client override layers on top of it. */
   initialFavorited: boolean
   isAuthenticated: boolean
@@ -31,8 +33,7 @@ const PAGE_LABEL = { off: 'Zapisz', on: 'W ulubionych' } as const
 const SIZE = {
   // The recipe page's button beside "Zacznij gotować": 60 px, full width of its cell,
   // as tall as the row so the two match.
-  // A guest gets it as a link to the login: bordered like a button, so no underline.
-  full: 'flex h-full min-h-[60px] w-full items-center justify-center gap-2.5 rounded-pill border-2 border-action px-4 text-[19px] font-bold no-underline!',
+  full: 'flex h-full min-h-[60px] w-full items-center justify-center gap-2.5 rounded-pill border-2 border-action px-4 text-[19px] font-bold',
   // No grey ring — a soft shadow sets the white circle off a light photo and the
   // heart itself carries the contrast (ZMIANY_prototyp §6).
   photo:
@@ -108,15 +109,18 @@ function FavoriteToast({ show, onUndo }: { show: boolean; onUndo: () => void }) 
  * The toast after a guest heart's login, on a page that has no heart for the
  * recipe (the signed-in home: the guest home's card hearts return there).
  */
-export function FavoriteAddedNotice({ recipeId }: { recipeId: number }) {
+export function FavoriteAddedNotice({ recipeId, recipeSlug }: { recipeId: number; recipeSlug?: string | null }) {
   const [toast, setToast] = useState(false)
   const hide = useCallback(() => setToast(false), [])
   useToastTimeout(toast, hide)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (claimFavoriteAdded(recipeId)) setToast(true)
-  }, [recipeId])
+    if (claimFavoriteAdded(recipeId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setToast(true)
+      if (recipeSlug) track('favorite_add', recipeSlug)
+    }
+  }, [recipeId, recipeSlug])
 
   return (
     <FavoriteToast
@@ -133,17 +137,17 @@ export function FavoriteAddedNotice({ recipeId }: { recipeId: number }) {
  * The heart (E01-S06), never a star: labelled on the recipe page, alone on a
  * card's photo, where its accessible name carries the label and the recipe.
  * Optimistic toggle with a ~5 s "Dodano do ulubionych · Cofnij" toast after
- * adding. A guest gets a link to /login?next={this page}&fav={id}; the favorite
+ * adding. A guest gets a button that opens /login?next={this page}&fav={id}; the favorite
  * is saved as the login completes and the toast shows on the way back.
  */
 export function FavoriteButton({
   recipeId,
+  recipeSlug,
   initialFavorited,
   isAuthenticated,
   size = 'full',
   recipeTitle,
 }: FavoriteButtonProps) {
-  const pathname = usePathname()
   const [override, setOverride] = useState<boolean | null>(null)
   const [toast, setToast] = useState(false)
   const [error, setError] = useState(false)
@@ -164,32 +168,35 @@ export function FavoriteButton({
         setError(true)
       } else if (next) {
         setToast(true)
+        if (recipeSlug) track('favorite_add', recipeSlug)
       }
     })
   }
 
   // A one-shot read of the address bar after hydration (the server render cannot see it).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (isAuthenticated && claimFavoriteAdded(recipeId)) setToast(true)
-  }, [isAuthenticated, recipeId])
+    if (isAuthenticated && claimFavoriteAdded(recipeId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setToast(true)
+      // The add happened server-side at login; this claim is its one client-side trace.
+      if (recipeSlug) track('favorite_add', recipeSlug)
+    }
+  }, [isAuthenticated, recipeId, recipeSlug])
 
   const hideToast = useCallback(() => setToast(false), [])
   useToastTimeout(toast, hideToast)
 
   if (!isAuthenticated) {
+    // A button, not a link: crawlers follow hrefs, so no /login?…&fav= URL is left to index.
     return (
-      <a
-        href={loginPath(pathname, recipeId)}
-        // The render knows only the path; return to the page's current query too.
-        onClick={(e) => {
-          e.currentTarget.href = loginPath(`${window.location.pathname}${window.location.search}`, recipeId)
-        }}
+      <button
+        type="button"
+        onClick={() => window.location.assign(loginPath(`${window.location.pathname}${window.location.search}`, recipeId))}
         aria-label={name(COPY.off)}
         className={`${SIZE[size]} ${LOOK[size].off}`}
       >
         <Content size={size} favorited={false} />
-      </a>
+      </button>
     )
   }
 

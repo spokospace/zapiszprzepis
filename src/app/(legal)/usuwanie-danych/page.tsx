@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function DataDeletionPage() {
   return (
-    <LegalPage title="Jak usunąć konto i swoje dane">
+    <LegalPage title="Jak usunąć konto i swoje dane" effective="28 października 2026">
       <p>
         Ta strona opisuje, jak usunąć swoje dane z serwisu Zapisz Przepis, także jeśli logujesz się przez Facebooka lub
         Google.

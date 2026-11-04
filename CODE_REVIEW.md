@@ -18,7 +18,7 @@ Stack: Next.js 16 App Router (React 19) running on Cloudflare Workers via OpenNe
 
 - Any `next=` / redirect target goes through `src/lib/safe-redirect.ts` (`safeNext`), never a regex or `startsWith` check (lessons.md #1).
 - External error codes (Supabase `error_code`, provider errors) are mapped by exact match against a `Set`, not `includes` (lessons.md #2).
-- `getUser()` is called once at the middleware boundary (`src/middleware.ts` → `src/lib/supabase/proxy.ts`); new downstream code uses the session rather than adding another round-trip (lessons.md #3).
+- The session is checked once at the middleware boundary (`src/middleware.ts` → `src/lib/supabase/proxy.ts`) with `getClaims()`, which verifies the JWT locally against the cached signing keys (`jwks-cache.ts`); reads downstream use `getCurrentUser()` / `getSignedInUser()` (same local check, id only) rather than adding a round-trip (lessons.md #3). Server actions, route handlers that write, and `requireUser()` keep `getUser()` (`checkUser`), which also sees a session revoked elsewhere.
 - A new public path must be added deliberately to the allow-list in `src/middleware.ts`; anything else is session-gated by default. Flag any route that becomes open by accident.
 - Auth email links rely on `RedirectTo` already containing `?next=` (templates append `&token_hash=…`). A change to the redirect URLs built in the auth actions or to `supabase/templates/*.html` must keep that shape, and the PR must say the production templates in the Supabase Dashboard need the same manual edit.
 

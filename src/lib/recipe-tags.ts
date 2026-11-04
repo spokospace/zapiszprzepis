@@ -156,6 +156,20 @@ export function resolveTags({ title, tags, prepTimeMinutes, cookTimeMinutes, tot
   return [...result].slice(0, MAX_TAGS)
 }
 
+export interface StaleTagRecipe extends Omit<TagInput, 'tags'> {
+  tags: string[] | null
+}
+
+/**
+ * The tags a stored recipe is missing, from the deterministic rules only (title
+ * patterns + "szybkie"). Empty once the recipe has any tag: the backfill only
+ * adds, and never re-resolves or clears tags it already has.
+ */
+export function staleTagsFor(recipe: StaleTagRecipe): RecipeTag[] {
+  if (recipe.tags && recipe.tags.length > 0) return []
+  return resolveTags({ ...recipe, tags: [] })
+}
+
 // Polish inflects, so "rowkami" / "rowkach" or "truskawkowy" / "truskawkową"
 // are the same word for this purpose: compare the first few letters.
 const STEM_LENGTH = 5

@@ -15,6 +15,7 @@ import { parseSteps, visibleStepImages } from '@/lib/steps'
 import { findGlossaryTerms } from '@/lib/ingredient-glossary'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
+import { TrackView } from '@/app/components/track-view'
 import { RecipeActions } from './_components/recipe-actions'
 import { StaffHiddenBanner, UnavailableRecipe } from './_components/hidden-notice'
 import { RecipeChecklists } from './_components/recipe-checklists'
@@ -23,11 +24,14 @@ import { LockedGallery } from './_components/locked-gallery'
 import { SimilarRecipes } from './_components/similar-recipes'
 import { DishVersionsBar } from './_components/dish-versions-bar'
 import { DishVersions } from './_components/dish-versions'
+import { RECIPE_MAIN, RECIPE_TOP_ROW } from './_components/recipe-split'
 import { parseVersionsSort, type DishVersionRow } from '@/lib/dish-versions'
 import { getFavoriteIds } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
+import { formatSource } from '@/lib/recipe-source'
+import { PostSiblings, type PostSibling } from './_components/post-siblings'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -80,15 +84,20 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   // a dish — until the #298 backfill lands, dish is null everywhere, so no call
   // is made and no bar/section renders (empty-data state).
   const supabase = await createSupabaseServerClient()
-  const [categoryContext, gallery, favorite, dishVersionsResult] = await Promise.all([
+  const [categoryContext, gallery, favorite, dishVersionsResult, siblingsResult] = await Promise.all([
     loadCategoryContext(supabase, typedRecipe),
     user ? supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle() : null,
     user
       ? supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle()
       : null,
     typedRecipe.dish ? supabase.rpc('dish_versions', { p_recipe_id: typedRecipe.id }) : null,
+    // The other dishes saved from this link (E01 multi-recipe, phase 4). A link with one dish has none.
+    typedRecipe.source_url
+      ? supabase.from('public_recipes').select('id, slug, title').eq('source_url', typedRecipe.source_url).neq('id', typedRecipe.id)
+      : null,
   ])
   const galleryImages: string[] = gallery?.data?.image_urls ?? []
+  const siblings = (siblingsResult?.data ?? []) as PostSibling[]
   const isFavorite = Boolean(favorite?.data)
   const galleryCount = typedRecipe.gallery_count ?? 0
 
@@ -136,7 +145,8 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   return (
     // From lg the list row sits right under the category bar (handoff 2026-10-28: a small
     // gap above it, 12 px to the hero), so the top padding shrinks there.
-    <main className="min-h-screen bg-white py-6 sm:py-8 lg:pt-2">
+    <main className={RECIPE_MAIN}>
+      {!hidden && <TrackView event="recipe_view" subject={typedRecipe.slug} />}
       {hidden?.kind === 'staff' && <StaffHiddenBanner reason={hidden.hiddenReason} recipeId={hidden.staffRecipeId} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
@@ -170,7 +180,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             "Przepisy › {Kategoria} › {Przepis}" on the right. From lg only; below lg the
             header carries the back link (C3). The list bar stays mounted at every width,
             because it also feeds that back link. */}
-        <div className="lg:mb-3 lg:flex lg:min-h-[44px] lg:items-center lg:gap-6 print:hidden">
+        <div className={`${RECIPE_TOP_ROW} print:hidden`}>
           <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
           <RecipeBreadcrumbs category={typedRecipe.category} title={typedRecipe.title} className="hidden lg:ml-auto lg:block" />
         </div>
@@ -192,6 +202,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           actions={
             <RecipeActions
               recipeId={typedRecipe.id}
+              recipeSlug={typedRecipe.slug}
               isFavorite={isFavorite}
               isAuthenticated={Boolean(user)}
               title={typedRecipe.title}
@@ -246,6 +257,14 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             All of it is screen-only — a printout stops at the recipe itself. */}
         <div className="print:hidden">
           <RecipeListNav slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+
+          {typedRecipe.source_url && (
+            <PostSiblings
+              sourceUrl={typedRecipe.source_url}
+              sourceName={formatSource(typedRecipe.source_type, typedRecipe.source_url, typedRecipe.source_author).text}
+              siblings={siblings}
+            />
+          )}
 
           <DishVersions
             versions={versions}

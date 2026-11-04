@@ -22,8 +22,8 @@ The project has exactly one GitHub account, `spokospace`: owner, author of every
 
 **How to apply:**
 - Never skip a PR because its author is `spokospace` (`om-review-prs` and the other `om-*` skills included). Post the review as a `COMMENT`; the pipeline label (`merge-queue` / `changes-requested`) carries the verdict.
-- Merge (squash) when the validation gate — `pnpm typecheck`, `pnpm lint`, `pnpm test` — passes on the PR head merged with the current `master`. Workers Builds runs only on `master` (preview builds for PR branches are off to save Cloudflare build minutes), so a PR has no Cloudflare check to wait for; after merging, confirm the `master` build passed (`SDLC.md`). Manual QA (`needs-qa`) is advisory for this account; this rule overrides the QA gate in `SDLC.md`. Note on the PR that it merged on green tests without manual QA.
-- Still never merge: a draft, a PR with a merge conflict, a PR labeled `do-not-merge` / `blocked`, or one whose description or runbook requires a manual production step first (e.g. a migration applied through the Management API) until the owner confirms that step is done.
+- Merge (squash) when both hold: the validation gate — `pnpm typecheck`, `pnpm lint`, `pnpm test` — passes on the PR head merged with the current `master`, and the PR's **`CI` check** (GitHub Actions, `.github/workflows/ci.yml`) is green on the current head. `CI` runs the same three commands plus the OpenNext Worker build and the Worker size check (`pnpm measure:worker`, fails above 2900 KiB gzipped; the free-plan limit is 3 MiB). It is the only check a PR has: Workers Builds runs only on `master` (preview builds for PR branches are off to save Cloudflare build minutes). After merging, confirm the `master` build passed (`SDLC.md`). Manual QA (`needs-qa`) is advisory for this account; this rule overrides the QA gate in `SDLC.md`. Note on the PR that it merged on green tests without manual QA.
+- Still never merge: a draft, a PR with a merge conflict, a PR whose `CI` check is red or still running, a PR labeled `do-not-merge` / `blocked`, or one whose description or runbook requires a manual production step first (e.g. a migration applied through the Management API) until the owner confirms that step is done. `master` has no branch protection, so GitHub does not enforce the `CI` check; this rule and the merge skills do.
 
 ## Po każdym deployu i każdej zmianie sekretu: `pnpm smoke:prod`
 
@@ -36,6 +36,19 @@ Po każdym buildzie `master` (Workers Builds) i po każdej zmianie zmiennej albo
 - Czerwony wynik: Cloudflare → Workers & Pages → zapiszprzepis → **Builds** → **Retry** przy ostatnim buildzie `master` (wgrywa kod i pliki razem; sekrety zostają), potem skrypt jeszcze raz. Agent nie ma dostępu do tego konta — poproś właściciela.
 - Sekret zmieniaj, gdy żaden build nie trwa, i od razu po nim zrób Retry buildu `master` + `pnpm smoke:prod`.
 - Dowolny adres jako argument: `pnpm smoke:prod https://<version>-zapiszprzepis.<subdomain>.workers.dev`.
+
+## Skeleton (`loading.tsx`) zawsze zgadza się z układem strony
+
+Każdy ekran, który ma `loading.tsx` (przepis `przepis/[slug]`, lista `recipes`, `ulubione`), ma skeleton o **tym samym układzie** co strona po wczytaniu: te same kolumny, szerokości, odstępy i przesunięcie od góry, na każdej szerokości (telefon, tablet, desktop). Zmiana układu strony i zmiana jej skeletona to **jeden PR**, nigdy „skeleton później”.
+
+**Dlaczego:** 2026-10-29 skeleton przepisu był ręczną kopią układu i został w tyle po #604 (nagłówek `1fr | 1.6fr` zamieniony na dwie równe kolumny): na desktopie zdjęcie miało 400 px zamiast 524, treść zaczynała się 32 px wyżej, a po wczytaniu cała strona skakała (#637, #638). Na telefonie przyciski w skeletonie zapadały się do zera wysokości.
+
+**Jak stosować:**
+- Układ (kolumny, odstępy, ramka zdjęcia, stałe wysokości) trzymaj w jednym miejscu, które czytają i strona, i skeleton: dla przepisu to `src/app/przepis/[slug]/_components/recipe-split.ts`. Nie kopiuj klas ręcznie do `loading.tsx`. Nowy ekran ze skeletonem robi to samo (plik ze stałymi obok strony).
+- Dodajesz, usuwasz albo przesuwasz blok na stronie (nowy wiersz, nowy przycisk, zmiana wysokości linii) → w tym samym PR dodaj, usuń albo przesuń odpowiadający mu wiersz w `loading.tsx`.
+- Sprawdzaj pomiarem, nie okiem: `e2e/recipe-skeleton.spec.ts` trzyma żądanie RSC, mierzy skeleton i stronę przy 360–1920 px i porównuje kolumny, szerokości, odsunięcie od góry i zdjęcie. Wymaga builda produkcyjnego (w `next dev` linki nie są prefetchowane i skeleton się nie pokazuje): `pnpm build && E2E_PORT=7733 pnpm exec next start -p 7733`, potem `E2E_PORT=7733 pnpm test:skeleton`. Skeleton innego ekranu dostaje taki sam test.
+- Wysokości zależne od danych (długość opisu, liczba składników, box „inne wersje”) mogą się różnić; kolumny i odsunięcia nie.
+- Skeleton nie ma `flex-1` / `flex-[n]` w kolumnie (w kolumnie `flex-1` ma bazę 0 i zapada wysokość): proporcje szerokości dawaj tylko dla układu w wierszu.
 
 ## Przebudowa (epik E01) — zasady projektowe: WCAG, czytelność, model
 

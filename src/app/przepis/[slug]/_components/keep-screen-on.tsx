@@ -28,8 +28,12 @@ export function KeepScreenOn() {
   if (!supported) return null
 
   return (
-    <div className="flex min-h-12 items-center gap-3 text-[16px] font-bold text-ink print:hidden">
-      <span id="keep-screen-on-label">Nie wygaszaj ekranu</span>
+    // min-w-0 on the row and the label: at 320 px a long unbroken word (a run-together title)
+    // would otherwise widen the flex row past the column (WCAG 1.4.10).
+    <div className="flex min-h-12 min-w-0 items-center gap-3 text-[16px] font-bold text-ink print:hidden">
+      <span id="keep-screen-on-label" className="min-w-0 break-words">
+        Nie wygaszaj ekranu
+      </span>
       <button
         type="button"
         role="switch"

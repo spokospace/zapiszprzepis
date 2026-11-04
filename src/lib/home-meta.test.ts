@@ -6,6 +6,10 @@ const SITE_URL = 'https://zapiszprzepis.pl'
 describe('homeMetadata', () => {
   const meta = homeMetadata(SITE_URL)
 
+  it('names the absolute homepage URL as canonical (#645)', () => {
+    expect(meta.alternates?.canonical).toBe(`${SITE_URL}/`)
+  })
+
   it('exposes an Open Graph card with an absolute website URL', () => {
     const og = meta.openGraph
     expect(og).toBeDefined()

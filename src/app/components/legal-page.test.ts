@@ -4,7 +4,7 @@ import { LegalPage, LegalSection } from './legal-page'
 
 describe('LegalPage headings (#392)', () => {
   it('binds one-letter words in the page title to the next word', () => {
-    const html = renderToStaticMarkup(LegalPage({ title: 'Jak usunąć konto i swoje dane', children: null }))
+    const html = renderToStaticMarkup(LegalPage({ title: 'Jak usunąć konto i swoje dane', effective: '1 stycznia 2026', children: null }))
     expect(html).toContain('Jak usunąć konto i\u00a0swoje dane')
   })
 

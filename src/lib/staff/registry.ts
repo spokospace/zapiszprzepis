@@ -3,6 +3,7 @@ import { finishImportRetry } from './imports'
 import type { ReadTool, ToolArg, WriteTool } from './mcp/types'
 import type { StaffPermission } from './permissions'
 import { finishRecipeMerge, finishRecipeSlug } from './recipe-finish'
+import { MAX_USAGE_DAYS } from './usage'
 
 /**
  * One thing staff can do to a resource. The panel and (Phase 4) the MCP are both
@@ -272,6 +273,40 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
           { name: 'to', param: 'p_to', type: 'timestamp', description: 'ISO 8601 upper bound.' },
           arg.limit(100, 'rows'),
           arg.beforeId,
+        ],
+      },
+    },
+  },
+  {
+    name: 'analytics',
+    label: 'Statystyki',
+    path: '/admin/statystyki',
+    permission: 'analytics.read',
+    operations: [],
+    mcp: {
+      get: {
+        description:
+          'Anonymous usage counters for the last N days (Warsaw days, today included): category views with the number of public recipes per category, the 20 most viewed public recipes, feature counts (timer_start, print, favorite_add) and orphan_views (views of slugs that no longer match a public recipe), plus daily [{day, event, count}] per day and event (days with nothing counted are absent). Counts are page events, not unique visitors; empty while collection is switched off.',
+        rpc: 'admin_usage_summary_as',
+        args: [
+          { name: 'days', param: 'p_days', type: 'integer', min: 1, max: MAX_USAGE_DAYS, description: `Window length in days, today included (1-${MAX_USAGE_DAYS}, default 7).` },
+        ],
+      },
+    },
+  },
+  {
+    name: 'search',
+    label: 'Wyszukiwania Google',
+    path: '/admin/wyszukiwania',
+    permission: 'analytics.read',
+    operations: [],
+    mcp: {
+      get: {
+        description:
+          'Google Search Console report for the last N days (Warsaw days, today included), synced once a day: the top 50 search queries and the top 50 site pages (path, recipe title when the path is a public recipe) with clicks, impressions and impression-weighted average position, plus daily [{day, clicks, impressions}] site totals per synced day. last_day is the newest synced day (Google lags 2-3 days); empty before the first sync.',
+        rpc: 'admin_search_summary_as',
+        args: [
+          { name: 'days', param: 'p_days', type: 'integer', min: 1, max: 366, description: 'Window length in days, today included (1-366, default 28).' },
         ],
       },
     },

@@ -73,6 +73,13 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     getRecipeOfTheDay(new Date()).catch(() => null),
   ])
 
+  // The slug of a recipe a guest's heart added at login, for the usage count (the notice only has the id).
+  const favoriteAddedId = user ? parseRecipeId(fav_added) : null
+  const favoriteAddedSlug =
+    favoriteAddedId === null
+      ? null
+      : ((await supabase.from('public_recipes').select('slug').eq('id', favoriteAddedId).maybeSingle()).data?.slug ?? null)
+
   const recipeOfDayCard = recipeOfDay ? (
     <RecipeOfTheDay
       slug={recipeOfDay.slug}
@@ -96,7 +103,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         {user && memberRows ? (
           <MemberHome
             vocative={vocative(greetingName)}
-            favoriteAdded={parseRecipeId(fav_added)}
+            favoriteAdded={favoriteAddedId}
+            favoriteAddedSlug={favoriteAddedSlug}
             rows={memberRows}
             myRecipesCount={menu?.myRecipesCount ?? null}
             favoritesCount={menu?.favoritesCount ?? null}
@@ -296,6 +304,7 @@ function GuestHome({ recentRecipes, recipeOfDay }: { recentRecipes: MyRecipeCard
 function MemberHome({
   vocative,
   favoriteAdded,
+  favoriteAddedSlug,
   rows,
   myRecipesCount,
   favoritesCount,
@@ -305,6 +314,7 @@ function MemberHome({
   vocative: string | null
   /** A guest-home card heart's login round-trip ends here (E01-S06); a row card shows the toast itself when it holds that recipe. */
   favoriteAdded: number | null
+  favoriteAddedSlug: string | null
   rows: MemberRows
   myRecipesCount: number | null
   favoritesCount: number | null
@@ -333,7 +343,7 @@ function MemberHome({
       </Hero>
       {recipeOfDay}
       <PageContainer className="flex flex-col gap-8 pt-6">
-        {favoriteAdded !== null && !shown.has(favoriteAdded) && <FavoriteAddedNotice recipeId={favoriteAdded} />}
+        {favoriteAdded !== null && !shown.has(favoriteAdded) && <FavoriteAddedNotice recipeId={favoriteAdded} recipeSlug={favoriteAddedSlug} />}
         {/* Categories sit above the rows (handoff 17 prototype); in the desktop header's bar (§2), so tiles are phones only (§5e). */}
         <CategoryGrid columns={3} className="lg:hidden" />
         {mine.length > 0 && (

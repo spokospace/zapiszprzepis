@@ -13,7 +13,7 @@ import { householdMeasure, type Ingredient } from '@/lib/ingredients'
 import type { GlossaryEntry } from '@/lib/ingredient-glossary'
 import { useStepPhotos } from './use-step-photos'
 import { IngredientGlossary } from './ingredient-glossary'
-import { RECIPE_SPLIT } from './recipe-split'
+import { RECIPE_CHECKLISTS_TOP, RECIPE_SPLIT } from './recipe-split'
 import { StepTimerText } from './step-timer-text'
 import { KeepScreenOn } from './keep-screen-on'
 
@@ -231,7 +231,7 @@ export function RecipeChecklists({
 
   return (
     // A hairline above, 40 px over the two lists (handoff 2026-10-28 §4); not on paper.
-    <div className={`recipe-print-grid border-t border-border-card pt-10 print:border-0 print:pt-0 ${RECIPE_SPLIT}`}>
+    <div className={`recipe-print-grid ${RECIPE_CHECKLISTS_TOP} print:border-0 print:pt-0 ${RECIPE_SPLIT}`}>
       <section
         aria-labelledby="ingredients-heading"
         className="mb-10 lg:rounded-tile lg:border lg:border-border-card lg:bg-surface-2 lg:p-6"

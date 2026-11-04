@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import Image from 'next/image'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
 import { ImageLightbox } from '@/app/components/image-lightbox'
+import { RECIPE_COVER_FRAME } from './recipe-split'
 
 interface RecipePhotosProps {
   /** The recipe's main photo (the archived cover). */
@@ -48,7 +49,7 @@ export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps)
     // Below lg the cover bleeds to the screen edges; the negative margins mirror
     // PageContainer's and <main>'s padding. From lg it sits inside the container, in the
     // hero's left column, with square corners (handoff 2026-10-28: photos have no radius).
-    <div className="recipe-print-cover relative mb-5 -mx-4 -mt-6 sm:-mx-6 sm:-mt-8 lg:mx-0 lg:mt-0 lg:mb-0">
+    <div className={`recipe-print-cover ${RECIPE_COVER_FRAME}`}>
       <div className="relative aspect-[4/3]">
         <div className="absolute inset-0 overflow-hidden bg-surface-3">
           <Image

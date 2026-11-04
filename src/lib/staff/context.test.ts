@@ -62,6 +62,11 @@ describe('requirePermission', () => {
     await expect(requirePermission('audit.read')).rejects.toThrow('NOT_FOUND')
   })
 
+  it('answers 404 for staff without analytics.read', async () => {
+    signInWith(() => ({ data: ['recipes.read'], error: null }))
+    await expect(requirePermission('analytics.read')).rejects.toThrow('NOT_FOUND')
+  })
+
   it('answers 404 for a user who is not staff', async () => {
     signInWith(() => ({ data: [], error: null }))
     await expect(requirePermission('users.read')).rejects.toThrow('NOT_FOUND')

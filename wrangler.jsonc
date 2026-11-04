@@ -67,6 +67,14 @@
       "name": "MCP_LIMIT",
       "namespace_id": "1003",
       "simple": { "limit": 60, "period": 60 }
+    },
+    // Anonymous usage counter (src/app/api/e): 120 events a minute per client address.
+    // The address is only the limiter's transient key; it is never stored. Nothing to
+    // create in Cloudflare: namespace_id only has to be unique in the account.
+    {
+      "name": "USAGE_LIMIT",
+      "namespace_id": "1004",
+      "simple": { "limit": 120, "period": 60 }
     }
   ],
   "assets": {
@@ -81,6 +89,13 @@
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://wvrlgddgdddwmgzbvtij.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2",
+    // First-party usage counter (.ai/specs/2026-10-30-first-party-usage-analytics.md).
+    // "1" turns on both the browser beacon and the /api/e writer; on since the owner
+    // approved the privacy-policy wording (2026-11-02). NEXT_PUBLIC_* values are inlined
+    // at `next build`, so the same value must also be set as a Workers Builds build
+    // variable (dashboard → Settings → Build → Variables and secrets); this runtime
+    // copy alone does not switch the bundled code.
+    "NEXT_PUBLIC_USAGE_ANALYTICS": "1",
     "NEXT_PUBLIC_SITE_URL": "https://zapiszprzepis.pl",
     // OAuth sign-in buttons on /login (E01-S12): parseOAuthProviders reads this
     // comma-separated list; a listed name shows its button and lets the server

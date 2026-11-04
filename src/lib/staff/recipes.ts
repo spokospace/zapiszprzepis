@@ -20,6 +20,7 @@ export interface StaffRecipe {
   hiddenAt: string | null
   hiddenReason: string | null
   favoriteCount: number
+  imageUrl: string | null
 }
 
 export interface DeletedRecipe {
@@ -82,6 +83,7 @@ export function mapRecipeRow(raw: unknown): StaffRecipe | null {
     hiddenAt: str(r.hidden_at),
     hiddenReason: str(r.hidden_reason),
     favoriteCount,
+    imageUrl: str(r.image_url),
   }
 }
 
