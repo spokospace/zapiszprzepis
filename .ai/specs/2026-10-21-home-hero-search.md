@@ -57,7 +57,7 @@ Values are the handoff README's, checked against `CLAUDE.md` where noted.
 
 **Suggestions panel.** The handoff says the suggestions panel "opens under the field at the block width". On `master` the home field has **no** suggestions: `header-search.tsx` / `header-search-panel.tsx` serve the signed-in desktop header on pages other than `/` (the header search is hidden on `/`). Showing suggestions on the hero field would be a new feature; this spec does not add it (see Q4).
 
-Prototype: not in the repository (see Problem Statement).
+Prototype: `.ai/design/hero-wyszukiwarka-handoff-14/Hero - propozycje.dc.html` (section "1c rozbudowane", ids 3a–3d) and `README.md`. The handoff was added to the repo after this spec was written; the limitation under Problem Statement is resolved.
 
 ## 📝 Edge Cases & Failure Scenarios
 

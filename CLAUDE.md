@@ -86,6 +86,19 @@ Obowiązują **każdy ekran** przebudowy (publiczna aplikacja, wysoka czytelnoś
 
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
+## Styl 1b i handoffy 13–17 — co jest zdecydowane (stan na 2026-11-04)
+
+Makiety i instrukcje projektanta leżą w `.ai/design/` — zacznij od `.ai/design/README.md` (indeks, kolejność ważności, co zbudowano i czym kod świadomie różni się od makiet). Makiety `.dc.html` to referencje, nie kod; przy konflikcie wygrywa ten plik i kod z testami.
+
+- **Promienie tylko z tokenów:** `rounded-pill` (przyciski, chipy, pola wyszukiwania, serce) i `rounded-tile` (4 px: karty, zdjęcia, ramki, inputy, komunikaty). Nigdy `rounded-[Npx]`, `rounded-field` ani `rounded-card` (aliasy usunięte, pilnuje `src/lib/radius-tokens.test.ts`). Wyjątek: panel podpowiedzi wyszukiwania ma `rounded-2xl` (16 px) według handoffu.
+- **Przyciski:** główny `#c2410c` + biały tekst; drugorzędny biały z ramką 2 px `border-ink` (`buttonClasses('outline')`). Karta przepisu bez ramki i tła, plakietka źródła to płaska biała zakładka (`left-px`, `bottom-1.5`), serce 48 px z cieniem.
+- **Zdjęcia kroków tylko dla zalogowanych** (decyzja właściciela, 2026-10-21): filtruje serwer (`visibleStepImages` w `src/lib/steps.ts`), gość dostaje sam tekst kroków, bez zdjęć, przełącznika i lightboxa. Nie przywracaj ich gościom.
+- **„← Wróć” na przepisie** prowadzi do ekranu, od którego zaczęło się przeglądanie (strona główna, kategoria, Ulubione, Moje przepisy, wyniki wyszukiwania), nazwanego w napisie; punkt powrotu jest w `sessionStorage` (`src/lib/return-point.ts`) i ustawiają go tylko te ekrany, nigdy przepisy. „Poprzedni” tylko dla przepisu otwartego z listy.
+- **Strona główna (handoff 14):** jedna kolumna, widoczna etykieta pola, „Powiedz, czego szukasz” poza polem (wiersz „albo” + przycisk, tylko gdzie jest Web Speech API), „Często szukane” w hero dla gościa i zalogowanego (5 haseł, 4 na telefonie), „Przepis dnia” osobnym blokiem 7fr/5fr pod linią. Nie ma baneru „wymaga uwagi” w hero (powiadomienia tylko w menu) i nie ma podpowiedzi pod polem hero — to byłaby nowa funkcja, nie dodawaj bez decyzji.
+- **Inne wersje przepisu (handoff 16):** nagłówek z dopełniaczem z mapy `DISH_GENITIVE` (`src/lib/dish-versions.ts`; brak dania w mapie → „Inne wersje tego dania”), karta z sercem, „Ma dodatkowo / Nie ma” zwykłym czarnym pogrubieniem (kolor nie niesie znaczenia, WCAG 1.4.1) i max 2 wiersze, 3 kolumny od `lg`, karuzela z kartami 270 px na telefonie.
+- **Filtr tagów kategorii:** na telefonie jeden wiersz przewijany w poziomie z „Więcej ›” / „‹ Wstecz” sięgającymi krawędzi ekranu; kliknięcie chipa działa w `ListTransition` (chip zaznacza się od razu, lista przygasa). Chipy zostają zwykłymi linkami (działają bez JS).
+- **Zmiana logiki to osobne issue**, nie część PR-a ze stylem (zasada samego handoffu: „nie zmieniaj istniejącej logiki”).
+
 ## 10xDevs AI Toolkit — Moduł 3, Lekcja 1
 
 Rozpocznij Moduł 3, tworząc **trwałą umowę jakościową opartą na ryzyku** przed napisaniem jakiegokolwiek testu — a następnie przeprowadzaj każdą fazę wdrożenia przez standardowy łańcuch zmian.

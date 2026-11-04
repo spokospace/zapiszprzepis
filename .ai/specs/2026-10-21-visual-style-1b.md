@@ -58,7 +58,7 @@ Rule set from the handoff (§10 "Kierunek wizualny 1b"), as transcribed in #418:
 
 **Accessibility (unchanged bar, all phases).** WCAG 2.2 AA: text ≥ 4.5:1, UI components and field borders ≥ 3:1, touch targets ≥ 48 px, visible focus (`outline: 3px solid #1d4ed8; offset 2px`), underlined links, no horizontal scroll at 320 px (`pnpm test:reflow`). Removing the card frame is allowed because the photo is the affordance; focus outline must still wrap the whole card link.
 
-Prototype: not available in the repo (see Problem Statement).
+Prototype: `.ai/design/przebudowa-handoff-13/designs/Prototyp klikalny.dc.html` and `Nowoczesny wygląd - propozycje.dc.html` (variant 1b); main instruction `.ai/design/przebudowa-handoff-13/ZMIANY_prototyp_klikalny.md`. The handoff was added to the repo after this spec was written; the limitation under Problem Statement is resolved.
 
 ## 📝 Edge Cases & Failure Scenarios
 
