@@ -10,6 +10,13 @@ The owner needs to know which recipes and categories real readers use (to decide
 - GA4 would need a PL/EU consent banner; rejected by the owner (no ads, banner cost in bounce rate).
 - `src/app/(legal)/polityka-prywatnosci/page.tsx` section 6 ends "Nie używamy ciasteczek reklamowych ani narzędzi, które śledzą ruch na stronie." That sentence becomes inaccurate once counters ship.
 
+### Baseline: Cloudflare edge traffic on 2026-10-30
+Reference for comparing the first-party numbers later; it is not a target. Source: Cloudflare GraphQL analytics for the `zapiszprzepis.pl` zone (read-only token, not recorded here).
+
+- **Weekly, zone analytics:** about 10-20k requests and 2-7k page views a week from August to early October. Weeks of 12.10, 19.10 and 26.10 (partial): 60k, 86k and 49k requests; 5.3k, 15.7k and 14.7k page views. Requests grew about 5x and page views about 3x from 12.10; the cause is probably bots, not confirmed.
+- **`/przepisy/<category>`, last 7 days** (sampled, eyeball traffic only): obiady 1516, ciasta 1467, przekaski 1186, salatki 1084, ciasteczka 974, zupy 842, desery 743, napoje 613, sniadania 537, pieczywo 489, syropy 410, inne 289, przetwory 260. All 13 categories are above 100 a week.
+- **Limits:** the per-path breakdown reaches back only about 4 weeks, is sampled (totals over different windows do not match exactly), counts HTTP requests rather than people, and does not filter bots. "Page views" is a Cloudflare heuristic over HTML responses.
+
 ## 📝 Proposed Solution
 A tiny beacon (`track(event, subject)`) in the browser posts `{e, s}` to `POST /api/e`; the route validates against an allowlist and calls one Supabase RPC that does `insert … on conflict do update set count = count + 1` on a daily row. Reading is SQL first (P1/P3), an admin page later (P4).
 

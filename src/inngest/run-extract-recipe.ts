@@ -2,10 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { NUMBERED_SLUG_ATTEMPTS, recipeSlug, recipeSlugCandidate } from '@/lib/slugify'
 import {
+  archiveImage,
   archiveRecipeImages,
   archiveStepImages,
   buildGallery,
   coverImage,
+  findPageImage,
+  imageAfterTitle,
+  onPageHost,
   jsonLdHowToStepImages,
   pickGalleryImages,
 } from '@/lib/recipe-image-archive'
@@ -207,6 +211,8 @@ export interface RecipeImageJob {
   recipeId: number
   userId: string
   cover?: string
+  /** The cover's file on the page's own host, tried when the cover's host refuses the download. */
+  coverFallback?: string
   gallery: string[]
   stepSources: (string | null)[]
   /** A refresh replaces the gallery outright, emptying it when the source has none left. */
@@ -249,7 +255,8 @@ export async function storeCoverAndGallery(supabase: SupabaseClient, job: Recipe
     clearStale: job.replace,
   })
   const update: Database['public']['Tables']['recipes']['Update'] = {}
-  if (archived.cover != null) update.image_url = archived.cover
+  const cover = archived.cover ?? (job.coverFallback ? await archiveImage(supabase, job.userId, job.recipeId, job.coverFallback) : null)
+  if (cover != null) update.image_url = cover
   if (archived.gallery != null && (job.replace || archived.gallery.length > 0)) update.image_urls = archived.gallery
   await updateRecipe(supabase, job.recipeId, update)
 }
@@ -281,6 +288,8 @@ interface RecipeData {
   imageUrl?: string
   /** The dish's own photo in a page with several dishes, as the LLM copied it from the page. */
   dishImage?: string | null
+  /** The dish's name as the page writes it, in the page's language; where its photo is found. */
+  sourceTitle?: string | null
   prepTimeMinutes?: number | null
   cookTimeMinutes?: number | null
   totalTimeMinutes?: number | null
@@ -704,6 +713,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure,
       {${foreignSource ? FOREIGN_INGREDIENT_FIELDS : ''}"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
   ],
   "steps": [{"text": "Step 1 description", "image": "image URL from the content that shows THIS step, or null"}],
+  "sourceTitle": "the dish's name EXACTLY as the page writes it, or null",
   "dishImage": "URL of the photo of THIS dish, or null",
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
   "prepTimeMinutes": integer or null,
@@ -728,6 +738,7 @@ Rules:
 - Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast buns (drożdżówki, jagodzianki) stay "desery", rogaliki "ciasteczka".
 - Category: salads and slaws ("sałatka", "surówka", "coleslaw") are "salatki", not "przekaski" or "inne". Home preserves are "przetwory", not "inne": jams and marmalades ("dżem", "konfitura", "powidła", "marmolada"), pickled or fermented vegetables and mushrooms ("ogórki kiszone/marynowane", "kiszona kapusta", "pikle", "grzyby marynowane", "papryka konserwowa"), and homemade ketchups, chutneys and sauces put up in jars for winter ("do słoików", "na zimę"). But a marinade made to flavour meat before cooking ("marynata do kurczaka/karkówki/mięsa/drobiu") is NOT a preserve — it is "inne", not "przetwory".
 - Category: homemade syrups, tinctures and herbal remedies made for health ("syrop na odporność/na kaszel", "mikstura na zatoki", "napar prozdrowotny") are "syropy". Everyday drinks (lemoniada, herbata, kompot, soki, koktajle) stay "napoje".
+- sourceTitle: on a page with several dishes, the dish's name copied CHARACTER FOR CHARACTER from the page text (a heading, or the caption or alt text of its photo), in the page's own language and spelling, NOT translated and NOT shortened. It is used to find the dish's photo on the page. When the page gives a single dish, or the dish has no such name in the text, return null.
 - dishImage: on a page with several dishes, the photo that shows THIS dish: the first image inside or right after its section. Use ONLY an image URL that appears verbatim in the provided Page HTML or Page markdown, copied EXACTLY. NEVER use the page's main/header photo, a logo, an avatar, an ad or a related-recipe thumbnail. When the dish has no photo of its own, or the page gives a single dish, return null.
 - Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
 - Title names the dish the way a menu would: not a question or how-to ("Jak zrobić domowe lody?" → "Domowe lody"), no praise words ("najlepszy", "pyszny", "idealny"), no first person ("moje", "mojej mamy") and no add-ons like "+ przepis na lukier". Proper names keep their capitals ("Prince Polo", "KFC", "Boże Narodzenie").
@@ -986,15 +997,25 @@ Rules:
       }
 
       // A page with several dishes has one og:image for all of them (the post's
-      // header), so each dish takes the photo the LLM found in its own section,
-      // checked against the page; none found leaves the dish without a cover
-      // rather than with another dish's. Its gallery is just that cover.
+      // header), so each dish takes the first photo in the body after its own
+      // heading, else the photo the LLM found in its section, checked against the
+      // page; none found leaves the dish without a cover rather than with another
+      // dish's. Its gallery is just that cover.
       const pageText = `${html}
 ${embedHtml}
 ${markdown}`
-      const dishImage = typeof recipeJSON.dishImage === 'string' ? recipeJSON.dishImage.trim() : ''
-      const cover = storable.length > 1 ? (dishImage && pageText.includes(dishImage) ? dishImage : undefined) : ogImage
+      // The names a dish goes by in the page: its name as the page writes it (any
+      // language), then the title the model gave it.
+      const namesOf = (dish: RecipeData) => [dish.sourceTitle, dish.title].filter((name): name is string => typeof name === 'string')
+      const bodyImage =
+        storable.length > 1
+          ? imageAfterTitle(namesOf(recipeJSON), pageText, storable.filter((dish) => dish !== recipeJSON).flatMap(namesOf))
+          : undefined
+      const dishImage =
+        bodyImage ?? (typeof recipeJSON.dishImage === 'string' ? findPageImage(recipeJSON.dishImage, pageText) : undefined)
+      const cover = storable.length > 1 ? dishImage : ogImage
       const dishGallery = storable.length > 1 ? [] : gallery
+      const coverFallback = cover && sourceUrl ? onPageHost(cover, sourceUrl) : undefined
 
       const timesEstimated = timesAreEstimated(recipeJSON)
       const estimatedTimes = estimatedTimeFields(recipeJSON)
@@ -1133,7 +1154,7 @@ ${markdown}`
         return {
           kind: 'saved',
           result: { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' },
-          job: { recipeId: refreshed.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace },
+          job: { recipeId: refreshed.id, userId, cover, coverFallback, gallery: dishGallery, stepSources: stepImageSources, replace },
         }
       }
 
@@ -1201,7 +1222,7 @@ ${markdown}`
           recipe = data
           // The og:image, gallery and per-step photos are archived once the row
           // exists; until then image_url stays null (NoPhoto placeholder).
-          imageJob = { recipeId: data.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace: false }
+          imageJob = { recipeId: data.id, userId, cover, coverFallback, gallery: dishGallery, stepSources: stepImageSources, replace: false }
           break
         } else {
           lastInsertError = error
@@ -1293,7 +1314,7 @@ ${markdown}`
             // the existing value alone (never writes a new external link). The
             // gallery and step photos follow the same rule: archived photos replace
             // whatever is there, which is how the backfill gives old recipes them.
-            imageJob = { recipeId: existing.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace: false }
+            imageJob = { recipeId: existing.id, userId, cover, coverFallback, gallery: dishGallery, stepSources: stepImageSources, replace: false }
 
             // Fill the dish columns only when this row was never classified (never
             // overwrite a reviewed value), the same guard as a refresh.
