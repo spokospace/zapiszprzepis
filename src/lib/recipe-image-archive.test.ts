@@ -9,6 +9,7 @@ import {
   namesTheDish,
   buildGallery,
   dedupeStoredGallery,
+  findPageImage,
   coverImage,
   jsonLdImage,
   archiveGallery,
@@ -693,6 +694,26 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
       'https://blogger.googleusercontent.com/img/b/R29v/AVvX/s1600/ciasto.jpg',
       'https://1.bp.blogspot.com/-abc/X/AAA/def/s1600/krok.jpg',
     ])
+  })
+})
+
+describe('findPageImage', () => {
+  const RAW = 'https://cdn.example.com/uploads/стравы-фота-3.jpg'
+  const ENCODED = 'https://cdn.example.com/uploads/%D1%81%D1%82%D1%80%D0%B0%D0%B2%D1%8B-%D1%84%D0%BE%D1%82%D0%B0-3.jpg'
+
+  it('returns the URL as the page writes it, whichever spelling the model copied', () => {
+    expect(findPageImage(ENCODED, `<img src="${RAW}">`)).toBe(RAW)
+    expect(findPageImage(RAW, `![](${ENCODED})`)).toBe(ENCODED)
+  })
+
+  it('finds a plain URL inside markdown and HTML', () => {
+    expect(findPageImage('https://x.test/a.jpg', 'text ![alt](https://x.test/a.jpg) more')).toBe('https://x.test/a.jpg')
+  })
+
+  it('is undefined for a URL the page does not contain, or a non-http one', () => {
+    expect(findPageImage('https://x.test/invented.jpg', '<img src="https://x.test/a.jpg">')).toBeUndefined()
+    expect(findPageImage('/relative.jpg', 'src="/relative.jpg"')).toBeUndefined()
+    expect(findPageImage('', 'anything')).toBeUndefined()
   })
 })
 

@@ -791,6 +791,30 @@ export function pickGalleryImages(html: string, pageUrl?: string): string[] {
   return urls
 }
 
+function decodedUrl(url: string): string {
+  try {
+    return decodeURI(url)
+  } catch {
+    return url
+  }
+}
+
+/**
+ * The URL as the page writes it for a photo the model named, or undefined when
+ * the page has no such URL. Compared decoded: a reader returns the same
+ * Cyrillic file name raw in the HTML and percent-encoded in its image summary,
+ * and the model copies either. Returning the page's own spelling keeps a model's
+ * invented URL out.
+ */
+export function findPageImage(url: string, pageText: string): string | undefined {
+  const wanted = decodedUrl(url.trim())
+  if (!/^https?:\/\//i.test(wanted)) return undefined
+  for (const [candidate] of pageText.matchAll(/https?:\/\/[^\s"'<>)\]]+/gi)) {
+    if (decodedUrl(candidate) === wanted) return candidate
+  }
+  return undefined
+}
+
 /**
  * The gallery to store: the cover first, then the other photos, each photo
  * once, at most GALLERY_LIMIT. Empty when there is nothing beyond the cover —
