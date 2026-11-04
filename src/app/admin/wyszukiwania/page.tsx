@@ -9,6 +9,7 @@ import {
   type SearchRow,
   type SearchSummary,
 } from '@/lib/staff/search'
+import { DailyBars } from '../charts'
 import { PageTitle } from '../ui'
 
 function MetricCells({ row }: { row: SearchRow }) {
@@ -45,53 +46,59 @@ function Window({ summary }: { summary: SearchSummary }) {
       {empty ? (
         <p>Brak danych w tym okresie.</p>
       ) : (
-        <div className="grid gap-8 xl:grid-cols-2">
-          <div className="overflow-x-auto">
-            <h3 className="mb-2 font-semibold">Zapytania</h3>
-            <table className="w-full border-collapse text-left">
-              <caption className="sr-only">Najczęstsze zapytania w Google, ostatnie {summary.days} dni</caption>
-              <thead>
-                <tr className="border-b-2 border-border-card-2">
-                  <th scope="col" className="py-2 pr-4">Zapytanie</th>
-                  <MetricHeaders />
-                </tr>
-              </thead>
-              <tbody>
-                {summary.queries.map((q) => (
-                  <tr key={q.query} className="border-b border-border-card">
-                    <td className="py-2 pr-4 break-words">{q.query}</td>
-                    <MetricCells row={q} />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          <div className="grid gap-x-8 lg:grid-cols-2">
+            <DailyBars title="Kliknięcia z Google dziennie" data={summary.daily.clicks} unit="kliknięć" />
+            <DailyBars title="Wyświetlenia w Google dziennie" data={summary.daily.impressions} unit="wyświetleń" />
           </div>
+          <div className="grid gap-8 xl:grid-cols-2">
+            <div className="overflow-x-auto">
+              <h3 className="mb-2 font-semibold">Zapytania</h3>
+              <table className="w-full border-collapse text-left">
+                <caption className="sr-only">Najczęstsze zapytania w Google, ostatnie {summary.days} dni</caption>
+                <thead>
+                  <tr className="border-b-2 border-border-card-2">
+                    <th scope="col" className="py-2 pr-4">Zapytanie</th>
+                    <MetricHeaders />
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.queries.map((q) => (
+                    <tr key={q.query} className="border-b border-border-card">
+                      <td className="py-2 pr-4 break-words">{q.query}</td>
+                      <MetricCells row={q} />
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="overflow-x-auto">
-            <h3 className="mb-2 font-semibold">Strony</h3>
-            <table className="w-full border-collapse text-left">
-              <caption className="sr-only">Strony z największym ruchem z Google, ostatnie {summary.days} dni</caption>
-              <thead>
-                <tr className="border-b-2 border-border-card-2">
-                  <th scope="col" className="py-2 pr-4">Strona</th>
-                  <MetricHeaders />
-                </tr>
-              </thead>
-              <tbody>
-                {summary.pages.map((p) => (
-                  <tr key={p.path} className="border-b border-border-card">
-                    <td className="py-2 pr-4 break-words">
-                      <Link href={p.path} className="underline underline-offset-4">
-                        {p.title ?? p.path}
-                      </Link>
-                    </td>
-                    <MetricCells row={p} />
+            <div className="overflow-x-auto">
+              <h3 className="mb-2 font-semibold">Strony</h3>
+              <table className="w-full border-collapse text-left">
+                <caption className="sr-only">Strony z największym ruchem z Google, ostatnie {summary.days} dni</caption>
+                <thead>
+                  <tr className="border-b-2 border-border-card-2">
+                    <th scope="col" className="py-2 pr-4">Strona</th>
+                    <MetricHeaders />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {summary.pages.map((p) => (
+                    <tr key={p.path} className="border-b border-border-card">
+                      <td className="py-2 pr-4 break-words">
+                        <Link href={p.path} className="underline underline-offset-4">
+                          {p.title ?? p.path}
+                        </Link>
+                      </td>
+                      <MetricCells row={p} />
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </section>
   )

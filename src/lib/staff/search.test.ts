@@ -10,6 +10,10 @@ const doc = {
     { path: '/przepis/sernik', title: 'Sernik', clicks: 9, impressions: 100, position: 3 },
     { path: '/', title: null, clicks: 1, impressions: 0, position: null },
   ],
+  daily: [
+    { day: '2026-10-29', clicks: 4, impressions: '120' },
+    { day: '2026-10-31', clicks: 1, impressions: 80 },
+  ],
 }
 
 describe('mapSearchSummary', () => {
@@ -23,7 +27,20 @@ describe('mapSearchSummary', () => {
         { path: '/przepis/sernik', title: 'Sernik', clicks: 9, impressions: 100, position: 3 },
         { path: '/', title: null, clicks: 1, impressions: 0, position: null },
       ],
+      daily: expect.objectContaining({}),
     })
+  })
+
+  it('fills the daily totals from the first to the last synced day, not into days without data', () => {
+    const s = mapSearchSummary(doc)!
+    expect(s.daily.clicks).toEqual([
+      { day: '2026-10-29', value: 4 },
+      { day: '2026-10-30', value: 0 },
+      { day: '2026-10-31', value: 1 },
+    ])
+    expect(s.daily.impressions[0]).toEqual({ day: '2026-10-29', value: 120 })
+    expect(mapSearchSummary({ ...doc, last_day: null })!.daily.clicks).toEqual([])
+    expect(mapSearchSummary({ ...doc, daily: [] })!.daily.clicks).toEqual([])
   })
 
   it('treats a never-synced table as no last day, and rejects anything that is not the document', () => {
