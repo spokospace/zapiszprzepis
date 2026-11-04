@@ -834,32 +834,53 @@ export function findPageImage(url: string, pageText: string): string | undefined
   return undefined
 }
 
-function indexOfTitle(pageText: string, title: string, from: number): number {
-  const pattern = new RegExp(title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+const IMAGE_IN_TEXT = /<img\b[^>]*?\b(?:src|data-src)=["'](https?:\/\/[^"'\s>]+)["']|!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i
+const MAX_MENTIONS = 20
+
+/** Where the page writes `name` (ignoring case) from `from` on, as indexes into `pageText`. */
+function mentions(pageText: string, name: string, from: number, limit = MAX_MENTIONS): number[] {
+  if (!name) return []
+  const pattern = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
   pattern.lastIndex = from
-  return pattern.exec(pageText)?.index ?? -1
+  const found: number[] = []
+  for (let hit = pattern.exec(pageText); hit && found.length < limit; hit = pattern.exec(pageText)) found.push(hit.index)
+  return found
+}
+
+/** Where the <img> tag or markdown image holding `index` in its alt text begins; `index` when it is in neither. */
+function imageStart(pageText: string, index: number): number {
+  const tag = pageText.lastIndexOf('<', index)
+  if (tag > pageText.lastIndexOf('>', index) && /^<img\b/i.test(pageText.slice(tag, tag + 5))) return tag
+  const alt = pageText.lastIndexOf('![', index)
+  return alt > pageText.lastIndexOf(']', index) ? alt : index
 }
 
 /**
- * The first photo in the body that follows a dish's own heading, read from the
- * page text: the span runs from the dish's first mention to the next dish's
- * mention (or the end of the text), and its first <img> or markdown image is the
- * cover. Undefined when the dish is not named in the text or its span has no
- * photo. The URL is copied from the page, so it needs no further check.
+ * The first photo in the page body that follows a dish's own name, read from the
+ * page text in the page's own language: the span runs from a mention of one of
+ * the dish's names (`ownNames`, tried in order) to the next mention of another
+ * dish (`otherNames`) or the end of the text, and its first <img> or markdown
+ * image is the cover. A name inside a photo's alt text starts the span at that
+ * photo. A mention whose span holds no photo (a lead-in, a contents list) is
+ * skipped for the next one. Undefined when no name is found with a photo after
+ * it. The URL is copied from the page, so it needs no further check.
  */
-export function imageAfterTitle(title: string, pageText: string, otherTitles: string[]): string | undefined {
-  const start = indexOfTitle(pageText, title, 0)
-  if (start < 0) return undefined
-  let end = pageText.length
-  for (const other of otherTitles) {
-    if (other.trim() === title.trim()) continue
-    const at = indexOfTitle(pageText, other, start + 1)
-    if (at > start && at < end) end = at
+export function imageAfterTitle(ownNames: string[], pageText: string, otherNames: string[]): string | undefined {
+  for (const own of ownNames.map((name) => name.trim()).filter(Boolean)) {
+    const others = otherNames.map((name) => name.trim()).filter((name) => name && name !== own)
+    for (const mention of mentions(pageText, own, 0)) {
+      const start = imageStart(pageText, mention)
+      let end = pageText.length
+      for (const other of others) {
+        const [next] = mentions(pageText, other, mention + own.length, 1)
+        const cut = next === undefined ? -1 : imageStart(pageText, next)
+        if (cut > start) end = Math.min(end, cut)
+      }
+      const image = IMAGE_IN_TEXT.exec(pageText.slice(start, end))
+      if (image) return image[1] ?? image[2]
+    }
   }
-  const image = /<img\b[^>]*?\b(?:src|data-src)=["'](https?:\/\/[^"'\s>]+)["']|!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i.exec(
-    pageText.slice(start, end),
-  )
-  return image ? (image[1] ?? image[2]) : undefined
+  return undefined
 }
 
 /**
