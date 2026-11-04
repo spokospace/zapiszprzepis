@@ -41,7 +41,7 @@ function setup(handle: (req: Request) => Promise<Response> = async () => html())
     await Promise.all(waits.splice(0))
     return res
   }
-  return { cache, handler, serve }
+  return { cache, ctx, handler, serve, waits }
 }
 
 const get = (url = RECIPE, headers: Record<string, string> = {}) => new Request(url, { headers })
@@ -62,21 +62,22 @@ describe('what may be cached (guests only)', () => {
     expect(isGuestRequest(get(RECIPE, { authorization: 'Bearer t' }))).toBe(false)
   })
 
-  it('only GET without Range; a client-side (RSC) request needs its _rsc hash', () => {
+  it('only a full-document GET without Range; never a client-side (RSC) request, _rsc or not', () => {
     expect(isEdgeCacheable(get())).toBe(true)
     expect(isEdgeCacheable(new Request(RECIPE, { method: 'POST' }))).toBe(false)
     expect(isEdgeCacheable(get(RECIPE, { range: 'bytes=0-9' }))).toBe(false)
     expect(isEdgeCacheable(get(RECIPE, { rsc: '1' }))).toBe(false)
-    expect(isEdgeCacheable(get(`${RECIPE}?_rsc=abc`, { rsc: '1' }))).toBe(true)
+    expect(isEdgeCacheable(get(`${RECIPE}?_rsc=abc`, { rsc: '1' }))).toBe(false)
+    for (const name of ['next-router-state-tree', 'next-url', 'next-router-prefetch', 'next-router-segment-prefetch'])
+      expect(isEdgeCacheable(get(RECIPE, { [name]: '1' })), name).toBe(false)
   })
 
-  it('keys the document and the RSC payload of one URL apart', () => {
-    expect(edgeCacheKey(RECIPE, false, VERSION)).not.toBe(edgeCacheKey(RECIPE, true, VERSION))
-    expect(edgeCacheKey(`${RECIPE}?from=zupy`, false, VERSION)).not.toBe(edgeCacheKey(RECIPE, false, VERSION))
+  it('keys each URL apart', () => {
+    expect(edgeCacheKey(`${RECIPE}?from=zupy`, VERSION)).not.toBe(edgeCacheKey(RECIPE, VERSION))
   })
 
   it('keys every Worker version apart, so a page cached before a deploy is never served after it', async () => {
-    expect(edgeCacheKey(RECIPE, false, 'v-1')).not.toBe(edgeCacheKey(RECIPE, false, 'v-2'))
+    expect(edgeCacheKey(RECIPE, 'v-1')).not.toBe(edgeCacheKey(RECIPE, 'v-2'))
     const { handler, serve } = setup()
     await serve(get(), T0, 'v-1')
     const afterDeploy = await serve(get(), T0 + 1000, 'v-2')
@@ -128,7 +129,7 @@ describe('serveGuestPage', () => {
 
   it('does not keep a response that sets a cookie, a redirect, an error or a non-page', async () => {
     for (const make of [
-      () => html(PAGE, { headers: { 'set-cookie': 'a=b' } }),
+      () => html(PAGE, { headers: { 'content-type': 'text/html; charset=utf-8', 'set-cookie': 'a=b' } }),
       () => new Response(null, { status: 308, headers: { location: '/przepis/x' } }),
       () => new Response('nope', { status: 404, headers: { 'content-type': 'text/html' } }),
       () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
@@ -155,12 +156,30 @@ describe('serveGuestPage', () => {
     expect(await next.text()).toBe('v2')
   })
 
-  it('starts one refresh at a time', async () => {
-    const { handler, serve } = setup()
+  it('answers with the stale page while the refresh is still running, and starts only one', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    let first = true
+    const { cache, ctx, handler, serve, waits } = setup(async () => {
+      if (first) {
+        first = false
+        return html('v1')
+      }
+      await gate
+      return html('v2')
+    })
     await serve(get())
     const late = T0 + (FRESH_SECONDS + 1) * 1000
-    await serve(get(), late)
-    await serve(get(), late + 1)
+
+    const stale = await serveGuestPage(get(), handler, cache, ctx, VERSION, late)
+    expect(stale.headers.get('x-edge-cache')).toBe('STALE')
+    expect(await stale.text()).toBe('v1')
+    await vi.waitFor(() => expect(handler).toHaveBeenCalledTimes(2))
+
+    const overlapping = await serveGuestPage(get(), handler, cache, ctx, VERSION, late + 1)
+    expect(overlapping.headers.get('x-edge-cache')).toBe('STALE')
+    release()
+    await Promise.all(waits.splice(0))
     expect(handler).toHaveBeenCalledTimes(2)
   })
 
@@ -170,13 +189,13 @@ describe('serveGuestPage', () => {
     await serve(get())
     status = 503
     await serve(get(), T0 + (FRESH_SECONDS + 1) * 1000)
-    expect([...cache.store.keys()].some((k) => k.includes('__edge=html') && !k.includes('__lock'))).toBe(true)
+    expect([...cache.store.keys()].some((k) => k.includes('__v=') && !k.includes('__lock'))).toBe(true)
 
     // lock expires in the real cache; the test clears it
     for (const k of cache.store.keys()) if (k.includes('__lock')) cache.store.delete(k)
     status = 404
     await serve(get(), T0 + (FRESH_SECONDS + 2) * 1000)
-    expect([...cache.store.keys()].some((k) => k.includes('__edge=html') && !k.includes('__lock'))).toBe(false)
+    expect([...cache.store.keys()].some((k) => k.includes('__v=') && !k.includes('__lock'))).toBe(false)
   })
 
   it('waits for a fresh render once the entry is older than the stale window', async () => {

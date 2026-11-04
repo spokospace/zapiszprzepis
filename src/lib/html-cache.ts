@@ -45,28 +45,27 @@ export function isGuestRequest(request: Request): boolean {
   return !request.headers.has('authorization') && !AUTH_COOKIE.test(request.headers.get('cookie') ?? '')
 }
 
-const isRsc = (request: Request) => request.headers.has('rsc')
+/** What marks a client-side navigation or prefetch; its payload depends on these headers. */
+const ROUTER_HEADERS = ['rsc', 'next-router-state-tree', 'next-url', 'next-router-prefetch', 'next-router-segment-prefetch']
 
 /**
- * Next adds `_rsc=<hash of the router headers>` to every client-side fetch so a CDN can
- * key on the URL alone; without it the variant is unknowable, so such a request is not cached.
+ * Full documents only. An RSC payload depends on the router headers, and production Next
+ * does not verify that `_rsc` matches them, so a URL key would let one request store a
+ * payload that other guests then receive.
  */
 export function isEdgeCacheable(request: Request): boolean {
   if (request.method !== 'GET' || request.headers.has('range')) return false
-  const url = new URL(request.url)
-  if (!isPublicPath(url.pathname) || !isGuestRequest(request)) return false
-  return !isRsc(request) || url.searchParams.has('_rsc')
+  if (ROUTER_HEADERS.some((name) => request.headers.has(name))) return false
+  return isPublicPath(new URL(request.url).pathname) && isGuestRequest(request)
 }
 
 /**
- * One entry per URL, variant and Worker version. The document and its client-side (RSC)
- * payload differ. The version matters because a deploy replaces the hashed `/_next/static`
- * files: a page cached by the previous version would point at files that no longer exist
- * (no CSS, ChunkLoadError, the incident `pnpm smoke:prod` was written for).
+ * One entry per URL and Worker version. The version matters because a deploy replaces the
+ * hashed `/_next/static` files: a page cached by the previous version would point at files
+ * that no longer exist (no CSS, ChunkLoadError, the incident `pnpm smoke:prod` was written for).
  */
-export function edgeCacheKey(requestUrl: string, rsc: boolean, version: string): string {
+export function edgeCacheKey(requestUrl: string, version: string): string {
   const url = new URL(requestUrl)
-  url.searchParams.set('__edge', rsc ? 'rsc' : 'html')
   url.searchParams.set('__v', version)
   return url.toString()
 }
@@ -81,11 +80,10 @@ interface WaitUntil {
   waitUntil(promise: Promise<unknown>): void
 }
 
-/** Only a complete, user-independent page is kept: no cookie to set, nothing but HTML or RSC. */
+/** Only a complete, user-independent page is kept: no cookie to set, nothing but HTML. */
 function isStorable(response: Response): boolean {
   if (response.status !== 200 || !response.body || response.headers.has('set-cookie')) return false
-  const type = response.headers.get('content-type') ?? ''
-  return type.includes('text/html') || type.includes('text/x-component')
+  return (response.headers.get('content-type') ?? '').includes('text/html')
 }
 
 async function store(cache: CacheLike, key: Request, response: Response, now: number): Promise<void> {
@@ -140,7 +138,7 @@ export async function serveGuestPage(
 ): Promise<Response> {
   if (!version || !isEdgeCacheable(request)) return handle(request)
 
-  const key = new Request(edgeCacheKey(request.url, isRsc(request), version))
+  const key = new Request(edgeCacheKey(request.url, version))
   let cached: Response | undefined
   try {
     cached = await cache.match(key)
