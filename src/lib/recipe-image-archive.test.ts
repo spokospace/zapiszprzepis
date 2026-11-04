@@ -337,7 +337,7 @@ describe('archiveImage — fetch not called for private URLs (Risk 6)', () => {
     const result = await archiveImage(mockSupabase, 'user-1', 1, 'https://external-cdn.example.com/photo.jpg')
 
     expect(fetchSpy).toHaveBeenCalledOnce()
-    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(result).toMatch(/^https:\/\/supabase\.co\/storage\/photo\.jpg\?v=[0-9a-f]{12}$/)
   })
 })
 
@@ -820,7 +820,7 @@ describe('archiveImage — http and proxy fallback for hosts the Worker cannot f
 
     const result = await archiveImage(client, 'user-1', 60, EXTERNAL)
 
-    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(result).toMatch(/^https:\/\/supabase\.co\/storage\/photo\.jpg\?v=[0-9a-f]{12}$/)
     // A refused status won't change over http, so no http attempt is made.
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     expect(fetchSpy.mock.calls[0][0]).toBe(EXTERNAL)
@@ -838,7 +838,7 @@ describe('archiveImage — http and proxy fallback for hosts the Worker cannot f
 
     const result = await archiveImage(storageMock().client, 'user-1', 60, EXTERNAL)
 
-    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(result).toMatch(/^https:\/\/supabase\.co\/storage\/photo\.jpg\?v=[0-9a-f]{12}$/)
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     expect(fetchSpy.mock.calls[1][0]).toBe(proxiedImageUrl(EXTERNAL))
   })
@@ -853,7 +853,7 @@ describe('archiveImage — http and proxy fallback for hosts the Worker cannot f
 
     const result = await archiveImage(client, 'user-1', 60, EXTERNAL)
 
-    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(result).toMatch(/^https:\/\/supabase\.co\/storage\/photo\.jpg\?v=[0-9a-f]{12}$/)
     expect(fetchSpy).toHaveBeenCalledTimes(2)
     expect(fetchSpy.mock.calls[1][0]).toBe(insecureHttpUrl(EXTERNAL))
     expect(upload).toHaveBeenCalledOnce()
@@ -869,7 +869,7 @@ describe('archiveImage — http and proxy fallback for hosts the Worker cannot f
 
     const result = await archiveImage(storageMock().client, 'user-1', 60, EXTERNAL)
 
-    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(result).toMatch(/^https:\/\/supabase\.co\/storage\/photo\.jpg\?v=[0-9a-f]{12}$/)
     expect(fetchSpy.mock.calls[2][0]).toBe(proxiedImageUrl(EXTERNAL))
   })
 
@@ -919,7 +919,7 @@ describe('archiveImage — full-size preference over a WordPress resize', () => 
 
     const result = await archiveImage(storageMock().client, 'user-1', 60, RESIZE)
 
-    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(result).toMatch(/^https:\/\/supabase\.co\/storage\/photo\.jpg\?v=[0-9a-f]{12}$/)
     expect(fetchSpy).toHaveBeenCalledOnce()
     expect(fetchSpy.mock.calls[0][0]).toBe(FULL)
   })
@@ -936,7 +936,7 @@ describe('archiveImage — full-size preference over a WordPress resize', () => 
 
     const result = await archiveImage(storageMock().client, 'user-1', 60, RESIZE)
 
-    expect(result).toBe('https://supabase.co/storage/photo.jpg')
+    expect(result).toMatch(/^https:\/\/supabase\.co\/storage\/photo\.jpg\?v=[0-9a-f]{12}$/)
     expect(fetchSpy.mock.calls.map((c) => c[0])).toContain(RESIZE)
   })
 })
@@ -1081,5 +1081,34 @@ describe('dedupeStoredGallery — a stored copy of the cover is dropped by conte
 
   it('returns the unique photos untouched', async () => {
     expect(await dedupeStoredGallery(['cover', 'other'], hashOf)).toEqual(['cover', 'other'])
+  })
+})
+
+describe('archiveImage — cover URL changes with the photo', () => {
+  function archiveBytes(bytes: number[]) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/jpeg' }),
+        arrayBuffer: () => Promise.resolve(new Uint8Array(bytes).buffer),
+      }),
+    )
+    const client = {
+      storage: {
+        from: () => ({
+          upload: vi.fn().mockResolvedValue({ error: null }),
+          getPublicUrl: (path: string) => ({ data: { publicUrl: `https://supabase.co/storage/v1/object/public/recipe-images/${path}` } }),
+        }),
+      },
+    } as any
+    return archiveImage(client, 'user-1', 7, 'https://external-cdn.example.com/photo.jpg')
+  }
+
+  it('gives a re-archived cover a new URL so image caches drop the old photo', async () => {
+    const header = await archiveBytes([1, 2, 3, 4])
+    const dish = await archiveBytes([9, 8, 7, 6])
+    expect(header).not.toBe(dish)
+    expect(extractStoragePath(header!)).toBe(extractStoragePath(dish!))
   })
 })

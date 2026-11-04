@@ -265,7 +265,11 @@ async function archiveCover(
 ): Promise<ArchivedCover | null> {
   const photo = await downloadPhoto(externalUrl)
   const url = photo ? await storePhoto(supabase, galleryFolder(userId, recipeId), photo) : null
-  return photo && url ? { url, hash: photo.hash } : null
+  // The cover keeps one path per recipe, so a re-archive overwrites the file under
+  // the same URL and the image caches keep serving the old photo (a multi-recipe
+  // page's shared header on a dish card). The content hash in `?v=` is a new URL
+  // exactly when the photo changes; extractStoragePath ignores it.
+  return photo && url ? { url: `${url}?v=${photo.hash.slice(0, 12)}`, hash: photo.hash } : null
 }
 
 /** Archives a recipe's cover image as `<user>/<recipe>.<ext>`. */
