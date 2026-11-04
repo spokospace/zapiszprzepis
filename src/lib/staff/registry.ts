@@ -314,6 +314,23 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
       },
     },
   },
+  {
+    name: 'api_usage',
+    label: 'Zużycie API',
+    path: '/admin/uzycie-api',
+    permission: 'analytics.read',
+    operations: [],
+    mcp: {
+      get: {
+        description:
+          'Usage of the external APIs behind recipe extraction (OpenAI, Firecrawl, Jina Reader) for the last N Warsaw days, today included: totals per service and model (calls, failures, input/output tokens, estimated USD cost, OpenAI only) and daily per-service series. Our own counter, so it covers only calls made since the counter shipped; it does not show remaining provider limits.',
+        rpc: 'admin_api_usage_as',
+        args: [
+          { name: 'days', param: 'p_days', type: 'integer', min: 1, max: 366, description: 'Window length in days, today included (1-366, default 28).' },
+        ],
+      },
+    },
+  },
 ]
 
 /** The resources this staff member may open, in navigation order. */

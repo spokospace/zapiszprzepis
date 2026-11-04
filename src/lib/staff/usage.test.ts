@@ -143,7 +143,7 @@ describe('loadUsageSummary', () => {
 
 describe('analytics.read gate', () => {
   it('shows Statystyki and Wyszukiwania Google to a holder of analytics.read and hides them from a moderator', () => {
-    expect(visibleResources(parsePermissions(['analytics.read'])).map((r) => r.name)).toEqual(['analytics', 'search'])
+    expect(visibleResources(parsePermissions(['analytics.read'])).map((r) => r.name)).toEqual(['analytics', 'search', 'api_usage'])
     const moderator = visibleResources(parsePermissions(['recipes.read', 'imports.read'])).map((r) => r.name)
     expect(moderator).not.toContain('analytics')
     expect(moderator).not.toContain('search')
