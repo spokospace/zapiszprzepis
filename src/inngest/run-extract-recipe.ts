@@ -50,6 +50,7 @@ import {
   POLISH_DISH_NAME_RULE,
 } from '@/lib/source-language'
 import { readerScrape, type ReaderPage } from '@/lib/jina-reader'
+import { recordApiUsage } from '@/lib/api-usage'
 import { fetchPublicHtml } from '@/lib/public-fetch'
 import type { Database } from '@/lib/supabase.types'
 
@@ -77,13 +78,18 @@ function sourcelessIngredients(parsed: RecipeData): RecipeData['ingredients'] {
   })
 }
 
+/** Counts a successful OpenAI chat completion from its `usage` block. */
+function recordOpenAiUsage(supabase: SupabaseClient, model: string, body: { usage?: { prompt_tokens?: number; completion_tokens?: number } }) {
+  recordApiUsage(supabase, { service: 'openai', model, tokensIn: body.usage?.prompt_tokens, tokensOut: body.usage?.completion_tokens })
+}
+
 /**
  * Second pass for an extraction that came back in the source's language
  * (recipe 1102: the full prompt kept the Belarusian text). A short request that
  * only translates the text values, so the long prompt cannot crowd the rule out.
  * Falls back to the first answer when the second one fails.
  */
-export async function translateToPolish(parsed: RecipeData): Promise<RecipeData> {
+export async function translateToPolish(parsed: RecipeData, supabase?: SupabaseClient): Promise<RecipeData> {
   const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -105,9 +111,14 @@ export async function translateToPolish(parsed: RecipeData): Promise<RecipeData>
     }),
     signal: AbortSignal.timeout(60_000),
   })
-  if (!openaiResponse.ok) return parsed
+  if (!openaiResponse.ok) {
+    if (supabase) recordApiUsage(supabase, { service: 'openai', model: FOREIGN_EXTRACTION_MODEL, failed: true })
+    return parsed
+  }
   try {
-    const translated = JSON.parse((await openaiResponse.json()).choices?.[0]?.message?.content ?? '')
+    const body = await openaiResponse.json()
+    if (supabase) recordOpenAiUsage(supabase, FOREIGN_EXTRACTION_MODEL, body)
+    const translated = JSON.parse(body.choices?.[0]?.message?.content ?? '')
     const sources = (parsed.ingredients as Array<{ source?: string }>).map((ing) => ing.source)
     return {
       ...parsed,
@@ -358,6 +369,7 @@ export async function runExtractRecipe(
       body: JSON.stringify(options),
       signal: AbortSignal.timeout(45_000),
     })
+    recordApiUsage(supabase, { service: 'firecrawl', failed: !response.ok })
     if (!response.ok) {
       throw new Error(`Firecrawl failed: ${httpStatus(response)}`)
     }
@@ -389,6 +401,10 @@ export async function runExtractRecipe(
     let read = readerPages.get(options.url)
     if (!read) {
       read = readerScrape(options.url, { fetch })
+      read.then(
+        () => recordApiUsage(supabase, { service: 'jina' }),
+        () => recordApiUsage(supabase, { service: 'jina', failed: true }),
+      )
       readerPages.set(options.url, read)
     }
     try {
@@ -692,6 +708,7 @@ export async function runExtractRecipe(
       // A foreign source gets the localization rules and a stronger model (#524);
       // a Polish one keeps the prompt and model it always had.
       const foreignSource = detectSourceLanguage(sourceText(transcript)) === 'foreign'
+      const model = foreignSource ? FOREIGN_EXTRACTION_MODEL : EXTRACTION_MODEL
       const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -699,7 +716,7 @@ export async function runExtractRecipe(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: foreignSource ? FOREIGN_EXTRACTION_MODEL : EXTRACTION_MODEL,
+          model,
           messages: [
             {
               role: 'system',
@@ -779,6 +796,7 @@ Rules:
       })
 
       if (!openaiResponse.ok) {
+        recordApiUsage(supabase, { service: 'openai', model, failed: true })
         // OpenAI's own message says which limit or input it hit.
         const detail = await openaiResponse
           .json()
@@ -788,6 +806,7 @@ Rules:
       }
 
       const openaiData = await openaiResponse.json()
+      recordOpenAiUsage(supabase, model, openaiData)
       const content = openaiData.choices?.[0]?.message?.content
       if (!content) throw new Error('No response from OpenAI')
 
@@ -802,7 +821,7 @@ Rules:
 
       // Each entry is one dish, cleaned up the way the single recipe always was.
       async function toRecipe(entry: RecipeData): Promise<RecipeData> {
-        const parsed = hasCyrillicOutput(entry) ? await translateToPolish(entry) : entry
+        const parsed = hasCyrillicOutput(entry) ? await translateToPolish(entry, supabase) : entry
         assertPolishOutput(parsed)
         // recipes.category is a strict enum: one off-list value fails the insert
         // and throws the whole extraction away.

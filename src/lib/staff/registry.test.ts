@@ -23,7 +23,7 @@ describe('staff registry', () => {
 
   it('permission matrix: an admin sees every resource', () => {
     const admin = parsePermissions(STAFF_PERMISSIONS)
-    expect(visibleResources(admin).map((r) => r.name)).toEqual(['users', 'imports', 'recipes', 'access', 'roles', 'audit', 'analytics', 'search'])
+    expect(visibleResources(admin).map((r) => r.name)).toEqual(['users', 'imports', 'recipes', 'access', 'roles', 'audit', 'analytics', 'search', 'api_usage'])
   })
 
   it('shows no resource to someone with no permissions', () => {
