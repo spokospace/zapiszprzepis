@@ -1,5 +1,5 @@
 import type { MenuSummary } from '@/lib/menu-summary'
-import { ADD_RECIPE_PATH, DISPLAY_PREFS_PATH } from '@/lib/routes'
+import { ADD_RECIPE_PATH, DISPLAY_PREFS_PATH, NOTIFICATIONS_PATH } from '@/lib/routes'
 
 /** The add page (E01-S10). */
 export const ADD_RECIPE_HREF = ADD_RECIPE_PATH
@@ -75,6 +75,18 @@ export function buildMenuModel({
 }
 
 /** "1 nowe powiadomienie", "3 nowe powiadomienia", "5 nowych powiadomień". */
+/**
+ * The routes to warm when the drawer opens: its rows sit in a closed <dialog>, which
+ * Next never prefetches on its own, so a tap would otherwise wait one round trip for
+ * the route's loading.tsx. Categories are left out (12 routes cost more than a tap saves).
+ */
+export function menuPrefetchHrefs(model: MenuModel, hasNotifications: boolean): string[] {
+  const hrefs = model.mine ? model.mine.map((entry) => entry.href) : ['/login', '/rejestracja']
+  if (hasNotifications) hrefs.push(NOTIFICATIONS_PATH)
+  if (model.showAccountFooter) hrefs.push('/settings')
+  return hrefs
+}
+
 export function newNotificationsNoun(count: number): string {
   if (count === 1) return 'nowe powiadomienie'
   const lastDigit = count % 10
