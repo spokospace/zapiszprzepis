@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ALargeSmall, Bell, BookOpen, Heart, House, Lock, LogOut, Menu, Plus, Settings, Timer, X, type LucideIcon } from 'lucide-react'
 import { useTimers } from '@/app/components/timer-provider'
 import { MenuTimers } from '@/app/components/menu-timers'
@@ -13,7 +13,7 @@ import type { MenuSummary } from '@/lib/menu-summary'
 import type { NotificationBadge } from '@/lib/notification-badge'
 import { NotificationDot } from './notification-dot'
 import { SignOutForm } from './sign-out-form'
-import { buildMenuModel, newNotificationsNoun, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
+import { buildMenuModel, menuPrefetchHrefs, newNotificationsNoun, recipesNoun, type MineEntry, type MineEntryKey } from './app-menu-model'
 
 const MINE_ICONS: Record<MineEntryKey, LucideIcon> = {
   'my-recipes': BookOpen,
@@ -133,11 +133,24 @@ export function AppMenu({
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const pathname = usePathname()
-  const { mine, showAccountFooter, displayPrefs } = buildMenuModel({ isAuthenticated, summary })
+  const menuModel = buildMenuModel({ isAuthenticated, summary })
+  const { mine, showAccountFooter, displayPrefs } = menuModel
   const { runningCount } = useTimers()
+
+  const router = useRouter()
 
   function close() {
     dialogRef.current?.close()
+  }
+
+  // The rows below are <Link>s inside a closed <dialog>, which Next never prefetches on
+  // its own (observed on production: a tap on "Ulubione" sent a plain navigation and
+  // showed no skeleton until the server answered, ~1 round trip). Opening the menu
+  // warms the routes a tap is likely to hit, so their loading.tsx shows at once.
+  // Categories are left out: 12 routes would cost more than the tap saves.
+  function openMenu() {
+    dialogRef.current?.showModal()
+    for (const href of menuPrefetchHrefs(menuModel, Boolean(notifications))) router.prefetch(href)
   }
 
   // A navigation (including back/forward) should never leave the drawer open.
@@ -149,7 +162,7 @@ export function AppMenu({
     <>
       <button
         type="button"
-        onClick={() => dialogRef.current?.showModal()}
+        onClick={openMenu}
         aria-haspopup="dialog"
         aria-controls="app-menu"
         // Mobile 1c (E01-S19, #412): icon over a 16 px bold caption, at least 64x56.
