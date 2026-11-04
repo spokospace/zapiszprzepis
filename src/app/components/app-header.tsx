@@ -107,6 +107,9 @@ export function AppHeader({
             {showBack && <PageBackLink className="lg:hidden" target={recipeBackTarget} />}
             <Link
               href="/"
+              // Always in view, and `/` has no loading.tsx: a prefetch only costs a Worker
+              // invocation per page view (#701). Same for Szukaj below and the category links.
+              prefetch={false}
               aria-label="Zapisz Przepis — strona główna"
               className={`${showBack ? 'hidden lg:flex' : 'flex'} min-h-12 min-w-0 items-center gap-2 no-underline!`}
             >
@@ -127,6 +130,7 @@ export function AppHeader({
             {pathname !== SEARCH_PATH && (
               <Link
                 href={SEARCH_PATH}
+                prefetch={false}
                 className="inline-flex h-14 min-w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-pill text-base leading-none font-bold text-ink no-underline! hover:bg-surface-3 lg:hidden"
               >
                 <Search aria-hidden="true" className="h-6 w-6" />

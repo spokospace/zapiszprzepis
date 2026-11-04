@@ -99,6 +99,9 @@
     // copy alone does not switch the bundled code.
     "NEXT_PUBLIC_USAGE_ANALYTICS": "1",
     "NEXT_PUBLIC_SITE_URL": "https://zapiszprzepis.pl",
+    // Temporary (#701): switches on /lab/przepis/{slug}, the no-cookies recipe experiment.
+    // Remove with the route once the production probe has an answer.
+    "RECIPE_LAB": "1",
     // OAuth sign-in buttons on /login (E01-S12): parseOAuthProviders reads this
     // comma-separated list; a listed name shows its button and lets the server
     // action use it. Facebook is enabled now that the Meta app is published Live

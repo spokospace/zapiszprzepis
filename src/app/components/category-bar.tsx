@@ -65,6 +65,7 @@ export function CategoryBar({ className = '' }: { className?: string }) {
             <li key={value}>
               <Link
                 href={href}
+                prefetch={false}
                 aria-current={active ? 'page' : undefined}
                 className={`flex h-12 items-center gap-1.5 whitespace-nowrap text-[16px] font-bold text-ink no-underline! hover:text-action-text hover:underline ${
                   active ? 'underline decoration-2 underline-offset-4' : ''
