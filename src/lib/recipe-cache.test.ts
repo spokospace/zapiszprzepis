@@ -33,6 +33,8 @@ import {
   getCategoryFacets,
   getCategoryTotal,
   getPublicRecipe,
+  getPublicRecipeLongLived,
+  LONG_REVALIDATE_SECONDS,
   getRecentPublicRecipes,
   getRecipeOfTheDay,
   readCategoryListing,
@@ -108,6 +110,16 @@ describe('cached wrappers — TTL, tags, and viewer-independent keys', () => {
       revalidate: 120,
       tags: [RECIPES_LIST_TAG, recipeTag('sernik-wiedenski')],
     })
+  })
+
+  it('getPublicRecipeLongLived: own entry, one-hour lifetime, same tags so a write still purges it', async () => {
+    await getPublicRecipeLongLived('sernik-wiedenski')
+    expect(cacheCalls[0].keyParts).toEqual(['public-recipe-long', 'sernik-wiedenski'])
+    expect(cacheCalls[0].options).toEqual({
+      revalidate: LONG_REVALIDATE_SECONDS,
+      tags: [RECIPES_LIST_TAG, recipeTag('sernik-wiedenski')],
+    })
+    expect(LONG_REVALIDATE_SECONDS).toBe(3600)
   })
 
   it('getRecentPublicRecipes: keyed by limit only', async () => {

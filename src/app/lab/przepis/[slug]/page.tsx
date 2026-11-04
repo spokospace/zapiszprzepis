@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PageContainer } from '@/app/components/page-container'
-import { getPublicRecipe } from '@/lib/recipe-cache'
+import { getPublicRecipeLongLived } from '@/lib/recipe-cache'
 import { recipePath } from '@/lib/routes'
 import { buildRecipeBreadcrumbJsonLd, buildRecipeJsonLd, serializeJsonLd } from '@/lib/recipe-json-ld'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
@@ -19,7 +19,9 @@ import { RECIPE_MAIN } from '@/app/przepis/[slug]/_components/recipe-split'
  * that makes `/przepis/{slug}` answer 1102? Off unless RECIPE_LAB=1, `noindex`, unlinked.
  * Remove the route, the flag and the middleware matcher entry once the probe has an answer.
  */
-export const revalidate = 300
+// Next reads segment config statically, so this repeats LONG_REVALIDATE_SECONDS as a literal;
+// the test below pins the two together.
+export const revalidate = 3600
 
 // No slug is prerendered at build time; an empty list is what makes Next render a slug on
 // its first visit and then serve it from the incremental cache (on-demand ISR), instead of
@@ -36,7 +38,7 @@ export const metadata: Metadata = {
 export default async function RecipeLabPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   if (process.env.RECIPE_LAB !== '1') notFound()
-  const recipe = await getPublicRecipe(slug)
+  const recipe = await getPublicRecipeLongLived(slug)
   if (!recipe) notFound()
 
   // Not getSiteUrl(): without NEXT_PUBLIC_SITE_URL it falls back to headers(), which would
