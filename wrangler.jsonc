@@ -10,6 +10,9 @@
   // not just the recipe page. Provisional: keep it only if the before/after TTFB measurement
   // in #464 shows a win for this Supabase region; revert the key if it does not help.
   "placement": { "mode": "smart" },
+  // The id of the deployed Worker version, read by the guest page cache (src/lib/html-cache.ts)
+  // so a page cached before a deploy is never served after it (its /_next/static files are gone).
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
   // Workers Logs (dashboard → zapiszprzepis → Observability): keeps console output
   // and each request's outcome, so "[auth] getUser failed" lines and requests that
   // hit the CPU limit (error 1102) can be read after the fact, not only live.

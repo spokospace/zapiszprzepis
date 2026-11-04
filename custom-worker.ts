@@ -35,6 +35,7 @@ import handler from './.open-next/worker.js'
 import { backupToR2, failoverStalePendingShares, keepDatabaseAwake, syncApiLimits, syncSearchConsole, type CronEnv } from './src/lib/worker-cron'
 import { serveImage } from './src/lib/image-cache'
 import { httpsRedirect } from './src/lib/https-redirect'
+import { serveGuestPage } from './src/lib/html-cache'
 
 const KEEP_ALIVE_CRON = '0 4 * * *'
 const BACKUP_CRON = '30 3 * * *'
@@ -51,10 +52,15 @@ type ExecutionCtx = {
   waitUntil(promise: Promise<unknown>): void
 }
 
-type FetchEnv = { NEXT_PUBLIC_SUPABASE_URL?: string; NEXT_PUBLIC_SITE_URL?: string }
+type FetchEnv = {
+  NEXT_PUBLIC_SUPABASE_URL?: string
+  NEXT_PUBLIC_SITE_URL?: string
+  /** This deployment's version (wrangler.jsonc `version_metadata`); keys the guest page cache. */
+  CF_VERSION_METADATA?: { id: string }
+}
 
 // Cloudflare's default Cache API store (not in the DOM lib types).
-declare const caches: { default: Parameters<typeof serveImage>[2] }
+declare const caches: { default: Parameters<typeof serveImage>[2] & Parameters<typeof serveGuestPage>[2] }
 
 const worker = {
   async fetch(request: Request, env: FetchEnv, ctx: ExecutionCtx): Promise<Response> {
@@ -70,7 +76,9 @@ const worker = {
         env.NEXT_PUBLIC_SUPABASE_URL,
       )
     }
-    return handler.fetch(request, env, ctx)
+    // Guests get the public pages from the edge cache (src/lib/html-cache.ts); anything
+    // signed-in or not public goes straight to Next.js.
+    return serveGuestPage(request, (req) => handler.fetch(req, env, ctx), caches.default, ctx, env.CF_VERSION_METADATA?.id)
   },
 
   async scheduled(
