@@ -242,6 +242,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: number
+          inngest_account: string | null
           read_at: string | null
           recipe_id: number | null
           share_intent: Json
@@ -256,6 +257,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: number
+          inngest_account?: string | null
           read_at?: string | null
           recipe_id?: number | null
           share_intent: Json
@@ -270,6 +272,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: number
+          inngest_account?: string | null
           read_at?: string | null
           recipe_id?: number | null
           share_intent?: Json

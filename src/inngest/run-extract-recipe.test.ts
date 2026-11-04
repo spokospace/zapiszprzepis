@@ -2475,3 +2475,31 @@ describe('runExtractRecipe — refresh by row id on a link with several dishes',
     expect(mock.updateArgs('recipes')).toHaveLength(0)
   })
 })
+
+describe('runExtractRecipe — idempotency guard (#580 phase 3)', () => {
+  it('skips a share another run already completed, without scraping or an LLM call', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipe_shares', { data: { status: 'completed', recipe_id: 55 }, error: null })
+    const fetchMock = makeFetchMock()
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: fetchMock as any, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 55, status: 'duplicate' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not block a forced refresh of an already-completed share', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipe_shares', { data: { status: 'completed', recipe_id: 55 }, error: null })
+    const fetchMock = makeFetchMock()
+
+    // A refresh deliberately re-extracts, so the guard is skipped and the run
+    // reaches the scrape. It may throw later for unrelated reasons; we only
+    // assert the guard did not short-circuit it.
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: fetchMock as any, supabase: mock.supabase as any }).catch(
+      () => {},
+    )
+
+    expect(fetchMock).toHaveBeenCalled()
+  })
+})

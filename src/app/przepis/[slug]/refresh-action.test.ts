@@ -99,7 +99,7 @@ describe('refreshRecipe — targets the row, not the source_url (multi-recipe li
       from: (table: string) => (table === 'recipes' ? recipesQuery : sharesQuery),
     } as any)
     vi.mocked(getFullAccess).mockResolvedValue(true)
-    vi.mocked(sendRecipeExtract).mockResolvedValue(undefined)
+    vi.mocked(sendRecipeExtract).mockResolvedValue('primary')
     const data = new FormData()
     data.set('slug', 'salatka-z-rzodkwi')
 
