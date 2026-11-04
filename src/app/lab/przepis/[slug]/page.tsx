@@ -79,7 +79,7 @@ export default async function RecipeLabPage({ params }: { params: Promise<{ slug
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildRecipeBreadcrumbJsonLd(recipe, site)) }} />
       <PageContainer>
         <nav data-testid="lab-links">
-          <Link href="/lab">Lab index</Link>
+          <Link href="/lab/index">Lab index</Link>
           {others.map((o) => (
             <Link key={o.slug} href={`/lab/przepis/${o.slug}`} className="ml-4">
               {o.title}

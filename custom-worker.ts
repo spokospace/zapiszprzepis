@@ -62,6 +62,8 @@ type FetchEnv = {
 // Cloudflare's default Cache API store (not in the DOM lib types).
 declare const caches: { default: Parameters<typeof serveImage>[2] & Parameters<typeof serveGuestPage>[2] }
 
+let isolateSeen = false
+
 const worker = {
   async fetch(request: Request, env: FetchEnv, ctx: ExecutionCtx): Promise<Response> {
     const toHttps = httpsRedirect(request, env.NEXT_PUBLIC_SITE_URL)
@@ -82,7 +84,13 @@ const worker = {
     }
     // Guests get the public pages from the edge cache (src/lib/html-cache.ts); anything
     // signed-in or not public goes straight to Next.js.
-    return serveGuestPage(request, (req) => handler.fetch(req, env, ctx), caches.default, ctx, env.CF_VERSION_METADATA?.id)
+    // Spec A proof: echo whether this isolate is new, to tell cold starts from render cost.
+    const freshIsolate = !isolateSeen
+    isolateSeen = true
+    const page = await serveGuestPage(request, (req) => handler.fetch(req, env, ctx), caches.default, ctx, env.CF_VERSION_METADATA?.id)
+    const tagged = new Response(page.body, page)
+    tagged.headers.set('x-isolate-new', freshIsolate ? '1' : '0')
+    return tagged
   },
 
   async scheduled(

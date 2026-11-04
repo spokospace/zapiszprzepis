@@ -12,4 +12,6 @@ export default defineCloudflareConfig({
   // Soft tags (_N_T_...) out: revalidatePath('/', 'layout') must not wipe the data cache for everyone.
   // Side effect: populateCache no longer creates the D1 table; it is created by hand (runbook 2.3).
   tagCache: withFilter({ tagCache: d1NextTagCache, filterFn: softTagFilter }),
+  // Spec A proof: answer cached ISR pages before Next.js starts.
+  enableCacheInterception: true,
 })
