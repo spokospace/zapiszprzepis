@@ -1,0 +1,179 @@
+import { describe, it, expect, vi } from 'vitest'
+import {
+  FRESH_SECONDS,
+  MAX_STALE_SECONDS,
+  edgeCacheKey,
+  isEdgeCacheable,
+  isGuestRequest,
+  isPublicPath,
+  serveGuestPage,
+} from './html-cache'
+
+const RECIPE = 'https://zapiszprzepis.pl/przepis/sernik'
+const PAGE = '<html>guest page</html>'
+const T0 = 1_000_000_000_000
+
+class MemoryCache {
+  store = new Map<string, Response>()
+  async match(req: Request) {
+    return this.store.get(req.url)?.clone()
+  }
+  async put(req: Request, res: Response) {
+    this.store.set(req.url, res)
+  }
+  async delete(req: Request) {
+    return this.store.delete(req.url)
+  }
+}
+
+const html = (body = PAGE, init: ResponseInit = {}) =>
+  new Response(body, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, no-store', ...init.headers }, ...init })
+
+function setup(handle: (req: Request) => Promise<Response> = async () => html()) {
+  const cache = new MemoryCache()
+  const waits: Promise<unknown>[] = []
+  const ctx = { waitUntil: (p: Promise<unknown>) => void waits.push(p) }
+  const handler = vi.fn(handle)
+  const serve = async (req: Request, now = T0) => {
+    const res = await serveGuestPage(req, handler, cache, ctx, now)
+    await Promise.all(waits.splice(0))
+    return res
+  }
+  return { cache, handler, serve }
+}
+
+const get = (url = RECIPE, headers: Record<string, string> = {}) => new Request(url, { headers })
+
+describe('what may be cached (guests only)', () => {
+  it('public paths: home, a recipe, a category; not .md, search, admin or the account', () => {
+    for (const p of ['/', '/przepis/sernik', '/przepisy/obiady']) expect(isPublicPath(p), p).toBe(true)
+    for (const p of ['/przepis/sernik.md', '/przepisy/obiady.md', '/szukaj', '/admin', '/ulubione', '/przepis/a/b', '/lab/przepis/x'])
+      expect(isPublicPath(p), p).toBe(false)
+  })
+
+  it('a request with a Supabase auth cookie (also chunked or mid-OAuth) or Authorization is not a guest', () => {
+    expect(isGuestRequest(get(RECIPE))).toBe(true)
+    expect(isGuestRequest(get(RECIPE, { cookie: 'zp-text-scale=2; theme=dark' }))).toBe(true)
+    expect(isGuestRequest(get(RECIPE, { cookie: 'a=1; sb-abc-auth-token=xyz' }))).toBe(false)
+    expect(isGuestRequest(get(RECIPE, { cookie: 'sb-abc-auth-token.0=x; sb-abc-auth-token.1=y' }))).toBe(false)
+    expect(isGuestRequest(get(RECIPE, { cookie: 'sb-abc-auth-token-code-verifier=v' }))).toBe(false)
+    expect(isGuestRequest(get(RECIPE, { authorization: 'Bearer t' }))).toBe(false)
+  })
+
+  it('only GET without Range; a client-side (RSC) request needs its _rsc hash', () => {
+    expect(isEdgeCacheable(get())).toBe(true)
+    expect(isEdgeCacheable(new Request(RECIPE, { method: 'POST' }))).toBe(false)
+    expect(isEdgeCacheable(get(RECIPE, { range: 'bytes=0-9' }))).toBe(false)
+    expect(isEdgeCacheable(get(RECIPE, { rsc: '1' }))).toBe(false)
+    expect(isEdgeCacheable(get(`${RECIPE}?_rsc=abc`, { rsc: '1' }))).toBe(true)
+  })
+
+  it('keys the document and the RSC payload of one URL apart', () => {
+    expect(edgeCacheKey(RECIPE, false)).not.toBe(edgeCacheKey(RECIPE, true))
+    expect(edgeCacheKey(`${RECIPE}?from=zupy`, false)).not.toBe(edgeCacheKey(RECIPE, false))
+  })
+})
+
+describe('serveGuestPage', () => {
+  it('renders on a miss, then serves the next guest from the cache without rendering', async () => {
+    const { handler, serve } = setup()
+    const first = await serve(get())
+    expect(first.headers.get('x-edge-cache')).toBe('MISS')
+    expect(await first.text()).toBe(PAGE)
+
+    const second = await serve(get(), T0 + 1000)
+    expect(second.headers.get('x-edge-cache')).toBe('HIT')
+    expect(await second.text()).toBe(PAGE)
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  it('hands the guest the original Cache-Control back, with no internal headers', async () => {
+    const { serve } = setup()
+    await serve(get())
+    const hit = await serve(get(), T0 + 1000)
+    expect(hit.headers.get('cache-control')).toBe('private, no-store')
+    expect(hit.headers.get('x-edge-cached-at')).toBeNull()
+    expect(hit.headers.get('x-edge-original-cache-control')).toBeNull()
+  })
+
+  it('never reads or writes the cache for a signed-in request', async () => {
+    const { cache, handler, serve } = setup()
+    await serve(get())
+    const signedIn = await serve(get(RECIPE, { cookie: 'sb-abc-auth-token=xyz' }), T0 + 1000)
+    expect(signedIn.headers.get('x-edge-cache')).toBeNull()
+    expect(handler).toHaveBeenCalledTimes(2)
+    // and what it rendered is not stored for guests
+    expect(cache.store.size).toBe(1)
+  })
+
+  it('does not keep a response that sets a cookie, a redirect, an error or a non-page', async () => {
+    for (const make of [
+      () => html(PAGE, { headers: { 'set-cookie': 'a=b' } }),
+      () => new Response(null, { status: 308, headers: { location: '/przepis/x' } }),
+      () => new Response('nope', { status: 404, headers: { 'content-type': 'text/html' } }),
+      () => new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
+    ]) {
+      const { cache, serve } = setup(async () => make())
+      await serve(get())
+      expect(cache.store.size).toBe(0)
+    }
+  })
+
+  it('serves a stale page at once and re-renders it in the background', async () => {
+    let version = 1
+    const { handler, serve, cache } = setup(async () => html(`v${version}`))
+    await serve(get())
+    version = 2
+    const stale = await serve(get(), T0 + (FRESH_SECONDS + 1) * 1000)
+    expect(stale.headers.get('x-edge-cache')).toBe('STALE')
+    expect(await stale.text()).toBe('v1')
+    expect(handler).toHaveBeenCalledTimes(2)
+    expect(cache.store.size).toBe(2) // the page and the refresh lock
+
+    const next = await serve(get(), T0 + (FRESH_SECONDS + 2) * 1000)
+    expect(next.headers.get('x-edge-cache')).toBe('HIT')
+    expect(await next.text()).toBe('v2')
+  })
+
+  it('starts one refresh at a time', async () => {
+    const { handler, serve } = setup()
+    await serve(get())
+    const late = T0 + (FRESH_SECONDS + 1) * 1000
+    await serve(get(), late)
+    await serve(get(), late + 1)
+    expect(handler).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the old page when the refresh fails, and drops it when the recipe is gone', async () => {
+    let status = 200
+    const { cache, serve } = setup(async () => (status === 200 ? html() : new Response('x', { status })))
+    await serve(get())
+    status = 503
+    await serve(get(), T0 + (FRESH_SECONDS + 1) * 1000)
+    expect([...cache.store.keys()].some((k) => k.includes('__edge=html') && !k.includes('__lock'))).toBe(true)
+
+    // lock expires in the real cache; the test clears it
+    for (const k of cache.store.keys()) if (k.includes('__lock')) cache.store.delete(k)
+    status = 404
+    await serve(get(), T0 + (FRESH_SECONDS + 2) * 1000)
+    expect([...cache.store.keys()].some((k) => k.includes('__edge=html') && !k.includes('__lock'))).toBe(false)
+  })
+
+  it('waits for a fresh render once the entry is older than the stale window', async () => {
+    const { handler, serve } = setup()
+    await serve(get())
+    const old = await serve(get(), T0 + (MAX_STALE_SECONDS + 1) * 1000)
+    expect(old.headers.get('x-edge-cache')).toBe('MISS')
+    expect(handler).toHaveBeenCalledTimes(2)
+  })
+
+  it('falls back to rendering when the cache itself fails', async () => {
+    const cache = { match: vi.fn().mockRejectedValue(new Error('down')), put: vi.fn(), delete: vi.fn() }
+    const handler = vi.fn(async () => html())
+    const ctx = { waitUntil: vi.fn() }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const res = await serveGuestPage(get(), handler, cache, ctx, T0)
+    expect(await res.text()).toBe(PAGE)
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+})
