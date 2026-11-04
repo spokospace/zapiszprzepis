@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { whereInCategory } from '@/lib/category-membership'
 import type { RecipeForMarkdown } from '@/lib/recipe-markdown'
 
 /** One canonical recipe for discoverability surfaces: its slug, title and a sitemap <lastmod>. */
@@ -90,10 +91,7 @@ export async function listCanonicalRecipesByCategory(category: string): Promise<
   const supabase = await createSupabaseServerClient()
   const rows: PublicRecipeRow[] = []
   for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabase
-      .from('public_recipes')
-      .select('slug, title, created_at')
-      .eq('category', category)
+    const { data, error } = await whereInCategory(supabase.from('public_recipes').select('slug, title, created_at'), category)
       .order('created_at', { ascending: true })
       .order('id', { ascending: true })
       .range(from, from + PAGE_SIZE - 1)

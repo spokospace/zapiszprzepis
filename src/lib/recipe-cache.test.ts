@@ -17,7 +17,7 @@ vi.mock('next/cache', () => ({
 // A benign anon client so the wrappers resolve without a real DB.
 vi.mock('@/lib/supabase/anon', () => {
   const builder: Record<string, unknown> = {}
-  for (const m of ['select', 'eq', 'contains', 'order', 'range', 'not', 'neq', 'limit']) builder[m] = () => builder
+  for (const m of ['select', 'eq', 'or', 'contains', 'order', 'range', 'not', 'neq', 'limit']) builder[m] = () => builder
   builder.maybeSingle = () => Promise.resolve({ data: null, error: null })
   builder.then = (res: (v: unknown) => unknown) => Promise.resolve({ data: [], count: 0, error: null }).then(res)
   const client = { from: () => builder, rpc: () => Promise.resolve({ data: [], error: null }) }
@@ -47,9 +47,14 @@ import {
 function fakeClient(opts: { many?: unknown; single?: unknown; rpc?: unknown } = {}) {
   const selectCols: string[] = []
   const fromTables: string[] = []
+  const orFilters: string[] = []
   const makeBuilder = () => {
     const b: Record<string, unknown> = {}
     for (const m of ['eq', 'contains', 'order', 'range', 'not', 'neq', 'limit']) b[m] = () => b
+    b.or = (filter: string) => {
+      orFilters.push(filter)
+      return b
+    }
     b.select = (cols: string) => {
       selectCols.push(cols)
       return b
@@ -66,7 +71,7 @@ function fakeClient(opts: { many?: unknown; single?: unknown; rpc?: unknown } = 
     },
     rpc: () => Promise.resolve(opts.rpc ?? { data: [], error: null }),
   }
-  return { client: client as never, selectCols, fromTables }
+  return { client: client as never, selectCols, fromTables, orFilters }
 }
 
 describe('cached wrappers — TTL, tags, and viewer-independent keys', () => {
@@ -146,9 +151,11 @@ describe('revalidateRecipeCaches', () => {
 
 describe('reads — public_recipes only, no user-scoped columns (no cross-user leakage)', () => {
   it('readCategoryListing returns rows + count and selects no user_id', async () => {
-    const { client, selectCols, fromTables } = fakeClient({ many: { data: [{ id: 1 }], count: 7, error: null } })
+    const { client, selectCols, fromTables, orFilters } = fakeClient({ many: { data: [{ id: 1 }], count: 7, error: null } })
     const out = await readCategoryListing(client, { category: 'obiady', tags: [], limit: 24 })
     expect(out).toEqual({ recipes: [{ id: 1 }], count: 7 })
+    // The list holds the recipes whose primary OR extra category is this one (#689).
+    expect(orFilters).toEqual(['category.eq.obiady,extra_categories.cs.{obiady}'])
     expect(fromTables).toEqual(['public_recipes'])
     expect(selectCols.join(' ')).not.toContain('user_id')
   })
@@ -160,8 +167,10 @@ describe('reads — public_recipes only, no user-scoped columns (no cross-user l
   })
 
   it('readCategoryTotal returns the head count', async () => {
-    const { client } = fakeClient({ many: { count: 42, error: null } })
+    const { client, orFilters } = fakeClient({ many: { count: 42, error: null } })
     expect(await readCategoryTotal(client, { category: 'obiady' })).toBe(42)
+    // The total uses the same predicate as the listing, so the two cannot disagree.
+    expect(orFilters).toEqual(['category.eq.obiady,extra_categories.cs.{obiady}'])
   })
 
   it('readPublicRecipe returns the first (oldest) row or null', async () => {

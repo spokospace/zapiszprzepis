@@ -350,6 +350,8 @@ export type Database = {
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url: string | null
           step_images: string[]
+          extra_categories: Database["public"]["Enums"]["recipe_category"][]
+          taxonomy_locked_at: string | null
           steps: Json
           tags: string[]
           times_estimated: boolean
@@ -383,6 +385,8 @@ export type Database = {
           source_type: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
           step_images?: string[]
+          extra_categories?: Database["public"]["Enums"]["recipe_category"][]
+          taxonomy_locked_at?: string | null
           steps?: Json
           tags?: string[]
           times_estimated?: boolean
@@ -416,6 +420,8 @@ export type Database = {
           source_type?: Database["public"]["Enums"]["recipe_source"]
           source_url?: string | null
           step_images?: string[]
+          extra_categories?: Database["public"]["Enums"]["recipe_category"][]
+          taxonomy_locked_at?: string | null
           steps?: Json
           tags?: string[]
           times_estimated?: boolean
@@ -669,6 +675,7 @@ export type Database = {
           description: string | null
           dish: string | null
           dish_accusative: string | null
+          extra_categories: Database["public"]["Enums"]["recipe_category"][] | null
           gallery_count: number | null
           id: number | null
           image_url: string | null
@@ -1126,6 +1133,7 @@ export type Database = {
           cook_time_minutes: number
           created_at: string
           description: string
+          extra_categories: Database["public"]["Enums"]["recipe_category"][]
           id: number
           image_url: string
           prep_time_minutes: number

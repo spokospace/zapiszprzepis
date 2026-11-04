@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseAnonClient } from '@/lib/supabase/anon'
 import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
 import type { TagCount } from '@/lib/category-tags'
+import { whereInCategory } from '@/lib/category-membership'
 import { dailyRecipeIndex, warsawDayKey } from '@/lib/recipe-of-the-day'
 import type { Database } from '@/lib/supabase.types'
 
@@ -23,6 +24,8 @@ export type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_finge
   last_modified?: string | null
   /** Per-step archived image URLs, index-aligned with `steps`; optional until the step-images column/view migration. */
   step_images?: string[] | null
+  /** Further category lists the dish is in (#689); optional until the extra-categories view migration. */
+  extra_categories?: string[] | null
 }
 
 /** The one card shape the category list renders (#444): only what a `RecipeCard` shows + its tags. */
@@ -74,7 +77,7 @@ export async function readCategoryListing(
   supabase: SupabaseClient,
   { category, tags, limit }: { category: string; tags: readonly string[]; limit: number },
 ): Promise<{ recipes: PublicRecipe[]; count: number }> {
-  let q = supabase.from('public_recipes').select(CATEGORY_CARD_COLUMNS, { count: 'exact' }).eq('category', category)
+  let q = whereInCategory(supabase.from('public_recipes').select(CATEGORY_CARD_COLUMNS, { count: 'exact' }), category)
   if (tags.length > 0) q = q.contains('tags', tags)
   const { data, count, error } = await q
     .order('created_at', { ascending: false })
@@ -96,10 +99,10 @@ export async function readCategoryFacets(
 
 /** The whole-category head count, read only for a filtered view (#444). */
 export async function readCategoryTotal(supabase: SupabaseClient, { category }: { category: string }): Promise<number> {
-  const { count, error } = await supabase
-    .from('public_recipes')
-    .select('id', { count: 'exact', head: true })
-    .eq('category', category)
+  const { count, error } = await whereInCategory(
+    supabase.from('public_recipes').select('id', { count: 'exact', head: true }),
+    category,
+  )
   must(error, 'category total failed')
   return count ?? 0
 }

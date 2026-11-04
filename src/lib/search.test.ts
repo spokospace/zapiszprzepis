@@ -58,6 +58,29 @@ describe('categoryFacets', () => {
   })
 })
 
+describe('categories with extras (#689)', () => {
+  const rows = [
+    { id: 1, slug: 'a', category: 'przekaski', extra_categories: ['sniadania'], total_count: 3 },
+    { id: 2, slug: 'b', category: 'sniadania', extra_categories: [], total_count: 3 },
+    { id: 3, slug: 'c', category: 'zupy', total_count: 3 },
+  ]
+
+  it('counts a dish in every list it is in', () => {
+    expect(categoryFacets(rows)).toEqual([
+      { value: 'sniadania', label: 'Śniadania', count: 2 },
+      { value: 'zupy', label: 'Zupy', count: 1 },
+      { value: 'przekaski', label: 'Przekąski', count: 1 },
+    ])
+  })
+
+  it('narrows by primary or extra category', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: rows, error: null })
+    const out = await searchRecipes(client(rpc), { q: 'x', scope: 'wszystkie', page: 1, category: 'sniadania' })
+    expect('rows' in out && out.rows.map((r) => r.id)).toEqual([1, 2])
+    expect(out).toMatchObject({ total: 2, totalAll: 3 })
+  })
+})
+
 describe('searchRecipes', () => {
   it('does not query for an empty search', async () => {
     const rpc = vi.fn()

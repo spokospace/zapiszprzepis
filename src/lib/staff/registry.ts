@@ -1,4 +1,6 @@
 import { MAX_TAGS, RECIPE_TAGS } from '@/lib/recipe-tags'
+import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { MAX_EXTRA_CATEGORIES } from '@/lib/category-membership'
 import { finishImportRetry } from './imports'
 import type { ReadTool, ToolArg, WriteTool } from './mcp/types'
 import type { StaffPermission } from './permissions'
@@ -173,11 +175,12 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
       {
         name: 'set_taxonomy', label: 'Zmień kategorię i tagi', permission: 'recipes.taxonomy', destructive: false,
         mcp: {
-          description: 'Set the category and/or the tags of a recipe. Give at least one. An empty tags list clears the tags.',
+          description: 'Set the category, the extra categories and/or the tags of a recipe. Give at least one. An empty tags list clears the tags; an empty extra_categories list clears the extra categories. Any call locks the taxonomy of the recipe: re-extraction no longer overwrites category, tags or extra categories.',
           rpc: 'admin_set_taxonomy_as', target: 'recipe_id', finish: finishRecipeSlug,
           args: [
             arg.recipeId,
             { name: 'category', param: 'p_category', type: 'string', maxLength: 40, description: 'Category slug (for example zupy, desery, ciasta). Unknown values are refused. Omit to keep the current one.' },
+            { name: 'extra_categories', param: 'p_extra_categories', type: 'string_list', maxItems: MAX_EXTRA_CATEGORIES, maxLength: 40, values: RECIPE_CATEGORIES.map((c) => c.value), description: `Further category lists the recipe also appears in (up to ${MAX_EXTRA_CATEGORIES}, from the closed category list, never the primary). The complete new list: omit to keep the current ones, [] to clear.` },
             { name: 'tags', param: 'p_tags', type: 'string_list', maxItems: MAX_TAGS, maxLength: 40, values: RECIPE_TAGS.map((t) => t.value), description: `The complete new tag list (up to ${MAX_TAGS}, from the closed list). Omit to keep the current tags.` },
           ],
         },
