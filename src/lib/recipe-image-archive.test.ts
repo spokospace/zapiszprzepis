@@ -9,6 +9,8 @@ import {
   namesTheDish,
   buildGallery,
   dedupeStoredGallery,
+  findPageImage,
+  onPageHost,
   coverImage,
   jsonLdImage,
   archiveGallery,
@@ -693,6 +695,40 @@ describe('pickGalleryImages — the recipe photos for the gallery', () => {
       'https://blogger.googleusercontent.com/img/b/R29v/AVvX/s1600/ciasto.jpg',
       'https://1.bp.blogspot.com/-abc/X/AAA/def/s1600/krok.jpg',
     ])
+  })
+})
+
+describe('onPageHost', () => {
+  it('moves a photo from another host to the page host, keeping the path', () => {
+    expect(onPageHost('https://cdn.sister.by/wp-content/uploads/a.jpg?x=1', 'https://slushna.by/post/')).toBe(
+      'https://slushna.by/wp-content/uploads/a.jpg?x=1',
+    )
+  })
+
+  it('is undefined when the photo is already on the page host or a URL is not http', () => {
+    expect(onPageHost('https://slushna.by/a.jpg', 'https://slushna.by/post/')).toBeUndefined()
+    expect(onPageHost('data:image/png;base64,AAAA', 'https://slushna.by/post/')).toBeUndefined()
+    expect(onPageHost('https://cdn.sister.by/a.jpg', 'not a url')).toBeUndefined()
+  })
+})
+
+describe('findPageImage', () => {
+  const RAW = 'https://cdn.example.com/uploads/стравы-фота-3.jpg'
+  const ENCODED = 'https://cdn.example.com/uploads/%D1%81%D1%82%D1%80%D0%B0%D0%B2%D1%8B-%D1%84%D0%BE%D1%82%D0%B0-3.jpg'
+
+  it('returns the URL as the page writes it, whichever spelling the model copied', () => {
+    expect(findPageImage(ENCODED, `<img src="${RAW}">`)).toBe(RAW)
+    expect(findPageImage(RAW, `![](${ENCODED})`)).toBe(ENCODED)
+  })
+
+  it('finds a plain URL inside markdown and HTML', () => {
+    expect(findPageImage('https://x.test/a.jpg', 'text ![alt](https://x.test/a.jpg) more')).toBe('https://x.test/a.jpg')
+  })
+
+  it('is undefined for a URL the page does not contain, or a non-http one', () => {
+    expect(findPageImage('https://x.test/invented.jpg', '<img src="https://x.test/a.jpg">')).toBeUndefined()
+    expect(findPageImage('/relative.jpg', 'src="/relative.jpg"')).toBeUndefined()
+    expect(findPageImage('', 'anything')).toBeUndefined()
   })
 })
 

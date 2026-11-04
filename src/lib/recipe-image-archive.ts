@@ -792,6 +792,98 @@ export function pickGalleryImages(html: string, pageUrl?: string): string[] {
 }
 
 /**
+ * The same photo path on the page's own host, or undefined when the photo is
+ * already there (or either URL is not http). A page often hotlinks its pictures
+ * from a sister host that refuses server downloads (bad certificate, 403), while
+ * the page's host serves the same file.
+ */
+export function onPageHost(photoUrl: string, pageUrl: string): string | undefined {
+  try {
+    const photo = new URL(photoUrl)
+    const page = new URL(pageUrl)
+    if (!/^https?:$/.test(photo.protocol) || !/^https?:$/.test(page.protocol) || photo.host === page.host) return undefined
+    photo.protocol = page.protocol
+    photo.host = page.host
+    return photo.href
+  } catch {
+    return undefined
+  }
+}
+
+function decodedUrl(url: string): string {
+  try {
+    return decodeURI(url)
+  } catch {
+    return url
+  }
+}
+
+/**
+ * The URL as the page writes it for a photo the model named, or undefined when
+ * the page has no such URL. Compared decoded: a reader returns the same
+ * Cyrillic file name raw in the HTML and percent-encoded in its image summary,
+ * and the model copies either. Returning the page's own spelling keeps a model's
+ * invented URL out.
+ */
+export function findPageImage(url: string, pageText: string): string | undefined {
+  const wanted = decodedUrl(url.trim())
+  if (!/^https?:\/\//i.test(wanted)) return undefined
+  for (const [candidate] of pageText.matchAll(/https?:\/\/[^\s"'<>)\]]+/gi)) {
+    if (decodedUrl(candidate) === wanted) return candidate
+  }
+  return undefined
+}
+
+const IMAGE_IN_TEXT = /<img\b[^>]*?\b(?:src|data-src)=["'](https?:\/\/[^"'\s>]+)["']|!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i
+const MAX_MENTIONS = 20
+
+/** Where the page writes `name` (ignoring case) from `from` on, as indexes into `pageText`. */
+function mentions(pageText: string, name: string, from: number, limit = MAX_MENTIONS): number[] {
+  if (!name) return []
+  const pattern = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+  pattern.lastIndex = from
+  const found: number[] = []
+  for (let hit = pattern.exec(pageText); hit && found.length < limit; hit = pattern.exec(pageText)) found.push(hit.index)
+  return found
+}
+
+/** Where the <img> tag or markdown image holding `index` in its alt text begins; `index` when it is in neither. */
+function imageStart(pageText: string, index: number): number {
+  const tag = pageText.lastIndexOf('<', index)
+  if (tag > pageText.lastIndexOf('>', index) && /^<img\b/i.test(pageText.slice(tag, tag + 5))) return tag
+  const alt = pageText.lastIndexOf('![', index)
+  return alt > pageText.lastIndexOf(']', index) ? alt : index
+}
+
+/**
+ * The first photo in the page body that follows a dish's own name, read from the
+ * page text in the page's own language: the span runs from a mention of one of
+ * the dish's names (`ownNames`, tried in order) to the next mention of another
+ * dish (`otherNames`) or the end of the text, and its first <img> or markdown
+ * image is the cover. A name inside a photo's alt text starts the span at that
+ * photo. A mention whose span holds no photo (a lead-in, a contents list) is
+ * skipped for the next one. Undefined when no name is found with a photo after
+ * it. The URL is copied from the page, so it needs no further check.
+ */
+export function imageAfterTitle(ownNames: string[], pageText: string, otherNames: string[]): string | undefined {
+  for (const own of ownNames.map((name) => name.trim()).filter(Boolean)) {
+    const others = otherNames.map((name) => name.trim()).filter((name) => name && name !== own)
+    for (const mention of mentions(pageText, own, 0)) {
+      const start = imageStart(pageText, mention)
+      let end = pageText.length
+      for (const other of others) {
+        const [next] = mentions(pageText, other, mention + own.length, 1)
+        const cut = next === undefined ? -1 : imageStart(pageText, next)
+        if (cut > start) end = Math.min(end, cut)
+      }
+      const image = IMAGE_IN_TEXT.exec(pageText.slice(start, end))
+      if (image) return image[1] ?? image[2]
+    }
+  }
+  return undefined
+}
+
+/**
  * The gallery to store: the cover first, then the other photos, each photo
  * once, at most GALLERY_LIMIT. Empty when there is nothing beyond the cover —
  * one photo is already shown as the cover.
