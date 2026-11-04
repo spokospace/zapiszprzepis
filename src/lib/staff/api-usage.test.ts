@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapApiUsage, formatUsd } from './api-usage'
+import { mapApiLimits, mapApiUsage, formatUsd } from './api-usage'
 
 describe('mapApiUsage', () => {
   it('rejects anything that is not the document', () => {
@@ -9,7 +9,7 @@ describe('mapApiUsage', () => {
 
   it('gives every service zeros and a filled series when nothing was counted', () => {
     const s = mapApiUsage({ days: 3, since: '2026-11-02', totals: [], daily: [] })!
-    expect(s.services.map((x) => x.service)).toEqual(['openai', 'firecrawl', 'jina'])
+    expect(s.services.map((x) => x.service)).toEqual(['openai', 'firecrawl', 'jina', 'inngest'])
     expect(s.services[0]).toMatchObject({ calls: 0, costUsd: 0 })
     expect(s.services[0].dailyCalls.map((d) => d.day)).toEqual(['2026-11-02', '2026-11-03', '2026-11-04'])
   })
@@ -32,5 +32,18 @@ describe('mapApiUsage', () => {
   it('formats cost', () => {
     expect(formatUsd(0)).toBe('–')
     expect(formatUsd(0.0123)).toContain('0,0123')
+  })
+})
+
+describe('mapApiLimits', () => {
+  it('is null unless the document is a list', () => {
+    expect(mapApiLimits(null)).toBeNull()
+    expect(mapApiLimits({})).toBeNull()
+  })
+  it('maps a row and drops the unusable ones', () => {
+    const row = { service: 'firecrawl', remaining: '40', total: 100, unit: 'kredytów', period_end: null, fetched_at: '2026-11-04T04:00:00Z' }
+    expect(mapApiLimits([row, { ...row, remaining: -1 }, { ...row, fetched_at: 5 }, 'x'])).toEqual([
+      { service: 'firecrawl', remaining: 40, total: 100, unit: 'kredytów', periodEnd: null, fetchedAt: '2026-11-04T04:00:00Z' },
+    ])
   })
 })

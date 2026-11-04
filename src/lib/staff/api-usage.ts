@@ -4,7 +4,7 @@ import { addDays, byDay, count, fillDays, type DayValue } from './series'
 /** The windows the admin screen shows. */
 export const API_USAGE_WINDOWS = [7, 28] as const
 
-export const API_SERVICES = ['openai', 'firecrawl', 'jina'] as const
+export const API_SERVICES = ['openai', 'firecrawl', 'jina', 'inngest'] as const
 export type ApiServiceName = (typeof API_SERVICES)[number]
 
 export interface ApiUsageTotals {
@@ -93,4 +93,45 @@ const usd = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'USD',
 /** Estimated cost as Polish text ("$0,0123"); a dash for services that are not billed per token. */
 export function formatUsd(value: number): string {
   return value > 0 ? usd.format(value) : '–'
+}
+
+/** What a provider says is left of its plan, as of `fetchedAt`. */
+export interface ApiLimit {
+  service: string
+  remaining: number
+  total: number
+  unit: string
+  /** ISO end of the billing period, when the provider gave one. */
+  periodEnd: string | null
+  fetchedAt: string
+}
+
+/** The `admin_api_limits` document: rows with unusable numbers are dropped; null when it is not a list. */
+export function mapApiLimits(raw: unknown): ApiLimit[] | null {
+  if (!Array.isArray(raw)) return null
+  const limits: ApiLimit[] = []
+  for (const row of raw) {
+    if (typeof row !== 'object' || row === null) continue
+    const r = row as Record<string, unknown>
+    const remaining = Number(r.remaining)
+    const total = Number(r.total)
+    if (typeof r.service !== 'string' || typeof r.fetched_at !== 'string') continue
+    if (!Number.isFinite(remaining) || !Number.isFinite(total) || remaining < 0 || total < 0) continue
+    limits.push({
+      service: r.service,
+      remaining,
+      total,
+      unit: typeof r.unit === 'string' ? r.unit : '',
+      periodEnd: typeof r.period_end === 'string' ? r.period_end : null,
+      fetchedAt: r.fetched_at,
+    })
+  }
+  return limits
+}
+
+export async function loadApiLimits(supabase: SupabaseClient): Promise<ApiLimit[] | null> {
+  const { data, error } = await supabase.rpc('admin_api_limits')
+  const limits = error ? null : mapApiLimits(data)
+  if (!limits) console.error('[staff] admin_api_limits failed:', error?.message ?? 'unexpected result')
+  return limits
 }

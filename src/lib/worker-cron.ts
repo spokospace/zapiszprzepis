@@ -5,6 +5,7 @@
 // Nothing here may import `server-only` or anything Next-specific: this code is
 // bundled into the Worker entrypoint, outside the Next.js request path.
 
+import { fetchFirecrawlLimit } from './api-limits'
 import {
   accessToken,
   fetchReport,
@@ -39,6 +40,8 @@ export type CronEnv = {
   BACKUPS?: R2Bucket
   // Google service-account key file (JSON) for Search Console; set with `wrangler secret put`.
   GSC_SERVICE_ACCOUNT_JSON?: string
+  // Firecrawl key, the same Worker secret the extraction uses; read here for the credit balance.
+  FIRECRAWL_API_KEY?: string
 }
 
 function restHeaders(key: string): Record<string, string> {
@@ -175,5 +178,42 @@ export async function syncSearchConsole(env: CronEnv, fetchFn: Fetch = fetch, no
     console.log(`search-console: ${days[0]}..${days[days.length - 1]}, ${rows.length} rows`)
   } catch (e) {
     console.error(`search-console: failed — ${e instanceof Error ? e.message : String(e)}`)
+  }
+}
+
+/**
+ * Copies each provider's remaining-plan figure into public.api_limit_snapshots, one row
+ * per service (upserted by service). A provider that cannot be reached keeps its previous
+ * row, so the admin screen shows an older "checked at" time instead of nothing.
+ *
+ * Never throws: a failed sync must not take the scheduled run down with it; the log line
+ * is the alert.
+ */
+export async function syncApiLimits(env: CronEnv, fetchFn: Fetch = fetch): Promise<void> {
+  const key = env.SUPABASE_SERVICE_ROLE_KEY
+  if (!key) {
+    console.error('api-limits: skipped — SUPABASE_SERVICE_ROLE_KEY is missing')
+    return
+  }
+  if (!env.FIRECRAWL_API_KEY) {
+    console.error('api-limits: skipped — FIRECRAWL_API_KEY is missing')
+    return
+  }
+
+  try {
+    const snapshot = await fetchFirecrawlLimit(env.FIRECRAWL_API_KEY, fetchFn)
+    const res = await fetchFn(`${restBase(env)}/rest/v1/api_limit_snapshots?on_conflict=service`, {
+      method: 'POST',
+      headers: {
+        ...restHeaders(key),
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify([{ ...snapshot, fetched_at: new Date().toISOString() }]),
+    })
+    if (!res.ok) throw new Error(`upsert: Supabase responded ${res.status}`)
+    console.log(`api-limits: ${snapshot.service} ${snapshot.remaining}/${snapshot.total} ${snapshot.unit}`)
+  } catch (e) {
+    console.error(`api-limits: failed — ${e instanceof Error ? e.message : String(e)}`)
   }
 }
