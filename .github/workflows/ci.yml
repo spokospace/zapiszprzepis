@@ -39,10 +39,10 @@ jobs:
     # (.ai/agentic.config.json), so a stuck job ends before the merge skills stop waiting.
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       # Version comes from the "packageManager" field in package.json.
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -65,9 +65,9 @@ jobs:
       # keeps the analytics client code that production ships.
       NEXT_PUBLIC_USAGE_ANALYTICS: '1'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
