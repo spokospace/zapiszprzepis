@@ -171,9 +171,10 @@ function cached<T>(
   keyParts: string[],
   read: (supabase: SupabaseClient) => Promise<T>,
   extraTags: string[] = [],
+  revalidate: number = REVALIDATE_SECONDS,
 ): Promise<T> {
   return unstable_cache(() => read(createSupabaseAnonClient()), [name, ...keyParts], {
-    revalidate: REVALIDATE_SECONDS,
+    revalidate,
     tags: [RECIPES_LIST_TAG, ...extraTags],
   })()
 }
@@ -198,6 +199,18 @@ export function getCategoryTotal(params: { category: string }) {
 /** Cached guest-safe recipe read, keyed per slug, with the recipe's own tag alongside the list tag. */
 export function getPublicRecipe(slug: string) {
   return cached('public-recipe', [slug], (c) => readPublicRecipe(c, slug), [recipeTag(slug)])
+}
+
+/**
+ * The same read with a one-hour lifetime, for the /lab recipe experiment (#701 follow-up):
+ * a page that is served from the incremental cache must not expire every 120 s, because an
+ * expired entry is served STALE and re-rendered inside the same invocation, which costs the
+ * same CPU as a miss. Freshness comes from the tags, which the same writers purge.
+ */
+export const LONG_REVALIDATE_SECONDS = 3600
+
+export function getPublicRecipeLongLived(slug: string) {
+  return cached('public-recipe-long', [slug], (c) => readPublicRecipe(c, slug), [recipeTag(slug)], LONG_REVALIDATE_SECONDS)
 }
 
 /** Cached „Ostatnio dodane” feed, keyed per limit. */

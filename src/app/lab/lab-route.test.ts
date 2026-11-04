@@ -27,7 +27,8 @@ describe('/lab recipe experiment (#701)', () => {
   }
 
   it('is revalidated on a timer, off by default, and kept out of indexes', () => {
-    expect(sources.page).toMatch(/export const revalidate = \d+/)
+    expect(sources.page).toMatch(/export const revalidate = 3600/)
+    expect(sources.page).toMatch(/getPublicRecipeLongLived/)
     expect(sources.page).toMatch(/process\.env\.RECIPE_LAB !== '1'\) notFound\(\)/)
     expect(sources.page).toMatch(/index: false/)
   })
