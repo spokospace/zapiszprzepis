@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 let pathname = '/przepisy/zupy'
-vi.mock('next/navigation', () => ({ usePathname: () => pathname, useRouter: () => ({ prefetch: vi.fn() }) }))
+vi.mock('next/navigation', () => ({ usePathname: () => pathname }))
 vi.mock('@/app/(actions)/sign-out', () => ({ signOut: vi.fn() }))
 
 import { AppMenu } from './app-menu'
