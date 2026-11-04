@@ -10,8 +10,13 @@ describe('toExtraCategories', () => {
     expect(toExtraCategories(['przekaski', 'inne', 'kolacje', 7, null, 'sniadania', 'Śniadania'], 'przekaski')).toEqual(['sniadania'])
   })
 
+  it('only ever allows przekaski, sniadania and salatki', () => {
+    expect(toExtraCategories(['przetwory', 'desery', 'zupy', 'ciasta', 'napoje'], 'obiady')).toEqual([])
+    expect(toExtraCategories(['przetwory', 'przekaski'], 'obiady')).toEqual(['przekaski'])
+  })
+
   it('caps the list at two (over-assignment guard)', () => {
-    expect(toExtraCategories(['zupy', 'obiady', 'desery', 'ciasta'], 'przekaski')).toEqual(['zupy', 'obiady'])
+    expect(toExtraCategories(['przekaski', 'sniadania', 'salatki'], 'obiady')).toEqual(['przekaski', 'sniadania'])
   })
 
   it('is empty for anything that is not a list', () => {

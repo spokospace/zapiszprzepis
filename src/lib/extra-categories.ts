@@ -15,11 +15,17 @@ import { RECIPE_CATEGORIES, type RecipeCategory } from '@/lib/recipe-categories'
 export const EXTRA_CATEGORIES_RULE = `Extra categories ("extra_categories"): a list of 0–${MAX_EXTRA_CATEGORIES} MORE categories (never the main one, never "inne") the dish ALSO belongs in. Almost every dish needs none: return [] unless the dish is clearly and typically found in both lists, and when in any doubt return []. The ONLY two overlaps allowed: finger food that is also breakfast food (sandwiches, toasts, baked sandwiches, stuffed eggs, a snack board built around breakfast items, tortilla wraps) is "przekaski" + "sniadania"; a salad served as finger food (in shells, tartlets, on skewers or crackers) is "przekaski" + "salatki" (drinks, juices, syrups and infusions get no extra). Everything else is []: sweet categories ("ciasta", "desery", "ciasteczka") are NEVER extras of each other or of a savoury list (a tort is not a dessert, tiramisu is not a cake, pancakes are not snacks); a main dish, soup, bread or preserve gets no extra only because it could also be served at another meal.`
 
 /**
- * The extras the model returned, made safe: only known category values or labels,
- * never the primary, never "inne", no repeats, at most MAX_EXTRA_CATEGORIES. Anything
+ * The extras the model returned, made safe: only przekaski, sniadania or salatki (by value
+ * or label), never the primary, no repeats, at most MAX_EXTRA_CATEGORIES. Anything
  * unreadable is `[]`. Unlike the primary (`toRecipeCategory`), an unknown value is
  * dropped, not turned into "inne": an extra is optional.
  */
+/**
+ * The only lists the model may add (hard guard behind the prompt; the precision check of
+ * 2026-11-04 showed everything else is noise). Staff can still set any extra by hand.
+ */
+export const LLM_EXTRA_CATEGORIES: readonly RecipeCategory[] = ['przekaski', 'sniadania', 'salatki']
+
 export function toExtraCategories(raw: unknown, primary: string): RecipeCategory[] {
   if (!Array.isArray(raw)) return []
   const out: RecipeCategory[] = []
@@ -27,7 +33,7 @@ export function toExtraCategories(raw: unknown, primary: string): RecipeCategory
     if (typeof item !== 'string') continue
     const folded = fold(item)
     const match = RECIPE_CATEGORIES.find((c) => c.value === folded || fold(c.label) === folded)
-    if (!match || match.value === 'inne' || match.value === primary || out.includes(match.value)) continue
+    if (!match || !LLM_EXTRA_CATEGORIES.includes(match.value) || match.value === primary || out.includes(match.value)) continue
     out.push(match.value)
     if (out.length === MAX_EXTRA_CATEGORIES) break
   }
