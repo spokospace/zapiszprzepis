@@ -2,11 +2,13 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { NUMBERED_SLUG_ATTEMPTS, recipeSlug, recipeSlugCandidate } from '@/lib/slugify'
 import {
+  archiveImage,
   archiveRecipeImages,
   archiveStepImages,
   buildGallery,
   coverImage,
   findPageImage,
+  onPageHost,
   jsonLdHowToStepImages,
   pickGalleryImages,
 } from '@/lib/recipe-image-archive'
@@ -208,6 +210,8 @@ export interface RecipeImageJob {
   recipeId: number
   userId: string
   cover?: string
+  /** The cover's file on the page's own host, tried when the cover's host refuses the download. */
+  coverFallback?: string
   gallery: string[]
   stepSources: (string | null)[]
   /** A refresh replaces the gallery outright, emptying it when the source has none left. */
@@ -250,7 +254,8 @@ export async function storeCoverAndGallery(supabase: SupabaseClient, job: Recipe
     clearStale: job.replace,
   })
   const update: Database['public']['Tables']['recipes']['Update'] = {}
-  if (archived.cover != null) update.image_url = archived.cover
+  const cover = archived.cover ?? (job.coverFallback ? await archiveImage(supabase, job.userId, job.recipeId, job.coverFallback) : null)
+  if (cover != null) update.image_url = cover
   if (archived.gallery != null && (job.replace || archived.gallery.length > 0)) update.image_urls = archived.gallery
   await updateRecipe(supabase, job.recipeId, update)
 }
@@ -996,6 +1001,7 @@ ${markdown}`
       const dishImage = typeof recipeJSON.dishImage === 'string' ? findPageImage(recipeJSON.dishImage, pageText) : undefined
       const cover = storable.length > 1 ? dishImage : ogImage
       const dishGallery = storable.length > 1 ? [] : gallery
+      const coverFallback = cover && sourceUrl ? onPageHost(cover, sourceUrl) : undefined
 
       const timesEstimated = timesAreEstimated(recipeJSON)
       const estimatedTimes = estimatedTimeFields(recipeJSON)
@@ -1134,7 +1140,7 @@ ${markdown}`
         return {
           kind: 'saved',
           result: { recipeId: refreshed.id, title, category: recipeJSON.category, status: 'refreshed' },
-          job: { recipeId: refreshed.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace },
+          job: { recipeId: refreshed.id, userId, cover, coverFallback, gallery: dishGallery, stepSources: stepImageSources, replace },
         }
       }
 
@@ -1202,7 +1208,7 @@ ${markdown}`
           recipe = data
           // The og:image, gallery and per-step photos are archived once the row
           // exists; until then image_url stays null (NoPhoto placeholder).
-          imageJob = { recipeId: data.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace: false }
+          imageJob = { recipeId: data.id, userId, cover, coverFallback, gallery: dishGallery, stepSources: stepImageSources, replace: false }
           break
         } else {
           lastInsertError = error
@@ -1294,7 +1300,7 @@ ${markdown}`
             // the existing value alone (never writes a new external link). The
             // gallery and step photos follow the same rule: archived photos replace
             // whatever is there, which is how the backfill gives old recipes them.
-            imageJob = { recipeId: existing.id, userId, cover, gallery: dishGallery, stepSources: stepImageSources, replace: false }
+            imageJob = { recipeId: existing.id, userId, cover, coverFallback, gallery: dishGallery, stepSources: stepImageSources, replace: false }
 
             // Fill the dish columns only when this row was never classified (never
             // overwrite a reviewed value), the same guard as a refresh.

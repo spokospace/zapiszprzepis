@@ -791,6 +791,25 @@ export function pickGalleryImages(html: string, pageUrl?: string): string[] {
   return urls
 }
 
+/**
+ * The same photo path on the page's own host, or undefined when the photo is
+ * already there (or either URL is not http). A page often hotlinks its pictures
+ * from a sister host that refuses server downloads (bad certificate, 403), while
+ * the page's host serves the same file.
+ */
+export function onPageHost(photoUrl: string, pageUrl: string): string | undefined {
+  try {
+    const photo = new URL(photoUrl)
+    const page = new URL(pageUrl)
+    if (!/^https?:$/.test(photo.protocol) || !/^https?:$/.test(page.protocol) || photo.host === page.host) return undefined
+    photo.protocol = page.protocol
+    photo.host = page.host
+    return photo.href
+  } catch {
+    return undefined
+  }
+}
+
 function decodedUrl(url: string): string {
   try {
     return decodeURI(url)
