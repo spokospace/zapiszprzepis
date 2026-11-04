@@ -4,9 +4,27 @@ import {
   ADD_RECIPE_HREF,
   DISPLAY_PREFS_ENTRY,
   buildMenuModel,
+  menuPrefetchHrefs,
   newNotificationsNoun,
   recipesNoun,
 } from './app-menu-model'
+
+describe('menuPrefetchHrefs', () => {
+  it('warms every signed-in row, notifications and settings', () => {
+    const model = buildMenuModel({ isAuthenticated: true, summary: null })
+    expect(menuPrefetchHrefs(model, true)).toEqual(['/recipes', '/ulubione', ADD_RECIPE_HREF, '/powiadomienia', '/settings'])
+  })
+
+  it('leaves out notifications when the page did not load them', () => {
+    const model = buildMenuModel({ isAuthenticated: true, summary: null })
+    expect(menuPrefetchHrefs(model, false)).not.toContain('/powiadomienia')
+  })
+
+  it('warms the sign-in pages for a guest, with no settings', () => {
+    const model = buildMenuModel({ isAuthenticated: false, summary: null })
+    expect(menuPrefetchHrefs(model, false)).toEqual(['/login', '/rejestracja'])
+  })
+})
 
 const keys = (model: ReturnType<typeof buildMenuModel>) => model.mine?.map((e) => e.key)
 
