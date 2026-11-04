@@ -58,10 +58,16 @@ export function isEdgeCacheable(request: Request): boolean {
   return !isRsc(request) || url.searchParams.has('_rsc')
 }
 
-/** One entry per URL and variant: the document and its client-side (RSC) payload differ. */
-export function edgeCacheKey(requestUrl: string, rsc: boolean): string {
+/**
+ * One entry per URL, variant and Worker version. The document and its client-side (RSC)
+ * payload differ. The version matters because a deploy replaces the hashed `/_next/static`
+ * files: a page cached by the previous version would point at files that no longer exist
+ * (no CSS, ChunkLoadError, the incident `pnpm smoke:prod` was written for).
+ */
+export function edgeCacheKey(requestUrl: string, rsc: boolean, version: string): string {
   const url = new URL(requestUrl)
   url.searchParams.set('__edge', rsc ? 'rsc' : 'html')
+  url.searchParams.set('__v', version)
   return url.toString()
 }
 
@@ -120,18 +126,21 @@ async function refresh(
 
 /**
  * Serve a public guest page from the edge cache, else through `handle`, keeping a
- * successful render. Anything not eligible, and any cache failure, goes straight to `handle`.
+ * successful render. Anything not eligible, any cache failure, and a Worker with no
+ * version id (the `CF_VERSION_METADATA` binding is missing) go straight to `handle`:
+ * without the version a cached page could outlive the files it points at.
  */
 export async function serveGuestPage(
   request: Request,
   handle: (request: Request) => Promise<Response>,
   cache: CacheLike,
   ctx: WaitUntil,
+  version: string | undefined,
   now: number = Date.now(),
 ): Promise<Response> {
-  if (!isEdgeCacheable(request)) return handle(request)
+  if (!version || !isEdgeCacheable(request)) return handle(request)
 
-  const key = new Request(edgeCacheKey(request.url, isRsc(request)))
+  const key = new Request(edgeCacheKey(request.url, isRsc(request), version))
   let cached: Response | undefined
   try {
     cached = await cache.match(key)

@@ -52,7 +52,12 @@ type ExecutionCtx = {
   waitUntil(promise: Promise<unknown>): void
 }
 
-type FetchEnv = { NEXT_PUBLIC_SUPABASE_URL?: string; NEXT_PUBLIC_SITE_URL?: string }
+type FetchEnv = {
+  NEXT_PUBLIC_SUPABASE_URL?: string
+  NEXT_PUBLIC_SITE_URL?: string
+  /** This deployment's version (wrangler.jsonc `version_metadata`); keys the guest page cache. */
+  CF_VERSION_METADATA?: { id: string }
+}
 
 // Cloudflare's default Cache API store (not in the DOM lib types).
 declare const caches: { default: Parameters<typeof serveImage>[2] & Parameters<typeof serveGuestPage>[2] }
@@ -73,7 +78,7 @@ const worker = {
     }
     // Guests get the public pages from the edge cache (src/lib/html-cache.ts); anything
     // signed-in or not public goes straight to Next.js.
-    return serveGuestPage(request, (req) => handler.fetch(req, env, ctx), caches.default, ctx)
+    return serveGuestPage(request, (req) => handler.fetch(req, env, ctx), caches.default, ctx, env.CF_VERSION_METADATA?.id)
   },
 
   async scheduled(

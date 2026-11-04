@@ -12,6 +12,7 @@ import {
 const RECIPE = 'https://zapiszprzepis.pl/przepis/sernik'
 const PAGE = '<html>guest page</html>'
 const T0 = 1_000_000_000_000
+const VERSION = 'v-1'
 
 class MemoryCache {
   store = new Map<string, Response>()
@@ -34,8 +35,9 @@ function setup(handle: (req: Request) => Promise<Response> = async () => html())
   const waits: Promise<unknown>[] = []
   const ctx = { waitUntil: (p: Promise<unknown>) => void waits.push(p) }
   const handler = vi.fn(handle)
-  const serve = async (req: Request, now = T0) => {
-    const res = await serveGuestPage(req, handler, cache, ctx, now)
+  // null stands for "no version id": an `undefined` argument would take the default.
+  const serve = async (req: Request, now = T0, version: string | null = VERSION) => {
+    const res = await serveGuestPage(req, handler, cache, ctx, version ?? undefined, now)
     await Promise.all(waits.splice(0))
     return res
   }
@@ -69,8 +71,26 @@ describe('what may be cached (guests only)', () => {
   })
 
   it('keys the document and the RSC payload of one URL apart', () => {
-    expect(edgeCacheKey(RECIPE, false)).not.toBe(edgeCacheKey(RECIPE, true))
-    expect(edgeCacheKey(`${RECIPE}?from=zupy`, false)).not.toBe(edgeCacheKey(RECIPE, false))
+    expect(edgeCacheKey(RECIPE, false, VERSION)).not.toBe(edgeCacheKey(RECIPE, true, VERSION))
+    expect(edgeCacheKey(`${RECIPE}?from=zupy`, false, VERSION)).not.toBe(edgeCacheKey(RECIPE, false, VERSION))
+  })
+
+  it('keys every Worker version apart, so a page cached before a deploy is never served after it', async () => {
+    expect(edgeCacheKey(RECIPE, false, 'v-1')).not.toBe(edgeCacheKey(RECIPE, false, 'v-2'))
+    const { handler, serve } = setup()
+    await serve(get(), T0, 'v-1')
+    const afterDeploy = await serve(get(), T0 + 1000, 'v-2')
+    expect(afterDeploy.headers.get('x-edge-cache')).toBe('MISS')
+    expect(handler).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not cache at all without a version id (the binding is missing)', async () => {
+    const { cache, handler, serve } = setup()
+    const res = await serve(get(), T0, null)
+    expect(res.headers.get('x-edge-cache')).toBeNull()
+    await serve(get(), T0 + 1000, null)
+    expect(handler).toHaveBeenCalledTimes(2)
+    expect(cache.store.size).toBe(0)
   })
 })
 
@@ -172,7 +192,7 @@ describe('serveGuestPage', () => {
     const handler = vi.fn(async () => html())
     const ctx = { waitUntil: vi.fn() }
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    const res = await serveGuestPage(get(), handler, cache, ctx, T0)
+    const res = await serveGuestPage(get(), handler, cache, ctx, VERSION, T0)
     expect(await res.text()).toBe(PAGE)
     expect(handler).toHaveBeenCalledTimes(1)
   })
