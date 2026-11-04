@@ -2326,6 +2326,38 @@ describe('runExtractRecipe — several recipes on one page', () => {
     expect(result.images?.map((job) => job.cover)).toEqual([fried, salad])
   })
 
+  it('finds each dish photo on a page in another language by the name the page gives the dish', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+    mock.queue('recipes', { data: { id: 43 }, error: null })
+    mock.queue('recipes', { data: { id: 44 }, error: null })
+    const salad = 'https://bel.24health.by/wp-content/uploads/2021/04/стравы-фота-3.jpg'
+    const fried = 'https://bel.24health.by/wp-content/uploads/2021/04/стравы-застаўка-2.jpg'
+    const potato = 'https://bel.24health.by/wp-content/uploads/2021/04/стравы-фота-4.jpg'
+    const markdown = [
+      '## Салата з цёртай рэдзькі з яйкам',
+      `![](${salad})`,
+      '## Смажанікі (смажанікі з каўбасой)',
+      `![](${fried})`,
+      `![Смажанікі з бульбы з падлівай](${potato})`,
+    ].join('\n\n')
+
+    const result = await runExtractRecipe(BASE_EVENT, {
+      fetch: makeFetchMock({
+        firecrawlMarkdown: markdown,
+        openaiContent: answer(
+          { ...dish('Sałatka z tartej rzodkwi z jajkiem'), sourceTitle: 'Салата з цёртай рэдзькі з яйкам' },
+          { ...dish('Smażaniki z kiełbasą'), sourceTitle: 'Смажанікі (смажанікі з каўбасой)' },
+          { ...dish('Smażaniki z ziemniaków z sosem'), sourceTitle: 'Смажанікі з бульбы з падлівай' },
+        ),
+      }),
+      supabase: mock.supabase as any,
+      deferImages: true,
+    })
+
+    expect(result.images?.map((job) => job.cover)).toEqual([salad, fried, potato])
+  })
+
   it('keeps the variants and ingredient sections of one dish in one entry', async () => {
     const mock = makeSupabaseMock()
     mock.queue('recipes', { data: { id: 42 }, error: null })

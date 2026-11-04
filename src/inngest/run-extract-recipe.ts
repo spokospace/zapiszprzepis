@@ -288,6 +288,8 @@ interface RecipeData {
   imageUrl?: string
   /** The dish's own photo in a page with several dishes, as the LLM copied it from the page. */
   dishImage?: string | null
+  /** The dish's name as the page writes it, in the page's language; where its photo is found. */
+  sourceTitle?: string | null
   prepTimeMinutes?: number | null
   cookTimeMinutes?: number | null
   totalTimeMinutes?: number | null
@@ -711,6 +713,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure,
       {${foreignSource ? FOREIGN_INGREDIENT_FIELDS : ''}"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
   ],
   "steps": [{"text": "Step 1 description", "image": "image URL from the content that shows THIS step, or null"}],
+  "sourceTitle": "the dish's name EXACTLY as the page writes it, or null",
   "dishImage": "URL of the photo of THIS dish, or null",
   "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
   "prepTimeMinutes": integer or null,
@@ -735,6 +738,7 @@ Rules:
 - Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast buns (drożdżówki, jagodzianki) stay "desery", rogaliki "ciasteczka".
 - Category: salads and slaws ("sałatka", "surówka", "coleslaw") are "salatki", not "przekaski" or "inne". Home preserves are "przetwory", not "inne": jams and marmalades ("dżem", "konfitura", "powidła", "marmolada"), pickled or fermented vegetables and mushrooms ("ogórki kiszone/marynowane", "kiszona kapusta", "pikle", "grzyby marynowane", "papryka konserwowa"), and homemade ketchups, chutneys and sauces put up in jars for winter ("do słoików", "na zimę"). But a marinade made to flavour meat before cooking ("marynata do kurczaka/karkówki/mięsa/drobiu") is NOT a preserve — it is "inne", not "przetwory".
 - Category: homemade syrups, tinctures and herbal remedies made for health ("syrop na odporność/na kaszel", "mikstura na zatoki", "napar prozdrowotny") are "syropy". Everyday drinks (lemoniada, herbata, kompot, soki, koktajle) stay "napoje".
+- sourceTitle: on a page with several dishes, the dish's name copied CHARACTER FOR CHARACTER from the page text (a heading, or the caption or alt text of its photo), in the page's own language and spelling, NOT translated and NOT shortened. It is used to find the dish's photo on the page. When the page gives a single dish, or the dish has no such name in the text, return null.
 - dishImage: on a page with several dishes, the photo that shows THIS dish: the first image inside or right after its section. Use ONLY an image URL that appears verbatim in the provided Page HTML or Page markdown, copied EXACTLY. NEVER use the page's main/header photo, a logo, an avatar, an ad or a related-recipe thumbnail. When the dish has no photo of its own, or the page gives a single dish, return null.
 - Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
 - Title names the dish the way a menu would: not a question or how-to ("Jak zrobić domowe lody?" → "Domowe lody"), no praise words ("najlepszy", "pyszny", "idealny"), no first person ("moje", "mojej mamy") and no add-ons like "+ przepis na lukier". Proper names keep their capitals ("Prince Polo", "KFC", "Boże Narodzenie").
@@ -1000,8 +1004,13 @@ Rules:
       const pageText = `${html}
 ${embedHtml}
 ${markdown}`
-      const dishTitles = storable.flatMap((dish) => (dish.title ? [dish.title] : []))
-      const bodyImage = storable.length > 1 && recipeJSON.title ? imageAfterTitle(recipeJSON.title, pageText, dishTitles) : undefined
+      // The names a dish goes by in the page: its name as the page writes it (any
+      // language), then the title the model gave it.
+      const namesOf = (dish: RecipeData) => [dish.sourceTitle, dish.title].filter((name): name is string => typeof name === 'string')
+      const bodyImage =
+        storable.length > 1
+          ? imageAfterTitle(namesOf(recipeJSON), pageText, storable.filter((dish) => dish !== recipeJSON).flatMap(namesOf))
+          : undefined
       const dishImage =
         bodyImage ?? (typeof recipeJSON.dishImage === 'string' ? findPageImage(recipeJSON.dishImage, pageText) : undefined)
       const cover = storable.length > 1 ? dishImage : ogImage
