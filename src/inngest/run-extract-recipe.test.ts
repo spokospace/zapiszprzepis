@@ -360,6 +360,30 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(mock.insertArgs('recipes')?.category).toBe(value)
   })
 
+  it('stores a cleaned-up extra_categories list (#689): primary, unknowns, inne and a third entry dropped', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const content = JSON.stringify({
+      ...JSON.parse(VALID_RECIPE_JSON),
+      category: 'przekaski',
+      extra_categories: ['przekaski', 'Śniadania', 'kolacje', 'inne', 'salatki', 'zupy'],
+    })
+
+    await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock({ openaiContent: content }), supabase: mock.supabase as any })
+
+    expect(mock.insertArgs('recipes')?.extra_categories).toEqual(['sniadania', 'salatki'])
+  })
+
+  it('stores no extra categories when the model sends none or garbage', async () => {
+    for (const extra of [undefined, 'sniadania', null, [42]]) {
+      const mock = makeSupabaseMock()
+      mock.queue('recipes', { data: { id: 7 }, error: null })
+      const content = JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), extra_categories: extra })
+      await runExtractRecipe(BASE_EVENT, { fetch: makeFetchMock({ openaiContent: content }), supabase: mock.supabase as any })
+      expect(mock.insertArgs('recipes')?.extra_categories).toEqual([])
+    }
+  })
+
   it('coerces the category on a refresh too', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const mock = makeSupabaseMock()
