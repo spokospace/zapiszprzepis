@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageContainer } from '@/app/components/page-container'
 import { TrackView } from '@/app/components/track-view'
-import { getPublicRecipeLongLived, getRecentPublicRecipes } from '@/lib/recipe-cache'
+import { getPublicRecipeLongLived } from '@/lib/recipe-cache'
+import { LAB_SLUGS } from '../../slugs'
 import { createSupabaseAnonClient } from '@/lib/supabase/anon'
 import { recipePath } from '@/lib/routes'
 import { buildRecipeBreadcrumbJsonLd, buildRecipeJsonLd, serializeJsonLd } from '@/lib/recipe-json-ld'
@@ -52,13 +53,12 @@ export default async function RecipeLabPage({ params }: { params: Promise<{ slug
   if (!recipe) notFound()
 
   const supabase = createSupabaseAnonClient()
-  const [categoryContext, dishVersionsResult, siblingsResult, others] = await Promise.all([
+  const [categoryContext, dishVersionsResult, siblingsResult] = await Promise.all([
     loadCategoryContext(supabase as unknown as Parameters<typeof loadCategoryContext>[0], recipe),
     recipe.dish ? supabase.rpc('dish_versions', { p_recipe_id: recipe.id }) : null,
     recipe.source_url
       ? supabase.from('public_recipes').select('id, slug, title').eq('source_url', recipe.source_url).neq('id', recipe.id)
       : null,
-    getRecentPublicRecipes(4),
   ])
   const siblings = (siblingsResult?.data ?? []) as PostSibling[]
   const versions = (dishVersionsResult?.data ?? []) as DishVersionRow[]
@@ -80,9 +80,9 @@ export default async function RecipeLabPage({ params }: { params: Promise<{ slug
       <PageContainer>
         <nav data-testid="lab-links">
           <Link href="/lab/index">Lab index</Link>
-          {others.map((o) => (
-            <Link key={o.slug} href={`/lab/przepis/${o.slug}`} className="ml-4">
-              {o.title}
+          {LAB_SLUGS.map((other) => (
+            <Link key={other} href={`/lab/przepis/${other}`} className="ml-4">
+              {other}
             </Link>
           ))}
         </nav>
