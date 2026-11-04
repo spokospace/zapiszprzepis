@@ -62,6 +62,19 @@ describe('categoryCounts', () => {
     ])
   })
 
+  it('counts a recipe once in its primary and once in each extra category (#689)', () => {
+    const rows = [
+      { category: 'przekaski', extra_categories: ['sniadania', 'salatki'] },
+      { category: 'sniadania', extra_categories: [] },
+      { category: 'przekaski' },
+    ]
+    expect(categoryCounts(rows)).toEqual([
+      { value: 'sniadania', label: 'Śniadania', count: 2 },
+      { value: 'przekaski', label: 'Przekąski', count: 2 },
+      { value: 'salatki', label: 'Sałatki', count: 1 },
+    ])
+  })
+
   it('is empty without rows', () => {
     expect(categoryCounts([])).toEqual([])
   })

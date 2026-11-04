@@ -23,8 +23,9 @@ describe('sendRecipeExtract — failover to the secondary Inngest account (#580)
   it('sends to the primary and never touches the secondary when the primary accepts', async () => {
     primary.send.mockResolvedValue({ ids: ['e1'] })
 
-    await sendRecipeExtract(data)
+    const account = await sendRecipeExtract(data)
 
+    expect(account).toBe('primary')
     expect(primary.send).toHaveBeenCalledWith({ name: 'recipe/extract', data })
     expect(secondary.send).not.toHaveBeenCalled()
   })
@@ -33,8 +34,9 @@ describe('sendRecipeExtract — failover to the secondary Inngest account (#580)
     primary.send.mockRejectedValue(new Error('queue down'))
     secondary.send.mockResolvedValue({ ids: ['e2'] })
 
-    await sendRecipeExtract(data)
+    const account = await sendRecipeExtract(data)
 
+    expect(account).toBe('secondary')
     expect(primary.send).toHaveBeenCalledTimes(1)
     expect(secondary.send).toHaveBeenCalledWith({ name: 'recipe/extract', data })
   })

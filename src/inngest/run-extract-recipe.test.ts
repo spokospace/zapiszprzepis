@@ -2180,6 +2180,31 @@ describe('runExtractRecipe — dish classification (E01-S21)', () => {
     expect(updates.some((a) => 'dish' in a || 'dish_classified_at' in a)).toBe(false)
   })
 
+  it('keeps a hand-fixed taxonomy on a refresh while taxonomy_locked_at is set (#689)', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { dish_classified_at: null, taxonomy_locked_at: '2026-11-04T10:00:00Z' }, error: null })
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeDishFetchMock(), supabase: mock.supabase as any })
+
+    const updates = mock.updateArgs('recipes')
+    expect(updates.length).toBeGreaterThan(0)
+    // Content refreshes; category, tags and extra_categories stay as staff left them.
+    expect(updates.some((a) => 'title' in a)).toBe(true)
+    expect(updates.some((a) => 'category' in a || 'tags' in a || 'extra_categories' in a)).toBe(false)
+  })
+
+  it('rewrites category and tags on a refresh of an unlocked row', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipes', { data: { dish_classified_at: null, taxonomy_locked_at: null }, error: null })
+    mock.queue('recipes', { data: { id: 42 }, error: null })
+
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: makeDishFetchMock(), supabase: mock.supabase as any })
+
+    const updates = mock.updateArgs('recipes')
+    expect(updates.some((a) => 'category' in a && 'tags' in a)).toBe(true)
+  })
+
   it('writes the dish on a refresh when the row was never classified', async () => {
     const mock = makeSupabaseMock()
     mock.queueMaybe('recipes', { data: { dish_classified_at: null }, error: null })
@@ -2473,5 +2498,33 @@ describe('runExtractRecipe — refresh by row id on a link with several dishes',
       }),
     ).rejects.toThrow('recipe not found')
     expect(mock.updateArgs('recipes')).toHaveLength(0)
+  })
+})
+
+describe('runExtractRecipe — idempotency guard (#580 phase 3)', () => {
+  it('skips a share another run already completed, without scraping or an LLM call', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipe_shares', { data: { status: 'completed', recipe_id: 55 }, error: null })
+    const fetchMock = makeFetchMock()
+
+    const result = await runExtractRecipe(BASE_EVENT, { fetch: fetchMock as any, supabase: mock.supabase as any })
+
+    expect(result).toMatchObject({ recipeId: 55, status: 'duplicate' })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not block a forced refresh of an already-completed share', async () => {
+    const mock = makeSupabaseMock()
+    mock.queueMaybe('recipe_shares', { data: { status: 'completed', recipe_id: 55 }, error: null })
+    const fetchMock = makeFetchMock()
+
+    // A refresh deliberately re-extracts, so the guard is skipped and the run
+    // reaches the scrape. It may throw later for unrelated reasons; we only
+    // assert the guard did not short-circuit it.
+    await runExtractRecipe({ ...BASE_EVENT, force: true }, { fetch: fetchMock as any, supabase: mock.supabase as any }).catch(
+      () => {},
+    )
+
+    expect(fetchMock).toHaveBeenCalled()
   })
 })

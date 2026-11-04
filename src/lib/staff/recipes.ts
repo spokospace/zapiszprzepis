@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
+import { MAX_EXTRA_CATEGORIES } from '@/lib/category-membership'
 import { isRecipeTag, MAX_TAGS } from '@/lib/recipe-tags'
 import { staffErrorCode, type StaffErrorCode } from './errors'
 import { UUID_RE } from './users'
@@ -214,19 +215,27 @@ export function parseLoserIds(raw: string, canonicalId: number): number[] | null
   return [...unique]
 }
 
-export type TaxonomyInput = { category: string | null; tags: string[] | null }
+export type TaxonomyInput = { category: string | null; tags: string[] | null; extraCategories: string[] }
 
 /**
  * The category and tags from the form, checked against the closed lists in
  * recipe-categories.ts and recipe-tags.ts. A blank category keeps the current one;
- * the tag field is always sent (a blank one clears the tags). Null when anything is
- * outside the lists or there are more than MAX_TAGS tags.
+ * the tag field and the extra-categories field are always sent (a blank one clears
+ * them). The chosen primary is quietly dropped from the extras, so switching the primary
+ * onto a ticked extra does not fail the form. Null when anything is outside the lists,
+ * there are more than MAX_TAGS tags or more than MAX_EXTRA_CATEGORIES extra categories.
  */
-export function parseTaxonomy(category: string, tags: readonly string[]): TaxonomyInput | null {
+export function parseTaxonomy(
+  category: string,
+  tags: readonly string[],
+  extraCategories: readonly string[] = [],
+): TaxonomyInput | null {
   const categoryOk = category === '' || RECIPE_CATEGORIES.some((c) => c.value === category)
   const unique = [...new Set(tags)]
-  if (!categoryOk || unique.length > MAX_TAGS || !unique.every(isRecipeTag)) return null
-  return { category: category || null, tags: unique }
+  const extras = [...new Set(extraCategories)].filter((c) => c !== category)
+  const extrasOk = extras.length <= MAX_EXTRA_CATEGORIES && extras.every((c) => RECIPE_CATEGORIES.some((r) => r.value === c))
+  if (!categoryOk || !extrasOk || unique.length > MAX_TAGS || !unique.every(isRecipeTag)) return null
+  return { category: category || null, tags: unique, extraCategories: extras }
 }
 
 /**

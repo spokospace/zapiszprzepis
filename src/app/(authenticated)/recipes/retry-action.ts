@@ -78,6 +78,9 @@ export async function retryShare(shareId: number): Promise<void> {
   }
 
   try {
+    // The account is not recorded here: a retried share keeps the
+    // `inngest_account` its original send set, so the watchdog (#580 phase 3)
+    // still finds it if the retry stalls on the primary.
     await sendRecipeExtract({
       shareId: share.id,
       sharedUrl: share.shared_url,

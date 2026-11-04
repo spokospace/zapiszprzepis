@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { SEARCH_SCOPES, type SearchScope } from '@/lib/routes'
 import { isRecipeCategory, type RecipeCategory } from '@/lib/recipe-categories'
 import { categoryCounts, type CategoryCount } from '@/lib/public-profile'
+import { inCategory, type CategoryMember } from '@/lib/category-membership'
 import type { Database } from '@/lib/supabase.types'
 
 /** Results per "Pokaż kolejne" step (E01-S05: „Pokaż kolejne 14”). */
@@ -60,6 +61,8 @@ export interface SearchResult {
   title: string
   image_url: string | null
   category: Database['public']['Enums']['recipe_category']
+  /** Further lists the dish is in (#689); absent before the extra-categories migration. */
+  extra_categories?: Database['public']['Enums']['recipe_category'][] | null
   description: string | null
   source_type: Database['public']['Enums']['recipe_source']
   source_url: string | null
@@ -113,7 +116,7 @@ export async function searchRecipes(
     return { error: error.message }
   }
   const all = (data ?? []) as SearchRow[]
-  const matching = category ? all.filter((r) => r.category === category) : all
+  const matching = category ? all.filter((r) => inCategory(r, category)) : all
   // Every row carries the same window count; it rides along unused on the rows.
   const totalAll = all.length ? Number(all[0].total_count) : 0
   return {
@@ -125,7 +128,7 @@ export async function searchRecipes(
 }
 
 /** The categories among `rows`, most matches first, then the RECIPE_CATEGORIES order. */
-export function categoryFacets(rows: readonly { category: string }[]): SearchCategoryFacet[] {
+export function categoryFacets(rows: readonly CategoryMember[]): SearchCategoryFacet[] {
   return categoryCounts(rows).sort((a, b) => b.count - a.count) // stable: ties keep category order
 }
 

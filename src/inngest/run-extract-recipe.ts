@@ -359,6 +359,25 @@ export async function runExtractRecipe(
   } = event
   const { fetch, supabase, deferImages = false } = deps
 
+  // Idempotency guard (#580 phase 3). A failover can leave two runs for one
+  // share: the secondary that the watchdog re-sent, and the primary starting
+  // late after its throttle cleared. Whichever finishes first marks the share
+  // `completed`; a later run must not overwrite it, so it exits here as a no-op.
+  // A forced refresh ("Odśwież przepis") deliberately re-extracts a completed
+  // recipe, so it is never blocked. Best-effort: two runs still both in flight
+  // read `pending` and proceed, as they did before this guard.
+  if (!forceRefresh) {
+    const { data: priorShare } = await supabase
+      .from('recipe_shares')
+      .select('status, recipe_id')
+      .eq('id', shareId)
+      .maybeSingle()
+    if (priorShare?.status === 'completed') {
+      console.log('[extract-recipe] share', shareId, 'already completed; skipping duplicate run')
+      return { recipeId: priorShare.recipe_id ?? 0, title: '', category: '', status: 'duplicate' }
+    }
+  }
+
   async function firecrawlScrape(options: ReturnType<typeof buildFirecrawlOptions>) {
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
@@ -1119,14 +1138,17 @@ ${markdown}`
         // columns only when this row was never classified (dish_classified_at is
         // null). Skip the pre-read entirely when the classification produced nothing
         // to write.
-        let refreshDishColumns: Record<string, string | null> = {}
-        if (Object.keys(dishColumns).length > 0) {
-          const { data: existingDish } = await (refreshRecipeId != null
-            ? supabase.from('recipes').select('dish_classified_at').eq('user_id', userId).eq('id', refreshRecipeId)
-            : supabase.from('recipes').select('dish_classified_at').eq('user_id', userId).eq('source_url', sharedUrl).is('source_key', null)
-          ).maybeSingle()
-          if (existingDish?.dish_classified_at == null) refreshDishColumns = dishColumns
-        }
+        //
+        // The same read tells whether staff fixed the taxonomy by hand (#689): while
+        // taxonomy_locked_at is set the refresh keeps category, tags and
+        // extra_categories as they are and refreshes everything else.
+        const { data: existingRow } = await (refreshRecipeId != null
+          ? supabase.from('recipes').select('dish_classified_at, taxonomy_locked_at').eq('user_id', userId).eq('id', refreshRecipeId)
+          : supabase.from('recipes').select('dish_classified_at, taxonomy_locked_at').eq('user_id', userId).eq('source_url', sharedUrl).is('source_key', null)
+        ).maybeSingle()
+        const refreshDishColumns: Record<string, string | null> =
+          Object.keys(dishColumns).length > 0 && existingRow?.dish_classified_at == null ? dishColumns : {}
+        const refreshTaxonomyColumns = existingRow?.taxonomy_locked_at != null ? {} : { category: recipeJSON.category, tags }
 
         const refreshQuery = supabase
           .from('recipes')
@@ -1134,10 +1156,9 @@ ${markdown}`
             title,
             ingredients: recipeJSON.ingredients,
             steps: recipeJSON.steps,
-            category: recipeJSON.category,
+            ...refreshTaxonomyColumns,
             description,
             meta_description: metaDescription,
-            tags,
             ingredient_fingerprint: ingredientFp,
             source_type: sourceType,
             // Found an embed this run: store it only when it still embeds, which
@@ -1276,7 +1297,7 @@ ${markdown}`
         if (ownUrl || error?.message.includes(GLOBAL_URL_KEY) || error?.message.includes(KEYED_URL_KEY)) {
           const existingQuery = supabase
             .from('recipes')
-            .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags, ingredient_fingerprint, dish_classified_at')
+            .select('id, user_id, title, category, prep_time_minutes, cook_time_minutes, total_time_minutes, servings, image_url, youtube_id, source_author, description, meta_description, tags, taxonomy_locked_at, ingredient_fingerprint, dish_classified_at')
           const byUrl = (ownUrl ? existingQuery.eq('user_id', userId) : existingQuery).eq('source_url', sourceUrl)
           const { data: existing } = await (sourceKey == null ? byUrl.is('source_key', null) : byUrl.eq('source_key', sourceKey)).single()
 
@@ -1318,7 +1339,7 @@ ${markdown}`
             if (existing.meta_description == null && metaDescription != null) {
               gapFill.meta_description = metaDescription
             }
-            if (!existing.tags?.length && tags.length > 0) {
+            if (!existing.tags?.length && tags.length > 0 && existing.taxonomy_locked_at == null) {
               gapFill.tags = tags
             }
             // Only backfill a missing fingerprint — gap-fill never rewrites the

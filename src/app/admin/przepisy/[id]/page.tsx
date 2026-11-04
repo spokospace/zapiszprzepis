@@ -5,6 +5,7 @@ import { readFlash } from '@/lib/staff/flash'
 import { DELETE_RECIPE_CONFIRMATION, getRecipe, listMerges, parseRecipeId } from '@/lib/staff/recipes'
 import { categoryLabel, RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { MAX_TAGS, RECIPE_TAGS } from '@/lib/recipe-tags'
+import { MAX_EXTRA_CATEGORIES } from '@/lib/category-membership'
 import { recipePath } from '@/lib/routes'
 import { Banner, buttonClass, buttonDangerClass, buttonOutlineClass, fieldClass, formatWhen, PageTitle } from '../../ui'
 import { deleteRecipe, hideRecipe, mergeRecipes, setTaxonomy, unhideRecipe, unmergeRecipes } from '../actions'
@@ -15,7 +16,7 @@ const OK_MESSAGES = {
   restored: 'Przepis został przywrócony.',
   merged: 'Duplikaty zostały scalone z tym przepisem. Ich adresy przekierowują tutaj.',
   unmerged: 'Scalenie cofnięte. Duplikaty wróciły pod swoimi numerami.',
-  taxonomy: 'Kategoria i tagi zapisane.',
+  taxonomy: 'Kategoria, dodatkowe kategorie i tagi zapisane.',
 } as const
 
 type SearchParams = { ok?: string; error?: string }
@@ -25,6 +26,7 @@ type SourcePreview = {
   description: string | null
   source_author: string | null
   tags: string[]
+  extra_categories: string[] | null
   ingredients: unknown
   steps: unknown
 }
@@ -50,11 +52,12 @@ export default async function RecipeAdminPage({
   const canTaxonomy = staff.permissions.has('recipes.taxonomy')
 
   const [{ data: previewRow }, merges] = await Promise.all([
-    staff.supabase.from('recipes').select('description, source_author, tags, ingredients, steps').eq('id', id).maybeSingle(),
+    staff.supabase.from('recipes').select('description, source_author, tags, extra_categories, ingredients, steps').eq('id', id).maybeSingle(),
     canMerge ? listMerges(staff.supabase, id) : Promise.resolve([]),
   ])
   const preview = previewRow as SourcePreview | null
   const tags = new Set(preview?.tags ?? [])
+  const extraCategories = new Set(preview?.extra_categories ?? [])
   const count = (value: unknown) => (Array.isArray(value) ? value.length : 0)
 
   return (
@@ -168,7 +171,7 @@ export default async function RecipeAdminPage({
       {canTaxonomy && (
         <section aria-labelledby="taxonomy-heading" className="mb-8 max-w-xl">
           <h2 id="taxonomy-heading" className="mb-2 text-xl font-semibold">
-            Kategoria i tagi
+            Kategoria, dodatkowe kategorie i tagi
           </h2>
           <form action={setTaxonomy} className="flex flex-col gap-3">
             <input type="hidden" name="id" value={recipe.id} />
@@ -182,6 +185,25 @@ export default async function RecipeAdminPage({
                 </option>
               ))}
             </select>
+            <fieldset className="flex flex-col gap-1">
+              <legend className="mb-1 font-semibold">Dodatkowe kategorie (najwyżej {MAX_EXTRA_CATEGORIES})</legend>
+              <p className="text-base text-ink-soft">
+                Przepis pojawia się też na listach tych kategorii. Kategoria główna decyduje o adresie i okruszkach.
+              </p>
+              {RECIPE_CATEGORIES.map((c) => (
+                <label key={c.value} className="min-h-touch flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    name="extra_categories"
+                    value={c.value}
+                    defaultChecked={extraCategories.has(c.value)}
+                    disabled={c.value === recipe.category}
+                    className="size-6"
+                  />
+                  <span>{c.label}</span>
+                </label>
+              ))}
+            </fieldset>
             <fieldset className="flex flex-col gap-1">
               <legend className="mb-1 font-semibold">Tagi (najwyżej {MAX_TAGS})</legend>
               {RECIPE_TAGS.map((t) => (

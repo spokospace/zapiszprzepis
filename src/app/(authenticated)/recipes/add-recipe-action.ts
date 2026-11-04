@@ -62,7 +62,9 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
     .insert({
       user_id: user.id,
       shared_url: dedup.normalizedUrl,
-      share_intent: { url: dedup.normalizedUrl, title: null, text: null },
+      // sourceType is stored so the throttle watchdog can rebuild the extract
+      // event without recomputing it in the Worker cron (#580 phase 3).
+      share_intent: { url: dedup.normalizedUrl, title: null, text: null, sourceType },
       status: 'pending',
       attempts: 0,
     })
@@ -75,12 +77,15 @@ export async function addRecipeFromUrl(formData: FormData): Promise<void> {
   }
 
   try {
-    await sendRecipeExtract({
+    const account = await sendRecipeExtract({
       shareId: share.id,
       sharedUrl: dedup.normalizedUrl,
       userId: user.id,
       sourceType,
     })
+    // Record which account accepted the event so the throttle watchdog (#580
+    // phase 3) can find pending shares that went to the primary.
+    await supabase.from('recipe_shares').update({ inngest_account: account }).eq('id', share.id)
   } catch (err) {
     console.error('Failed to trigger extraction:', err)
     await supabase

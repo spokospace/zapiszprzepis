@@ -135,7 +135,15 @@ describe('addRecipeFromUrl — per-account extraction cap (E02-S11-T04)', () => 
   })
 
   it('under the cap: queues the extraction as before', async () => {
-    const query: any = { insert: () => query, select: () => query, single: async () => ({ data: { id: 3 }, error: null }) }
+    const query: any = {
+      insert: () => query,
+      select: () => query,
+      single: async () => ({ data: { id: 3 }, error: null }),
+      // The success path records the accepting account (#580 phase 3):
+      // from('recipe_shares').update({ inngest_account }).eq('id', share.id).
+      update: () => query,
+      eq: async () => ({ data: null, error: null }),
+    }
     vi.mocked(createSupabaseServerClient).mockResolvedValue({
       auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
       from: () => query,

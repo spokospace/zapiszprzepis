@@ -67,6 +67,9 @@ export async function triggerRecipeExtraction(
         url: dedup.normalizedUrl,
         title: title || null,
         text: text || null,
+        // Stored so the throttle watchdog can rebuild the extract event without
+        // recomputing the source type in the Worker cron (#580 phase 3).
+        sourceType,
       },
       status: 'pending',
       attempts: 0,
@@ -79,7 +82,7 @@ export async function triggerRecipeExtraction(
   }
 
   try {
-    await sendRecipeExtract({
+    const account = await sendRecipeExtract({
       shareId: share.id,
       sharedUrl: dedup.normalizedUrl,
       sharedTitle: title,
@@ -87,6 +90,9 @@ export async function triggerRecipeExtraction(
       userId: user.id,
       sourceType,
     })
+    // Record which account accepted the event so the throttle watchdog (#580
+    // phase 3) can find pending shares that went to the primary.
+    await supabase.from('recipe_shares').update({ inngest_account: account }).eq('id', share.id)
   } catch (error) {
     console.error('Failed to trigger extraction task:', error)
     // Mark the share as failed so it surfaces in the notification bell.

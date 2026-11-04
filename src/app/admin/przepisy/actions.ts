@@ -139,6 +139,7 @@ export async function setTaxonomy(formData: FormData): Promise<void> {
   const parsed = parseTaxonomy(
     text(formData, 'category', 40),
     formData.getAll('tags').map((t) => String(t)),
+    formData.getAll('extra_categories').map((c) => String(c)),
   )
   if (!parsed) redirect(flashPath(detail(id), { error: 'invalid_input' }))
 
@@ -146,6 +147,7 @@ export async function setTaxonomy(formData: FormData): Promise<void> {
     p_recipe: id,
     p_category: parsed.category,
     p_tags: parsed.tags,
+    p_extra_categories: parsed.extraCategories,
   })
   if (result.error) redirect(flashPath(detail(id), { error: result.error }))
 
