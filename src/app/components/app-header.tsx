@@ -138,6 +138,7 @@ export function AppHeader({
                 isAuthenticated={isAuthenticated}
                 summary={menu}
                 notifications={isAuthenticated ? notificationBadge(failedShares) : null}
+                sessionKnown={sessionKnown}
               />
             </div>
           </div>

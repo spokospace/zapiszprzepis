@@ -20,6 +20,15 @@ const CHECK_FAILED: FailedSharesResult = { status: 'error' }
 const REFRESH_MS = 15_000
 
 /**
+ * Whether an auth error leaves the session undecided: no answer, 429 or a 5xx. The rule of
+ * `isTransientAuthError`, by status: its module would put supabase-js in every guest's bundle.
+ */
+function isUndecided(error: { status?: number } | null): boolean {
+  if (!error) return false
+  return error.status === undefined || error.status === 429 || error.status >= 500
+}
+
+/**
  * The session and the header's private data, read straight from Supabase under RLS, so
  * none of it costs the Worker. The session is re-read on every sync, because signing in
  * or out happens on the server and tells the browser nothing. A guest has no session
@@ -49,12 +58,20 @@ export function createSessionStore(
 
   async function sync({ force = false }: { force?: boolean } = {}): Promise<void> {
     if (!hasSessionCookie()) return clear()
-    // A chunk gone after a deploy: the next page tries again, and the header still works.
+    const started = latestLoad
     const supabase = await getClient().catch(() => null)
-    if (!supabase) return
+    // A chunk gone after a deploy cannot be fetched again from this page, so the header
+    // falls back to the guest variant; /login sends a signed-in reader back, and the next
+    // page reads the session.
+    if (!supabase) {
+      if (session === UNKNOWN) publish(GUEST)
+      return
+    }
     const { data, error } = await supabase.auth.getSession()
-    // A refresh that could not reach Supabase is not a sign-out.
-    if (error && session.status === 'user') return
+    // A sign-out or a newer load overtook this read.
+    if (started !== latestLoad) return
+    // A refresh that could not reach Supabase is not a sign-out; a rejected token is.
+    if (isUndecided(error) && session.status === 'user') return
     const userId = data.session?.user.id
     if (!userId) return clear()
 

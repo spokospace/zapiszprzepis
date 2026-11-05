@@ -12,7 +12,7 @@ const MENU = { hasFullAccess: true, myRecipesCount: 2, favoritesCount: 3 }
 const SHARES: FailedSharesResult = { status: 'ok', shares: [], unreadReady: 1 }
 
 function setup() {
-  const auth = { userId: null as string | null, error: null as { message: string } | null, cookie: true }
+  const auth = { userId: null as string | null, error: null as { message: string; status?: number } | null, cookie: true }
   const getClient = vi.fn(async () => client)
   const client = {
     auth: {
@@ -51,11 +51,44 @@ describe('createSessionStore', () => {
     expect(getClient).not.toHaveBeenCalled()
   })
 
-  it('keeps the page working when the Supabase client cannot be downloaded', async () => {
+  it('falls back to the guest header when the Supabase client cannot be downloaded', async () => {
     const { getClient, store } = setup()
     getClient.mockRejectedValueOnce(new Error('ChunkLoadError'))
     await expect(store.sync()).resolves.toBeUndefined()
-    expect(store.getSnapshot()).toEqual({ status: 'unknown' })
+    expect(store.getSnapshot()).toEqual({ status: 'guest' })
+  })
+
+  it('reads the session again on the next page after that fallback', async () => {
+    const { auth, getClient, store } = setup()
+    auth.userId = 'u1'
+    getClient.mockRejectedValueOnce(new Error('ChunkLoadError'))
+    await store.sync()
+    await store.sync()
+    expect(store.getSnapshot()).toMatchObject({ status: 'user', userId: 'u1' })
+  })
+
+  it('drops a session read that a sign-out overtook', async () => {
+    const { auth, getClient, store } = setup()
+    auth.userId = 'u1'
+    let finish: (client: never) => void = () => {}
+    const client = await getClient()
+    getClient.mockReturnValueOnce(new Promise((resolve) => (finish = resolve as never)))
+    const read = store.sync()
+    store.clear()
+    finish(client as never)
+    await read
+    expect(store.getSnapshot()).toEqual({ status: 'guest' })
+    expect(getMenuSummary).not.toHaveBeenCalled()
+  })
+
+  it('signs the user out of the header when Supabase rejects the token', async () => {
+    const { auth, store } = setup()
+    auth.userId = 'u1'
+    await store.sync()
+    auth.userId = null
+    auth.error = { message: 'refresh_token_not_found', status: 400 }
+    await store.sync()
+    expect(store.getSnapshot()).toEqual({ status: 'guest' })
   })
 
   it('becomes a guest without querying anything when there is no session', async () => {
