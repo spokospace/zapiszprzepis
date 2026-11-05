@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.34.9",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/export-recipe-files.mjs",
     "start": "next start",
     "lint": "eslint",
     "env:link": "node scripts/link-env.mjs",

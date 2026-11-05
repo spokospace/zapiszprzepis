@@ -72,3 +72,6 @@ context/foundation/test-accounts.md
 # (public repo). Only the list of reviewed ids is tracked.
 scripts/data-fixes/*
 !scripts/data-fixes/steps-reviewed.json
+
+# Written by scripts/export-recipe-files.mjs after next build
+/public/przepis/
