@@ -33,8 +33,12 @@ import { RECIPE_MAIN, RECIPE_TOP_ROW } from '@/app/przepis/[slug]/_components/re
  */
 export const revalidate = 3600
 
-export function generateStaticParams() {
-  return []
+// Pre-render every recipe at build time, outside the Worker's CPU limit, so a visitor never
+// causes a miss. New recipes still render on their first visit.
+export async function generateStaticParams() {
+  const { data, error } = await createSupabaseAnonClient().from('public_recipes').select('slug').limit(1000)
+  if (error) throw new Error(`[lab] slug list failed: ${error.message}`)
+  return (data ?? []).map((row) => ({ slug: row.slug as string }))
 }
 
 const siteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://zapiszprzepis.pl').replace(/\/$/, '')
