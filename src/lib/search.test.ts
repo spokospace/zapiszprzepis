@@ -1,6 +1,5 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import { categoryFacets, parseSearchParams, searchRecipes, suggestRecipes } from './search'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 function client(rpc: ReturnType<typeof vi.fn>) {
   return { rpc } as any

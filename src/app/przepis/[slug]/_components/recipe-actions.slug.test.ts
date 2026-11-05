@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { ReactElement } from 'react'
 import { FavoriteButton } from '@/app/components/favorite-button'
 import { PrintButton } from './print-button'
