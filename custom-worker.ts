@@ -67,6 +67,10 @@ const worker = {
     const toHttps = httpsRedirect(request, env.NEXT_PUBLIC_SITE_URL)
     if (toHttps) return toHttps
     const { pathname } = new URL(request.url)
+    // Spec A proof, never merged: Q12's answer to a prefetch, to see what the client does with it.
+    if (pathname.startsWith('/lab/przepis/') && request.headers.has('next-router-prefetch')) {
+      return new Response(null, { status: 204 })
+    }
     if (request.method === 'GET' && pathname === '/_next/image') {
       return serveImage(
         request,
