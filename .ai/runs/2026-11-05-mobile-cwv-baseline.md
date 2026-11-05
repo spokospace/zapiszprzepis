@@ -33,3 +33,18 @@ Static Astro page at `/pilot/{slug}/` from Workers Static Assets on a branch pre
 | `kajzerki` | 1052 / 2052 ms | 0 / 435 ms | 1008 / 1092 ms | 339 / 67 ms | 82 / 360 KB | 3 / 25 |
 
 **This is an upper bound, not a forecast.** The pilot has no JavaScript beyond one inline script and leaves out the menu, footer, list bar, favorites, servings scaling, units, cooking mode, timers, glossary, gallery, versions, similar recipes and analytics. Its real TBT would be above 0. The production TTFB here is the guest edge-cache `HIT`, and the pilot runs on a `workers.dev` preview, so TTFB is not comparable. Production TBT moved between measurements (`kajzerki` 1397 ms, then 435 ms).
+
+## Fuller Astro pilot vs production (2026-11-05)
+
+The recipe's real React components are hydrated as islands: `RecipeActions` (`client:load`: cooking mode, favorites, print, share) and `RecipeChecklists` (`client:visible`: servings, units, step timers, glossary, ticks). Static: header with a simple menu, similar recipes, footer. Same profile, plus a scroll through the page so lazy islands count on both sides. Alternating, median of 3, 24 of 24 runs answered `200`.
+
+| Recipe | LCP pilot / now | TBT pilot / now | Total pilot / now | Requests pilot / now | RSC now |
+|---|---|---|---|---|---|
+| `zupa-pomidorowa` | 1120 / 2152 ms | 68 / 810 ms | 243 / 525 KB | 12 / 36 | 10 |
+| `zapiekanka` | 888 / 2300 ms | 138 / 867 ms | 207 / 541 KB | 12 / 48 | 17 |
+| `barszcz-ukrainski-5` | 824 / 1908 ms | 60 / 1009 ms | 211 / 488 KB | 12 / 46 | 15 |
+| `kajzerki` | 1240 / 2228 ms | 114 / 1383 ms | 252 / 620 KB | 12 / 40 | 14 |
+
+JS 87 KB against 195 KB. HTML 36-51 KB against about 183 KB. CLS 0 on both. Across runs the ranges do not overlap: pilot TBT 44-264 ms, production 689-2036 ms. Checked in a browser: islands hydrate, ticking an ingredient works, no app errors.
+
+Still left out: list bar with Previous/Next, dish versions, the real menu drawer, analytics, and the signed-in overlay (session store, supabase-js), which signed-in readers would pay for. Full page loads between recipes were not measured. Lab profile only, one session, `workers.dev` preview, so TTFB is not comparable.
