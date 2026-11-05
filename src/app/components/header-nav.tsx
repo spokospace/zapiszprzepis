@@ -15,6 +15,7 @@ export function HeaderNav({ className = '', member = false }: { className?: stri
     <nav aria-label="Ulubione" className={`items-center ${className}`}>
       <Link
         href={FAVORITES_PATH}
+        prefetch={false}
         className="inline-flex min-h-[48px] items-center gap-2 rounded-pill px-2 text-[17px] font-bold text-ink no-underline! hover:underline"
       >
         <Heart aria-hidden="true" className="h-[22px] w-[22px] shrink-0 text-action-text" />
