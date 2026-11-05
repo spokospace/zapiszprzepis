@@ -68,6 +68,7 @@ function loadWorker(version = 'build1') {
   const clients = { claim: vi.fn() }
   const context = vm.createContext({
     self, clients, caches: caches.api, fetch, URL, Response, console: { log() {}, warn() {} },
+    setTimeout: (run: () => void) => setTimeout(run, 0),
   })
   vm.runInContext(SW_SOURCE, context)
 
@@ -178,6 +179,62 @@ describe('sw.js fetch handling', () => {
 
     await sw.dispatchFetch(request('/_next/static/chunks/app.js', { mode: 'no-cors' }))
     expect([...sw.caches.store.keys()]).toEqual(['zapiszprzepis-static-abc123'])
+  })
+})
+
+describe('sw.js on a 503 page (Worker CPU limit)', () => {
+  const failed = () => new Response('error code: 1102', { status: 503 })
+
+  it('tries once more and serves the second answer, which it also caches', async () => {
+    const sw = loadWorker()
+    sw.fetch.mockResolvedValueOnce(failed()).mockResolvedValueOnce(new Response('sernik'))
+    const response = await sw.dispatchFetch(request('/przepis/sernik'))
+    expect(await response?.text()).toBe('sernik')
+    expect(sw.fetch).toHaveBeenCalledTimes(2)
+    expect(sw.caches.store.get('zapiszprzepis-pages-build1')?.has(`${ORIGIN}/przepis/sernik`)).toBe(true)
+  })
+
+  it('serves the copy the reader has when the second try fails too', async () => {
+    const sw = loadWorker()
+    sw.caches.seed('zapiszprzepis-pages-build1', '/przepis/sernik', 'stara kopia')
+    sw.fetch.mockImplementation(async () => failed())
+    const response = await sw.dispatchFetch(request('/przepis/sernik'))
+    expect(await response?.text()).toBe('stara kopia')
+    expect(sw.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('serves the copy when the connection drops on the second try', async () => {
+    const sw = loadWorker()
+    sw.caches.seed('zapiszprzepis-pages-build1', '/przepis/sernik', 'stara kopia')
+    sw.fetch.mockResolvedValueOnce(failed()).mockRejectedValueOnce(new Error('offline'))
+    expect(await (await sw.dispatchFetch(request('/przepis/sernik')))?.text()).toBe('stara kopia')
+  })
+
+  it('shows the 503, not another page, when nothing of this page is cached', async () => {
+    const sw = loadWorker()
+    sw.caches.seed('zapiszprzepis-pages-build1', '/', 'strona główna')
+    sw.fetch.mockImplementation(async () => failed())
+    const response = await sw.dispatchFetch(request('/przepis/sernik'))
+    expect(response?.status).toBe(503)
+    expect(sw.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries a signed-in page too, without caching it', async () => {
+    const sw = loadWorker()
+    sw.fetch.mockResolvedValueOnce(failed()).mockResolvedValueOnce(new Response('ulubione'))
+    expect(await (await sw.dispatchFetch(request('/ulubione')))?.text()).toBe('ulubione')
+    expect(sw.caches.store.size).toBe(0)
+  })
+
+  it('never retries another error or a file', async () => {
+    const sw = loadWorker()
+    sw.fetch.mockResolvedValue(new Response('nie ma', { status: 404 }))
+    expect((await sw.dispatchFetch(request('/przepis/nie-ma')))?.status).toBe(404)
+    expect(sw.fetch).toHaveBeenCalledTimes(1)
+
+    sw.fetch.mockClear().mockImplementation(async () => failed())
+    await sw.dispatchFetch(request('/manifest.json', { mode: 'cors' }))
+    expect(sw.fetch).toHaveBeenCalledTimes(1)
   })
 })
 
