@@ -23,11 +23,10 @@ export const MAX_STALE_SECONDS = 900
 /** One background refresh per entry at a time (best effort: the Cache API has no lock). */
 const LOCK_SECONDS = 20
 
+import { hasAuthCookie } from '@/lib/auth-cookie'
+
 /** The home page, a recipe and a category list. `.md` alternates are routes of their own. */
 const PUBLIC_PATHS = [/^\/$/, /^\/przepis\/[^/]+$/, /^\/przepisy\/[^/]+$/]
-
-/** Supabase's session cookie, also when chunked or while an OAuth sign-in is in progress. */
-const AUTH_COOKIE = /(?:^|;\s*)sb-[^=;\s]*-auth-token/
 
 const CACHED_AT = 'x-edge-cached-at'
 const ORIGINAL_CACHE_CONTROL = 'x-edge-original-cache-control'
@@ -42,7 +41,7 @@ export function isPublicPath(pathname: string): boolean {
 
 /** No credentials of any kind on the request: it can only be served the guest page. */
 export function isGuestRequest(request: Request): boolean {
-  return !request.headers.has('authorization') && !AUTH_COOKIE.test(request.headers.get('cookie') ?? '')
+  return !request.headers.has('authorization') && !hasAuthCookie(request.headers.get('cookie') ?? '')
 }
 
 /** What marks a client-side navigation or prefetch; its payload depends on these headers. */

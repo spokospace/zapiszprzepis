@@ -31,6 +31,20 @@ function render(isAuthenticated: boolean, hasFullAccess = true) {
   )
 }
 
+describe('AppHeader before the browser has read the session', () => {
+  const unknown = () =>
+    renderToStaticMarkup(createElement(AppHeader, { failedShares: NO_FAILED_SHARES, isAuthenticated: false, sessionKnown: false }))
+  const signIn = (html: string) => html.match(/<a[^>]*href="\/login"[^>]*>/)?.[0] ?? ''
+
+  it('keeps „Zaloguj się” in place but unseen, so a signed-in reader never sees it flash', () => {
+    expect(signIn(unknown())).toContain('invisible')
+  })
+
+  it('shows it once the visitor is known to be a guest', () => {
+    expect(signIn(render(false))).not.toContain('invisible')
+  })
+})
+
 describe('AppHeader "Dodaj przepis" (desktop A9; ZMIANY_prototyp §2)', () => {
   it('is a desktop-only outline button linking to /dodaj — in MENU below lg', () => {
     const html = render(true)
@@ -226,21 +240,6 @@ describe('AppHeader on /szukaj (E01-S26)', () => {
     expect(render(true)).toMatch(/<header class="[^"]*max-lg:hidden/)
     pathname = '/'
     expect(render(true)).not.toContain('max-lg:hidden')
-  })
-})
-
-// #226: a layout hands the header its data unawaited, so the page is not held back.
-describe('AppHeader while the notifications check and counters load (#226)', () => {
-  function renderPending() {
-    const never = new Promise<never>(() => {})
-    return renderToStaticMarkup(
-      createElement(AppHeader, { failedShares: never, isAuthenticated: true, menu: never }),
-    )
-  }
-
-  it('keeps a working MENU without a badge until the counts arrive', () => {
-    pathname = '/'
-    expect(renderPending()).toContain('data-testid="menu" data-notifications="null"')
   })
 })
 

@@ -2,8 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import type { User } from '@supabase/supabase-js'
 import { getMenuSummary } from '@/lib/menu-summary'
 
-// menu-summary and full-access are server-only; the guard throws outside a server bundle.
-vi.mock('server-only', () => ({}))
 
 type CountResult = { count: number | null; error: unknown }
 

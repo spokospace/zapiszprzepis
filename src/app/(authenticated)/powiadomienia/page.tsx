@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { requireUser } from '@/lib/supabase/server'
 import { getNotifications } from '@/lib/notifications'
 import { PageContainer } from '@/app/components/page-container'
+import { SessionRefresh } from '@/app/components/session-header'
 import { NotificationsView } from './notifications-view'
 
 export const metadata: Metadata = { title: 'Powiadomienia · Zapisz Przepis', robots: { index: false } }
@@ -15,6 +16,8 @@ export default async function NotificationsPage() {
 
   return (
     <main className="min-h-screen bg-white pb-10 text-[19px] text-ink">
+      {/* The actions here re-render the page; the MENU badge lives in the browser. */}
+      <SessionRefresh token={result} />
       <PageContainer className="pt-2">
         <NotificationsView result={result} />
       </PageContainer>

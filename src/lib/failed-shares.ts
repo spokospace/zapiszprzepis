@@ -1,5 +1,4 @@
-import 'server-only'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { isStalePending, STALE_PENDING_ERROR } from '@/lib/share-staleness'
 
 export type FailedShare = {
@@ -28,8 +27,6 @@ export function readyWindowStart(now: Date = new Date()): string {
   return new Date(now.getTime() - READY_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
 }
 
-type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
-
 /**
  * Which of `urls` are the source of a recipe in the user's favorites — a link
  * someone else added first lands there instead of in "Moje przepisy"
@@ -37,7 +34,7 @@ type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
  * hides in `recipes`, so their source comes from public_recipes. A failed
  * lookup resolves nothing: over-reporting is the safe direction.
  */
-async function favoritedSourceUrls(supabase: ServerClient, userId: string, urls: string[]): Promise<Set<string>> {
+async function favoritedSourceUrls(supabase: SupabaseClient, userId: string, urls: string[]): Promise<Set<string>> {
   const { data: favorites, error } = await supabase.from('favorites').select('recipe_id').eq('user_id', userId)
   if (error) {
     console.error('[failed-shares] Failed to load favorites:', error)
@@ -63,7 +60,7 @@ async function favoritedSourceUrls(supabase: ServerClient, userId: string, urls:
  * keep claiming a problem. A stale pending row (#382) is not in progress — it
  * is listed as a problem itself. A failed lookup resolves nothing (over-report).
  */
-async function pendingSourceUrls(supabase: ServerClient, userId: string, urls: string[]): Promise<Set<string>> {
+async function pendingSourceUrls(supabase: SupabaseClient, userId: string, urls: string[]): Promise<Set<string>> {
   const { data, error } = await supabase
     .from('recipe_shares')
     .select('shared_url, status, updated_at')
@@ -102,7 +99,7 @@ async function pendingSourceUrls(supabase: ServerClient, userId: string, urls: s
  * indexed query — the recipes lookup runs only when there are failed rows, and
  * is bounded to their URLs.
  */
-export async function getFailedShares(supabase: ServerClient, userId: string): Promise<FailedSharesResult> {
+export async function getFailedShares(supabase: SupabaseClient, userId: string): Promise<FailedSharesResult> {
   const [shares, unreadReady] = await Promise.all([
     loadFailedShares(supabase, userId),
     countUnreadReady(supabase, userId),
@@ -121,7 +118,7 @@ const UNREAD_SCAN_LIMIT = 100
  * `recipe_id` is fetched — a few ids at most. It must never break the bell —
  * before the read-state migration is applied (or on any error) it counts 0.
  */
-async function countUnreadReady(supabase: ServerClient, userId: string): Promise<number> {
+async function countUnreadReady(supabase: SupabaseClient, userId: string): Promise<number> {
   const { data, error } = await supabase
     .from('recipe_shares')
     .select('recipe_id')
@@ -140,7 +137,7 @@ async function countUnreadReady(supabase: ServerClient, userId: string): Promise
 }
 
 /** `null` = could not check. */
-async function loadFailedShares(supabase: ServerClient, userId: string): Promise<FailedShare[] | null> {
+async function loadFailedShares(supabase: SupabaseClient, userId: string): Promise<FailedShare[] | null> {
   // Failed rows plus pending ones, so a stale pending share (#382) is caught.
   const { data: rows, error: failedError } = await supabase
     .from('recipe_shares')

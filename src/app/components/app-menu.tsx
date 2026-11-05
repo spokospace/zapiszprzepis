@@ -172,12 +172,15 @@ export function AppMenu({
   isAuthenticated,
   summary,
   notifications,
+  sessionKnown = true,
 }: {
   isAuthenticated: boolean
   /** Counters + full access; undefined where the page did not load it. */
   summary?: MenuSummary | null
   /** Signed in only: the "Powiadomienia" row and the MENU badge below lg (#323). */
   notifications?: NotificationBadge | null
+  /** False until the browser has read the session: no sign-in offer to someone who may be signed in. */
+  sessionKnown?: boolean
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const pathname = usePathname()
@@ -321,7 +324,7 @@ export function AppMenu({
                   )}
                 </ul>
               </section>
-            ) : (
+            ) : sessionKnown && (
               <section aria-label="Konto" className="px-5 pb-6">
                 <p className="mb-3 text-[17px] text-ink-soft">Zaloguj się, żeby zapisywać ulubione przepisy.</p>
                 <div className="flex flex-col gap-3">

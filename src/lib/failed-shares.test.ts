@@ -2,8 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { getFailedShares } from '@/lib/failed-shares'
 import { STALE_PENDING_ERROR } from '@/lib/share-staleness'
 
-// failed-shares is server-only; the guard throws outside a server bundle.
-vi.mock('server-only', () => ({}))
 
 type Result = { data: unknown; error: unknown }
 

@@ -12,11 +12,11 @@
 // src/lib/image-remote-patterns.ts, `unoptimized`). A stricter, nonce-based CSP
 // is a later tightening.
 
+import { PRODUCTION_SUPABASE_URL } from '@/lib/image-remote-patterns'
+
 // The Supabase host only exists in the Worker's runtime vars, so a build/test
 // without NEXT_PUBLIC_SUPABASE_URL falls back to the production project — the
-// same fallback src/lib/image-remote-patterns.ts uses. (A shared supabase-URL
-// helper across both modules is worth extracting in its own PR.)
-const PRODUCTION_SUPABASE_ORIGIN = 'https://wvrlgddgdddwmgzbvtij.supabase.co'
+// same fallback src/lib/image-remote-patterns.ts uses.
 
 type SecurityHeadersOptions = {
   supabaseUrl?: string
@@ -25,9 +25,9 @@ type SecurityHeadersOptions = {
 
 function supabaseOrigin(supabaseUrl: string | undefined): string {
   try {
-    return new URL(supabaseUrl || PRODUCTION_SUPABASE_ORIGIN).origin
+    return new URL(supabaseUrl || PRODUCTION_SUPABASE_URL).origin
   } catch {
-    return PRODUCTION_SUPABASE_ORIGIN
+    return PRODUCTION_SUPABASE_URL
   }
 }
 

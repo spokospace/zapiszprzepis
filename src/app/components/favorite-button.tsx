@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Heart } from 'lucide-react'
 import { track } from '@/lib/analytics/track'
+import { browserSession } from '@/lib/browser-session'
 import { addFavorite, removeFavorite } from '@/app/favorites/actions'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
@@ -166,7 +167,10 @@ export function FavoriteButton({
       if (!result.ok) {
         setOverride(!next)
         setError(true)
-      } else if (next) {
+        return
+      }
+      void browserSession.sync({ force: true }) // the MENU counter
+      if (next) {
         setToast(true)
         if (recipeSlug) track('favorite_add', recipeSlug)
       }
