@@ -4,6 +4,7 @@ const track = vi.hoisted(() => vi.fn())
 const actions = vi.hoisted(() => ({ addFavorite: vi.fn(), removeFavorite: vi.fn() }))
 vi.mock('@/lib/analytics/track', () => ({ track }))
 vi.mock('@/app/favorites/actions', () => actions)
+vi.mock('@/lib/browser-session', () => ({ browserSession: { sync: vi.fn() } }))
 
 const effects = vi.hoisted(() => [] as (() => void)[])
 vi.mock('@/lib/strip-search-param', () => ({ stripSearchParam: vi.fn() }))
