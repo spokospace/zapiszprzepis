@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
+import { isGuestRequest } from '@/lib/html-cache'
 import { getCachedJwks } from './jwks-cache'
 import { checkClaims, type SessionUser } from './user-check'
 
@@ -10,9 +10,12 @@ export async function updateSession(request: NextRequest): Promise<{
   user: SessionUser | null
   /** The session could not be checked (see isTransientAuthError); `user` is then null. */
   authTransient: boolean
-  supabase: SupabaseClient
 }> {
   let response = NextResponse.next({ request })
+
+  // No auth cookie, no session to check or refresh: skip the client and the keys. The
+  // result is what getClaims() would report, and most requests are guests (#710).
+  if (isGuestRequest(request)) return { response, user: null, authTransient: false }
 
   const supabase = createServerClient(
     SUPABASE_URL,
@@ -48,5 +51,5 @@ export async function updateSession(request: NextRequest): Promise<{
     await getCachedJwks(SUPABASE_URL),
   )
 
-  return { response, user, authTransient: transient, supabase }
+  return { response, user, authTransient: transient }
 }

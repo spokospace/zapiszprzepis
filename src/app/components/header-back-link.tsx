@@ -39,14 +39,14 @@ export function PageBackLink({ className, target }: Props) {
   }
   if (target) {
     return (
-      <Link href={target.href} aria-label={`Wróć: ${target.label}`} className={`${BACK} ${className ?? ''}`}>
+      <Link href={target.href} prefetch={false} aria-label={`Wróć: ${target.label}`} className={`${BACK} ${className ?? ''}`}>
         <ArrowLeft aria-hidden="true" className="h-6 w-6 shrink-0" />
         <span className="truncate py-1">{target.label}</span>
       </Link>
     )
   }
   return (
-    <Link href="/" aria-label="Wróć" onClick={onClick} className={`${BACK} shrink-0 ${className ?? ''}`}>
+    <Link href="/" prefetch={false} aria-label="Wróć" onClick={onClick} className={`${BACK} shrink-0 ${className ?? ''}`}>
       <ArrowLeft aria-hidden="true" className="h-6 w-6" />
       Wróć
     </Link>

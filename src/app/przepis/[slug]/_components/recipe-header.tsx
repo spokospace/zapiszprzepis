@@ -86,13 +86,13 @@ export function RecipeBreadcrumbs({ category, title, className = '' }: { categor
     <nav aria-label="Okruszki" className={`text-[16px] text-ink-soft ${className}`}>
       <ol className="flex flex-wrap items-center gap-x-2">
         <li>
-          <Link href={SEARCH_PATH} className="underline hover:text-action-hover">
+          <Link href={SEARCH_PATH} prefetch={false} className="underline hover:text-action-hover">
             Przepisy
           </Link>
         </li>
         <li aria-hidden="true">›</li>
         <li>
-          <Link href={categoryPath(category)} className="font-bold text-action-text underline hover:text-action-hover">
+          <Link href={categoryPath(category)} prefetch={false} className="font-bold text-action-text underline hover:text-action-hover">
             {categoryLabel(category)}
           </Link>
         </li>
@@ -211,7 +211,7 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions 
             <span className="min-w-0 break-words">
               Dodane przez{' '}
               {authorHref ? (
-                <Link href={authorHref} className="font-bold text-action-text underline hover:text-action-hover">
+                <Link href={authorHref} prefetch={false} className="font-bold text-action-text underline hover:text-action-hover">
                   {recipe.author_name}
                 </Link>
               ) : (

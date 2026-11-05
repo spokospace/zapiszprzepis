@@ -143,6 +143,7 @@ export function AppHeader({
               // (ZMIANY_prototyp §2). Shown without full access too: /dodaj then gates (3c).
               <Link
                 href={ADD_RECIPE_PATH}
+                prefetch={false}
                 className="hidden h-12 shrink-0 flex-row items-center gap-1.5 whitespace-nowrap rounded-pill border-2 border-action px-4 text-[18px] leading-none font-bold text-action-text no-underline! transition-colors hover:bg-surface-accent lg:inline-flex"
               >
                 <Plus aria-hidden="true" className="h-5 w-5" />
@@ -153,6 +154,7 @@ export function AppHeader({
               // signs in and creates the account, so a single outlined button (§2).
               <Link
                 href="/login"
+                prefetch={false}
                 className="hidden h-12 items-center whitespace-nowrap rounded-pill border-2 border-action px-4 text-[18px] font-bold text-action-text no-underline! hover:bg-surface-accent lg:inline-flex"
               >
                 Zaloguj się
