@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { categoryFacets, parseSearchParams, searchRecipes, suggestRecipes } from './search'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 function client(rpc: ReturnType<typeof vi.fn>) {
   return { rpc } as any
@@ -143,9 +142,13 @@ describe('searchRecipes', () => {
 })
 
 describe('suggestRecipes (E01-S29)', () => {
-  function fakeSupabase(result: { data: unknown; error: unknown }) {
-    const rpc = vi.fn(async () => result)
-    return { client: { rpc } as unknown as SupabaseClient, rpc }
+  function stubFetch(response: { ok: boolean; status?: number; json?: () => Promise<unknown> } | Error) {
+    const request = vi.fn(async () => {
+      if (response instanceof Error) throw response
+      return response
+    })
+    vi.stubGlobal('fetch', request)
+    return request
   }
   const row = (slug: string) => ({
     slug,
@@ -157,23 +160,30 @@ describe('suggestRecipes (E01-S29)', () => {
     total_count: 9,
   })
 
+  afterEach(() => vi.unstubAllGlobals())
+
   it('asks for nothing below two letters', async () => {
-    const { client, rpc } = fakeSupabase({ data: [], error: null })
-    expect(await suggestRecipes(client, ' d ')).toEqual([])
-    expect(rpc).not.toHaveBeenCalled()
+    const request = stubFetch({ ok: true, json: async () => [] })
+    expect(await suggestRecipes(' d ')).toEqual([])
+    expect(request).not.toHaveBeenCalled()
   })
 
   it('asks the public search for at most four recipes and keeps only what the list shows', async () => {
-    const { client, rpc } = fakeSupabase({ data: [row('a'), row('b'), row('c'), row('d'), row('e')], error: null })
-    const items = await suggestRecipes(client, '  dy ')
-    expect(rpc).toHaveBeenCalledWith('search_recipes', { p_query: 'dy', p_scope: 'all', p_limit: 4 })
+    const request = stubFetch({ ok: true, json: async () => ['a', 'b', 'c', 'd', 'e'].map(row) })
+    const items = await suggestRecipes('  dy ')
+    const [url, init] = request.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toMatch(/\/rest\/v1\/rpc\/search_recipes$/)
+    expect(JSON.parse(init.body as string)).toEqual({ p_query: 'dy', p_scope: 'all', p_limit: 4 })
     expect(items).toHaveLength(4)
     expect(items[0]).toEqual({ slug: 'a', title: 'a', image_url: null, category: 'zupy' })
   })
 
-  it('is empty on an error, never throwing', async () => {
-    const { client } = fakeSupabase({ data: null, error: { message: 'boom' } })
+  it.each([
+    ['a refused request', { ok: false, status: 500 }],
+    ['no connection', new Error('offline')],
+  ])('is empty on %s, never throwing', async (_name, response) => {
+    stubFetch(response)
     vi.spyOn(console, 'error').mockImplementation(() => {})
-    expect(await suggestRecipes(client, 'dynia')).toEqual([])
+    expect(await suggestRecipes('dynia')).toEqual([])
   })
 })

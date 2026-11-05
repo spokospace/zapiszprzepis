@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { cache } from 'react'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { getFavoriteIds } from '@/lib/favorites'
 import type { RecipeSource } from '@/lib/recipe-source'
 import { getSiteUrl } from '@/lib/site-url'
 import { profilePath } from '@/lib/routes'
@@ -162,8 +161,6 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
   // At the page cap a further link would render the same list again.
   const hasMore = recipes.length > shown && page < MAX_PROFILE_PAGE
   const visible = recipes.slice(0, shown)
-  // The favorites bar on each card (E01-S22); favorites are private, so only with a session.
-  const favoriteIds = user && visible.length ? await getFavoriteIds(supabase, user.id, visible.map((r) => r.id)) : new Set<number>()
   // The first card of the newest page, where "Pokaż kolejne" lands (#wiecej).
   const firstNewIndex = page > 1 ? (page - 1) * PROFILE_PAGE_SIZE : -1
 
@@ -250,7 +247,7 @@ export default async function ProfilePage({ params, searchParams }: { params: Pa
                     sourceType={r.source_type}
                     sourceUrl={r.source_url}
                     sourceAuthor={r.source_author}
-                    favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: Boolean(user) }}
+                    favorite={{ recipeId: r.id }}
                   />
                 </li>
               ))}

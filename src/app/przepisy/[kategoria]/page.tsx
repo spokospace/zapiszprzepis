@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getCategoryFacets, getCategoryListing, getCategoryTotal } from '@/lib/recipe-cache'
-import { getUserFavoriteIds } from '@/lib/favorites'
 import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { getCategoryMeta } from '@/lib/category-descriptions'
 import { categoryNoun, parsePageParam, parseTagParam, tagFacetsFromCounts, tagSummary, type TagCount } from '@/lib/category-tags'
@@ -75,15 +73,9 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const page = Math.min(parsePageParam(query.strona), MAX_PAGE)
   const shown = page * PAGE_SIZE
 
-  // The viewer's favorites are read in parallel with the list, not after it (#435).
-  const supabase = await createSupabaseServerClient()
-  const userPromise = getCurrentUser()
-  const favoritesPromise = userPromise.then((u) => (u ? getUserFavoriteIds(supabase, u.id) : new Set<number>()))
-
   // The user-independent reads — the list cards + exact total, the per-tag facet
   // counters (#444), and a filtered view's whole-category head count — are cached
-  // per category/tag/page with a short TTL (#445); the viewer and their favorites
-  // stay per request. The counters are an aid, not the content: a failed facet or
+  // per category/tag/page with a short TTL (#445). The counters are an aid, not the content: a failed facet or
   // count read degrades to no chips / an unknown total, the list still renders.
   const facetsPromise = getCategoryFacets({ category, selected }).catch((e) => {
     console.error('[przepisy] Tag facets failed:', e)
@@ -98,14 +90,12 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           return null
         })
       : null
-  const [user, facets, categoryCount, listing, favoriteIds] = await Promise.all([
-    userPromise,
+  const [facets, categoryCount, listing] = await Promise.all([
     facetsPromise,
     categoryCountPromise,
     // "Pokaż kolejne" re-renders the list from the top, one page longer. A failed
     // read throws here, so the route error boundary shows it (not an empty state).
     getCategoryListing({ category, tags: selected, limit: shown }),
-    favoritesPromise,
   ])
   const { recipes, count } = listing
 
@@ -127,8 +117,6 @@ export default async function CategoryPage({ params, searchParams }: { params: P
 
   const list = recipes ?? []
   const remaining = total - list.length
-
-  // favoriteIds (the hearts on the cards, E01-S06) was read above; favorites are private, so only with a session.
 
   return (
     <main className="min-h-screen bg-surface">
@@ -208,7 +196,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
                     sourceUrl={r.source_url}
                     sourceAuthor={r.source_author}
                     from="kategoria"
-                    favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: Boolean(user) }}
+                    favorite={{ recipeId: r.id }}
                   />
                 </li>
               ))}

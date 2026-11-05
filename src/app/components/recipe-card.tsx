@@ -23,7 +23,7 @@ interface RecipeCardProps {
   /** The list this card sits in, for the recipe page's back link (E01-S07). */
   from?: ListKey
   /** The heart on the card's photo (E01-S06); no heart without it. */
-  favorite?: { recipeId: number; favorited: boolean; isAuthenticated: boolean }
+  favorite?: { recipeId: number; favorited?: boolean }
   /**
    * Photo height (E01-S31 §2). `list` (default): a full-width card in the
    * one-column list / grid — 210 px on a phone, 180 from md. `carousel`: a card
@@ -112,7 +112,6 @@ export function RecipeCard({
               recipeId={favorite.recipeId}
               recipeSlug={slug}
               initialFavorited={favorite.favorited}
-              isAuthenticated={favorite.isAuthenticated}
               size="photo"
               recipeTitle={title}
             />

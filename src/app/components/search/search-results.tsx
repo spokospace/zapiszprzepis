@@ -14,7 +14,6 @@ interface SearchResultsProps {
   rows: SearchResult[]
   total: number
   /** Ids among `rows` the signed-in user has in Ulubione; null for a guest. */
-  favoriteIds: Set<number> | null
 }
 
 /**
@@ -22,7 +21,7 @@ interface SearchResultsProps {
  * favorites bar, then „Pokaż kolejne 14” — a plain link that re-renders with
  * one more page and jumps to the first new card (no infinite scroll).
  */
-export function SearchResults({ q, scope, page, category, rows, total, favoriteIds }: SearchResultsProps) {
+export function SearchResults({ q, scope, page, category, rows, total }: SearchResultsProps) {
   const remaining = total - rows.length
   const canShowMore = remaining > 0 && page < SEARCH_MAX_PAGES
   return (
@@ -48,7 +47,7 @@ export function SearchResults({ q, scope, page, category, rows, total, favoriteI
               sourceType={r.source_type}
               sourceUrl={r.source_url}
               sourceAuthor={r.source_author}
-              favorite={{ recipeId: r.id, favorited: favoriteIds?.has(r.id) ?? false, isAuthenticated: favoriteIds !== null }}
+              favorite={{ recipeId: r.id }}
             />
           </li>
         ))}

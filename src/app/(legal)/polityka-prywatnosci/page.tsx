@@ -107,7 +107,9 @@ export default function PrivacyPolicyPage() {
         <LegalList>
           <li>
             <strong>Supabase</strong> — tu mieszka baza danych: Twoje konto, przepisy i pliki (zdjęcia profilowe oraz
-            zdjęcia przepisów). Stąd wychodzą też e-maile z linkiem do logowania i do ustawienia hasła.
+            zdjęcia przepisów). Stąd wychodzą też e-maile z linkiem do logowania i do ustawienia hasła. Podpowiedzi
+            w wyszukiwarce pobiera Twoja przeglądarka prosto z tej bazy, więc Supabase widzi wtedy Twój adres IP
+            i wpisywany tekst.
           </li>
           <li>
             <strong>Cloudflare</strong> — utrzymuje serwis w internecie i raz dziennie robi kopie zapasowe przepisów

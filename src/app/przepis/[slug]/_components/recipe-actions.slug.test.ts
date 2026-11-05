@@ -1,10 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { ReactElement } from 'react'
 import { FavoriteButton } from '@/app/components/favorite-button'
 import { PrintButton } from './print-button'
 import { RecipeActions } from './recipe-actions'
 
-vi.mock('@/app/favorites/actions', () => ({ addFavorite: vi.fn(), removeFavorite: vi.fn() }))
 
 /** Every element of the given component type in a rendered tree. */
 function find(node: unknown, type: unknown, out: ReactElement[] = []): ReactElement[] {
@@ -21,8 +20,6 @@ describe('RecipeActions usage-count slug', () => {
   const tree = RecipeActions({
     recipeId: 7,
     recipeSlug: 'zupa-krem',
-    isFavorite: false,
-    isAuthenticated: true,
     title: 'Zupa krem',
     shareUrl: 'https://zapiszprzepis.pl/przepis/zupa-krem',
     steps: ['a'],

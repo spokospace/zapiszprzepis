@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Heart } from 'lucide-react'
 import { track } from '@/lib/analytics/track'
-import { browserSession } from '@/lib/browser-session'
-import { addFavorite, removeFavorite } from '@/app/favorites/actions'
+import { browserSession, useBrowserSession, type BrowserSession } from '@/lib/browser-session'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
 import { stripSearchParam } from '@/lib/strip-search-param'
@@ -13,9 +12,8 @@ interface FavoriteButtonProps {
   recipeId: number
   /** The recipe's slug, the subject of the `favorite_add` usage count. */
   recipeSlug?: string
-  /** Server truth at render time; the client override layers on top of it. */
-  initialFavorited: boolean
-  isAuthenticated: boolean
+  /** What a private list already knows, shown until the browser has read the favorites. */
+  initialFavorited?: boolean
   /**
    * `full`: the labelled button of the recipe page. `photo`: a recipe card's
    * heart, alone in a 48 px white circle on the card's photo, so a list keeps
@@ -110,25 +108,22 @@ function FavoriteToast({ show, onUndo }: { show: boolean; onUndo: () => void }) 
  * The toast after a guest heart's login, on a page that has no heart for the
  * recipe (the signed-in home: the guest home's card hearts return there).
  */
-export function FavoriteAddedNotice({ recipeId, recipeSlug }: { recipeId: number; recipeSlug?: string | null }) {
+export function FavoriteAddedNotice({ recipeId }: { recipeId: number }) {
   const [toast, setToast] = useState(false)
   const hide = useCallback(() => setToast(false), [])
   useToastTimeout(toast, hide)
 
   useEffect(() => {
-    if (claimFavoriteAdded(recipeId)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setToast(true)
-      if (recipeSlug) track('favorite_add', recipeSlug)
-    }
-  }, [recipeId, recipeSlug])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (claimFavoriteAdded(recipeId)) setToast(true)
+  }, [recipeId])
 
   return (
     <FavoriteToast
       show={toast}
       onUndo={() => {
         setToast(false)
-        void removeFavorite(recipeId)
+        void browserSession.setFavorite(recipeId, false)
       }}
     />
   )
@@ -137,44 +132,49 @@ export function FavoriteAddedNotice({ recipeId, recipeSlug }: { recipeId: number
 /**
  * The heart (E01-S06), never a star: labelled on the recipe page, alone on a
  * card's photo, where its accessible name carries the label and the recipe.
+ * It reads the browser's session, so the page around it is the same for everyone.
  * Optimistic toggle with a ~5 s "Dodano do ulubionych · Cofnij" toast after
- * adding. A guest gets a button that opens /login?next={this page}&fav={id}; the favorite
+ * adding. A guest's click opens /login?next={this page}&fav={id}; the favorite
  * is saved as the login completes and the toast shows on the way back.
  */
-export function FavoriteButton({
-  recipeId,
-  recipeSlug,
-  initialFavorited,
-  isAuthenticated,
-  size = 'full',
-  recipeTitle,
-}: FavoriteButtonProps) {
-  const [override, setOverride] = useState<boolean | null>(null)
+export function FavoriteButton({ recipeId, recipeSlug, initialFavorited = false, size = 'full', recipeTitle }: FavoriteButtonProps) {
+  const session = useBrowserSession()
   const [toast, setToast] = useState(false)
   const [error, setError] = useState(false)
   const [pending, startTransition] = useTransition()
-  const favorited = override ?? initialFavorited
+  const isAuthenticated = session.status === 'user'
+  const isFavorited = (s: BrowserSession) => (s.status === 'user' ? s.favoriteIds?.has(recipeId) : undefined) ?? initialFavorited
+  const favorited = isFavorited(session)
   const iconOnly = size === 'photo'
   // An icon alone names itself; the title tells one card's heart from the next.
   const name = (label: string) => (iconOnly ? (recipeTitle ? `${label}: ${recipeTitle}` : label) : undefined)
 
   function change(next: boolean) {
-    setOverride(next)
     setError(false)
     setToast(false)
     startTransition(async () => {
-      const result = next ? await addFavorite(recipeId) : await removeFavorite(recipeId)
+      const result = await browserSession.setFavorite(recipeId, next)
       if (!result.ok) {
-        setOverride(!next)
         setError(true)
         return
       }
-      void browserSession.sync({ force: true }) // the MENU counter
       if (next) {
         setToast(true)
         if (recipeSlug) track('favorite_add', recipeSlug)
       }
     })
+  }
+
+  async function onClick() {
+    // A tap before the session is read must not send a signed-in reader to /login.
+    if (session.status === 'unknown') await browserSession.sync()
+    const current = browserSession.getSnapshot()
+    if (current.status === 'user') {
+      change(!isFavorited(current))
+    } else {
+      // Not a link: crawlers follow hrefs, so no /login?…&fav= URL is left to index.
+      window.location.assign(loginPath(`${window.location.pathname}${window.location.search}`, recipeId))
+    }
   }
 
   // A one-shot read of the address bar after hydration (the server render cannot see it).
@@ -190,20 +190,6 @@ export function FavoriteButton({
   const hideToast = useCallback(() => setToast(false), [])
   useToastTimeout(toast, hideToast)
 
-  if (!isAuthenticated) {
-    // A button, not a link: crawlers follow hrefs, so no /login?…&fav= URL is left to index.
-    return (
-      <button
-        type="button"
-        onClick={() => window.location.assign(loginPath(`${window.location.pathname}${window.location.search}`, recipeId))}
-        aria-label={name(COPY.off)}
-        className={`${SIZE[size]} ${LOOK[size].off}`}
-      >
-        <Content size={size} favorited={false} />
-      </button>
-    )
-  }
-
   return (
     <div className={iconOnly ? 'flex flex-col items-end gap-2' : 'flex flex-col gap-2'}>
       <button
@@ -211,7 +197,7 @@ export function FavoriteButton({
         aria-pressed={favorited}
         aria-label={name(favorited ? COPY.on : COPY.off)}
         disabled={pending}
-        onClick={() => change(!favorited)}
+        onClick={() => void onClick()}
         className={`${SIZE[size]} ${favorited ? LOOK[size].on : LOOK[size].off} disabled:opacity-70`}
       >
         <Content size={size} favorited={favorited} />

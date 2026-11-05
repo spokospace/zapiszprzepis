@@ -5,7 +5,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 vi.mock('server-only', () => ({}))
 // The header search field pulls in the /szukaj suggestions action; keep it out of this
 // SSR render (it reaches for the Supabase server client).
-vi.mock('@/app/szukaj/actions', () => ({ getSuggestions: vi.fn(async () => []) }))
 let pathname = '/'
 let searchString = ''
 vi.mock('next/navigation', () => ({

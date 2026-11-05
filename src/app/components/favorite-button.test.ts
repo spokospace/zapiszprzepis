@@ -4,11 +4,10 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { FavoriteButton } from './favorite-button'
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/szukaj' }))
-vi.mock('@/app/favorites/actions', () => ({ addFavorite: vi.fn(), removeFavorite: vi.fn() }))
 
 const heart = (props: Partial<Parameters<typeof FavoriteButton>[0]>) =>
   renderToStaticMarkup(
-    createElement(FavoriteButton, { recipeId: 7, initialFavorited: false, isAuthenticated: true, ...props }),
+    createElement(FavoriteButton, { recipeId: 7, ...props }),
   )
 
 describe('FavoriteButton on a card photo', () => {
@@ -27,8 +26,8 @@ describe('FavoriteButton on a card photo', () => {
     expect(html).toContain('fill="currentColor"')
   })
 
-  it('gives a guest the same named heart as a button, with no login link for crawlers to follow', () => {
-    const html = heart({ size: 'photo', recipeTitle: 'Sernik', isAuthenticated: false })
+  it('is a named button in the shared page, with no login link for crawlers to follow', () => {
+    const html = heart({ size: 'photo', recipeTitle: 'Sernik' })
     expect(html).toMatch(/<button[^>]*type="button"[^>]*aria-label="Dodaj do ulubionych: Sernik"/)
     expect(html).not.toContain('href=')
     expect(html).not.toContain('fav=')
@@ -59,8 +58,8 @@ describe('FavoriteButton on the recipe page (handoff 2026-10-28)', () => {
     expect(html).toContain('aria-pressed="true"')
   })
 
-  it('gives a guest the same "Zapisz" as a button, with no login link for crawlers to follow', () => {
-    const html = heart({ isAuthenticated: false })
+  it('is the same "Zapisz" button in the shared page, with no login link for crawlers to follow', () => {
+    const html = heart({})
     expect(html).toMatch(/<button[^>]*type="button"[^>]*>/)
     expect(html).not.toContain('href=')
     expect(html).toContain('Zapisz<span class="sr-only"> w ulubionych</span>')

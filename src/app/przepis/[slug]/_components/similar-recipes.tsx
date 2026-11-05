@@ -1,12 +1,10 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Tag } from 'lucide-react'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
 import { sharedTagsCaption, similarHeading } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
-import { getFavoriteIds } from '@/lib/favorites'
 import { CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
 import { CardCarousel } from '@/app/components/card-carousel'
 import { getSimilarRecipes, type SimilarCard } from '@/lib/recipe-cache'
@@ -14,8 +12,6 @@ import { getSimilarRecipes, type SimilarCard } from '@/lib/recipe-cache'
 interface SimilarRecipesProps {
   /** `dish` (E01-S21): when set, same-dish recipes are excluded — they show in "Inne przepisy na …". */
   recipe: { id: number; category: string; tags: string[]; dish?: string | null }
-  /** The signed-in viewer, for the hearts on the "Podobne" cards (A5); null for a guest. */
-  userId: string | null
 }
 
 /**
@@ -34,7 +30,7 @@ export function SimilarRecipes(props: SimilarRecipesProps) {
   )
 }
 
-async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
+async function SimilarRecipesSection({ recipe }: SimilarRecipesProps) {
   let similar: SimilarCard[] = []
   let total: number | null = null
   try {
@@ -43,17 +39,6 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
     total = found.total
   } catch (err) {
     console.error('[recipe] Similar recipes failed:', err)
-  }
-
-  let favoriteIds = new Set<number>()
-  if (userId && similar.length > 0) {
-    try {
-      const supabase = await createSupabaseServerClient()
-      favoriteIds = await getFavoriteIds(supabase, userId, similar.map((r) => r.id))
-    } catch (err) {
-      // Hearts then start empty; toggling still works.
-      console.error('[recipe] Similar favorites failed:', err)
-    }
   }
 
   const label = categoryLabel(recipe.category)
@@ -112,7 +97,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
                   sourceAuthor={r.source_author}
                   photo="carousel"
                   sizes={CAROUSEL_SIZES}
-                  favorite={{ recipeId: r.id, favorited: favoriteIds.has(r.id), isAuthenticated: userId !== null }}
+                  favorite={{ recipeId: r.id }}
                 />
               ),
             }))}
