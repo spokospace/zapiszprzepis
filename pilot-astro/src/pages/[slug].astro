@@ -1,120 +1,103 @@
 ---
-// Throwaway pilot: the recipe page as static HTML with the real interactive components hydrated
-// as islands (RecipeActions with cooking mode, share, print and favorites; RecipeChecklists with
-// servings, units, timers, glossary). Production CSS and image pipeline, so those cost the same.
-// Left out: list bar, dish versions, the real header drawer, and the signed-in overlay
-// (session store and supabase-js), which a guest would not load.
+// Throwaway pilot: the production recipe layout as static HTML, with the interactive parts
+// hydrated as islands. Static: RecipeHeader, PageContainer, SiteFooter. Islands: AppHeader,
+// RecipeActions, RecipeChecklists, RecipeListNav, SimilarBlock. Production CSS and image route.
+// Left out: dish versions, gallery teaser, analytics, and the signed-in overlay.
+import { AppHeader } from '@/app/components/app-header'
+import { SiteFooter } from '@/app/components/site-footer'
+import { PageContainer } from '@/app/components/page-container'
 import { RecipeActions } from '@/app/przepis/[slug]/_components/recipe-actions'
+import { RecipeHeader, RecipeBreadcrumbs } from '@/app/przepis/[slug]/_components/recipe-header'
 import { RecipeChecklists } from '@/app/przepis/[slug]/_components/recipe-checklists'
+import { RecipeListNav } from '@/app/przepis/[slug]/_components/recipe-list-bar'
+import { RECIPE_MAIN, RECIPE_TOP_ROW } from '@/app/przepis/[slug]/_components/recipe-split'
+import { loadCategoryContext } from '@/app/przepis/[slug]/category-context'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
 import { parseSteps } from '@/lib/steps'
 import { findGlossaryTerms } from '@/lib/ingredient-glossary'
+import { coverImageSrc } from '@/lib/recipe-image-archive'
+import { SimilarBlock } from '../components/SimilarBlock'
+import { imageSrcSet } from '../shims/next-image'
 
 const SUPABASE = 'https://wvrlgddgdddwmgzbvtij.supabase.co'
 const KEY = 'sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2'
 const SITE = 'https://zapiszprzepis.pl'
 const CSS = `${SITE}/_next/static/chunks/2rvoqduuttn3s.css`
+const headers = { apikey: KEY, 'content-type': 'application/json' }
 
 export async function getStaticPaths() {
   const slugs = ['zupa-pomidorowa', 'zapiekanka', 'barszcz-ukrainski-5', 'kajzerki']
   return slugs.map((slug) => ({ params: { slug } }))
 }
 
-const read = async (query) => (await fetch(`${SUPABASE}/rest/v1/public_recipes?${query}`, { headers: { apikey: KEY } })).json()
+const read = async (query) => (await fetch(`${SUPABASE}/rest/v1/public_recipes?${query}`, { headers })).json()
 
 const { slug } = Astro.params
+globalThis.__pilotPath = `/przepis/${slug}`
 const [recipe] = await read(`slug=eq.${slug}&select=*&order=created_at.asc&limit=1`)
-const similar = await read(`category=eq.${recipe.category}&id=neq.${recipe.id}&select=slug,title,image_url&order=created_at.desc&limit=4`)
+const cards = await read(`category=eq.${recipe.category}&id=neq.${recipe.id}&select=id,slug,title,image_url,category,description,source_type,source_url,source_author&order=created_at.desc&limit=4`)
+const rpc = async (name, body) => {
+  const res = await fetch(`${SUPABASE}/rest/v1/rpc/${name}`, { method: 'POST', headers, body: JSON.stringify(body) })
+  return { data: res.ok ? await res.json() : null, error: res.ok ? null : { message: String(res.status) } }
+}
+const categoryContext = await loadCategoryContext({ rpc }, recipe)
 
 const ingredientGroups = groupBySection(parseIngredients(recipe.ingredients))
 const steps = parseSteps(recipe.steps)
 const glossary = findGlossaryTerms([recipe.title, ...ingredientGroups.flatMap((g) => g.items.map((i) => i.name)), ...steps])
-const widths = [640, 750, 828, 1080, 1200]
-const image = (url, w) => `${SITE}/_next/image?url=${encodeURIComponent(url)}&w=${w}&q=75`
-const srcset = widths.map((w) => `${image(recipe.image_url, w)} ${w}w`).join(', ')
+const cover = coverImageSrc(recipe.image_url)
 const sizes = '(max-width: 1023px) 100vw, (max-width: 1535px) 40vw, 45vw'
-const times = [
-  ['Przygotowanie', recipe.prep_time_minutes],
-  ['Gotowanie', recipe.cook_time_minutes],
-  ['Łącznie', recipe.total_time_minutes],
-].filter(([, v]) => v)
 ---
 
 <html lang="pl" class="h-full antialiased">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, interactive-widget=resizes-content" />
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#c2410c" />
     <title>{recipe.title} · Zapisz Przepis</title>
     <link rel="stylesheet" href={CSS} />
-    <link rel="preload" as="image" imagesrcset={srcset} imagesizes={sizes} fetchpriority="high" />
+    {cover && <link rel="preload" as="image" imagesrcset={imageSrcSet(cover)} imagesizes={sizes} fetchpriority="high" />}
   </head>
   <body class="min-h-full flex flex-col w-full">
-    <header class="border-b-2 border-border-card">
-      <div class="flex min-h-16 items-center justify-between gap-2 py-1 pr-3 pl-4">
-        <a href="/" class="font-bold text-ink no-underline! text-[24px]">Zapisz Przepis</a>
-        <a href="/szukaj" class="font-bold text-ink no-underline!">Szukaj</a>
-        <details class="relative">
-          <summary class="font-bold text-ink">MENU</summary>
-          <nav class="absolute right-0 z-10 flex w-56 flex-col gap-3 border border-border-card bg-white p-4">
-            <a href="/login">Zaloguj się</a>
-            <a href="/przepisy/obiady">Obiady</a>
-            <a href="/przepisy/zupy">Zupy</a>
-            <a href="/przepisy/ciasta">Ciasta</a>
-          </nav>
-        </details>
-      </div>
-    </header>
-    <main class="min-h-screen bg-white py-6">
-      <div class="mx-auto w-full max-w-[1152px] px-4">
-        <div class="relative mb-5 -mx-4 -mt-6 aspect-[4/3]">
-          <img alt={recipe.title} src={image(recipe.image_url, 828)} srcset={srcset} sizes={sizes} fetchpriority="high" decoding="async" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0" />
+    <AppHeader client:load failedShares={{ status: 'ok', shares: [], unreadReady: 0 }} isAuthenticated={false} />
+    <main class={RECIPE_MAIN}>
+      <PageContainer>
+        <div class={`${RECIPE_TOP_ROW} print:hidden`}>
+          <RecipeBreadcrumbs category={recipe.category} title={recipe.title} className="hidden lg:ml-auto lg:block" />
         </div>
-        <h1 class="mb-3 text-[32px] font-bold text-ink">{recipe.title}</h1>
-        {recipe.description && <p class="mb-4 text-[19px] text-ink">{recipe.description}</p>}
-        <ul class="mb-4 flex flex-wrap gap-4 text-[17px] text-ink-soft">
-          {times.map(([label, value]) => <li>{label}: {value} min</li>)}
-          {recipe.servings && <li>Wychodzi: {recipe.servings}</li>}
-        </ul>
-        <RecipeActions
-          client:load
+        <RecipeHeader recipe={recipe}>
+          <Fragment slot="actions">
+            <RecipeActions
+              client:load
+              recipeId={recipe.id}
+              recipeSlug={recipe.slug}
+              isFavorite={false}
+              isAuthenticated={false}
+              title={recipe.title}
+              shareUrl={`${SITE}/przepis/${recipe.slug}`}
+              steps={steps}
+              stepImages={[]}
+            />
+          </Fragment>
+        </RecipeHeader>
+        <RecipeChecklists
+          client:visible
           recipeId={recipe.id}
           recipeSlug={recipe.slug}
-          isFavorite={false}
-          isAuthenticated={false}
-          title={recipe.title}
-          shareUrl={`${SITE}/przepis/${recipe.slug}`}
+          recipeTitle={recipe.title}
+          ingredientGroups={ingredientGroups}
           steps={steps}
           stepImages={[]}
+          servings={recipe.servings}
+          glossary={glossary}
         />
-        <div class="mt-8">
-          <RecipeChecklists
-            client:visible
-            recipeId={recipe.id}
-            recipeSlug={recipe.slug}
-            recipeTitle={recipe.title}
-            ingredientGroups={ingredientGroups}
-            steps={steps}
-            stepImages={[]}
-            servings={recipe.servings}
-            glossary={glossary}
-          />
+        <div class="print:hidden">
+          <RecipeListNav client:visible slug={recipe.slug} from={null} fallback={categoryContext} />
+          <SimilarBlock client:visible category={recipe.category} tags={recipe.tags ?? []} cards={cards} />
         </div>
-        <h2 class="mb-4 mt-8 text-[24px] font-bold text-ink">Podobne</h2>
-        <ul class="grid grid-cols-2 gap-4">
-          {similar.map((s) => (
-            <li>
-              <a href={`/pilot/${s.slug}/`} class="text-ink">
-                {s.image_url && <img alt="" src={image(s.image_url, 384)} loading="lazy" decoding="async" class="aspect-[4/3] w-full object-cover" />}
-                <span class="mt-2 block font-bold">{s.title}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
+      </PageContainer>
     </main>
-    <footer class="border-t border-border-card p-4">
-      <a href="/regulamin">Regulamin</a> · <a href="/polityka-prywatnosci">Polityka prywatności</a> · <a href="/usuwanie-danych">Usuwanie danych</a>
-    </footer>
+    <SiteFooter />
   </body>
 </html>
