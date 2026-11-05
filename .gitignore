@@ -72,3 +72,7 @@ context/foundation/test-accounts.md
 # (public repo). Only the list of reviewed ids is tracked.
 scripts/data-fixes/*
 !scripts/data-fixes/steps-reviewed.json
+
+# Astro pilot (throwaway)
+pilot-astro/node_modules
+pilot-astro/.astro

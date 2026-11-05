@@ -1,0 +1,99 @@
+---
+// Throwaway pilot: one recipe as a static page, to measure what shipping almost no JavaScript
+// does to mobile CWV. It reuses the production stylesheet and image pipeline so CSS and the
+// LCP image cost the same as on /przepis/{slug}. It leaves out the list bar, servings scaling,
+// cooking mode, timers, glossary, versions and similar recipes, so it is an upper bound.
+const SUPABASE = 'https://wvrlgddgdddwmgzbvtij.supabase.co'
+const KEY = 'sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2'
+const SITE = 'https://zapiszprzepis.pl'
+const CSS = `${SITE}/_next/static/chunks/2rvoqduuttn3s.css`
+
+export async function getStaticPaths() {
+  const slugs = ['zupa-pomidorowa', 'zapiekanka', 'barszcz-ukrainski-5', 'kajzerki']
+  return slugs.map((slug) => ({ params: { slug } }))
+}
+
+const { slug } = Astro.params
+const res = await fetch(
+  `${SUPABASE}/rest/v1/public_recipes?slug=eq.${slug}&select=title,description,image_url,servings,prep_time_minutes,cook_time_minutes,total_time_minutes,ingredients,steps&order=created_at.asc&limit=1`,
+  { headers: { apikey: KEY } },
+)
+const [recipe] = await res.json()
+const ingredients = recipe.ingredients ?? []
+const sections = [...new Set(ingredients.map((i) => i.section ?? ''))]
+const steps = (recipe.steps ?? []).map((s) => (typeof s === 'string' ? s : s.text ?? ''))
+const widths = [640, 750, 828, 1080, 1200]
+const image = (w) => `${SITE}/_next/image?url=${encodeURIComponent(recipe.image_url)}&w=${w}&q=75`
+const srcset = widths.map((w) => `${image(w)} ${w}w`).join(', ')
+const sizes = '(max-width: 1023px) 100vw, (max-width: 1535px) 40vw, 45vw'
+const times = [
+  ['Przygotowanie', recipe.prep_time_minutes],
+  ['Gotowanie', recipe.cook_time_minutes],
+  ['Łącznie', recipe.total_time_minutes],
+].filter(([, v]) => v)
+---
+
+<html lang="pl" class="h-full antialiased">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{recipe.title} · Zapisz Przepis</title>
+    <link rel="stylesheet" href={CSS} />
+    <link rel="preload" as="image" imagesrcset={srcset} imagesizes={sizes} fetchpriority="high" />
+  </head>
+  <body class="min-h-full flex flex-col w-full">
+    <header class="border-b-2 border-border-card">
+      <div class="flex min-h-16 items-center justify-between gap-2 py-1 pr-3 pl-4">
+        <a href="/" class="font-bold text-ink no-underline! text-[24px]">Zapisz Przepis</a>
+        <a href="/szukaj" class="font-bold text-ink no-underline!">Szukaj</a>
+      </div>
+    </header>
+    <main class="min-h-screen bg-white py-6">
+      <div class="mx-auto w-full max-w-[1152px] px-4">
+        <div class="relative mb-5 -mx-4 -mt-6 aspect-[4/3]">
+          <img alt={recipe.title} src={image(828)} srcset={srcset} sizes={sizes} fetchpriority="high" decoding="async" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0" />
+        </div>
+        <h1 class="mb-3 text-[32px] font-bold text-ink">{recipe.title}</h1>
+        {recipe.description && <p class="mb-4 text-[19px] text-ink">{recipe.description}</p>}
+        <ul class="mb-8 flex flex-wrap gap-4 text-[17px] text-ink-soft">
+          {times.map(([label, value]) => <li>{label}: {value} min</li>)}
+          {recipe.servings && <li>Wychodzi: {recipe.servings}</li>}
+        </ul>
+        <h2 class="mb-4 text-[24px] font-bold text-ink">Składniki</h2>
+        {sections.map((section) => (
+          <div class="mb-6">
+            {section && <h3 class="mb-2 text-[19px] font-bold text-ink">{section}</h3>}
+            <ul>
+              {ingredients.filter((i) => (i.section ?? '') === section).map((i) => (
+                <li class="mb-2">
+                  <label class="flex min-h-12 items-center gap-3 text-[19px] text-ink">
+                    <input type="checkbox" class="h-6 w-6 shrink-0" />
+                    <span>{[i.amount, i.unit, i.name].filter(Boolean).join(' ')}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        <h2 class="mb-4 text-[24px] font-bold text-ink">Przygotowanie</h2>
+        <ol class="list-decimal pl-6">
+          {steps.map((step) => <li class="mb-4 text-[19px] text-ink">{step}</li>)}
+        </ol>
+      </div>
+    </main>
+    <script is:inline>
+      // The one piece of interactivity kept: ticked ingredients survive a reload.
+      const key = 'pilot:' + location.pathname
+      const boxes = [...document.querySelectorAll('input[type=checkbox]')]
+      let saved = []
+      try { saved = JSON.parse(localStorage.getItem(key) || '[]') } catch {}
+      boxes.forEach((box, i) => {
+        box.checked = saved.includes(i)
+        box.addEventListener('change', () => {
+          try { localStorage.setItem(key, JSON.stringify(boxes.flatMap((b, n) => (b.checked ? [n] : [])))) } catch {}
+        })
+      })
+    </script>
+  </body>
+</html>
