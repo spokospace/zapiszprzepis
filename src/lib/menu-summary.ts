@@ -1,9 +1,5 @@
-import 'server-only'
-import type { SessionUser } from '@/lib/supabase/user-check'
-import type { createSupabaseServerClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { getFullAccess } from '@/lib/full-access'
-
-type ServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>
 
 /**
  * What the MENU drawer needs about a signed-in user (E01-S09). A null count
@@ -17,7 +13,7 @@ export type MenuSummary = {
 }
 
 async function countOwnRows(
-  supabase: ServerClient,
+  supabase: SupabaseClient,
   table: 'recipes' | 'favorites',
   userId: string,
 ): Promise<number | null> {
@@ -35,7 +31,7 @@ async function countOwnRows(
 }
 
 /** null for a guest: no "Moje" block, nothing to query. */
-export async function getMenuSummary(supabase: ServerClient, user: SessionUser | null): Promise<MenuSummary | null> {
+export async function getMenuSummary(supabase: SupabaseClient, user: { id: string } | null): Promise<MenuSummary | null> {
   if (!user) return null
   const [fullAccess, myRecipesCount, favoritesCount] = await Promise.all([
     getFullAccess(supabase),

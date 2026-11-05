@@ -3,7 +3,7 @@ import type { RemotePattern } from 'next/dist/shared/lib/image-config'
 // The image allowlist is baked in when Next builds, but the Worker's `vars`
 // (wrangler.jsonc) only exist at runtime, so a build without
 // NEXT_PUBLIC_SUPABASE_URL falls back to the production project.
-const PRODUCTION_SUPABASE_URL = 'https://wvrlgddgdddwmgzbvtij.supabase.co'
+export const PRODUCTION_SUPABASE_URL = 'https://wvrlgddgdddwmgzbvtij.supabase.co'
 
 /**
  * The only remote images /_next/image may fetch: recipe photos archived in

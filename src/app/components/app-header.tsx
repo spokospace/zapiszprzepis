@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, use } from 'react'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Plus, Search } from 'lucide-react'
@@ -21,53 +21,24 @@ import { notificationBadge } from '@/lib/notification-badge'
 import { ADD_RECIPE_PATH, PRZEPIS_PAGE_RE, SEARCH_PATH } from '@/lib/routes'
 import { parseReturnPoint, resolveRecipeBackTarget, RETURN_POINT_KEY } from '@/lib/return-point'
 
-/** A value, or the promise of one a server component passed down without awaiting it (#226). */
-type Awaitable<T> = T | PromiseLike<T>
-
-function isThenable<T>(value: Awaitable<T>): value is PromiseLike<T> {
-  return typeof (value as PromiseLike<T> | null)?.then === 'function'
-}
-
-/** Suspends on a pending promise (inside the caller's Suspense boundary); a plain value passes through. */
-function useAwaited<T>(value: Awaitable<T>): T {
-  return isThenable(value) ? use(value as Promise<T>) : value
-}
-
-function HeaderMenu({
-  isAuthenticated,
-  failedShares,
-  menu,
-}: {
-  isAuthenticated: boolean
-  failedShares: Awaitable<FailedSharesResult>
-  menu: Awaitable<MenuSummary | null | undefined>
-}) {
-  const summary = useAwaited(menu)
-  const shares = useAwaited(failedShares)
-  return (
-    <AppMenu
-      isAuthenticated={isAuthenticated}
-      summary={summary}
-      notifications={isAuthenticated ? notificationBadge(shares) : null}
-    />
-  )
-}
-
 export function AppHeader({
   failedShares,
   isAuthenticated,
   menu,
+  sessionKnown = true,
 }: {
-  /**
-   * The notifications check. A layout passes the promise unawaited, so the header
-   * and the page (its loading skeleton included) are sent at once and the bell and
-   * MENU badge fill in when it returns (#226).
-   */
-  failedShares: Awaitable<FailedSharesResult>
+  /** The notifications check, behind the MENU badge. */
+  failedShares: FailedSharesResult
   /** Guest (E01-S02) vs signed-in: a guest gets no Dodaj or Ulubione; "Zaloguj się" is in MENU below lg. */
   isAuthenticated: boolean
   /** MENU counters + full access (E01-S09); the drawer degrades without it, and while it loads. */
-  menu?: Awaitable<MenuSummary | null | undefined>
+  menu?: MenuSummary | null
+  /**
+   * False until the browser has read the session. From lg „Zaloguj się” then keeps its
+   * place unseen, so a signed-in reader never sees it flash; below lg the header is the
+   * same for everyone.
+   */
+  sessionKnown?: boolean
 }) {
   const pathname = usePathname()
   // Below lg "← Wróć" replaces the logo on the screens below the start page (handoff 1c);
@@ -155,7 +126,7 @@ export function AppHeader({
               <Link
                 href="/login"
                 prefetch={false}
-                className="hidden h-12 items-center whitespace-nowrap rounded-pill border-2 border-action px-4 text-[18px] font-bold text-action-text no-underline! hover:bg-surface-accent lg:inline-flex"
+                className={`hidden h-12 items-center whitespace-nowrap rounded-pill border-2 border-action px-4 text-[18px] font-bold text-action-text no-underline! hover:bg-surface-accent lg:inline-flex ${sessionKnown ? '' : 'invisible'}`}
               >
                 Zaloguj się
               </Link>
@@ -163,10 +134,11 @@ export function AppHeader({
             {/* The guest drawer holds only the sign-in CTA and the categories, which the
                 desktop header already shows. */}
             <div className={isAuthenticated ? 'flex' : 'flex lg:hidden'}>
-              {/* While the counts load, a working MENU without counters or badge. */}
-              <Suspense fallback={<AppMenu isAuthenticated={isAuthenticated} />}>
-                <HeaderMenu isAuthenticated={isAuthenticated} failedShares={failedShares} menu={menu} />
-              </Suspense>
+              <AppMenu
+                isAuthenticated={isAuthenticated}
+                summary={menu}
+                notifications={isAuthenticated ? notificationBadge(failedShares) : null}
+              />
             </div>
           </div>
         </PageContainer>
