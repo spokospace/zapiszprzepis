@@ -12,7 +12,6 @@ const PROPS: Parameters<typeof RecipeActions>[0] = {
   title: 'Zupa krem z dyni',
   shareUrl: 'https://zapiszprzepis.pl/przepis/zupa-krem-z-dyni',
   steps: ['Zagotuj wodę.', 'Dodaj dynię.'],
-  stepImages: ['', ''],
 }
 
 function render(extra: Partial<Parameters<typeof RecipeActions>[0]> = {}) {
@@ -27,7 +26,7 @@ describe('RecipeActions (handoff 2026-10-28)', () => {
   })
 
   it('drops the cooking button when the recipe has no steps; the heart takes the whole row', () => {
-    const html = render({ steps: [], stepImages: [] })
+    const html = render({ steps: [] })
     expect(html).not.toContain('Zacznij gotować')
     expect(html).not.toContain('flex-[2]')
     expect(html).toMatch(/<div class="flex flex-col gap-3 min-\[480px\]:flex-row"><div class="w-full">/)

@@ -1,35 +1,31 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { Toast } from '@/app/components/toast'
+import { Suspense } from 'react'
+import { createSupabaseAnonClient } from '@/lib/supabase/anon'
 import { PageContainer } from '@/app/components/page-container'
-import { buttonClasses } from '@/app/components/ui/button'
 import { recipePath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
 import { buildRecipeBreadcrumbJsonLd, buildRecipeJsonLd, serializeJsonLd } from '@/lib/recipe-json-ld'
-import { refreshRecipe } from './refresh-action'
 import { loadRecipe } from './load-recipe'
 import { recipeMetadata } from './recipe-metadata'
 import { parseIngredients, groupBySection } from '@/lib/ingredients'
-import { parseSteps, visibleStepImages } from '@/lib/steps'
+import { parseSteps } from '@/lib/steps'
 import { findGlossaryTerms } from '@/lib/ingredient-glossary'
-import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { TrackView } from '@/app/components/track-view'
-import { SessionRefresh } from '@/app/components/session-header'
 import { RecipeActions } from './_components/recipe-actions'
 import { StaffHiddenBanner, UnavailableRecipe } from './_components/hidden-notice'
-import { RecipeChecklists } from './_components/recipe-checklists'
-import { RecipeListBar, RecipeListNav } from './_components/recipe-list-bar'
-import { LockedGallery } from './_components/locked-gallery'
+import { LIST_BAR } from './_components/recipe-list-bar'
+import { RecipeListBarFromUrl, RecipeListNavFromUrl } from './_components/recipe-list-from-url'
+import { RecipeNotices } from './_components/recipe-notices'
+import { GuestGallery, OwnerActions, PrivateRecipeChecklists, RecipePrivateProvider } from './_components/recipe-private'
 import { SimilarRecipes } from './_components/similar-recipes'
 import { DishVersionsBar } from './_components/dish-versions-bar'
 import { DishVersions } from './_components/dish-versions'
 import { RECIPE_MAIN, RECIPE_TOP_ROW } from './_components/recipe-split'
-import { parseVersionsSort, type DishVersionRow } from '@/lib/dish-versions'
+import type { DishVersionRow } from '@/lib/dish-versions'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
-import { parseListKey } from '@/lib/recipe-list-context'
 import { formatSource } from '@/lib/recipe-source'
 import { PostSiblings, type PostSibling } from './_components/post-siblings'
 
@@ -45,30 +41,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return recipeMetadata(recipe, await getSiteUrl())
 }
 
-interface RecipeDetailPageProps {
-  params: Promise<{
-    slug: string
-  }>
-  searchParams: Promise<{
-    duplicate?: string
-    refreshing?: string
-    refresh_error?: string
-    /** The link was someone else's recipe; it was added to favorites instead (E01-S03a). */
-    in_favorites?: string
-    /** The delete was refused: others have this recipe as a favorite (E01-S03a). */
-    delete_error?: string
-    /** The list the visitor came from, for the list bar (E01-S07); whitelisted. */
-    from?: string
-    /** Version sort order (E01-S21); whitelisted, falls back to popularne. */
-    wersje?: string
-  }>
-}
-
-export default async function RecipeDetailPage({ params, searchParams }: RecipeDetailPageProps) {
+/**
+ * One page for every reader: it reads neither the session nor the URL. What is personal comes
+ * in the browser (`RecipePrivateProvider`, `RecipeNotices`, the `?from` list and `?wersje` order).
+ */
+export default async function RecipeDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const { duplicate, refreshing, refresh_error, in_favorites, delete_error, from, wersje } = await searchParams
 
-  const { recipe: typedRecipe, error, isOwner, user, hidden } = await loadRecipe(slug)
+  const { recipe: typedRecipe, error, hidden } = await loadRecipe(slug)
 
   if (hidden?.kind === 'unavailable') return <UnavailableRecipe />
 
@@ -77,22 +57,19 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     notFound()
   }
 
-  // The gallery is a login perk (decision Q3), so it needs a session. The list bar's
-  // category context (E01-S07) is guest-safe. They run in parallel on one client.
+  // The list bar's category context (E01-S07) is guest-safe, so it reads with no session.
   // The "versions of the same dish" RPC (E01-S21) runs ONLY when this recipe has
   // a dish — until the #298 backfill lands, dish is null everywhere, so no call
   // is made and no bar/section renders (empty-data state).
-  const supabase = await createSupabaseServerClient()
-  const [categoryContext, gallery, dishVersionsResult, siblingsResult] = await Promise.all([
+  const supabase = createSupabaseAnonClient()
+  const [categoryContext, dishVersionsResult, siblingsResult] = await Promise.all([
     loadCategoryContext(supabase, typedRecipe),
-    user ? supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle() : null,
     typedRecipe.dish ? supabase.rpc('dish_versions', { p_recipe_id: typedRecipe.id }) : null,
     // The other dishes saved from this link (E01 multi-recipe, phase 4). A link with one dish has none.
     typedRecipe.source_url
       ? supabase.from('public_recipes').select('id, slug, title').eq('source_url', typedRecipe.source_url).neq('id', typedRecipe.id)
       : null,
   ])
-  const galleryImages: string[] = gallery?.data?.image_urls ?? []
   const siblings = (siblingsResult?.data ?? []) as PostSibling[]
   const galleryCount = typedRecipe.gallery_count ?? 0
 
@@ -100,7 +77,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   if (dishVersionsResult?.error) console.error('[recipe] dish_versions failed:', dishVersionsResult.error)
   const versions = (dishVersionsResult?.data ?? []) as DishVersionRow[]
   const versionsTotal = versions[0]?.total_count ?? 0
-  const versionsOrder = parseVersionsSort(wersje)
   const currentRecipe = {
     servings: typedRecipe.servings,
     prep_time_minutes: typedRecipe.prep_time_minutes,
@@ -122,11 +98,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     ...ingredientGroups.flatMap((g) => g.items.map((i) => i.name)),
     ...steps,
   ])
-  // Per-step photos, index-aligned with steps; empty until the column/view migration
-  // and an import that captures them land (recipes without them render exactly as today).
-  // Signed-in users only: a guest gets plain step text, with no photo or toggle.
-  const stepImages = visibleStepImages(typedRecipe.step_images, Boolean(user))
-  const listKey = parseListKey(from)
   const siteUrl = await getSiteUrl()
   const canonicalUrl = `${siteUrl}${recipePath(typedRecipe.slug)}`
   // schema.org/Recipe for Google rich results. Built from guest-safe fields only
@@ -143,39 +114,21 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {hidden?.kind === 'staff' && <StaffHiddenBanner reason={hidden.hiddenReason} recipeId={hidden.staffRecipeId} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: recipeJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
-      {duplicate === '1' && (
-        <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
-      )}
-      {in_favorites === '1' && <SessionRefresh token={in_favorites} />}
-      {in_favorites === '1' && (
-        <Toast
-          message="Ten przepis już jest w aplikacji Zapisz Przepis. Dodaliśmy go do Twoich ulubionych."
-          type="info"
-          duration={5000}
-          clearParam="in_favorites"
-        />
-      )}
-      {refreshing === '1' && (
-        <Toast message="Odświeżam przepis — zmiany pojawią się za chwilę." type="success" duration={5000} clearParam="refreshing" />
-      )}
-      {refresh_error === '1' && (
-        <Toast message="Nie można odświeżyć — przepis nie ma źródłowego adresu." type="error" duration={5000} clearParam="refresh_error" />
-      )}
-      {refresh_error === 'no_access' && (
-        <Toast message="Odświeżanie przepisów wymaga kodu dostępu." type="error" duration={5000} clearParam="refresh_error" />
-      )}
-      {refresh_error === 'rate_limited' && (
-        <Toast message="Za dużo odświeżeń naraz. Spróbuj później, za kilka minut." type="error" duration={5000} clearParam="refresh_error" />
-      )}
+      <Suspense>
+        <RecipeNotices />
+      </Suspense>
       {/* Not `narrow`: the desktop layout (E01-S17, A9) uses the full 1152 px; below lg
           both widths are the viewport anyway. */}
+      <RecipePrivateProvider recipeId={typedRecipe.id}>
       <PageContainer>
         {/* Handoff 2026-10-28: one row above the hero, "← {lista} · N z M" on the left and
             "Przepisy › {Kategoria} › {Przepis}" on the right. From lg only; below lg the
             header carries the back link (C3). The list bar stays mounted at every width,
             because it also feeds that back link. */}
         <div className={`${RECIPE_TOP_ROW} print:hidden`}>
-          <RecipeListBar slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+          <Suspense fallback={<div aria-hidden="true" className={LIST_BAR} />}>
+            <RecipeListBarFromUrl slug={typedRecipe.slug} fallback={categoryContext} />
+          </Suspense>
           <RecipeBreadcrumbs category={typedRecipe.category} title={typedRecipe.title} className="hidden lg:ml-auto lg:block" />
         </div>
         {/* The actions and the versions box sit in the header's text column. The cooking
@@ -183,7 +136,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             module-level useStepPhotos store, so „Ukryj” reaches both. */}
         <RecipeHeader
           recipe={typedRecipe}
-          galleryImages={galleryImages}
           versionsBar={
             versionsTotal > 0 ? (
               <DishVersionsBar
@@ -200,19 +152,17 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
               title={typedRecipe.title}
               shareUrl={canonicalUrl}
               steps={steps}
-              stepImages={stepImages}
             />
           }
         />
         {/* Video and gallery sit in the steps column from lg (E01-S17); below lg they
             follow the steps exactly as before. */}
-        <RecipeChecklists
+        <PrivateRecipeChecklists
           recipeId={typedRecipe.id}
           recipeSlug={typedRecipe.slug}
           recipeTitle={typedRecipe.title}
           ingredientGroups={ingredientGroups}
           steps={steps}
-          stepImages={stepImages}
           servings={typedRecipe.servings}
           glossary={glossary}
         >
@@ -236,19 +186,17 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
           {/* The photos are in the header now (RecipePhotos): the thumbnails for a signed-in
               reader, nothing for a guest (decision Q3). */}
           {/* A guest gets a locked teaser with the count only (E01-S07). */}
-          {!user && galleryCount > 1 && (
-            <div className="print:hidden">
-              <LockedGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />
-            </div>
-          )}
-        </RecipeChecklists>
+          {galleryCount > 1 && <GuestGallery count={galleryCount} loginHref={loginPath(recipePath(typedRecipe.slug))} />}
+        </PrivateRecipeChecklists>
 
         {/* The end of the recipe (handoff C3, items 12–13): Poprzedni / Następny, then
             the tags and similar recipes. The original is reached from the source badge
             on the photo now (E01-S31 §3), so there is no "Otwórz oryginał" button here.
             All of it is screen-only — a printout stops at the recipe itself. */}
         <div className="print:hidden">
-          <RecipeListNav slug={typedRecipe.slug} from={listKey} fallback={categoryContext} />
+          <Suspense>
+            <RecipeListNavFromUrl slug={typedRecipe.slug} fallback={categoryContext} />
+          </Suspense>
 
           {typedRecipe.source_url && (
             <PostSiblings
@@ -262,41 +210,17 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             versions={versions}
             totalCount={versionsTotal}
             dish={typedRecipe.dish ?? null}
-            order={versionsOrder}
             current={currentRecipe}
           />
 
           <SimilarRecipes recipe={typedRecipe} />
         </div>
 
-        {isOwner && delete_error === 'shared' && (
-          <p role="alert" className="mb-4 border-t border-border-card pt-8 text-[17px] font-bold text-danger print:hidden">
-            {RECIPE_SHARED_MESSAGE}
-          </p>
-        )}
-        {isOwner && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-card pt-8 print:hidden">
-            <form action={refreshRecipe}>
-              <input type="hidden" name="slug" value={typedRecipe.slug} />
-              <button
-                type="submit"
-                className={buttonClasses('outline', 'md')}
-              >
-                Odśwież przepis
-              </button>
-            </form>
-            <form action="/api/recipes/delete" method="POST">
-              <input type="hidden" name="slug" value={typedRecipe.slug} />
-              <button
-                type="submit"
-                className={buttonClasses('danger', 'md')}
-              >
-                Usuń przepis
-              </button>
-            </form>
-          </div>
-        )}
+        <Suspense>
+          <OwnerActions slug={typedRecipe.slug} />
+        </Suspense>
       </PageContainer>
+      </RecipePrivateProvider>
     </main>
   )
 }

@@ -1,7 +1,7 @@
 import { FavoriteButton } from '@/app/components/favorite-button'
 import { ShareButton } from './share-button'
 import { PrintButton } from './print-button'
-import { CookingMode } from './cooking-mode'
+import { PrivateCookingMode } from './recipe-private'
 
 interface RecipeActionsProps {
   recipeId: number
@@ -9,9 +9,8 @@ interface RecipeActionsProps {
   title: string
   /** The canonical recipe URL, shared without the ?from= list context. */
   shareUrl: string
-  /** Steps and per-step photos for "Zacznij gotować" (E01-S08), the first action. */
+  /** Steps for "Zacznij gotować" (E01-S08), the first action. */
   steps: string[]
-  stepImages: string[]
 }
 
 /**
@@ -23,7 +22,7 @@ interface RecipeActionsProps {
  * through the shared useStepPhotos preference. The whole block is `print:hidden` — none of
  * it belongs on paper.
  */
-export function RecipeActions({ recipeId, recipeSlug, title, shareUrl, steps, stepImages }: RecipeActionsProps) {
+export function RecipeActions({ recipeId, recipeSlug, title, shareUrl, steps }: RecipeActionsProps) {
   const hasSteps = steps.length > 0
   return (
     // No bottom margin: the header's own mb-8 is the gap to „Składniki” (#538).
@@ -33,7 +32,7 @@ export function RecipeActions({ recipeId, recipeSlug, title, shareUrl, steps, st
       <div className="flex flex-col gap-3 min-[480px]:flex-row">
         {hasSteps && (
           <div className="min-w-0 flex-[2]">
-            <CookingMode title={title} steps={steps} stepImages={stepImages} />
+            <PrivateCookingMode title={title} steps={steps} />
           </div>
         )}
         <div className={hasSteps ? 'min-w-0 flex-1' : 'w-full'}>

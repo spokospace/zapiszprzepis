@@ -85,7 +85,6 @@ function section(props: Partial<Parameters<typeof DishVersions>[0]>) {
       versions: [],
       totalCount: 0,
       dish: 'sernik',
-      order: 'popularne',
       current,
       ...props,
     }),
@@ -122,18 +121,11 @@ describe('DishVersions (handoff 2026-10-28 §6)', () => {
     expect(section({ versions: [row()], totalCount: 1 })).not.toContain('Kolejność')
   })
 
-  it('shows the segmented switch and marks the active order with aria-current', () => {
-    const html = section({ versions: [row({ id: 1 }), row({ id: 2 })], totalCount: 2, order: 'nowe' })
+  it('shows the segmented switch and marks the default order with aria-current', () => {
+    const html = section({ versions: [row({ id: 1 }), row({ id: 2 })], totalCount: 2 })
     expect(html).toContain('Kolejność')
-    expect(html).toMatch(/aria-current="true"[^>]*>Najnowsze</)
+    expect(html).toMatch(/aria-current="true"[^>]*>Najpopularniejsze</)
     expect(html).toContain('rounded-pill bg-[#f3f4f6]')
-  })
-
-  it('server-renders the chosen order (newest first for ?wersje=nowe)', () => {
-    const older = row({ id: 1, slug: 'stary', title: 'Stary', created_at: '2026-01-01T00:00:00Z' })
-    const newer = row({ id: 2, slug: 'nowy', title: 'Nowy', created_at: '2026-05-01T00:00:00Z' })
-    const html = section({ versions: [older, newer], totalCount: 2, order: 'nowe' })
-    expect(html.indexOf('/przepis/nowy')).toBeLessThan(html.indexOf('/przepis/stary'))
   })
 
   it('shows the linked title and "podpis · źródło"', () => {

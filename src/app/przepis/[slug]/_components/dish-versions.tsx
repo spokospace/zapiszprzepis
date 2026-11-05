@@ -7,7 +7,6 @@ import {
   versionTimeCompare,
   ingredientDiff,
   type DishVersionRow,
-  type VersionsSort,
 } from '@/lib/dish-versions'
 import { formatSource } from '@/lib/recipe-source'
 import { isArchivedImageUrl } from '@/lib/recipe-image-archive'
@@ -32,8 +31,6 @@ interface DishVersionsProps {
   totalCount: number
   /** The dish name (nominative, as stored); the heading takes its genitive from it. */
   dish: string | null
-  /** The server-resolved order (from ?wersje=); the client island may re-sort after hydration. */
-  order: VersionsSort
   /** The recipe being viewed, for the ingredient diff and the time comparison. */
   current: CurrentRecipe
 }
@@ -167,10 +164,10 @@ export function splitHeadingCount(heading: string): [text: string, count: string
  * "Podobne". The heading is the anchor target of the versions box; it takes focus so
  * keyboard / screen-reader users land here, and its scroll margin clears the sticky app
  * header. The rows are rendered here (server) and handed to the client sort island, which
- * only re-orders them and opens the rest of the list; without JS the sort links reload
- * with ?wersje= and every row shows.
+ * only re-orders them and opens the rest of the list; without JS every row shows, in the
+ * default order.
  */
-export function DishVersions({ versions, totalCount, dish, order, current }: DishVersionsProps) {
+export function DishVersions({ versions, totalCount, dish, current }: DishVersionsProps) {
   if (versions.length === 0) return null
   const heading = versionsHeading(totalCount, dish)
   const [headingText, count] = splitHeadingCount(heading)
@@ -181,7 +178,6 @@ export function DishVersions({ versions, totalCount, dish, order, current }: Dis
     <section aria-labelledby="inne-przepisy" className="mb-12 border-t border-border-card pt-8">
       <DishVersionsSort
         versions={versions}
-        initialOrder={order}
         rows={rows}
         header={
           <div className="min-w-0">

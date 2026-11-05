@@ -31,7 +31,6 @@ function render(count: number) {
   return renderToStaticMarkup(
     createElement(DishVersionsSort, {
       versions,
-      initialOrder: 'popularne',
       rows,
       header: createElement('h2', { id: 'inne-przepisy' }, 'Inne wersje'),
       legend: createElement('p', { 'data-legend': '' }),
