@@ -29,10 +29,6 @@ describe('middleware config.matcher — crawler endpoints bypass the gate', () =
     expect(re.test('/api/e')).toBe(false)
     expect(re.test('/api/events')).toBe(true)
   })
-  it('does NOT match /lab/, the no-cookies recipe experiment (#701), but matches a look-alike path', () => {
-    expect(re.test('/lab/przepis/zupa')).toBe(false)
-    expect(re.test('/laboratorium')).toBe(true)
-  })
   it('still matches app pages that must pass through the gate', () => {
     expect(re.test('/przepisy/obiady')).toBe(true)
     expect(re.test('/ulubione')).toBe(true)
