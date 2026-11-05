@@ -37,7 +37,8 @@ export const revalidate = 3600
 // causes a miss. New recipes still render on their first visit.
 export async function generateStaticParams() {
   const { data, error } = await createSupabaseAnonClient().from('public_recipes').select('slug').limit(1000)
-  if (error) throw new Error(`[lab] slug list failed: ${error.message}`)
+  // CI builds against a placeholder Supabase URL: no list means render on first visit.
+  if (error) console.warn(`[lab] no slug list, nothing pre-rendered: ${error.message}`)
   return (data ?? []).map((row) => ({ slug: row.slug as string }))
 }
 
