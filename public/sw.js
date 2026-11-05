@@ -12,6 +12,7 @@
  * - every other page: network-only
  * - offline fallback for pages: the cached page, else the cached home page,
  *   else an "Offline" response
+ * - a page answered with 503: one more try, then the cached page, else the 503
  * - never intercepted: non-GET (Server Actions, Web Share Target, /api POSTs),
  *   /api/*, RSC requests (client navigations), cross-origin requests
  *
@@ -91,6 +92,8 @@ async function fetchAndStore(event, cacheName) {
 // stored), so a Vary header added upstream must not turn a stored page into a miss.
 const MATCH_OPTIONS = { ignoreVary: true }
 
+const RETRY_DELAY_MS = 400
+
 async function cacheFirst(event) {
   return (await caches.match(event.request, MATCH_OPTIONS)) ?? fetchAndStore(event, STATIC_CACHE_NAME)
 }
@@ -111,9 +114,22 @@ async function offlineFallback(request) {
     new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
 }
 
+/**
+ * A 503 is mostly the Worker's CPU limit (error 1102) on this one request, so a second try
+ * usually works. It runs once, as more tries would add to the load that caused it. When
+ * that fails too, the reader gets the copy they already have, else the error page.
+ */
+async function recoverPage(event, cacheName, failed) {
+  await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS))
+  const retried = await fetchAndStore(event, cacheName).catch(() => null)
+  if (retried && retried.status !== 503) return retried
+  return (await caches.match(event.request, MATCH_OPTIONS)) ?? failed
+}
+
 async function page(event, cacheName) {
   try {
-    return await fetchAndStore(event, cacheName)
+    const response = await fetchAndStore(event, cacheName)
+    return response.status === 503 ? await recoverPage(event, cacheName, response) : response
   } catch {
     return offlineFallback(event.request)
   }
