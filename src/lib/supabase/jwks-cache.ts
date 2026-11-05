@@ -42,6 +42,10 @@ export async function getCachedJwks(supabaseUrl: string): Promise<{ keys: JWK[] 
     return { keys: cache.keys }
   }
   const keys = await fetchKeys(supabaseUrl)
+  // A parallel fetch may have stored good keys meanwhile; a failure must not replace them.
+  if (keys.length === 0 && cache?.url === supabaseUrl && cache.keys.length > 0 && Date.now() < cache.expiresAt) {
+    return { keys: cache.keys }
+  }
   cache = { url: supabaseUrl, keys, expiresAt: Date.now() + (keys.length ? JWKS_TTL_MS : EMPTY_TTL_MS) }
   return { keys }
 }
