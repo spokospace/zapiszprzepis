@@ -26,10 +26,11 @@ describe('/lab recipe experiment (#701)', () => {
     })
   }
 
-  it('is revalidated on a timer, off by default, and kept out of indexes', () => {
+  it('is revalidated on a timer and kept out of indexes', () => {
     expect(sources.page).toMatch(/export const revalidate = 3600/)
     expect(sources.page).toMatch(/getPublicRecipeLongLived/)
-    expect(sources.page).toMatch(/process\.env\.RECIPE_LAB !== '1'\) notFound\(\)/)
+    // A runtime flag is not set during the build, so it would pre-render every recipe as a 404.
+    expect(sources.page).not.toMatch(/process\.env\.RECIPE_LAB/)
     expect(sources.page).toMatch(/index: false/)
   })
 })

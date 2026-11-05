@@ -53,7 +53,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function RecipeLabPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  if (process.env.RECIPE_LAB !== '1') notFound()
   const recipe = await getPublicRecipeLongLived(slug)
   if (!recipe) notFound()
 
