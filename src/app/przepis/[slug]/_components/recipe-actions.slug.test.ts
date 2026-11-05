@@ -23,7 +23,6 @@ describe('RecipeActions usage-count slug', () => {
     title: 'Zupa krem',
     shareUrl: 'https://zapiszprzepis.pl/przepis/zupa-krem',
     steps: ['a'],
-    stepImages: [''],
   })
 
   it('passes the slug to the favorite and print buttons', () => {

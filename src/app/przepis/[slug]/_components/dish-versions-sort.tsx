@@ -7,6 +7,7 @@ import { polishPlural } from '@/lib/recipe-meta'
 import { sortVersions, parseVersionsSort, type DishVersionRow, type VersionsSort } from '@/lib/dish-versions'
 
 const STORAGE_KEY = 'zp.versionsSort'
+const DEFAULT_ORDER = parseVersionsSort(undefined)
 
 /** Rows shown before „Pokaż wszystkie” (handoff 2026-10-28 §6). */
 export const VERSIONS_SHOWN = 4
@@ -25,12 +26,10 @@ export function showAllLabel(n: number): string {
 /**
  * The versions list with its sort control (E01-S21; handoff 2026-10-28 §6). The rows are
  * rendered on the server and passed in keyed by id; this island only re-orders them and
- * opens the rest of the list. Server-rendered in `initialOrder` (from ?wersje=), so it
- * works without JS — each control is a real link that reloads with the new order, and
- * every row shows (the list is cut to four only after hydration, below the fold). With JS
- * a click re-sorts the rows already on the page (no request), updates the URL with
- * replaceState and announces the change; the choice is remembered per viewer in
- * localStorage and applied on mount only when the URL did not pin an order.
+ * opens the rest of the list. Server-rendered in the default order, with every row showing
+ * (the list is cut to four only after hydration, below the fold). A click re-sorts the rows
+ * already on the page (no request), updates the URL with replaceState and announces the
+ * change; on mount ?wersje= wins, then the choice remembered in localStorage.
  *
  * From md the control is the handoff's segmented switch beside the heading. Below md the
  * three names do not fit a phone row, so it stays a single „Kolejność: {wybrana} ▾” button
@@ -38,13 +37,11 @@ export function showAllLabel(n: number): string {
  */
 export function DishVersionsSort({
   versions,
-  initialOrder,
   rows,
   header,
   legend,
 }: {
   versions: DishVersionRow[]
-  initialOrder: VersionsSort
   /** Server-rendered rows keyed by recipe id, re-ordered here without a request. */
   rows: Record<number, ReactNode>
   /** The heading and its caption, sharing a line with the switch from md. */
@@ -52,7 +49,7 @@ export function DishVersionsSort({
   /** What the difference chips mean, over the list. */
   legend: ReactNode
 }) {
-  const [order, setOrder] = useState<VersionsSort>(initialOrder)
+  const [order, setOrder] = useState<VersionsSort>(DEFAULT_ORDER)
   const [announce, setAnnounce] = useState('')
   const [expanded, setExpanded] = useState(false)
   const hydrated = useHydrated()
@@ -60,17 +57,16 @@ export function DishVersionsSort({
   const summaryRef = useRef<HTMLElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
 
-  // The stored choice wins only when the URL pins no order (an explicit
-  // ?wersje= beats it). Guarded: a private window simply keeps the default.
+  // An explicit ?wersje= beats the stored choice. Guarded: a private window simply keeps
+  // the default.
   useEffect(() => {
     try {
-      if (new URLSearchParams(window.location.search).has('wersje')) return
-      const stored = window.localStorage.getItem(STORAGE_KEY)
+      const wanted = new URLSearchParams(window.location.search).get('wersje') ?? window.localStorage.getItem(STORAGE_KEY)
       // localStorage is unavailable during SSR, so this must apply after mount —
       // a lazy initializer would mismatch the server HTML. The re-sort is below
       // the fold, so there is no visible jump.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (stored) setOrder(parseVersionsSort(stored))
+      if (wanted) setOrder(parseVersionsSort(wanted))
     } catch {
       // storage blocked — keep the server order
     }
@@ -167,8 +163,8 @@ export function DishVersionsSort({
 
       {versions.length >= 2 && (
         // Phone (11b): one compact button that shows the current choice and opens the
-        // options. A `<details>` so it still works without JS (the links reload with
-        // ?wersje=); with JS the clicks re-sort in place and close the menu.
+        // options. A `<details>` opens without JS too; the clicks re-sort in place and close
+        // the menu.
         <details ref={detailsRef} className="group relative mt-4 md:hidden">
           <summary
             ref={summaryRef}

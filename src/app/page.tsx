@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { AUTH_COOKIE_SCRIPT } from '@/lib/auth-cookie'
 import { SessionHeader } from '@/app/components/session-header'
 import { HomeContent } from '@/app/components/home/home-content'
 import { RecipeRow } from '@/app/components/home/recipe-row'
@@ -46,7 +45,6 @@ export default async function HomePage() {
 
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: AUTH_COOKIE_SCRIPT }} />
       {/* schema.org/WebSite: where Google reads the site name it shows above a result. */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(homeWebSiteJsonLd(siteUrl)) }} />
       <SessionHeader />

@@ -9,7 +9,7 @@ import { coverImageSrc } from '@/lib/recipe-image-archive'
 import { SEARCH_PATH, categoryPath, profilePath } from '@/lib/routes'
 import { SourceBadge } from '@/app/components/source-badge'
 import { NoPhoto } from '@/app/components/no-photo'
-import { RecipePhotos } from './recipe-photos'
+import { PrivateRecipePhotos } from './recipe-private'
 import { RECIPE_HEADER_GRID } from './recipe-split'
 
 export interface RecipeHeaderData {
@@ -29,15 +29,12 @@ export interface RecipeHeaderData {
   source_author: string | null
   author_name: string | null
   author_username?: string | null
+  /** How many photos the gallery holds; the thumbnails themselves are a login perk. */
+  gallery_count?: number | null
 }
 
 interface RecipeHeaderProps {
   recipe: RecipeHeaderData
-  /**
-   * The gallery photos a signed-in reader can see, under the main photo as thumbnails
-   * (handoff 2026-10-28). Empty for a guest, who gets the cover only.
-   */
-  galleryImages?: string[]
   /** E01-S21: the "N innych wersji tego dania" box, last in the text column. */
   versionsBar?: ReactNode
   /** The action buttons (RecipeActions), under the time strip in the text column. */
@@ -158,7 +155,7 @@ function TimeStrip({ items }: { items: TimeStripItem[] }) {
  * first. The list position and the breadcrumbs sit in a row above it (the page renders
  * it); the tags render at the bottom of the page, in "Ten przepis jest" (E01-S16).
  */
-export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, versionsBar, actions }: RecipeHeaderProps) {
   const authorHref = profilePath(recipe.author_username)
   const strip = timeStripItems(recipe)
   const source = formatSource(recipe.source_type, recipe.source_url, recipe.source_author)
@@ -170,7 +167,7 @@ export function RecipeHeader({ recipe, galleryImages = [], versionsBar, actions 
   return (
     <header className={RECIPE_HEADER_GRID}>
       {cover ? (
-        <RecipePhotos cover={cover} title={recipe.title} images={galleryImages} badge={sourceBadge} />
+        <PrivateRecipePhotos cover={cover} title={recipe.title} galleryCount={recipe.gallery_count ?? 0} badge={sourceBadge} />
       ) : (
         // No cover: from lg a category-icon placeholder fills the photo column so the
         // two-column header does not collapse to a full-width run (#495). It is a

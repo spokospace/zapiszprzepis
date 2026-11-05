@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseSteps, parseStepImages, visibleStepImages } from '@/lib/steps'
+import { parseSteps, parseStepImages } from '@/lib/steps'
 
 // #135 — malformed `steps` jsonb crashed the recipe detail RSC with a 500, which
 // also hid the delete button. parseSteps must never throw and must only return
@@ -61,15 +61,3 @@ describe('parseStepImages', () => {
   })
 })
 
-describe('visibleStepImages', () => {
-  const raw = ['https://cdn/step-1.jpg', '', 'https://cdn/step-3.jpg']
-
-  it('gives a signed-in user the step photos', () => {
-    expect(visibleStepImages(raw, true)).toEqual(parseStepImages(raw))
-  })
-
-  it('gives a guest none, whatever is stored', () => {
-    expect(visibleStepImages(raw, false)).toEqual([])
-    expect(visibleStepImages(undefined, false)).toEqual([])
-  })
-})

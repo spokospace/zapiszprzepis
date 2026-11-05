@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { NextRequest } from 'next/server'
 
-vi.mock('next/navigation', () => ({
-  redirect: vi.fn((url: string) => {
-    throw new Error(`REDIRECT ${url}`)
-  }),
-}))
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn() }))
 vi.mock('@/inngest/send', () => ({ sendRecipeExtract: vi.fn() }))
 vi.mock('@/lib/full-access', () => ({ getFullAccess: vi.fn() }))
@@ -14,9 +10,17 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { sendRecipeExtract } from '@/inngest/send'
 import { getFullAccess } from '@/lib/full-access'
 import { extractionAllowed } from '@/lib/extraction-rate-limit'
-import { refreshRecipe } from './refresh-action'
+import { POST } from './route'
 
-describe('refreshRecipe — full-access gate (E01-S11)', () => {
+/** Where the form's POST sends the browser. */
+async function locationAfter(data: FormData): Promise<string> {
+  const request = new NextRequest('https://zapiszprzepis.pl/api/recipes/refresh', { method: 'POST', body: data })
+  const response = await POST(request)
+  expect(response.status).toBe(303)
+  return new URL(response.headers.get('location') ?? '').pathname + new URL(response.headers.get('location') ?? '').search
+}
+
+describe('POST /api/recipes/refresh — full-access gate (E01-S11)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -31,14 +35,14 @@ describe('refreshRecipe — full-access gate (E01-S11)', () => {
     const data = new FormData()
     data.set('slug', 'tiramisu')
 
-    await expect(refreshRecipe(data)).rejects.toThrow('REDIRECT /przepis/tiramisu?refresh_error=no_access')
+    expect(await locationAfter(data)).toBe('/przepis/tiramisu?refresh_error=no_access')
 
     expect(from).not.toHaveBeenCalled()
     expect(sendRecipeExtract).not.toHaveBeenCalled()
   })
 })
 
-describe('refreshRecipe — a share that could not be queued (#382)', () => {
+describe('POST /api/recipes/refresh — a share that could not be queued (#382)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -71,14 +75,14 @@ describe('refreshRecipe — a share that could not be queued (#382)', () => {
     const data = new FormData()
     data.set('slug', 'tiramisu')
 
-    await expect(refreshRecipe(data)).rejects.toThrow('REDIRECT /przepis/tiramisu?refreshing=1')
+    expect(await locationAfter(data)).toBe('/przepis/tiramisu?refreshing=1')
 
     expect(shareUpdate).toHaveBeenCalledWith({ status: 'failed', error_message: 'Failed to queue extraction' }, 'id', 5)
   })
 })
 
 
-describe('refreshRecipe — targets the row, not the source_url (multi-recipe links)', () => {
+describe('POST /api/recipes/refresh — targets the row, not the source_url (multi-recipe links)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -103,7 +107,7 @@ describe('refreshRecipe — targets the row, not the source_url (multi-recipe li
     const data = new FormData()
     data.set('slug', 'salatka-z-rzodkwi')
 
-    await expect(refreshRecipe(data)).rejects.toThrow('REDIRECT /przepis/salatka-z-rzodkwi?refreshing=1')
+    expect(await locationAfter(data)).toBe('/przepis/salatka-z-rzodkwi?refreshing=1')
 
     expect(sendRecipeExtract).toHaveBeenCalledWith(
       expect.objectContaining({ sharedUrl: 'https://example.com/menu', force: true, recipeId: 7 }),
@@ -111,7 +115,7 @@ describe('refreshRecipe — targets the row, not the source_url (multi-recipe li
   })
 })
 
-describe('refreshRecipe — per-account extraction cap (E02-S11-T04)', () => {
+describe('POST /api/recipes/refresh — per-account extraction cap (E02-S11-T04)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -132,7 +136,7 @@ describe('refreshRecipe — per-account extraction cap (E02-S11-T04)', () => {
     const data = new FormData()
     data.set('slug', 'tiramisu')
 
-    await expect(refreshRecipe(data)).rejects.toThrow('REDIRECT /przepis/tiramisu?refresh_error=rate_limited')
+    expect(await locationAfter(data)).toBe('/przepis/tiramisu?refresh_error=rate_limited')
 
     expect(extractionAllowed).toHaveBeenCalledWith('user-1')
     expect(from).not.toHaveBeenCalledWith('recipe_shares')

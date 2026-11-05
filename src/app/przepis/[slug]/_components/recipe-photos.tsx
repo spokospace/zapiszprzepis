@@ -14,6 +14,8 @@ interface RecipePhotosProps {
   images: string[]
   /** The source badge, pinned to the bottom-left corner of the main photo. */
   badge: ReactNode
+  /** Keeps the thumbnails' row for a reader with a session cookie while they load. */
+  reserveThumbnails?: boolean
 }
 
 /** The photos in thumbnail order: the cover first, then the gallery, each URL once. */
@@ -36,10 +38,10 @@ export function zoomLabel(selected: number, total: number): string {
  * row of thumbnails under it — the cover first, then the gallery. A tap on a thumbnail
  * swaps the main photo; each thumbnail is a toggle (`aria-pressed`) with its own name. A
  * tap on the main photo opens it full-screen (owner decision after #595), with the other
- * photos a swipe away. A guest gets only the cover: the gallery is a login perk (A1), so
- * the locked teaser below the steps stands in for it.
+ * photos a swipe away. `images` arrive in the browser, for a signed-in reader only: the
+ * gallery is a login perk (A1), so a guest gets the cover and the locked teaser below the steps.
  */
-export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps) {
+export function RecipePhotos({ cover, title, images, badge, reserveThumbnails = false }: RecipePhotosProps) {
   const all = photoList(cover, images)
   const [selected, setSelected] = useState(0)
   const [zoomed, setZoomed] = useState<number | null>(null)
@@ -106,6 +108,12 @@ export function RecipePhotos({ cover, title, images, badge }: RecipePhotosProps)
             </li>
           ))}
         </ul>
+      )}
+
+      {all.length === 1 && reserveThumbnails && (
+        <div aria-hidden="true" className="session-slot mt-3 grid-cols-4 gap-2.5 px-4 sm:px-6 lg:px-0 print:hidden">
+          <div className="aspect-[4/3]" />
+        </div>
       )}
 
       <ImageLightbox

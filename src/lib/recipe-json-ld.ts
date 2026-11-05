@@ -68,7 +68,7 @@ function absoluteImage(imageUrl: string, siteUrl: string): string {
  *     defaulting a cuisine (e.g. "Polish") would be invented data. Revisit only if
  *     a trustworthy cuisine field is ever stored.
  *   - NO image / video per recipeInstructions step — step photos are login-gated
- *     (visibleStepImages), and Googlebot is anonymous, so the markup must describe
+ *     (`getRecipePrivate`), and Googlebot is anonymous, so the markup must describe
  *     only what a signed-out visitor sees.
  * `keywords` IS emitted, but only from stored `tags` (a comma-separated list of
  * their labels). A recipe that resolves to NO tags — its title matches no
