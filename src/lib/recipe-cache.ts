@@ -171,10 +171,9 @@ function cached<T>(
   keyParts: string[],
   read: (supabase: SupabaseClient) => Promise<T>,
   extraTags: string[] = [],
-  revalidate: number = REVALIDATE_SECONDS,
 ): Promise<T> {
   return unstable_cache(() => read(createSupabaseAnonClient()), [name, ...keyParts], {
-    revalidate,
+    revalidate: REVALIDATE_SECONDS,
     tags: [RECIPES_LIST_TAG, ...extraTags],
   })()
 }
@@ -202,15 +201,16 @@ export function getPublicRecipe(slug: string) {
 }
 
 /**
- * The same read with a one-hour lifetime, for the /lab recipe experiment (#701 follow-up):
- * a page that is served from the incremental cache must not expire every 120 s, because an
- * expired entry is served STALE and re-rendered inside the same invocation, which costs the
- * same CPU as a miss. Freshness comes from the tags, which the same writers purge.
+ * The same read with no time limit, for the /lab recipe experiment. A page's lifetime is
+ * capped by its reads, and a time-stale page falls out of OpenNext's cache interception (the
+ * dummy queue throws), so nothing here may expire on a timer. It carries only the recipe's
+ * own tag: `recipes:list` is purged by every import, which would empty every recipe page.
  */
-export const LONG_REVALIDATE_SECONDS = 3600
-
 export function getPublicRecipeLongLived(slug: string) {
-  return cached('public-recipe-long', [slug], (c) => readPublicRecipe(c, slug), [recipeTag(slug)], LONG_REVALIDATE_SECONDS)
+  return unstable_cache(() => readPublicRecipe(createSupabaseAnonClient(), slug), ['public-recipe-long', slug], {
+    revalidate: false,
+    tags: [recipeTag(slug)],
+  })()
 }
 
 /** Cached „Ostatnio dodane” feed, keyed per limit. */
