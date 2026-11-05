@@ -10,7 +10,7 @@ Readers of recipes, category lists and the home page hit a Next.js render on a W
 
 - **Q1. Serving:** improve the existing version first. Phase 0 and Phase 1 run on Next.js; the pilot tries Next.js files first. Astro files are the fallback if Next.js files miss the Phase 2 targets. Workers Cache is out, because it needs Paid in practice.
 - **Q5. Workers Paid:** not now. The work stays on the Free plan for as long as it can improve the site. Known limit: static pages do not remove 1102 from screens that stay on the Worker (`/login` 57 ms, `/dodaj`, `/settings`, admin, page misses, possibly `/_next/image`), so Paid stays the fallback for those.
-- **Q2. Freshness:** automatic refresh within about 15 minutes. With a file-based option, a build already running can stretch this to about 20 minutes, and a failed build leaves pages stale until the next success, so a kill switch is required.
+- **Q2. Freshness:** automatic refresh within about 15 minutes. With a file-based option, a build already running can stretch this to about 20 minutes, and a failed build leaves pages stale until the next success, so a kill switch is required. Refresh is capped at 12 builds a day, reset at midnight UTC, which keeps 3,000 build minutes a month within reach at 6-7 minutes a build. Changes after the cap stay in the change table and go out in the first build after the reset, so a backfill day can exceed 15 minutes; a removal that cannot wait uses the kill switch.
 - **Q3. Search:** `search_recipes` stays and is called from the browser.
 - **Q4. Scope:** one spec with independently shippable phases.
 - **Earlier, still valid:** step photos and the gallery stay signed-in perks loaded on the client; owner buttons appear after a client check; the interface must not get worse.
@@ -75,15 +75,15 @@ Forem is the closest match: the same cached HTML for everyone, with user data fr
 - Files are read in one bulk query, with external CSS. At 0.21 s per page, 5,000 recipes would pass the 20-minute build timeout.
 - `_headers` is generated from `securityHeaders()`. HTTP to HTTPS moves to the zone, because `custom-worker.ts` no longer runs on these URLs.
 - A separate assets Worker on routes, with a service binding to the app for misses, would keep content builds away from the app. This fits Astro only and is untested, so the pilot checks it.
-- Refresh: triggers fill a change table (`updated_at` cannot show hard deletes), the cron calls a Deploy Hook at most once per 10 minutes with a daily cap, a watermark advances only after a successful smoke test, and each build bumps the service worker version.
+- Refresh: triggers fill a change table (`updated_at` cannot show hard deletes), the cron calls a Deploy Hook at most once per 10 minutes, up to the daily cap in Q2, a watermark advances only after a successful smoke test, and each build bumps the service worker version.
 - Kill switch: a zone redirect rule for one URL, used for legal removal. Not yet checked in the docs.
 
 **One source of truth.** If two renderers exist: a pure `buildRecipeView(recipe)`, shared `RecipePageBody`, `HomeBody` and `CategoryBody`, `headTags(metadata)`, `recipe-split.ts`, and a parity test comparing Next.js and static output.
 
 ## 📝 Data Model
 
-- New `recipe_changes` table fed by triggers on insert, update and delete of `recipes`. File-based options only.
-- `step_images` is readable by anon through `public_recipes`; only `visibleStepImages` hides it in the UI. This exists today, and a signed-in perk needs a separate view or RPC under RLS before the overlay ships.
+- New `recipe_changes` table fed by triggers on insert, update and delete of `recipes`, and on update of `profiles.display_name`, which records that author's recipe ids, because recipe pages show the author's name. File-based options only.
+- `step_images` is readable by anon through `public_recipes`; only `visibleStepImages` hides it in the UI. This exists today. A separate view or RPC under RLS keeps the URLs out of public data, but it is not enough alone: the `recipe-images` bucket is public, so a URL a guest already has keeps working. Enforcing the perk needs a private bucket or signed URLs for step photos, and a migration of the existing objects.
 
 ## 📝 Edge Cases & Failure Scenarios
 
@@ -117,14 +117,14 @@ Forem is the closest match: the same cached HTML for everyone, with user data fr
 1. Add `public/_headers` with one year `immutable` for `/_next/static/*`; verify on a preview.
 2. Extend `smoke:prod` with sampled recipe URLs and a failure threshold; unit test the threshold.
 2a. Read `SimilarRecipes` through `recipe-cache.ts` with the anon client, so its queries stop running on every view; hearts keep the signed-in read.
-2b. Pass slugs from the extraction result to `revalidateRecipeCaches`, and take `recipes:list` off the recipe read, so one import stops purging every recipe.
+2b. Look up the slugs of the recipes a run wrote from their ids (the extraction result carries ids only), pass them to `revalidateRecipeCaches`, and only then take `recipes:list` off the recipe read, in the same PR, so one import stops purging every recipe and no written page stays stale.
 
 ### Phase 1
 3. Add the browser session store with a test for sign-out and user change; verify token refresh with an expired token.
 4. Move the header, menu counters and notifications to the store.
 5. Move favorites and suggestions to browser Supabase; check RLS with both QA accounts.
 6. Add `/api/recipes/refresh`, replacing the Server Action.
-7. Gate `step_images` under RLS, then load photos and gallery in the overlay.
+7. Gate `step_images` under RLS, then load photos and gallery in the overlay. Moving step photos to a private bucket or signed URLs is a separate step, decided by the owner, since it changes image delivery and cost.
 8. Move toasts, `from` and `searchParams` to the client, with `loading.tsx` updated in the same PR.
 9. Remove `cookies()`, session and `searchParams` from the three public routes; `next build` shows them as static.
 

@@ -8,9 +8,9 @@ Owner direction (2026-11-05): keep improving the existing version on the free Cl
 
 1. **The cause is the design, not code quality.** A site that is almost entirely read-only content renders every public page per request, with the session in the layout, on a plan with a 10 ms CPU limit. A recipe request averages 86 ms, so tuning the render will not reach 10 ms.
 2. **One step is common to every option:** public pages must stop depending on who is reading, and personal state must move to the browser.
-3. **Only static files remove the Worker from a page view on Free.** Cache layers in front of Next.js still run the Worker. ISR with cache interception failed 32% of requests in bursts.
-4. **Static pages do not fix screens that stay on the Worker** (`/login`, `/dodaj`, settings, admin, page misses, possibly `/_next/image`). Only Paid removes 1102 from those.
-5. **Paid does not make pages faster.** It removes the limit, not the render.
+3. **Static files are the only option that keeps the Worker out of every public page view on Free.** ISR with cache interception and the Cache API layer still run the Worker; interception failed 32% of requests in bursts. Workers Cache hits skip the Worker too, but its misses render, so 1102 stays on Free.
+4. **Static pages do not fix screens that stay on the Worker** (`/login`, `/dodaj`, settings, admin, page misses, possibly `/_next/image`). Paid removes the CPU-limit failures there: its limit is 30 s by default, up to 5 minutes. The 128 MB memory limit stays on both plans and also returns 1102.
+5. **Paid does not make pages faster.** It raises the CPU limit; the render stays the same.
 
 ## What is badly designed today
 
