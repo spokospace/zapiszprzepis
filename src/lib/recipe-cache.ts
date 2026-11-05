@@ -200,19 +200,6 @@ export function getPublicRecipe(slug: string) {
   return cached('public-recipe', [slug], (c) => readPublicRecipe(c, slug), [recipeTag(slug)])
 }
 
-/**
- * The same read with no time limit, for the /lab recipe experiment. A page's lifetime is
- * capped by its reads, and a time-stale page falls out of OpenNext's cache interception (the
- * dummy queue throws), so nothing here may expire on a timer. It carries only the recipe's
- * own tag: `recipes:list` is purged by every import, which would empty every recipe page.
- */
-export function getPublicRecipeLongLived(slug: string) {
-  return unstable_cache(() => readPublicRecipe(createSupabaseAnonClient(), slug), ['public-recipe-long', slug], {
-    revalidate: false,
-    tags: [recipeTag(slug)],
-  })()
-}
-
 /** Cached „Ostatnio dodane” feed, keyed per limit. */
 export function getRecentPublicRecipes(limit: number) {
   return cached('recent-public-recipes', [String(limit)], (c) => readRecentPublicRecipes(c, limit))

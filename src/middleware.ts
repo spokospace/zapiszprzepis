@@ -155,8 +155,6 @@ export const config = {
     // (The `.md` alternates are NOT excluded — they rely on middleware's rewrite.)
     // /api/e is the anonymous usage counter: it must not run a session check per
     // event (CPU) and must never see the auth cookie the browser attaches.
-    // /lab/ is the temporary no-cookies recipe experiment (#701): it must reach the Worker
-    // without a session check, or it would not test a request that needs no per-request work.
-    '/((?!_next/static|_next/image|lab/|api/e$|robots\\.txt|sitemap\\.xml|llms\\.txt|\\.well-known/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
+    '/((?!_next/static|_next/image|api/e$|robots\\.txt|sitemap\\.xml|llms\\.txt|\\.well-known/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|avif|woff2?|ttf|otf|eot|map|js)$|sw\\.js).*)',
   ],
 }
