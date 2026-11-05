@@ -31,7 +31,7 @@ import { RECIPE_MAIN, RECIPE_TOP_ROW } from '@/app/przepis/[slug]/_components/re
  * Spec A proof, branch preview only, never merged: the real recipe tree for a guest with no
  * per-request input. Same blocks and reads as `/przepis/{slug}`, through the anon client.
  */
-export const revalidate = 3600
+export const revalidate = false
 
 // Pre-render every recipe at build time, outside the Worker's CPU limit, so a visitor never
 // causes a miss. New recipes still render on their first visit.

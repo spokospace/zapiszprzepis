@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { LAB_SLUGS } from '../slugs'
 
-export const revalidate = 3600
+export const revalidate = false
 export const metadata = { title: 'Recipe lab', robots: { index: false, follow: false } }
 
 /** A source page for the spec A click test: real `<Link>`s into the lab recipe route. */

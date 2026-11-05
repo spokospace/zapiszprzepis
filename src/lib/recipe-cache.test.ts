@@ -5,10 +5,10 @@ vi.mock('server-only', () => ({}))
 // Capture every unstable_cache(fn, keyParts, options) call, then invoke fn so the
 // wrapper still resolves. This lets us assert the TTL, the tags, and that the
 // cache KEY carries no per-viewer input (the cross-user-safety guarantee).
-const cacheCalls: { keyParts: string[]; options: { revalidate?: number; tags?: string[] } }[] = []
+const cacheCalls: { keyParts: string[]; options: { revalidate?: number | false; tags?: string[] } }[] = []
 vi.mock('next/cache', () => ({
   unstable_cache: (fn: () => unknown, keyParts: string[], options: unknown) => {
-    cacheCalls.push({ keyParts, options: options as { revalidate?: number; tags?: string[] } })
+    cacheCalls.push({ keyParts, options: options as { revalidate?: number | false; tags?: string[] } })
     return fn
   },
   revalidateTag: vi.fn(),
@@ -34,7 +34,6 @@ import {
   getCategoryTotal,
   getPublicRecipe,
   getPublicRecipeLongLived,
-  LONG_REVALIDATE_SECONDS,
   getRecentPublicRecipes,
   getRecipeOfTheDay,
   readCategoryListing,
@@ -112,14 +111,10 @@ describe('cached wrappers — TTL, tags, and viewer-independent keys', () => {
     })
   })
 
-  it('getPublicRecipeLongLived: own entry, one-hour lifetime, same tags so a write still purges it', async () => {
+  it('getPublicRecipeLongLived: own entry, no time limit, only the recipe tag so an import does not purge it', async () => {
     await getPublicRecipeLongLived('sernik-wiedenski')
     expect(cacheCalls[0].keyParts).toEqual(['public-recipe-long', 'sernik-wiedenski'])
-    expect(cacheCalls[0].options).toEqual({
-      revalidate: LONG_REVALIDATE_SECONDS,
-      tags: [RECIPES_LIST_TAG, recipeTag('sernik-wiedenski')],
-    })
-    expect(LONG_REVALIDATE_SECONDS).toBe(3600)
+    expect(cacheCalls[0].options).toEqual({ revalidate: false, tags: [recipeTag('sernik-wiedenski')] })
   })
 
   it('getRecentPublicRecipes: keyed by limit only', async () => {
