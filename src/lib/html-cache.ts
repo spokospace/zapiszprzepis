@@ -49,9 +49,9 @@ export function isGuestRequest(request: Request): boolean {
 const ROUTER_HEADERS = ['rsc', 'next-router-state-tree', 'next-url', 'next-router-prefetch', 'next-router-segment-prefetch']
 
 /**
- * Full documents only. An RSC payload depends on the router headers, and production Next
- * does not verify that `_rsc` matches them, so a URL key would let one request store a
- * payload that other guests then receive.
+ * Full documents only. An RSC payload of a dynamic page depends on the router headers, so
+ * it would need a key per source page. Next does check `_rsc` against those headers
+ * (`validateRSCRequestHeaders`, on by default).
  */
 export function isEdgeCacheable(request: Request): boolean {
   if (request.method !== 'GET' || request.headers.has('range')) return false
