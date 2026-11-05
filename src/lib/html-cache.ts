@@ -11,8 +11,8 @@
  * Authorization header, a public path. A signed-in request never reads or writes the
  * cache, so nothing personal can leak through it.
  *
- * Freshness: an entry is fresh for FRESH_SECONDS (the 120 s budget the guest-read cache
- * already uses, #445). Up to MAX_STALE_SECONDS it is still served at once and re-rendered
+ * Freshness: an entry is fresh for FRESH_SECONDS (120 s, the freshness budget of #445).
+ * Up to MAX_STALE_SECONDS it is still served at once and re-rendered
  * in the background (stale-while-revalidate); older than that, the next visitor waits
  * for a render. The Cache API is per data centre and cannot be purged from elsewhere, so
  * that bound is also how long a deleted or hidden recipe could stay visible to guests.

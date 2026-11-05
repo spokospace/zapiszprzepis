@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyAttempts, type AttemptResult } from '@/lib/smoke-attempts'
+import { classifyAttempts, classifyRecipeSample, sampleRecipePaths, type AttemptResult } from '@/lib/smoke-attempts'
 
 const ok = (): AttemptResult => ({ kind: 'ok', recovered: false })
 const recovered = (): AttemptResult => ({ kind: 'ok', recovered: true })
@@ -40,5 +40,39 @@ describe('classifyAttempts', () => {
   it('treats a redirect as a failure: a public page must answer 200 to a guest', () => {
     const verdict = classifyAttempts('/login', [error(307)])
     expect(verdict.hardFailure).toBe('page /login → 1/1 attempts failed (307×1); the page never served a 200')
+  })
+})
+
+describe('sampleRecipePaths', () => {
+  const xml = ['/', '/szukaj', '/przepisy/ciasta', '/przepis/sernik', '/przepis/makowiec', '/przepis/zupa']
+    .map((p) => `<url><loc>https://zapiszprzepis.pl${p}</loc></url>`)
+    .join('')
+
+  it('takes recipe pages only, never lists', () => {
+    expect(sampleRecipePaths(xml, 10).sort()).toEqual(['/przepis/makowiec', '/przepis/sernik', '/przepis/zupa'])
+  })
+
+  it('returns at most the requested number of different recipes', () => {
+    const picked = sampleRecipePaths(xml, 2)
+    expect(picked).toHaveLength(2)
+    expect(new Set(picked).size).toBe(2)
+  })
+
+  it('is empty for a sitemap with no recipes', () => {
+    expect(sampleRecipePaths('<urlset></urlset>', 5)).toEqual([])
+  })
+})
+
+describe('classifyRecipeSample', () => {
+  it('passes while failures stay within the allowance', () => {
+    expect(classifyRecipeSample([200, 200, 503], 1)).toBeNull()
+  })
+
+  it('fails above the allowance and names the statuses', () => {
+    expect(classifyRecipeSample([200, 503, 503, 0], 1)).toBe('recipes → 3/4 different recipes failed (503×2, 0×1)')
+  })
+
+  it('fails when there is nothing to check', () => {
+    expect(classifyRecipeSample([], 1)).toBe('recipes → the sitemap lists none')
   })
 })

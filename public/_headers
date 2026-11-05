@@ -1,0 +1,4 @@
+# Workers Static Assets. Build output under /_next/static has a content hash in its
+# name, so a file never changes; the default is max-age=0, must-revalidate.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

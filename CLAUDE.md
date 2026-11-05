@@ -27,7 +27,7 @@ The project has exactly one GitHub account, `spokospace`: owner, author of every
 
 ## Po każdym deployu i każdej zmianie sekretu: `pnpm smoke:prod`
 
-Po każdym buildzie `master` (Workers Builds) i po każdej zmianie zmiennej albo sekretu Workera (panel Cloudflare, `wrangler secret put`) uruchom `pnpm smoke:prod`. Skrypt otwiera publiczne strony produkcji i sprawdza, czy każdy plik `/_next/static` (CSS, JS, fonty), do którego się odwołują, zwraca 200. Exit 1 = produkcja jest zepsuta.
+Po każdym buildzie `master` (Workers Builds) i po każdej zmianie zmiennej albo sekretu Workera (panel Cloudflare, `wrangler secret put`) uruchom `pnpm smoke:prod`. Skrypt otwiera publiczne strony produkcji i sprawdza, czy każdy plik `/_next/static` (CSS, JS, fonty), do którego się odwołują, zwraca 200. Potem otwiera 30 losowych przepisów po jednym razie, bez ponawiania, i kończy się błędem, gdy więcej niż jeden się nie otworzy. Exit 1 = produkcja jest zepsuta.
 
 **Dlaczego:** 2026-10-22 zapis sekretu `JINA_API_KEY` w panelu od razu wdrożył nową wersję Workera („Add secret: …”, źródło Dashboard), której HTML odwoływał się do nieistniejących plików: cała strona bez CSS i z `ChunkLoadError`, mimo że ostatni build był zielony. Zielony build nie dowodzi, że produkcja działa.
 

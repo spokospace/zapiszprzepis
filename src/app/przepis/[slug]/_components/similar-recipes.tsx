@@ -3,14 +3,13 @@ import Link from 'next/link'
 import { Tag } from 'lucide-react'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { categoryLabel } from '@/lib/recipe-categories'
-import { rankSimilar, sharedTagsCaption, similarHeading } from '@/lib/category-tags'
+import { sharedTagsCaption, similarHeading } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { getFavoriteIds } from '@/lib/favorites'
 import { CAROUSEL_SIZES, RecipeCard } from '@/app/components/recipe-card'
 import { CardCarousel } from '@/app/components/card-carousel'
-import { dishExclusionFilter } from '@/lib/dish-versions'
-import type { RecipeSource } from '@/lib/recipe-source'
+import { getSimilarRecipes, type SimilarCard } from '@/lib/recipe-cache'
 
 interface SimilarRecipesProps {
   /** `dish` (E01-S21): when set, same-dish recipes are excluded — they show in "Inne przepisy na …". */
@@ -19,30 +18,13 @@ interface SimilarRecipesProps {
   userId: string | null
 }
 
-interface SimilarCard {
-  id: number
-  slug: string
-  title: string
-  image_url: string | null
-  category: string
-  description: string | null
-  source_type: RecipeSource
-  source_url: string | null
-  source_author: string | null
-  tags: string[] | null
-}
-
-const CARD_COLUMNS = 'id, slug, title, image_url, category, description, source_type, source_url, source_author, tags'
-/** Enough tag-sharing candidates to rank; a category holds a few hundred at most. */
-const CANDIDATES = 50
-
 /**
  * The bottom of the recipe page (E01-S16): "Ten przepis jest" (its tags, each
  * linking to the category filtered by it) and "Podobne" — up to 4 recipes from
  * the same category, most shared tags first, topped up with the newest — plus
  * "Wszystkie {kategoria} (N) →". Loads its own data so the page only
- * mounts it; non-critical, so a failed query logs and hides the lists.
- * Streamed behind Suspense so its three queries never hold up the recipe itself.
+ * mounts it; non-critical, so a failed read logs and hides the lists.
+ * Streamed behind Suspense so its read never holds up the recipe itself.
  */
 export function SimilarRecipes(props: SimilarRecipesProps) {
   return (
@@ -53,32 +35,12 @@ export function SimilarRecipes(props: SimilarRecipesProps) {
 }
 
 async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
-  const supabase = await createSupabaseServerClient()
-  // Same category, not this recipe, newest first. When the recipe has a dish,
-  // its other versions are excluded here (they show in "Inne przepisy na …"),
-  // keeping null-dish rows eligible.
-  const dishFilter = dishExclusionFilter(recipe.dish)
-  const others = (limit: number, tags?: string[]) => {
-    let q = supabase.from('public_recipes').select(CARD_COLUMNS).eq('category', recipe.category).neq('id', recipe.id)
-    if (dishFilter) q = q.or(dishFilter)
-    if (tags) q = q.overlaps('tags', tags)
-    return q.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(limit)
-  }
-
   let similar: SimilarCard[] = []
   let total: number | null = null
   try {
-    const [candidates, fill, count] = await Promise.all([
-      recipe.tags.length > 0 ? others(CANDIDATES, recipe.tags) : null,
-      // A wider top-up pool: rankSimilar may drop recipes that contradict the diet.
-      others(CANDIDATES),
-      supabase.from('public_recipes').select('id', { count: 'exact', head: true }).eq('category', recipe.category),
-    ])
-    const error = candidates?.error ?? fill.error
-    if (error) console.error('[recipe] Similar recipes failed:', error)
-    else similar = rankSimilar(recipe.tags, (candidates?.data ?? []) as SimilarCard[], (fill.data ?? []) as SimilarCard[])
-    if (count.error) console.error('[recipe] Category count failed:', count.error)
-    else total = count.count
+    const found = await getSimilarRecipes(recipe)
+    similar = found.cards
+    total = found.total
   } catch (err) {
     console.error('[recipe] Similar recipes failed:', err)
   }
@@ -86,6 +48,7 @@ async function SimilarRecipesSection({ recipe, userId }: SimilarRecipesProps) {
   let favoriteIds = new Set<number>()
   if (userId && similar.length > 0) {
     try {
+      const supabase = await createSupabaseServerClient()
       favoriteIds = await getFavoriteIds(supabase, userId, similar.map((r) => r.id))
     } catch (err) {
       // Hearts then start empty; toggling still works.
