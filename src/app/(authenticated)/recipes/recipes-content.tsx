@@ -146,7 +146,7 @@ export function RecipesContent({
                       sourceType={recipe.source_type}
                       sourceUrl={recipe.source_url}
                       sourceAuthor={recipe.source_author}
-                      favorite={{ recipeId: recipe.id, favorited: favoriteIds.has(recipe.id), isAuthenticated: true }}
+                      favorite={{ recipeId: recipe.id, favorited: favoriteIds.has(recipe.id) }}
                     />
                     )}
                   </div>

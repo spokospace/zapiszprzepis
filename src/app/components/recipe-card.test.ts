@@ -69,7 +69,7 @@ describe('RecipeCard without a photo', () => {
 })
 
 describe('RecipeCard heart', () => {
-  const favorite = { recipeId: 1, favorited: false, isAuthenticated: true }
+  const favorite = { recipeId: 1 }
 
   it('sits in the photo corner, with no bar under the card', () => {
     const html = card({ favorite })

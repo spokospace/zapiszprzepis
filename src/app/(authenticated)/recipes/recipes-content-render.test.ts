@@ -8,7 +8,7 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/recipes',
 }))
 vi.mock('@/app/components/recipe-card', () => ({
-  RecipeCard: ({ slug, favorite }: { slug: string; favorite?: { favorited: boolean; isAuthenticated: boolean } }) =>
+  RecipeCard: ({ slug, favorite }: { slug: string; favorite?: { favorited?: boolean } }) =>
     createElement('a', { href: `/przepis/${slug}`, 'data-favorited': favorite ? String(favorite.favorited) : 'none' }, slug),
 }))
 

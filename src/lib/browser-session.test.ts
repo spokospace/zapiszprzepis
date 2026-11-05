@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@/lib/menu-summary', () => ({ getMenuSummary: vi.fn() }))
 vi.mock('@/lib/failed-shares', () => ({ getFailedShares: vi.fn() }))
+vi.mock('@/lib/favorites', () => ({ getUserFavoriteIds: vi.fn(), insertFavorite: vi.fn() }))
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSessionStore } from './browser-session'
 import { getFailedShares, type FailedSharesResult } from '@/lib/failed-shares'
+import { getUserFavoriteIds, insertFavorite } from '@/lib/favorites'
 import { getMenuSummary } from '@/lib/menu-summary'
 
 const MENU = { hasFullAccess: true, myRecipesCount: 2, favoritesCount: 3 }
@@ -34,6 +36,87 @@ function setup() {
 beforeEach(() => {
   vi.mocked(getMenuSummary).mockReset().mockResolvedValue(MENU)
   vi.mocked(getFailedShares).mockReset().mockResolvedValue(SHARES)
+  vi.mocked(getUserFavoriteIds).mockReset().mockResolvedValue(new Set([1]))
+  vi.mocked(insertFavorite).mockReset().mockResolvedValue(null)
+})
+
+describe('setFavorite', () => {
+  const favorites = (store: ReturnType<typeof setup>['store']) => {
+    const session = store.getSnapshot()
+    return session.status === 'user' ? [...(session.favoriteIds ?? [])] : null
+  }
+  async function signedIn() {
+    const context = setup()
+    context.auth.userId = 'u1'
+    await context.store.sync()
+    return context
+  }
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+  it('refuses a guest without touching Supabase', async () => {
+    const { auth, store } = setup()
+    auth.cookie = false
+    await store.sync()
+    expect(await store.setFavorite(5, true)).toEqual({ ok: false, error: 'unauthenticated' })
+    expect(insertFavorite).not.toHaveBeenCalled()
+  })
+
+  it('shows the heart before the save answers', async () => {
+    const { store } = await signedIn()
+    let answer: (value: null) => void = () => {}
+    vi.mocked(insertFavorite).mockReturnValue(new Promise((resolve) => (answer = resolve)))
+    const saving = store.setFavorite(5, true)
+    expect(favorites(store)).toEqual([1, 5])
+    answer(null)
+    expect(await saving).toEqual({ ok: true })
+  })
+
+  it('brings the heart back and reloads the real favorites after a failed save', async () => {
+    const { store } = await signedIn()
+    vi.mocked(insertFavorite).mockResolvedValue({ code: '42501', message: 'denied' })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(getUserFavoriteIds).mockClear()
+    expect(await store.setFavorite(5, true)).toEqual({ ok: false, error: 'failed' })
+    expect(favorites(store)).toEqual([1])
+    await settle()
+    expect(getUserFavoriteIds).toHaveBeenCalledTimes(1)
+  })
+
+  it('updates the MENU counter after a save', async () => {
+    const { store } = await signedIn()
+    vi.mocked(getMenuSummary).mockResolvedValue({ ...MENU, favoritesCount: 4 })
+    await store.setFavorite(5, true)
+    await settle()
+    expect(store.getSnapshot()).toMatchObject({ menu: { favoritesCount: 4 } })
+  })
+
+  it('does not let a load that started before the click undo the heart', async () => {
+    const { store, advance } = await signedIn()
+    advance(60_000)
+    let staleLoad: (value: Set<number>) => void = () => {}
+    vi.mocked(getUserFavoriteIds).mockReturnValueOnce(new Promise((resolve) => (staleLoad = resolve)))
+    const loading = store.sync()
+    await settle()
+    vi.mocked(getUserFavoriteIds).mockResolvedValue(new Set([1, 5]))
+    await store.setFavorite(5, true)
+    staleLoad(new Set([1]))
+    await loading
+    await settle()
+    expect(favorites(store)).toEqual([1, 5])
+  })
+
+  it('leaves the set alone until the favorites are read, so listed hearts do not go blank', async () => {
+    const { auth, store } = setup()
+    auth.userId = 'u1'
+    let answer: (value: Set<number>) => void = () => {}
+    vi.mocked(getUserFavoriteIds).mockReturnValueOnce(new Promise((resolve) => (answer = resolve)))
+    const loading = store.sync()
+    await settle()
+    const saving = store.setFavorite(5, true)
+    expect(favorites(store)).toEqual([])
+    answer(new Set([1]))
+    await Promise.all([loading, saving])
+  })
 })
 
 describe('createSessionStore', () => {
@@ -106,7 +189,7 @@ describe('createSessionStore', () => {
     await store.sync()
     expect(seen).toEqual([
       { status: 'user', userId: 'u1' },
-      { status: 'user', userId: 'u1', menu: MENU, failedShares: SHARES },
+      { status: 'user', userId: 'u1', menu: MENU, failedShares: SHARES, favoriteIds: new Set([1]) },
     ])
   })
 
@@ -145,7 +228,7 @@ describe('createSessionStore', () => {
     await store.sync()
     finishFirst({ ...MENU, favoritesCount: 99 })
     await first
-    expect(store.getSnapshot()).toEqual({ status: 'user', userId: 'u2', menu: MENU, failedShares: SHARES })
+    expect(store.getSnapshot()).toEqual({ status: 'user', userId: 'u2', menu: MENU, failedShares: SHARES, favoriteIds: new Set([1]) })
   })
 
   it('never lets a load finish after sign-out', async () => {
@@ -186,7 +269,7 @@ describe('createSessionStore', () => {
     vi.mocked(getMenuSummary).mockRejectedValue(new Error('boom'))
     auth.userId = 'u1'
     await store.sync()
-    expect(store.getSnapshot()).toEqual({ status: 'user', userId: 'u1', menu: undefined, failedShares: { status: 'error' } })
+    expect(store.getSnapshot()).toEqual({ status: 'user', userId: 'u1', menu: undefined, failedShares: { status: 'error' }, favoriteIds: new Set([1]) })
   })
 
   it('stops telling a listener that unsubscribed', async () => {

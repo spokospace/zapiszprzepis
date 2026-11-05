@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* A reader with a session cookie waits for the session instead of seeing the guest's view blink. */
+html[data-session] .session-pending {
+  visibility: hidden;
+}
+
 /*
  * Atkinson Hyperlegible Next (OFL), self-hosted from /public/fonts so the build and
  * the page never reach Google (ZMIANY_prototyp §1). Variable 200–800; the two subsets

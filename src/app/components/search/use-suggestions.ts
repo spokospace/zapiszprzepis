@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { SUGGEST_MIN_LENGTH, type RecipeSuggestion } from '@/lib/search'
-import { getSuggestions } from '@/app/szukaj/actions'
+import { SUGGEST_MIN_LENGTH, suggestRecipes, type RecipeSuggestion } from '@/lib/search'
 
 /** Wait for a pause in typing before asking the server. */
 const DEBOUNCE_MS = 250
@@ -19,13 +18,9 @@ export function useSuggestions(query: string): RecipeSuggestion[] {
     if (!active) return
     let current = true
     const timer = setTimeout(() => {
-      getSuggestions(query)
-        .then((items) => {
-          if (current) setResult({ q: query, items })
-        })
-        .catch(() => {
-          if (current) setResult({ q: query, items: [] })
-        })
+      void suggestRecipes(query).then((items) => {
+        if (current) setResult({ q: query, items })
+      })
     }, DEBOUNCE_MS)
     return () => {
       current = false

@@ -1,6 +1,8 @@
+import { useSyncExternalStore } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { hasAuthCookie } from '@/lib/auth-cookie'
 import { getFailedShares, type FailedSharesResult } from '@/lib/failed-shares'
+import { getUserFavoriteIds, insertFavorite, type FavoriteResult } from '@/lib/favorites'
 import { getMenuSummary, type MenuSummary } from '@/lib/menu-summary'
 
 /**
@@ -11,7 +13,14 @@ import { getMenuSummary, type MenuSummary } from '@/lib/menu-summary'
 export type BrowserSession =
   | { status: 'unknown' }
   | { status: 'guest' }
-  | { status: 'user'; userId: string; menu?: MenuSummary | null; failedShares?: FailedSharesResult }
+  | {
+      status: 'user'
+      userId: string
+      menu?: MenuSummary | null
+      failedShares?: FailedSharesResult
+      /** Every heart on every page reads this, so two hearts of one recipe never disagree. */
+      favoriteIds?: ReadonlySet<number>
+    }
 
 const UNKNOWN: BrowserSession = { status: 'unknown' }
 const GUEST: BrowserSession = { status: 'guest' }
@@ -81,16 +90,58 @@ export function createSessionStore(
 
     const load = ++latestLoad
     loadedAt = now()
-    const [menu, failedShares] = await Promise.all([
+    const [menu, failedShares, favoriteIds] = await Promise.all([
       getMenuSummary(supabase, { id: userId }).catch(() => undefined),
       getFailedShares(supabase, userId).catch(() => CHECK_FAILED),
+      getUserFavoriteIds(supabase, userId).catch(() => new Set<number>()),
     ])
-    if (load === latestLoad) publish({ status: 'user', userId, menu, failedShares })
+    if (load === latestLoad) publish({ status: 'user', userId, menu, failedShares, favoriteIds })
+  }
+
+  /** The heart shown at once; a load already under way is dropped, as it may predate the change. */
+  function showFavorite(recipeId: number, on: boolean) {
+    if (session.status !== 'user' || !session.favoriteIds) return
+    latestLoad++
+    const favoriteIds = new Set(session.favoriteIds)
+    if (on) favoriteIds.add(recipeId)
+    else favoriteIds.delete(recipeId)
+    publish({ ...session, favoriteIds })
+  }
+
+  /**
+   * Adds or removes a favorite straight in Supabase under the owner-only RLS, so a heart costs
+   * the Worker nothing. Adding one that exists and removing a missing one both succeed. The
+   * forced sync brings the MENU counter and, after a failure, the real hearts back.
+   */
+  async function setFavorite(recipeId: number, on: boolean): Promise<FavoriteResult> {
+    if (session.status !== 'user') return { ok: false, error: 'unauthenticated' }
+    const { userId } = session
+    showFavorite(recipeId, on)
+    const saved = await saveFavorite(userId, recipeId, on)
+    if (!saved) showFavorite(recipeId, !on)
+    // After the rollback: showFavorite drops any load that started before it.
+    void sync({ force: true })
+    return saved ? { ok: true } : { ok: false, error: 'failed' }
+  }
+
+  async function saveFavorite(userId: string, recipeId: number, on: boolean): Promise<boolean> {
+    try {
+      const supabase = await getClient()
+      const error = on
+        ? await insertFavorite(supabase, userId, recipeId)
+        : (await supabase.from('favorites').delete().eq('user_id', userId).eq('recipe_id', recipeId)).error
+      if (error) console.error('[favorites] save failed', { code: error.code })
+      return !error
+    } catch (e) {
+      console.error('[favorites] save failed', e instanceof Error ? e.message : e)
+      return false
+    }
   }
 
   return {
     sync,
     clear,
+    setFavorite,
     getSnapshot: () => session,
     getServerSnapshot: () => UNKNOWN,
     subscribe(listener: () => void) {
@@ -100,7 +151,13 @@ export function createSessionStore(
   }
 }
 
-export const browserSession = createSessionStore(
-  async () => (await import('@/lib/supabase/client')).createSupabaseBrowserClient(),
-  () => hasAuthCookie(document.cookie),
-)
+/** The signed-in reader's client; a dynamic import, so a guest never downloads supabase-js. */
+export async function loadBrowserClient(): Promise<SupabaseClient> {
+  return (await import('@/lib/supabase/client')).createSupabaseBrowserClient()
+}
+
+export const browserSession = createSessionStore(loadBrowserClient, () => hasAuthCookie(document.cookie))
+
+export function useBrowserSession(): BrowserSession {
+  return useSyncExternalStore(browserSession.subscribe, browserSession.getSnapshot, browserSession.getServerSnapshot)
+}

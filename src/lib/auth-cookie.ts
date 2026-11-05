@@ -5,3 +5,6 @@ const AUTH_COOKIE = /(?:^|;\s*)sb-[^=;\s]*-auth-token/
 export function hasAuthCookie(cookies: string): boolean {
   return AUTH_COOKIE.test(cookies)
 }
+
+/** Runs before the first paint, so `.session-pending` can hide the guest's view from a reader with a session. */
+export const AUTH_COOKIE_SCRIPT = `if(${AUTH_COOKIE}.test(document.cookie))document.documentElement.dataset.session='1'`

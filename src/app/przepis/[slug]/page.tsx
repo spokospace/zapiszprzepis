@@ -16,6 +16,7 @@ import { findGlossaryTerms } from '@/lib/ingredient-glossary'
 import { RECIPE_SHARED_MESSAGE } from '@/lib/recipe-delete'
 import { RecipeBreadcrumbs, RecipeHeader } from './_components/recipe-header'
 import { TrackView } from '@/app/components/track-view'
+import { SessionRefresh } from '@/app/components/session-header'
 import { RecipeActions } from './_components/recipe-actions'
 import { StaffHiddenBanner, UnavailableRecipe } from './_components/hidden-notice'
 import { RecipeChecklists } from './_components/recipe-checklists'
@@ -26,7 +27,6 @@ import { DishVersionsBar } from './_components/dish-versions-bar'
 import { DishVersions } from './_components/dish-versions'
 import { RECIPE_MAIN, RECIPE_TOP_ROW } from './_components/recipe-split'
 import { parseVersionsSort, type DishVersionRow } from '@/lib/dish-versions'
-import { getFavoriteIds } from '@/lib/favorites'
 import { loginPath } from '@/lib/login-redirect'
 import { loadCategoryContext } from './category-context'
 import { parseListKey } from '@/lib/recipe-list-context'
@@ -77,19 +77,15 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
     notFound()
   }
 
-  // The gallery is a login perk (decision Q3) and favorites are private (owner-only
-  // RLS): both need a session. The list bar's category context (E01-S07) is
-  // guest-safe. All three run in parallel on one client.
+  // The gallery is a login perk (decision Q3), so it needs a session. The list bar's
+  // category context (E01-S07) is guest-safe. They run in parallel on one client.
   // The "versions of the same dish" RPC (E01-S21) runs ONLY when this recipe has
   // a dish — until the #298 backfill lands, dish is null everywhere, so no call
   // is made and no bar/section renders (empty-data state).
   const supabase = await createSupabaseServerClient()
-  const [categoryContext, gallery, favorite, dishVersionsResult, siblingsResult] = await Promise.all([
+  const [categoryContext, gallery, dishVersionsResult, siblingsResult] = await Promise.all([
     loadCategoryContext(supabase, typedRecipe),
     user ? supabase.from('recipe_gallery_images').select('image_urls').eq('id', typedRecipe.id).maybeSingle() : null,
-    user
-      ? supabase.from('favorites').select('recipe_id').eq('user_id', user.id).eq('recipe_id', typedRecipe.id).maybeSingle()
-      : null,
     typedRecipe.dish ? supabase.rpc('dish_versions', { p_recipe_id: typedRecipe.id }) : null,
     // The other dishes saved from this link (E01 multi-recipe, phase 4). A link with one dish has none.
     typedRecipe.source_url
@@ -98,15 +94,12 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
   ])
   const galleryImages: string[] = gallery?.data?.image_urls ?? []
   const siblings = (siblingsResult?.data ?? []) as PostSibling[]
-  const isFavorite = Boolean(favorite?.data)
   const galleryCount = typedRecipe.gallery_count ?? 0
 
   // An RPC error is non-critical: log it and hide the feature (treat as []).
   if (dishVersionsResult?.error) console.error('[recipe] dish_versions failed:', dishVersionsResult.error)
   const versions = (dishVersionsResult?.data ?? []) as DishVersionRow[]
   const versionsTotal = versions[0]?.total_count ?? 0
-  // The hearts on the version cards: the viewer's favorites among them (null = guest).
-  const versionFavoriteIds = user ? await getFavoriteIds(supabase, user.id, versions.map((v) => v.id)) : null
   const versionsOrder = parseVersionsSort(wersje)
   const currentRecipe = {
     servings: typedRecipe.servings,
@@ -153,6 +146,7 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
       {duplicate === '1' && (
         <Toast message="Ten przepis już masz." type="info" duration={5000} clearParam="duplicate" />
       )}
+      {in_favorites === '1' && <SessionRefresh token={in_favorites} />}
       {in_favorites === '1' && (
         <Toast
           message="Ten przepis już jest w aplikacji Zapisz Przepis. Dodaliśmy go do Twoich ulubionych."
@@ -203,8 +197,6 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             <RecipeActions
               recipeId={typedRecipe.id}
               recipeSlug={typedRecipe.slug}
-              isFavorite={isFavorite}
-              isAuthenticated={Boolean(user)}
               title={typedRecipe.title}
               shareUrl={canonicalUrl}
               steps={steps}
@@ -270,12 +262,11 @@ export default async function RecipeDetailPage({ params, searchParams }: RecipeD
             versions={versions}
             totalCount={versionsTotal}
             dish={typedRecipe.dish ?? null}
-            favoriteIds={versionFavoriteIds}
             order={versionsOrder}
             current={currentRecipe}
           />
 
-          <SimilarRecipes recipe={typedRecipe} userId={user?.id ?? null} />
+          <SimilarRecipes recipe={typedRecipe} />
         </div>
 
         {isOwner && delete_error === 'shared' && (

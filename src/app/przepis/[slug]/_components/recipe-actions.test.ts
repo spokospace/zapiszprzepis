@@ -3,15 +3,12 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 vi.mock('next/navigation', () => ({ usePathname: () => '/przepis/zupa-krem-z-dyni' }))
-vi.mock('@/app/favorites/actions', () => ({ addFavorite: vi.fn(), removeFavorite: vi.fn() }))
 
 import { RecipeActions } from './recipe-actions'
 
 const PROPS: Parameters<typeof RecipeActions>[0] = {
   recipeId: 7,
   recipeSlug: 'zupa-krem-z-dyni',
-  isFavorite: false,
-  isAuthenticated: true,
   title: 'Zupa krem z dyni',
   shareUrl: 'https://zapiszprzepis.pl/przepis/zupa-krem-z-dyni',
   steps: ['Zagotuj wodę.', 'Dodaj dynię.'],

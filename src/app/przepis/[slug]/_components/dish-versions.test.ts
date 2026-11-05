@@ -2,15 +2,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-// The rows' heart pulls in server-only actions; stub it with a marker that shows where the
-// heart sits and what it was given.
+// A marker that shows where the heart sits; its state comes from the browser session.
 vi.mock('@/app/components/favorite-button', () => ({
-  FavoriteButton: ({ recipeId, initialFavorited, isAuthenticated }: { recipeId: number; initialFavorited: boolean; isAuthenticated: boolean }) =>
-    createElement('i', {
-      'data-heart': String(recipeId),
-      'data-favorited': String(initialFavorited),
-      'data-auth': String(isAuthenticated),
-    }),
+  FavoriteButton: ({ recipeId }: { recipeId: number }) => createElement('i', { 'data-heart': String(recipeId) }),
 }))
 
 import { DishVersionsBar, versionsBoxLabel } from './dish-versions-bar'
@@ -91,7 +85,6 @@ function section(props: Partial<Parameters<typeof DishVersions>[0]>) {
       versions: [],
       totalCount: 0,
       dish: 'sernik',
-      favoriteIds: null,
       order: 'popularne',
       current,
       ...props,
@@ -119,13 +112,10 @@ describe('DishVersions (handoff 2026-10-28 §6)', () => {
     expect(section({ versions: [row()], totalCount: 1 })).toMatch(/id="inne-przepisy"[^>]*class="[^"]*scroll-mt-36[^"]*lg:scroll-mt-40/)
   })
 
-  it('puts a heart on every row, filled for the viewer\'s favorites, login-bound for a guest', () => {
-    const rows = [row({ id: 1, slug: 'a' }), row({ id: 2, slug: 'b' })]
-    const member = section({ versions: rows, totalCount: 2, favoriteIds: new Set([2]) })
-    expect(member).toContain('data-heart="1" data-favorited="false" data-auth="true"')
-    expect(member).toContain('data-heart="2" data-favorited="true" data-auth="true"')
-    const guest = section({ versions: rows, totalCount: 2, favoriteIds: null })
-    expect(guest).toContain('data-heart="1" data-favorited="false" data-auth="false"')
+  it('puts a heart on every row', () => {
+    const html = section({ versions: [row({ id: 1, slug: 'a' }), row({ id: 2, slug: 'b' })], totalCount: 2 })
+    expect(html).toContain('data-heart="1"')
+    expect(html).toContain('data-heart="2"')
   })
 
   it('hides the sort control with fewer than two versions', () => {

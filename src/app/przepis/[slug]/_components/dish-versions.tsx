@@ -32,8 +32,6 @@ interface DishVersionsProps {
   totalCount: number
   /** The dish name (nominative, as stored); the heading takes its genitive from it. */
   dish: string | null
-  /** The signed-in viewer's favorites among these versions; null for a guest (the heart sends them to log in). */
-  favoriteIds: ReadonlySet<number> | null
   /** The server-resolved order (from ?wersje=); the client island may re-sort after hydration. */
   order: VersionsSort
   /** The recipe being viewed, for the ingredient diff and the time comparison. */
@@ -98,11 +96,9 @@ function Legend() {
 function VersionRow({
   version: v,
   current,
-  favoriteIds,
 }: {
   version: DishVersionRow
   current: CurrentRecipe
-  favoriteIds: ReadonlySet<number> | null
 }): ReactNode {
   const diff = ingredientDiff(current.ingredients, v.ingredients)
   const time = versionTimeCompare(current, v)
@@ -152,8 +148,6 @@ function VersionRow({
         <FavoriteButton
           recipeId={v.id}
           recipeSlug={v.slug}
-          initialFavorited={favoriteIds?.has(v.id) ?? false}
-          isAuthenticated={favoriteIds !== null}
           size="photo"
           recipeTitle={v.title}
         />
@@ -176,12 +170,12 @@ export function splitHeadingCount(heading: string): [text: string, count: string
  * only re-orders them and opens the rest of the list; without JS the sort links reload
  * with ?wersje= and every row shows.
  */
-export function DishVersions({ versions, totalCount, dish, favoriteIds, order, current }: DishVersionsProps) {
+export function DishVersions({ versions, totalCount, dish, order, current }: DishVersionsProps) {
   if (versions.length === 0) return null
   const heading = versionsHeading(totalCount, dish)
   const [headingText, count] = splitHeadingCount(heading)
   const rows: Record<number, ReactNode> = Object.fromEntries(
-    versions.map((v) => [v.id, <VersionRow key={v.id} version={v} current={current} favoriteIds={favoriteIds} />]),
+    versions.map((v) => [v.id, <VersionRow key={v.id} version={v} current={current} />]),
   )
   return (
     <section aria-labelledby="inne-przepisy" className="mb-12 border-t border-border-card pt-8">

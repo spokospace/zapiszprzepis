@@ -46,9 +46,10 @@ describe('every guest-facing reader goes through the filtered views', () => {
 
   it('the category list and the home page read recipes only through recipe-cache or scoped to the signed-in user', () => {
     expect(code('src/app/przepisy/[kategoria]/page.tsx')).not.toMatch(FROM_RECIPES)
-    // The home page reads the member's OWN recipes from the table and must drop hidden ones.
-    const home = code('src/app/page.tsx')
-    const own = home.match(/\.from\('recipes'\)[\s\S]*?\.limit\(RECENT_LIMIT\)/)?.[0] ?? ''
+    expect(code('src/app/page.tsx')).not.toMatch(FROM_RECIPES)
+    // The signed-in home reads the member's OWN recipes from the table and must drop hidden ones.
+    const home = code('src/lib/member-home.ts')
+    const own = home.match(/\.from\('recipes'\)[\s\S]*?\.limit\(HOME_ROW_LIMIT\)/)?.[0] ?? ''
     expect(own).toMatch(/\.eq\('user_id', userId\)/)
     expect(own).toMatch(/\.is\('hidden_at', null\)/)
   })

@@ -1,10 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import { PRODUCTION_SUPABASE_URL } from '@/lib/image-remote-patterns'
-
-// Both are public by design and also in wrangler.jsonc `vars`. A NEXT_PUBLIC_ value
-// reaches the browser only when it is set at build time, so production is the fallback.
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || PRODUCTION_SUPABASE_URL
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2'
+import { PUBLIC_SUPABASE_KEY, PUBLIC_SUPABASE_URL } from './public-config'
 
 /**
  * Reads the session cookie the server wrote. No refresh timer: middleware refreshes the
@@ -13,7 +8,7 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishabl
  * detection: /auth/callback and /auth/confirm open the session on the server.
  */
 export function createSupabaseBrowserClient() {
-  return createBrowserClient(SUPABASE_URL, SUPABASE_KEY, {
+  return createBrowserClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_KEY, {
     auth: { autoRefreshToken: false, detectSessionInUrl: false },
   })
 }

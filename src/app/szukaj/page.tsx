@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
 import { getFullAccess } from '@/lib/full-access'
-import { getFavoriteIds } from '@/lib/favorites'
 import { searchPath } from '@/lib/routes'
 import { parseSearchParams, searchRecipes } from '@/lib/search'
 import { recipesNoun } from '@/app/components/app-menu-model'
@@ -45,10 +44,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
   const outcome = await searchRecipes(supabase, { q, scope, page, category })
   const rows = 'rows' in outcome ? outcome.rows : []
 
-  const [favoriteIds, hasFullAccess] = await Promise.all([
-    user && rows.length ? getFavoriteIds(supabase, user.id, rows.map((r) => r.id)) : null,
-    user && q && 'rows' in outcome ? getFullAccess(supabase) : false,
-  ])
+  const hasFullAccess = user && q && 'rows' in outcome ? await getFullAccess(supabase) : false
 
   // "Kategoria" only when there is something to narrow, or a filter to undo.
   const categoryOptions: CategoryOption[] =
@@ -116,7 +112,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                 category={category}
                 rows={rows}
                 total={outcome.total}
-                favoriteIds={user ? (favoriteIds ?? new Set()) : null}
               />
             ) : (
               <div>

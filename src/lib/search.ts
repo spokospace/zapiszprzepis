@@ -3,6 +3,7 @@ import { SEARCH_SCOPES, type SearchScope } from '@/lib/routes'
 import { isRecipeCategory, type RecipeCategory } from '@/lib/recipe-categories'
 import { categoryCounts, type CategoryCount } from '@/lib/public-profile'
 import { inCategory, type CategoryMember } from '@/lib/category-membership'
+import { PUBLIC_SUPABASE_KEY, PUBLIC_SUPABASE_URL } from '@/lib/supabase/public-config'
 import type { Database } from '@/lib/supabase.types'
 
 /** Results per "Pokaż kolejne" step (E01-S05: „Pokaż kolejne 14”). */
@@ -147,17 +148,25 @@ export interface RecipeSuggestion {
  * Up to SUGGEST_LIMIT recipes for a half-typed query, from the same public search
  * as the results (every recipe, title hits first). Empty below SUGGEST_MIN_LENGTH
  * letters or on any error: suggestions are a convenience, never a failure.
+ *
+ * Runs in the browser with the public key, in a plain request: the Worker is not involved
+ * and a guest does not download supabase-js for a list of four titles.
  */
-export async function suggestRecipes(supabase: SupabaseClient, raw: string): Promise<RecipeSuggestion[]> {
+export async function suggestRecipes(raw: string): Promise<RecipeSuggestion[]> {
   const q = raw.trim().slice(0, MAX_QUERY_LENGTH).trim()
   if (q.length < SUGGEST_MIN_LENGTH) return []
-  const { data, error } = await supabase.rpc('search_recipes', { p_query: q, p_scope: 'all', p_limit: SUGGEST_LIMIT })
-  if (error) {
-    console.error('[search] suggestions failed:', error.message)
+  try {
+    const response = await fetch(`${PUBLIC_SUPABASE_URL}/rest/v1/rpc/search_recipes`, {
+      method: 'POST',
+      headers: { apikey: PUBLIC_SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_query: q, p_scope: 'all', p_limit: SUGGEST_LIMIT }),
+    })
+    if (!response.ok) throw new Error(`status ${response.status}`)
+    const rows = (await response.json()) as SearchRow[]
+    return rows.slice(0, SUGGEST_LIMIT).map(({ slug, title, image_url, category }) => ({ slug, title, image_url, category }))
+  } catch (e) {
+    console.error('[search] suggestions failed:', e instanceof Error ? e.message : e)
     return []
   }
-  return ((data ?? []) as SearchRow[])
-    .slice(0, SUGGEST_LIMIT)
-    .map(({ slug, title, image_url, category }) => ({ slug, title, image_url, category }))
 }
 

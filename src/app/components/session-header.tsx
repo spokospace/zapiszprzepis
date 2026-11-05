@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { AppHeader } from './app-header'
-import { browserSession } from '@/lib/browser-session'
+import { browserSession, useBrowserSession } from '@/lib/browser-session'
 import { NO_FAILED_SHARES } from '@/lib/failed-shares'
 
 /**
@@ -12,7 +12,7 @@ import { NO_FAILED_SHARES } from '@/lib/failed-shares'
  * signing in or out happens on the server.
  */
 export function SessionHeader() {
-  const session = useSyncExternalStore(browserSession.subscribe, browserSession.getSnapshot, browserSession.getServerSnapshot)
+  const session = useBrowserSession()
   const pathname = usePathname()
 
   useEffect(() => {

@@ -49,7 +49,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" className="h-full antialiased">
+    // suppressHydrationWarning: AUTH_COOKIE_SCRIPT marks <html> before React hydrates it.
+    <html lang="pl" className="h-full antialiased" suppressHydrationWarning>
       {/* Full width so section backgrounds (the home hero, the header border) reach the
           viewport edges; content stays centred at 1152 px via PageContainer (E01-S31 §4). */}
       <body className="min-h-full flex flex-col w-full">
