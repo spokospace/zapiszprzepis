@@ -21,7 +21,7 @@ const READERS: { name: string; file: string; relation: RegExp }[] = [
   { name: 'listCanonicalRecipes / canonicalRecipeBySlug (sitemap, llms.txt, .md)', file: 'src/lib/public-recipe.ts', relation: /from\('public_recipes'\)/ },
   { name: 'search_recipes (RPC over public_recipes)', file: 'src/lib/search.ts', relation: /rpc\('search_recipes'/ },
   { name: 'category context (RPC over public_recipes)', file: 'src/app/przepis/[slug]/category-context.ts', relation: /rpc\('recipe_category_context'/ },
-  { name: 'similar recipes', file: 'src/app/przepis/[slug]/_components/similar-recipes.tsx', relation: /from\('public_recipes'\)/ },
+  { name: 'similar recipes', file: 'src/lib/recipe-cache.ts', relation: /from\('public_recipes'\)/ },
   { name: '/u/{username}', file: 'src/app/u/[username]/page.tsx', relation: /from\('public_recipes'\)/ },
   { name: 'notifications (recipe titles)', file: 'src/lib/notifications.ts', relation: /from\('public_recipes'\)/ },
 ]

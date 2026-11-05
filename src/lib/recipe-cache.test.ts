@@ -17,7 +17,7 @@ vi.mock('next/cache', () => ({
 // A benign anon client so the wrappers resolve without a real DB.
 vi.mock('@/lib/supabase/anon', () => {
   const builder: Record<string, unknown> = {}
-  for (const m of ['select', 'eq', 'or', 'contains', 'order', 'range', 'not', 'neq', 'limit']) builder[m] = () => builder
+  for (const m of ['select', 'eq', 'or', 'contains', 'overlaps', 'order', 'range', 'not', 'neq', 'limit']) builder[m] = () => builder
   builder.maybeSingle = () => Promise.resolve({ data: null, error: null })
   builder.then = (res: (v: unknown) => unknown) => Promise.resolve({ data: [], count: 0, error: null }).then(res)
   const client = { from: () => builder, rpc: () => Promise.resolve({ data: [], error: null }) }
@@ -35,12 +35,14 @@ import {
   getPublicRecipe,
   getRecentPublicRecipes,
   getRecipeOfTheDay,
+  getSimilarRecipes,
   readCategoryListing,
   readCategoryFacets,
   readCategoryTotal,
   readPublicRecipe,
   readRecentPublicRecipes,
   readRecipeOfTheDay,
+  readSimilarRecipes,
 } from './recipe-cache'
 
 /** A fake Supabase client whose chain resolves to `many` (awaited) / `single` (maybeSingle). */
@@ -50,7 +52,7 @@ function fakeClient(opts: { many?: unknown; single?: unknown; rpc?: unknown } = 
   const orFilters: string[] = []
   const makeBuilder = () => {
     const b: Record<string, unknown> = {}
-    for (const m of ['eq', 'contains', 'order', 'range', 'not', 'neq', 'limit']) b[m] = () => b
+    for (const m of ['eq', 'contains', 'overlaps', 'order', 'range', 'not', 'neq', 'limit']) b[m] = () => b
     b.or = (filter: string) => {
       orFilters.push(filter)
       return b
@@ -79,11 +81,11 @@ describe('cached wrappers — TTL, tags, and viewer-independent keys', () => {
     cacheCalls.length = 0
   })
 
-  it('getCategoryListing: keyed by category/tags/limit only, 120 s TTL, list tag', async () => {
+  it('getCategoryListing: keyed by category/tags/limit only, 1 h TTL, list tag', async () => {
     await getCategoryListing({ category: 'obiady', tags: ['szybkie', 'tanie'], limit: 24 })
     const { keyParts, options } = cacheCalls[0]
     expect(keyParts).toEqual(['category-listing', 'obiady', 'szybkie,tanie', '24'])
-    expect(options).toEqual({ revalidate: 120, tags: [RECIPES_LIST_TAG] })
+    expect(options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
     // No key part looks like a user id / cookie — nothing viewer-specific is cached.
     expect(keyParts.join('|')).not.toMatch(/user|cookie|session/i)
   })
@@ -93,33 +95,41 @@ describe('cached wrappers — TTL, tags, and viewer-independent keys', () => {
     expect(cacheCalls[0].keyParts).toEqual(['category-listing', 'obiady', 'szybkie,tanie', '24'])
   })
 
-  it('getCategoryFacets / getCategoryTotal carry the 120 s TTL + list tag', async () => {
+  it('getCategoryFacets / getCategoryTotal carry the 1 h TTL + list tag', async () => {
     await getCategoryFacets({ category: 'obiady', selected: ['tanie', 'szybkie'] })
     await getCategoryTotal({ category: 'obiady' })
     expect(cacheCalls[0].keyParts).toEqual(['category-facets', 'obiady', 'szybkie,tanie'])
     expect(cacheCalls[1].keyParts).toEqual(['category-total', 'obiady'])
-    for (const c of cacheCalls) expect(c.options).toEqual({ revalidate: 120, tags: [RECIPES_LIST_TAG] })
+    for (const c of cacheCalls) expect(c.options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
   })
 
-  it('getPublicRecipe: keyed by slug, tagged with the recipe tag + list tag', async () => {
+  it('getPublicRecipe: keyed by slug, tagged with its own tag only, so an import does not purge it', async () => {
     await getPublicRecipe('sernik-wiedenski')
     expect(cacheCalls[0].keyParts).toEqual(['public-recipe', 'sernik-wiedenski'])
     expect(cacheCalls[0].options).toEqual({
-      revalidate: 120,
-      tags: [RECIPES_LIST_TAG, recipeTag('sernik-wiedenski')],
+      revalidate: 3600,
+      tags: [recipeTag('sernik-wiedenski')],
     })
+  })
+
+  it('getSimilarRecipes: keyed by what the ranking reads, tag order ignored, list tag', async () => {
+    await getSimilarRecipes({ id: 5, category: 'ciasta', tags: ['tanie', 'szybkie'], dish: 'sernik' })
+    await getSimilarRecipes({ id: 5, category: 'ciasta', tags: ['szybkie', 'tanie'] })
+    expect(cacheCalls[0].keyParts).toEqual(['similar-recipes', '5', 'ciasta', 'sernik', 'szybkie,tanie'])
+    expect(cacheCalls[1].keyParts).toEqual(['similar-recipes', '5', 'ciasta', '', 'szybkie,tanie'])
+    expect(cacheCalls[0].options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
   })
 
   it('getRecentPublicRecipes: keyed by limit only', async () => {
     await getRecentPublicRecipes(4)
     expect(cacheCalls[0].keyParts).toEqual(['recent-public-recipes', '4'])
-    expect(cacheCalls[0].options).toEqual({ revalidate: 120, tags: [RECIPES_LIST_TAG] })
+    expect(cacheCalls[0].options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
   })
 
   it('getRecipeOfTheDay: keyed by the Warsaw civil day (stable within a day)', async () => {
     await getRecipeOfTheDay(new Date('2026-10-25T09:00:00Z'))
     expect(cacheCalls[0].keyParts).toEqual(['recipe-of-the-day', '2026-10-25'])
-    expect(cacheCalls[0].options).toEqual({ revalidate: 120, tags: [RECIPES_LIST_TAG] })
+    expect(cacheCalls[0].options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
   })
 })
 
@@ -130,6 +140,13 @@ describe('revalidateRecipeCaches', () => {
     revalidateRecipeCaches()
     expect(revalidateTag).toHaveBeenCalledTimes(1)
     expect(revalidateTag).toHaveBeenCalledWith(RECIPES_LIST_TAG, { expire: 0 })
+  })
+
+  it('purges the tag of every slug given', () => {
+    revalidateRecipeCaches('sernik', 'makowiec')
+    expect(revalidateTag).toHaveBeenCalledTimes(3)
+    expect(revalidateTag).toHaveBeenCalledWith(recipeTag('sernik'), { expire: 0 })
+    expect(revalidateTag).toHaveBeenCalledWith(recipeTag('makowiec'), { expire: 0 })
   })
 
   it('also purges the per-recipe tag when a slug is given', () => {
@@ -184,6 +201,27 @@ describe('reads — public_recipes only, no user-scoped columns (no cross-user l
   it('readPublicRecipe throws on a DB error (so a failure is never cached)', async () => {
     const { client } = fakeClient({ many: { data: null, error: { message: 'boom' } } })
     await expect(readPublicRecipe(client, 's')).rejects.toThrow('recipe read failed')
+  })
+
+  it('readSimilarRecipes ranks shared tags first and returns the category total', async () => {
+    const rows = [{ id: 1, tags: ['tanie'] }, { id: 2, tags: ['szybkie'] }]
+    const { client, fromTables, selectCols } = fakeClient({ many: { data: rows, count: 12, error: null } })
+    const out = await readSimilarRecipes(client, { id: 9, category: 'ciasta', tags: ['szybkie'] })
+    expect(out.cards.map((c) => c.id)).toEqual([2, 1])
+    expect(out.total).toBe(12)
+    expect(new Set(fromTables)).toEqual(new Set(['public_recipes']))
+    expect(selectCols.join(' ')).not.toContain('user_id')
+  })
+
+  it('readSimilarRecipes leaves out the other versions of a dish', async () => {
+    const { client, orFilters } = fakeClient({ many: { data: [], count: 0, error: null } })
+    await readSimilarRecipes(client, { id: 9, category: 'ciasta', tags: [], dish: 'sernik' })
+    expect(orFilters).toEqual(['dish.is.null,dish.neq."sernik"'])
+  })
+
+  it('readSimilarRecipes throws on a DB error (so a failure is never cached)', async () => {
+    const { client } = fakeClient({ many: { data: null, error: { message: 'boom' } } })
+    await expect(readSimilarRecipes(client, { id: 9, category: 'ciasta', tags: [] })).rejects.toThrow('similar recipes failed')
   })
 
   it('readRecentPublicRecipes returns the feed and selects no user_id', async () => {

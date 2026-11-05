@@ -67,3 +67,28 @@ function breakdown(results: AttemptResult[]): string {
   }
   return [...counts].map(([label, n]) => `${label}×${n}`).join(', ')
 }
+
+/**
+ * Up to `count` different recipe paths from the sitemap. Random, because a fixed list
+ * would be warm in every cache and would hide what a reader moving between recipes meets.
+ */
+export function sampleRecipePaths(sitemapXml: string, count: number, random: () => number = Math.random): string[] {
+  const paths = [...sitemapXml.matchAll(/<loc>https?:\/\/[^/<]+(\/przepis\/[^<]+)<\/loc>/g)].map((m) => m[1])
+  for (let i = paths.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[paths[i], paths[j]] = [paths[j], paths[i]]
+  }
+  return paths.slice(0, count)
+}
+
+/**
+ * The verdict on one pass over different recipes, with no retries: a reader who gets a
+ * 503 sees it, whatever a retry would have returned. Null when failures stay within `allowed`.
+ */
+export function classifyRecipeSample(statuses: number[], allowed: number): string | null {
+  if (statuses.length === 0) return 'recipes → the sitemap lists none'
+  const failed = statuses.filter((status) => status !== 200)
+  if (failed.length <= allowed) return null
+  const tally = [...new Set(failed)].map((status) => `${status}×${failed.filter((s) => s === status).length}`).join(', ')
+  return `recipes → ${failed.length}/${statuses.length} different recipes failed (${tally})`
+}

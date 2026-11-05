@@ -3,9 +3,11 @@ import { unstable_cache, revalidateTag } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseAnonClient } from '@/lib/supabase/anon'
 import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
-import type { TagCount } from '@/lib/category-tags'
+import { rankSimilar, type TagCount } from '@/lib/category-tags'
 import { whereInCategory } from '@/lib/category-membership'
+import { dishExclusionFilter } from '@/lib/dish-versions'
 import { dailyRecipeIndex, warsawDayKey } from '@/lib/recipe-of-the-day'
+import type { RecipeSource } from '@/lib/recipe-source'
 import type { Database } from '@/lib/supabase.types'
 
 type Recipe = Database['public']['Tables']['recipes']['Row']
@@ -32,16 +34,37 @@ export type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_finge
 const CATEGORY_CARD_COLUMNS =
   'id, slug, title, image_url, category, source_type, source_url, source_author, tags, total_time_minutes, prep_time_minutes, cook_time_minutes'
 
+/** A card of the "Podobne" row on the recipe page. */
+export interface SimilarCard {
+  id: number
+  slug: string
+  title: string
+  image_url: string | null
+  category: string
+  description: string | null
+  source_type: RecipeSource
+  source_url: string | null
+  source_author: string | null
+  tags: string[] | null
+}
+
+/** What the "Podobne" ranking reads from the recipe it is shown on. */
+type SimilarSource = { id: number; category: string; tags: readonly string[]; dish?: string | null }
+
+const SIMILAR_CARD_COLUMNS = 'id, slug, title, image_url, category, description, source_type, source_url, source_author, tags'
+/** Enough tag-sharing candidates to rank; a category holds a few hundred at most. */
+const SIMILAR_CANDIDATES = 50
+
 /**
- * All user-independent public reads share one list tag so a single
- * `revalidateRecipeCaches()` clears the category listings, the home feed and the
- * recipe-of-the-day pick; each recipe also has its own tag so a write to one
- * recipe need not bust every list. The TTL is the owner-confirmed freshness
- * budget (#445): a guest sees a new/edited/deleted recipe at most this stale.
+ * Lists share one tag, so a single `revalidateRecipeCaches()` clears the category
+ * listings, the home feed and the recipe-of-the-day pick. A recipe has a tag of its
+ * own and not the list tag, so an import does not purge every recipe. Every write
+ * invalidates by tag, so the TTL only bounds a purge that failed or a write made
+ * outside the app, such as a backfill script.
  */
 export const RECIPES_LIST_TAG = 'recipes:list'
 export const recipeTag = (slug: string) => `recipe:${slug}`
-const REVALIDATE_SECONDS = 120
+const REVALIDATE_SECONDS = 3600
 
 /** Throw (so `unstable_cache` never stores a failure) when a read errored. */
 function must(error: { message?: string } | null | undefined, label: string): void {
@@ -53,18 +76,18 @@ function must(error: { message?: string } | null | undefined, label: string): vo
  * Handler or Server Action (where `revalidateTag` has the Next cache context).
  * `{ expire: 0 }` purges immediately (Next 16: the next request is a blocking
  * cache miss, not stale-while-revalidate) — the right choice outside a Server
- * Action, e.g. a delete, where stale content must not be served. Every cached
- * read carries the list tag, so a call without a slug purges the recipe pages too.
+ * Action, e.g. a delete, where stale content must not be served. Pass the slug of
+ * every recipe written: a call without one purges only the lists.
  *
  * Best-effort: the write it follows has already succeeded, so a failure here is
  * logged, not thrown — the TTL still bounds staleness. A no-op while OpenNext runs
  * its default dummy incremental + tag caches; real hits and invalidation need the
  * Phase-2 R2 + D1 caches (#445, `.ai/specs/2026-10-26-cache-guest-reads-phase2-plan.md`).
  */
-export function revalidateRecipeCaches(slug?: string): void {
+export function revalidateRecipeCaches(...slugs: string[]): void {
   try {
     revalidateTag(RECIPES_LIST_TAG, { expire: 0 })
-    if (slug) revalidateTag(recipeTag(slug), { expire: 0 })
+    for (const slug of slugs) revalidateTag(recipeTag(slug), { expire: 0 })
   } catch (error) {
     console.error('[recipe-cache] invalidation failed:', error instanceof Error ? error.message : String(error))
   }
@@ -120,6 +143,33 @@ export async function readPublicRecipe(supabase: SupabaseClient, slug: string): 
   return ((data ?? []) as PublicRecipe[])[0] ?? null
 }
 
+/**
+ * "Podobne": same category, not this recipe, newest first, ranked by shared tags. A
+ * recipe with a dish leaves out its other versions (they show in "Inne przepisy na …"),
+ * keeping null-dish rows eligible. Returns the ranked cards only, so the cached entry stays small.
+ */
+export async function readSimilarRecipes(
+  supabase: SupabaseClient,
+  recipe: SimilarSource,
+): Promise<{ cards: SimilarCard[]; total: number }> {
+  const dishFilter = dishExclusionFilter(recipe.dish)
+  const others = (tags?: readonly string[]) => {
+    let q = supabase.from('public_recipes').select(SIMILAR_CARD_COLUMNS).eq('category', recipe.category).neq('id', recipe.id)
+    if (dishFilter) q = q.or(dishFilter)
+    if (tags) q = q.overlaps('tags', [...tags])
+    return q.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(SIMILAR_CANDIDATES)
+  }
+  const [candidates, fill, count] = await Promise.all([
+    recipe.tags.length > 0 ? others(recipe.tags) : null,
+    // A wider top-up pool: rankSimilar may drop recipes that contradict the diet.
+    others(),
+    supabase.from('public_recipes').select('id', { count: 'exact', head: true }).eq('category', recipe.category),
+  ])
+  must(candidates?.error ?? fill.error ?? count.error, 'similar recipes failed')
+  const cards = rankSimilar(recipe.tags, (candidates?.data ?? []) as SimilarCard[], (fill.data ?? []) as SimilarCard[])
+  return { cards, total: count.count ?? 0 }
+}
+
 /** „Ostatnio dodane”: the newest public recipes across all users. */
 export async function readRecentPublicRecipes(supabase: SupabaseClient, limit: number): Promise<MyRecipeCard[]> {
   const { data, error } = await supabase
@@ -162,19 +212,19 @@ const tagsKey = (tags: readonly string[]): string => [...tags].sort().join(',')
 
 /**
  * Wrap a user-independent read: the cookie-free anon client + `unstable_cache`
- * with the shared 120 s TTL and the list tag (plus any extra per-entry tag).
- * Keeping the TTL and the list tag here, not in each wrapper, makes the
- * freshness / invalidation contract structural — a new read cannot forget them.
+ * with the shared TTL and, unless told otherwise, the list tag. Keeping both here,
+ * not in each wrapper, makes the freshness / invalidation contract structural — a
+ * new read cannot forget them.
  */
 function cached<T>(
   name: string,
   keyParts: string[],
   read: (supabase: SupabaseClient) => Promise<T>,
-  extraTags: string[] = [],
+  tags: string[] = [RECIPES_LIST_TAG],
 ): Promise<T> {
   return unstable_cache(() => read(createSupabaseAnonClient()), [name, ...keyParts], {
     revalidate: REVALIDATE_SECONDS,
-    tags: [RECIPES_LIST_TAG, ...extraTags],
+    tags,
   })()
 }
 
@@ -195,9 +245,16 @@ export function getCategoryTotal(params: { category: string }) {
   return cached('category-total', [params.category], (c) => readCategoryTotal(c, params))
 }
 
-/** Cached guest-safe recipe read, keyed per slug, with the recipe's own tag alongside the list tag. */
+/** Cached guest-safe recipe read, keyed per slug, purged by the recipe's own tag only. */
 export function getPublicRecipe(slug: string) {
   return cached('public-recipe', [slug], (c) => readPublicRecipe(c, slug), [recipeTag(slug)])
+}
+
+/** Cached "Podobne" row, keyed by everything the ranking reads from the recipe. */
+export function getSimilarRecipes(recipe: SimilarSource) {
+  return cached('similar-recipes', [String(recipe.id), recipe.category, recipe.dish ?? '', tagsKey(recipe.tags)], (c) =>
+    readSimilarRecipes(c, recipe),
+  )
 }
 
 /** Cached „Ostatnio dodane” feed, keyed per limit. */

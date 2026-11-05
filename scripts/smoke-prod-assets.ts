@@ -1,5 +1,5 @@
 import { staticAssetPaths } from '../src/lib/static-assets'
-import { classifyAttempts, type AttemptResult } from '../src/lib/smoke-attempts'
+import { classifyAttempts, classifyRecipeSample, sampleRecipePaths, type AttemptResult } from '../src/lib/smoke-attempts'
 
 // Production smoke check: every `/_next/static` file the public pages reference
 // must load. A Worker version whose code and static assets come from different
@@ -15,7 +15,13 @@ import { classifyAttempts, type AttemptResult } from '../src/lib/smoke-attempts'
 // failure, so a healthy post-deploy window does not read as an outage. A 1102
 // that is still failing after the retries, a non-1102 status, a missing/404
 // static file, or a page that never answers 200 still fails — none of those
-// warms away. Run after every deploy and every secret change:
+// warms away.
+//
+// The retries above can hide a Worker that fails readers, so a second pass opens
+// different recipes once each, with no retry, the way someone clicking through them
+// does. On 2026-11-05 a version failing 26% of requests passed the first pass.
+//
+// Run after every deploy and every secret change:
 //
 //   pnpm smoke:prod                         # https://zapiszprzepis.pl
 //   pnpm smoke:prod https://<version>.workers.dev
@@ -31,6 +37,9 @@ const ATTEMPTS = 10
 const GAP_MS = 300
 // Backoff before each retry of a 1102, giving the cold isolate time to warm.
 const CPU_LIMIT_BACKOFF_MS = [700, 1500, 3000]
+// Different recipes opened once each, and how many of them may fail.
+const RECIPE_SAMPLE = 30
+const RECIPE_FAILURES_ALLOWED = 1
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -88,6 +97,17 @@ async function getRepeatedly(page: string): Promise<{ results: AttemptResult[]; 
   return { results, html }
 }
 
+/** The status of each sampled recipe, one request each and one at a time. */
+async function sampleRecipes(): Promise<number[]> {
+  const sitemap = await get(`${BASE}/sitemap.xml`, { readBody: true })
+  const statuses: number[] = []
+  for (const path of sampleRecipePaths(sitemap.html ?? '', RECIPE_SAMPLE)) {
+    if (statuses.length > 0) await sleep(GAP_MS)
+    statuses.push((await get(`${BASE}${path}?cb=${Date.now()}`)).status)
+  }
+  return statuses
+}
+
 async function main(): Promise<void> {
   const failures: string[] = []
   const notes: string[] = []
@@ -115,7 +135,13 @@ async function main(): Promise<void> {
     if (status !== 200 || type.startsWith('text/html')) failures.push(`${path} → ${status} ${type}`)
   }
 
-  console.log(`${BASE}: ${PAGES.length} pages × ${ATTEMPTS} attempts, ${assets.size} static files checked`)
+  const recipes = await sampleRecipes()
+  const recipeFailure = classifyRecipeSample(recipes, RECIPE_FAILURES_ALLOWED)
+  if (recipeFailure) failures.push(recipeFailure)
+
+  console.log(
+    `${BASE}: ${PAGES.length} pages × ${ATTEMPTS} attempts, ${assets.size} static files, ${recipes.length} different recipes checked`,
+  )
   if (notes.length > 0) {
     console.warn('⚠ transient post-deploy cold-start (error 1102); the site still serves:')
     for (const n of notes) console.warn(`  ${n}`)
