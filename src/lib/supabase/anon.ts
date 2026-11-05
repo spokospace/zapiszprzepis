@@ -12,16 +12,18 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/env'
  *
  * Untyped like `createSupabaseServerClient` (no `Database` generic), so the
  * `public_recipes` view — which is not in the generated table types — resolves.
- * Module singleton: one client per Worker isolate, reused across invocations;
- * `persistSession`/`autoRefreshToken` are off because there is no user session.
+ * Module singleton: one client per Worker isolate, reused across invocations.
+ *
+ * `accessToken` keeps the auth client out of it. That client starts an `initializePromise`
+ * in its constructor, and every query awaits it. On Workers a promise dies with the request
+ * that started it, so if the first request ended early (error 1102, a client that left),
+ * every later read in the isolate would hang. A null token falls back to the anon key.
  */
 let anonClient: SupabaseClient | null = null
 
 export function createSupabaseAnonClient(): SupabaseClient {
   if (!anonClient) {
-    anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    })
+    anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { accessToken: async () => null })
   }
   return anonClient
 }

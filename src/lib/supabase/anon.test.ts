@@ -9,11 +9,11 @@ vi.mock('@supabase/supabase-js', () => ({ createClient }))
 const { createSupabaseAnonClient } = await import('./anon')
 
 describe('createSupabaseAnonClient', () => {
-  it('builds a cookie-free anon client with no session (persist/refresh off)', () => {
+  it('builds a cookie-free client without the auth client, whose init promise could hang reads', async () => {
     const client = createSupabaseAnonClient()
-    expect(createClient).toHaveBeenCalledWith('https://db.example', 'anon-key', {
-      auth: { persistSession: false, autoRefreshToken: false },
-    })
+    expect(createClient).toHaveBeenCalledWith('https://db.example', 'anon-key', { accessToken: expect.any(Function) })
+    const options = (createClient.mock.calls[0] as unknown[])[2] as { accessToken: () => Promise<string | null> }
+    await expect(options.accessToken()).resolves.toBeNull()
     expect(client).toEqual({ __anonClient: true })
   })
 

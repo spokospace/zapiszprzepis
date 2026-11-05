@@ -12,8 +12,11 @@ const JWKS_TTL_MS = 10 * 60 * 1000
 const EMPTY_TTL_MS = 30 * 1000
 const FETCH_TIMEOUT_MS = 3000
 
+// Only a finished result is kept, never a fetch in progress. On Workers a promise belongs to
+// the request that started it: if that request ends early (error 1102, a client that left),
+// the promise never settles, and every later request in the isolate awaiting it hangs until
+// the isolate is replaced. A few parallel fetches on an expired cache are the cheap price.
 let cache: { url: string; keys: JWK[]; expiresAt: number } | undefined
-let inflight: { url: string; promise: Promise<JWK[]> } | undefined
 
 /** The published keys, or none when the fetch fails or the project publishes none. */
 async function fetchKeys(supabaseUrl: string): Promise<JWK[]> {
@@ -30,30 +33,20 @@ async function fetchKeys(supabaseUrl: string): Promise<JWK[]> {
 }
 
 /**
- * The project's public signing keys, from memory while fresh; concurrent callers share
- * one fetch. Never throws: with no keys, getClaims() asks the Auth server itself (a
- * getUser() round trip) and reports a failure through the usual error path.
+ * The project's public signing keys, from memory while fresh; otherwise each caller
+ * fetches for itself. Never throws: with no keys, getClaims() asks the Auth server itself
+ * (a getUser() round trip) and reports a failure through the usual error path.
  */
 export async function getCachedJwks(supabaseUrl: string): Promise<{ keys: JWK[] }> {
   if (cache && cache.url === supabaseUrl && Date.now() < cache.expiresAt) {
     return { keys: cache.keys }
   }
-  if (inflight?.url !== supabaseUrl) {
-    const promise = fetchKeys(supabaseUrl)
-      .then((keys) => {
-        cache = { url: supabaseUrl, keys, expiresAt: Date.now() + (keys.length ? JWKS_TTL_MS : EMPTY_TTL_MS) }
-        return keys
-      })
-      .finally(() => {
-        if (inflight?.promise === promise) inflight = undefined
-      })
-    inflight = { url: supabaseUrl, promise }
-  }
-  return { keys: await inflight.promise }
+  const keys = await fetchKeys(supabaseUrl)
+  cache = { url: supabaseUrl, keys, expiresAt: Date.now() + (keys.length ? JWKS_TTL_MS : EMPTY_TTL_MS) }
+  return { keys }
 }
 
 /** Forget the kept keys; for tests. */
 export function resetJwksCache(): void {
   cache = undefined
-  inflight = undefined
 }
