@@ -42,12 +42,31 @@ describe('getCachedJwks', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-  it('shares one fetch between concurrent callers', async () => {
-    const fetchMock = vi.fn(async () => answer({ keys: [KEY] }))
+  it('never makes a caller wait on a fetch another caller started', async () => {
+    // On Workers a promise dies with the request that started it, so a caller that joined
+    // it would hang. Here the first fetch never settles, as if its request had been killed.
+    const fetchMock = vi.fn()
+    fetchMock.mockImplementationOnce(() => new Promise(() => {}))
+    fetchMock.mockImplementation(async () => answer({ keys: [KEY] }))
     vi.stubGlobal('fetch', fetchMock)
-    const results = await Promise.all([getCachedJwks(URL_A), getCachedJwks(URL_A), getCachedJwks(URL_A)])
-    expect(results).toEqual([{ keys: [KEY] }, { keys: [KEY] }, { keys: [KEY] }])
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    void getCachedJwks(URL_A)
+    await expect(getCachedJwks(URL_A)).resolves.toEqual({ keys: [KEY] })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps good keys when a parallel fetch fails after them', async () => {
+    let failLate!: () => void
+    const late = new Promise<Response>((_, reject) => (failLate = () => reject(new Error('down'))))
+    const fetchMock = vi.fn()
+    fetchMock.mockImplementationOnce(() => late)
+    fetchMock.mockImplementation(async () => answer({ keys: [KEY] }))
+    vi.stubGlobal('fetch', fetchMock)
+    const slow = getCachedJwks(URL_A)
+    await expect(getCachedJwks(URL_A)).resolves.toEqual({ keys: [KEY] })
+    failLate()
+    await expect(slow).resolves.toEqual({ keys: [KEY] })
+    await expect(getCachedJwks(URL_A)).resolves.toEqual({ keys: [KEY] })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('returns no keys when the fetch fails or answers badly, and tries again after half a minute', async () => {
