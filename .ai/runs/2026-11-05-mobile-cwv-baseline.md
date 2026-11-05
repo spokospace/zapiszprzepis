@@ -48,3 +48,21 @@ The recipe's real React components are hydrated as islands: `RecipeActions` (`cl
 JS 87 KB against 195 KB. HTML 36-51 KB against about 183 KB. CLS 0 on both. Across runs the ranges do not overlap: pilot TBT 44-264 ms, production 689-2036 ms. Checked in a browser: islands hydrate, ticking an ingredient works, no app errors.
 
 Still left out: list bar with Previous/Next, dish versions, the real menu drawer, analytics, and the signed-in overlay (session store, supabase-js), which signed-in readers would pay for. Full page loads between recipes were not measured. Lab profile only, one session, `workers.dev` preview, so TTFB is not comparable.
+
+## Real phone (Pixel 11 Pro, Android 17, Chrome 156, Wi-Fi, 2026-11-05)
+
+Pilot now renders the real layout (`AppHeader`, `RecipeHeader`, `SiteFooter`, real cards), JS about 109 KB gzip, HTML 111-126 KB. Chrome over adb, cache and service worker bypassed, median of 3. Production ran **signed in** (the phone's own session), the pilot as a guest on `workers.dev`.
+
+| Page | CPU | TTFB | FCP | LCP | TBT | Requests | RSC |
+|---|---|---|---|---|---|---|---|
+| pilot `zapiekanka` | x1 | 351 ms | 492 ms | 492 ms | 0 | 30 | 0 |
+| production `zapiekanka` | x1 | 123 ms | 280 ms | 668 ms | 0 | 57 | 8 |
+| pilot `kajzerki` | x1 | 514 ms | 640 ms | 640 ms | 0 | 30 | 0 |
+| production `kajzerki` | x1 | 237 ms | 344 ms | 464 ms | 0 | 50 | 12 |
+| pilot `zapiekanka` | x4 | 324 ms | 452 ms | 492 ms | 0 | 30 | 0 |
+| production `zapiekanka` | x4 | 194 ms | 324 ms | 772 ms | 160 ms | 57 | 8 |
+
+- On a flagship phone on Wi-Fi the two are about equal. The large gap belongs to slow devices and networks; the lab profile showed TBT 60-138 ms against 810-1383 ms for an earlier pilot without the header island.
+- The real-layout pilot has not been measured on the lab profile yet.
+- First production visits had TTFB 907-958 ms; later ones 122-237 ms.
+- 18 of 18 runs answered `200` here, but during the same session the installed app stayed on its splash screen for minutes, a Chrome load timed out after 60 s, and a guest `curl` of `/` timed out after 20 s, then answered in 0.8 s. These are hangs, not 1102. Cause unknown.
