@@ -6,6 +6,14 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### `/szukaj` jako plik na produkcji (PR #726)
+
+**Jak:** scalenie o 14:09, build `master` gotowy o 14:12. Pięć żądań `/szukaj?q=ser`, ten sam przebieg gościa co na podglądzie (desktop i Pixel 7), `pnpm smoke:prod`.
+
+**Wynik:** 0,08-0,10 s zamiast 0,50-1,40 s przed zmianą, bez nagłówka `x-opennext`, z nagłówkami bezpieczeństwa. Wyniki, „Pokaż kolejne”, kategoria, wejście w przepis i powrót działają, bez błędów w konsoli i bez poziomego przewijania. `pnpm smoke:prod` przeszedł.
+
+**Nie dowodzi:** czas to samo pobranie pliku, a wyniki dochodzą osobnym zapytaniem: pełne otwarcie z wynikami zajęło 1,1 s na desktopie i 0,55 s na telefonie w pojedynczych próbach. Zalogowany był sprawdzony tylko na lokalnym dev. Uper SEO po tych zmianach jeszcze nie powtórzony.
+
 ### `/szukaj` jako plik: przed zmianą i skeleton
 
 **Stan przed zmianą:** `/szukaj?q=ser` na produkcji, 3 żądania: 1,40 s, 1,27 s, 0,50 s, każde z renderem na Workerze. Samo `search_recipes` z przeglądarki 0,10-0,25 s. Próba jest mała, kierunek wyraźny.
