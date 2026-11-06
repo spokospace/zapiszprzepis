@@ -6,6 +6,19 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### Wyszukiwarka: migracja wgrana na produkcję (PR #724)
+
+**Jak:** migracja i test `supabase/tests/search_word_similarity.sql` w jednej transakcji o 13:19, potem przeładowanie schematu. Zapytania jako gość przez publiczne API, zakresy zalogowanego w bloku cofniętym wyjątkiem, ekran kontem QA na lokalnym dev (ta sama baza).
+
+**Wynik:**
+- Test przeszedł, nowy indeks jest, starego nie ma, wersja zarejestrowana.
+- Gość: `pierogów` 3 wyniki, `sałatka z kurczakiem` 22, `ciasto z jabłkami` 14, `dyni` 3. Pełne żądanie z tego komputera 100-250 ms, razem z siecią.
+- Gość pytający o „Moje” i „Ulubione” dostaje pustą listę, bez błędu uprawnień.
+- Właściciel przepisów: „Moje” dla `ciasto` zwraca 140 (limit), „Ulubione” 3.
+- Konto QA: `pierogów` w „Ulubionych” znalazło „Pierogi leniwe”. Serce usunięte po teście, ulubione QA znów puste.
+
+**Nie dowodzi:** „Moje” nie było sprawdzone na ekranie, bo konto QA nie ma przepisów i nie wolno ich dodawać. Działanie na prawdziwym ruchu nie jest jeszcze zmierzone.
+
 ### Wyszukiwarka: próba `search_recipes` z podobieństwem (PR #724)
 
 **Jak:** cała migracja w jednej transakcji zakończonej wyjątkiem, na danych produkcyjnych. Po próbie stary indeks był na miejscu, a nowego nie było. 171 zapytań wybranych ręcznie, bez logów prawdziwych wyszukiwań.
@@ -21,7 +34,7 @@ Zniknęły 34 wyniki: 33 dla `dyni` i 1 dla `zup`. W sprawdzonej próbce były t
 
 **Nie dowodzi:** miara szumu zaniża wynik, bo patrzy tylko na początek słowa (`cukina` łapie „cukier”, a to się nie liczy). „Moje” i „Ulubione” nie były sprawdzone na zalogowanym koncie. Krótkie słowa są szerokie: `mak` 527 wyników (łapie „mąkę”), `pier` 705 (łapie „pieprz”).
 
-**Status:** migracja niewgrana, czeka na zgodę właściciela.
+**Status:** migracja wgrana, patrz wpis wyżej.
 
 ### Wyszukiwarka: Pagefind, dziś i `pg_trgm`
 
