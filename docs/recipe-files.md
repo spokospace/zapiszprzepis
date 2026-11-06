@@ -34,7 +34,7 @@ Plik zniknie też bez reguły, po buildzie. Reguła skraca czas z kilkunastu min
 
 ## HTTP na HTTPS dla adresów z plików (do ustawienia w strefie)
 
-Stan z 2026-11-06: `http://zapiszprzepis.pl/przepis/zapiekanka` odpowiada 200 bez przekierowania, bo `custom-worker.ts` (który robił to przekierowanie) nie działa na adresach podawanych z plików. Strefa nie ma włączonego „Always Use HTTPS”. Zmiana dotyczy całej strefy, więc robi ją właściciel.
+**Zrobione 2026-11-06 22:02 UTC** (włączone w panelu za zgodą właściciela, sprawdzone `curl -I`: 301 na `https://`). Przed zmianą `http://zapiszprzepis.pl/przepis/zapiekanka` odpowiadał 200 bez przekierowania, bo `custom-worker.ts` (który robił to przekierowanie) nie działa na adresach podawanych z plików. Kroki poniżej to opis i sposób sprawdzenia lub cofnięcia.
 
 1. Cloudflare → strefa `zapiszprzepis.pl` → SSL/TLS → Edge Certificates → **Always Use HTTPS** → włącz.
 2. Sprawdź:

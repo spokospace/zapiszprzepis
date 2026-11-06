@@ -6,6 +6,16 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### Always Use HTTPS włączone w strefie (22:02 UTC)
+
+**Jak:** za zgodą właściciela przełącznik SSL/TLS → Edge Certificates → Always Use HTTPS włączony w panelu (token projektu nie ma uprawnień do ustawień strefy). Sprawdzenie `curl -I` po kilkunastu sekundach.
+
+**Wynik:** `http://zapiszprzepis.pl/przepis/zapiekanka`, ten sam adres z `?x=1`, `http://www.zapiszprzepis.pl/` i `http://zapiszprzepis.pl/` odpowiadają 301 na `https://` z tą samą ścieżką i zapytaniem. Przed zmianą było 200. Wersja https nadal 200. Przełączenie zadziałało w ciągu około 20 sekund.
+
+**Przy okazji (`pnpm smoke:prod` zaraz potem, czerwony):** `/` 8 z 10 prób 503, `/login` 9 z 10 prób 503, a krok „recipes” zgłosił, że sitemap nie zawiera adresów. Ręcznie chwilę później: `/` 200, `/przepis/zapiekanka` 200, `/sitemap.xml` 200, `/login` 503. Strony główna i `/login` idą przez Workera, więc to ten sam znany problem 1102, a nie skutek przekierowania (503, nie pętla przekierowań). To kilka minut po czterech błędach z 21:38.
+
+**Nie dowodzi:** że przekierowanie nie ma żadnych skutków ubocznych (np. HSTS nie włączono, zostaje do osobnej decyzji). Czerwony smoke nie jest powtórzony po 30 cichych minutach, więc nie wiem, czy `/` i `/login` wracają same. Nie kontynuuję prób obciążających produkcję.
+
 ### Worker po przepisach i `/szukaj` jako plikach: stan o 22:00
 
 **Jak:** Cloudflare GraphQL (`workersInvocationsAdaptive`), skrypt `zapiszprzepis`, okno od 12:15 do 22:00 UTC. Wersja `89a871db` (wdrożona 21:09), poprzednie wersje `78af6b56` (14:21) i `191b152b` (18:31).
