@@ -13,6 +13,15 @@ Zwykle zmiana lub usunięcie przepisu widać więc po około 10-15 minutach. Bez
 
 Po 12 buildach w ciągu doby kolejna zmiana czeka do północy UTC albo do ręcznego Retry.
 
+## Automatyczna kontrola po wdrożeniu
+
+Build z deploy hooka nikt nie ogląda, a GitHub Actions nie ma minut. Dlatego cron co 5 minut (`src/lib/post-deploy-check.ts`) sprawdza każdą nową wersję Workera raz: `/szukaj` i trzy najstarsze przepisy muszą odpowiedzieć 200, a każdy plik `/_next/static`, który wskazują, musi się załadować (nie 404 i nie HTML w miejscu CSS/JS). Nie sprawdza tras z Workera (`/`, `/login`): 503 tam to znany problem obciążenia, a kontrola nie ma go zaogniać.
+
+- Wynik: wiersz w Observability (`post-deploy: version … ok` albo `… FAILED`) i rekord `deploy-check/last.json` w R2 (`zapiszprzepis-backups`).
+- Nieudaną kontrolę powtarza następne uruchomienie crona, do 3 prób na wersję.
+- `FAILED` = to samo co czerwony `pnpm smoke:prod`: Builds → Retry ostatniego builda `master`, potem `pnpm smoke:prod`.
+- Kontrola nie zastępuje `pnpm smoke:prod` po zmianie sekretu: ten sam cron ją uruchomi, bo zmiana sekretu też tworzy wersję.
+
 ## Pilne zdjęcie jednej strony
 
 Dla sprawy prawnej albo danych, które nie mogą czekać na build. Sprawdzone 2026-11-06 na przepisie podawanym z pliku: reguła wygrywa z plikiem, działa w kilkadziesiąt sekund od zapisania i obejmuje też adresy z query string, HTTP i ukośnikiem na końcu (ten przez przekierowanie). Po jej usunięciu przepis wraca od razu.
