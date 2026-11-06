@@ -29,9 +29,14 @@ export type R2Bucket = {
     value: string,
     options?: { httpMetadata?: { contentType?: string } },
   ): Promise<unknown>
+  // Read by the post-deploy check (src/lib/post-deploy-check.ts); the backup only writes.
+  get?(key: string): Promise<{ json(): Promise<unknown> } | null>
 }
 
 export type CronEnv = {
+  // The next two are read by the post-deploy check.
+  NEXT_PUBLIC_SITE_URL?: string
+  CF_VERSION_METADATA?: { id: string }
   NEXT_PUBLIC_SUPABASE_URL: string
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string
   // Set with `wrangler secret put`; absent until someone does that.

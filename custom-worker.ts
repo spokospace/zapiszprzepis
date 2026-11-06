@@ -38,6 +38,7 @@ import { serveImage } from './src/lib/image-cache'
 import { httpsRedirect } from './src/lib/https-redirect'
 import { serveGuestPage } from './src/lib/html-cache'
 import { requestRecipeFilesBuild } from './src/lib/recipe-files-refresh'
+import { runPostDeployCheck } from './src/lib/post-deploy-check'
 
 const KEEP_ALIVE_CRON = '0 4 * * *'
 const BACKUP_CRON = '30 3 * * *'
@@ -100,6 +101,7 @@ const worker = {
       case WATCHDOG_CRON:
         ctx.waitUntil(failoverStalePendingShares(env))
         ctx.waitUntil(requestRecipeFilesBuild(env))
+        ctx.waitUntil(runPostDeployCheck(env))
         return
       default:
         console.error(`scheduled: no handler for cron "${controller.cron}"`)
