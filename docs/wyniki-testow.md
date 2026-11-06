@@ -14,7 +14,13 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 **Pomyłka po drodze:** tytuł karty nie zmieniał się na produkcyjnym buildzie, choć kod go ustawiał, bo tytuł strony dochodził później i go nadpisywał. Na serwerze deweloperskim wyglądało to podobnie, ale dopiero build to potwierdził. Tytuł ustawiamy teraz też po nadejściu wyników.
 
-**Nie dowodzi:** skeleton zakłada gościa z filtrem „Kategoria”. Zalogowany ma dodatkowy wiersz „Szukaj w:”, więc u niego lista przesuwa się po wczytaniu. Pusty `/szukaj` przez chwilę pokazuje karty skeletonu, bo plik nie zna adresu.
+**Na podglądzie Cloudflare, jako plik (gość, desktop i telefon Pixel 7):** `/szukaj?q=ser` 5 żądań, 0,09-0,16 s, bez nagłówka `x-opennext`, z nagłówkami bezpieczeństwa. Wyniki, „Pokaż kolejne”, filtr kategorii, wejście w przepis i powrót działają, bez błędów w konsoli i bez poziomego przewijania. Zdjęcia kart się ładują.
+
+**Konto QA na lokalnym dev:** „Moje” i „Ulubione” odpowiadają bez błędu (konto ma 0 przepisów i 0 ulubionych, więc lista jest pusta).
+
+**Zaskoczenie:** planowaliśmy, że „Pokaż kolejne” i kategoria nie będą pytać bazy drugi raz, ale na podglądzie każde z nich dało 1 zapytanie. Link w obrębie aplikacji dostaje z pliku HTML zamiast danych Next.js, więc przeglądarka ładuje stronę od nowa. Działa poprawnie, a oszczędność dotyczy tylko nawigacji bez przeładowania.
+
+**Nie dowodzi:** skeleton zakłada gościa z filtrem „Kategoria”. Zalogowany ma dodatkowy wiersz „Szukaj w:”, więc u niego lista przesuwa się po wczytaniu. Pusty `/szukaj` przez chwilę pokazuje karty skeletonu, bo plik nie zna adresu. Zdjęcia kart nadal idą przez `/_next/image` na Workerze, więc strona wyników nie jest w pełni wolna od Workera. Pełny dostęp w zakładce „Na blogach” nie był klikany, bo to płatne zapytanie.
 
 ### Wyszukiwarka: migracja wgrana na produkcję (PR #724)
 
