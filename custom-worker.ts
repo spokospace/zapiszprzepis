@@ -14,7 +14,8 @@
  *   backup     — the free plan includes no backups, so the recipes exist in exactly
  *                one place. This copies them to R2 daily.
  *   watchdog   — re-sends shares still pending on the primary Inngest account to the
- *                secondary account (failoverStalePendingShares, #580 phase 3).
+ *                secondary account (failoverStalePendingShares, #580 phase 3). The same
+ *                five-minute cron asks for a build when the recipe files are behind.
  *
  * The backup also counts as database activity, so on a good day it keeps the project
  * awake by itself. keep-alive stays as the fallback for when the backup is broken —
@@ -36,6 +37,7 @@ import { backupToR2, failoverStalePendingShares, keepDatabaseAwake, syncApiLimit
 import { serveImage } from './src/lib/image-cache'
 import { httpsRedirect } from './src/lib/https-redirect'
 import { serveGuestPage } from './src/lib/html-cache'
+import { requestRecipeFilesBuild } from './src/lib/recipe-files-refresh'
 
 const KEEP_ALIVE_CRON = '0 4 * * *'
 const BACKUP_CRON = '30 3 * * *'
@@ -97,6 +99,7 @@ const worker = {
         return
       case WATCHDOG_CRON:
         ctx.waitUntil(failoverStalePendingShares(env))
+        ctx.waitUntil(requestRecipeFilesBuild(env))
         return
       default:
         console.error(`scheduled: no handler for cron "${controller.cron}"`)

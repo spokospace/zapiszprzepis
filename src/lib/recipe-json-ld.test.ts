@@ -195,6 +195,11 @@ describe('buildRecipeBreadcrumbJsonLd', () => {
 })
 
 describe('serializeJsonLd', () => {
+  // scripts/export-recipe-files.mjs looks for this text to tell a finished recipe page.
+  it('writes the recipe type the way the file export expects', () => {
+    expect(serializeJsonLd(buildRecipeJsonLd(base, SITE))).toContain('"@type":"Recipe"')
+  })
+
   const SEP_2028 = String.fromCharCode(0x2028)
   const SEP_2029 = String.fromCharCode(0x2029)
 

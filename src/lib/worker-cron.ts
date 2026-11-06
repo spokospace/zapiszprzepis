@@ -48,13 +48,18 @@ export type CronEnv = {
   // Minutes a share may stay pending on the primary before the watchdog re-sends
   // it to the secondary. Default 10; set as a Worker var to tune without a deploy.
   INNGEST_FAILOVER_WINDOW_MINUTES?: string
+  // Workers Builds deploy hook; the URL is the credential. Absent = recipe files refresh only
+  // with a code build.
+  RECIPE_FILES_DEPLOY_HOOK?: string
+  // Static assets binding, for the content version the deployed recipe files hold.
+  ASSETS?: { fetch(url: string): Promise<Response> }
 }
 
-function restHeaders(key: string): Record<string, string> {
+export function restHeaders(key: string): Record<string, string> {
   return { apikey: key, Authorization: `Bearer ${key}` }
 }
 
-function restBase(env: Pick<CronEnv, 'NEXT_PUBLIC_SUPABASE_URL'>): string {
+export function restBase(env: Pick<CronEnv, 'NEXT_PUBLIC_SUPABASE_URL'>): string {
   return env.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, '')
 }
 

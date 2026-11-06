@@ -1,30 +1,88 @@
-// Runs after `next build`: opens the pilot's recipes on the freshly built server and saves them
-// in public/, which OpenNext copies to the Worker's static assets. /przepis/{slug} then finds
+// Runs after `next build`: opens recipes on the freshly built server and saves them in public/,
+// which OpenNext copies to the Worker's static assets. /przepis/{slug} then finds
 // przepis/{slug}.html and never starts the Worker. Any failure leaves that recipe on the Worker,
-// so this never fails a build. Empty recipe-files.json to end the pilot.
+// so this never fails a build. recipe-files.json is a list of slugs, or "all" for every public
+// recipe; [] serves every recipe from the Worker again.
 //
 // Not generateStaticParams: on a static route a slug outside the list that reads the session
 // answers 500. A saved page is the same stream a live one is: the skeleton from loading.tsx,
 // then the content and the inline script that swaps it in, so it needs JavaScript like today.
 import { spawn } from 'node:child_process'
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const PORT = 3977
+// 925 recipes took 34 s at 8 in parallel on a laptop; one at a time is about 4 minutes.
+const PARALLEL = 8
+// A build may run 20 minutes. Recipes left when this runs out stay on the Worker.
+const TIME_LIMIT_MS = 10 * 60_000
+const PAGE_SIZE = 1000
+// One recipe that never exports must not cost 12 builds a day; an outage or the time limit must.
+const COMPLETE_SHARE = 0.99
 
-export async function exportRecipeFiles(slugs, fetchPage, root = process.cwd()) {
+// The status is sent before the page is rendered, so a page that failed half way is still a 200.
+// The recipe's structured data is written only once the recipe has been read.
+const isRecipePage = (html) => html.includes('"@type":"Recipe"') && html.includes('</html>')
+
+export async function exportRecipeFiles(slugs, fetchPage, { root = process.cwd(), deadline = Infinity } = {}) {
   const to = join(root, 'public/przepis')
   rmSync(to, { recursive: true, force: true })
   const exported = []
-  for (const slug of slugs) {
-    const page = await fetchPage(slug).catch(() => null)
-    if (page?.status !== 200 || !page.html.includes('</html>')) continue
-    mkdirSync(to, { recursive: true })
-    writeFileSync(join(to, `${slug}.html`), page.html)
-    exported.push(slug)
+  const queue = [...slugs]
+  async function work() {
+    while (queue.length > 0 && Date.now() < deadline) {
+      const slug = queue.shift()
+      const page = await fetchPage(slug).catch(() => null)
+      if (page?.status !== 200 || !isRecipePage(page.html)) continue
+      mkdirSync(to, { recursive: true })
+      writeFileSync(join(to, `${slug}.html`), page.html)
+      exported.push(slug)
+    }
   }
+  await Promise.all(Array.from({ length: PARALLEL }, work))
   return exported
+}
+
+/** Every read the export makes lands here, and OpenNext uploads all of it to R2 on each deploy. */
+export function clearDataCache(root = process.cwd()) {
+  rmSync(join(root, '.next/cache/fetch-cache'), { recursive: true, force: true })
+}
+
+/** A short export saves no version, so the cron asks for another build, within its daily limit. */
+export function versionToSave(version, exported, total) {
+  return exported >= total * COMPLETE_SHARE ? version : null
+}
+
+/** Which content the saved pages hold. The Worker's cron compares it with the database. */
+export function writeContentVersion(version, root = process.cwd()) {
+  writeFileSync(join(root, 'public/recipe-files-version.json'), JSON.stringify({ version }))
+}
+
+function supabase() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL && existsSync('.env.local')) process.loadEnvFile('.env.local')
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  return { url: process.env.NEXT_PUBLIC_SUPABASE_URL, headers: { apikey: key, Authorization: `Bearer ${key}` } }
+}
+
+async function publicSlugs() {
+  const { url, headers } = supabase()
+  const slugs = []
+  for (;;) {
+    const query = `select=slug&order=id.asc&limit=${PAGE_SIZE}&offset=${slugs.length}`
+    const response = await fetch(`${url}/rest/v1/public_recipes?${query}`, { headers })
+    if (!response.ok) throw new Error(`recipe list: ${response.status}`)
+    const rows = await response.json()
+    slugs.push(...rows.map((row) => row.slug))
+    if (rows.length < PAGE_SIZE) return slugs
+  }
+}
+
+/** Read before the pages, so a change made during the export asks for one more build. */
+async function contentVersion() {
+  const { url, headers } = supabase()
+  const response = await fetch(`${url}/rest/v1/rpc/recipe_content_version`, { method: 'POST', headers })
+  return response.ok ? response.json() : null
 }
 
 async function waitForServer() {
@@ -37,17 +95,31 @@ async function waitForServer() {
 }
 
 async function main() {
-  const slugs = JSON.parse(readFileSync('scripts/recipe-files.json', 'utf8'))
-  if (slugs.length === 0) return exportRecipeFiles([])
+  const listed = JSON.parse(readFileSync('scripts/recipe-files.json', 'utf8'))
+  const version = await contentVersion().catch(() => null)
+  const slugs = listed === 'all' ? await publicSlugs() : listed
+  const exported = slugs.length === 0 ? await exportRecipeFiles([]) : await exportFromServer(slugs)
+  writeContentVersion(versionToSave(version, exported.length, slugs.length))
+  return exported
+}
+
+async function exportFromServer(slugs) {
+  // A build cache could bring back the last build's entries, with the old recipes in them.
+  clearDataCache()
   const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', String(PORT)], { stdio: 'inherit' })
   try {
     await waitForServer()
-    return await exportRecipeFiles(slugs, async (slug) => {
-      const response = await fetch(`http://localhost:${PORT}/przepis/${slug}`, { redirect: 'manual' })
-      return { status: response.status, html: await response.text() }
-    })
+    return await exportRecipeFiles(
+      slugs,
+      async (slug) => {
+        const response = await fetch(`http://localhost:${PORT}/przepis/${slug}`, { redirect: 'manual' })
+        return { status: response.status, html: await response.text() }
+      },
+      { deadline: Date.now() + TIME_LIMIT_MS },
+    )
   } finally {
     server.kill()
+    clearDataCache()
   }
 }
 
