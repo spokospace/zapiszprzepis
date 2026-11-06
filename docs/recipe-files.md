@@ -15,11 +15,11 @@ Po 12 buildach w ciągu doby kolejna zmiana czeka do północy UTC albo do ręcz
 
 ## Pilne zdjęcie jednej strony
 
-Dla sprawy prawnej albo danych, które nie mogą czekać na build:
+Dla sprawy prawnej albo danych, które nie mogą czekać na build. Sprawdzone 2026-11-06 na przepisie podawanym z pliku: reguła wygrywa z plikiem, działa w kilkadziesiąt sekund od zapisania i obejmuje też adresy z query string, HTTP i ukośnikiem na końcu (ten przez przekierowanie). Po jej usunięciu przepis wraca od razu.
 
 1. Cloudflare → strefa `zapiszprzepis.pl` → Rules → Redirect Rules → Create rule (Single Redirect; plan Free ma 10 reguł).
 2. Warunek: `URI Path` równa się `/przepis/{slug}`.
-3. Akcja: Static, adres `https://zapiszprzepis.pl/`, kod 302, bez zachowania query string. Wdróż.
+3. Akcja: Static, adres `https://zapiszprzepis.pl/`, kod 302 (domyślne 301 przeglądarki zapamiętują na stałe), bez zachowania query string. Wdróż.
 4. Sprawdź:
    ```bash
    curl -sI https://zapiszprzepis.pl/przepis/{slug}
