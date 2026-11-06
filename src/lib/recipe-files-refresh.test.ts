@@ -2,27 +2,37 @@ import { describe, expect, it, vi } from 'vitest'
 import { requestRecipeFilesBuild, shouldRequestBuild, type RecipeFilesState } from './recipe-files-refresh'
 
 const NOW = new Date('2026-11-06T12:00:00Z')
+const files = (version: number | null, day: string | null = null) => ({ version, day })
 const STATE: RecipeFilesState = { content_version: 5, build_requested_at: null, builds_day: null, builds_today: 0 }
 
 describe('shouldRequestBuild', () => {
   it('stays quiet while the files hold the current content', () => {
-    expect(shouldRequestBuild(STATE, 5, NOW)).toBe(false)
+    expect(shouldRequestBuild(STATE, files(5), NOW)).toBe(false)
   })
 
   it('asks when the files are behind, or say nothing about their content', () => {
-    expect(shouldRequestBuild(STATE, 4, NOW)).toBe(true)
-    expect(shouldRequestBuild(STATE, null, NOW)).toBe(true)
+    expect(shouldRequestBuild(STATE, files(4), NOW)).toBe(true)
+    expect(shouldRequestBuild(STATE, files(null), NOW)).toBe(true)
+  })
+
+  it('asks after Polish midnight when the home file holds the previous day pick, even with current content', () => {
+    expect(shouldRequestBuild(STATE, files(5, '2026-11-05'), NOW)).toBe(true)
+    expect(shouldRequestBuild(STATE, files(5, '2026-11-06'), NOW)).toBe(false)
+  })
+
+  it('has no daily rebuild when the home page is not a file', () => {
+    expect(shouldRequestBuild(STATE, files(5, null), NOW)).toBe(false)
   })
 
   it('waits 10 minutes after the last request', () => {
-    expect(shouldRequestBuild({ ...STATE, build_requested_at: '2026-11-06T11:51:00Z' }, 4, NOW)).toBe(false)
-    expect(shouldRequestBuild({ ...STATE, build_requested_at: '2026-11-06T11:50:00Z' }, 4, NOW)).toBe(true)
+    expect(shouldRequestBuild({ ...STATE, build_requested_at: '2026-11-06T11:51:00Z' }, files(4), NOW)).toBe(false)
+    expect(shouldRequestBuild({ ...STATE, build_requested_at: '2026-11-06T11:50:00Z' }, files(4), NOW)).toBe(true)
   })
 
   it('stops at 12 builds a day and starts again the next UTC day', () => {
     const spent = { ...STATE, builds_day: '2026-11-06', builds_today: 12 }
-    expect(shouldRequestBuild(spent, 4, NOW)).toBe(false)
-    expect(shouldRequestBuild({ ...spent, builds_day: '2026-11-05' }, 4, NOW)).toBe(true)
+    expect(shouldRequestBuild(spent, files(4), NOW)).toBe(false)
+    expect(shouldRequestBuild({ ...spent, builds_day: '2026-11-05' }, files(4), NOW)).toBe(true)
   })
 })
 
@@ -33,7 +43,7 @@ describe('requestRecipeFilesBuild', () => {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon',
     SUPABASE_SERVICE_ROLE_KEY: 'key',
     RECIPE_FILES_DEPLOY_HOOK: HOOK,
-    ASSETS: { fetch: async () => Response.json({ version: deployed }) },
+    ASSETS: { fetch: async () => Response.json({ version: deployed, day: null }) },
   })
 
   function fakeFetch(hookStatus = 200) {

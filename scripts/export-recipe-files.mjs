@@ -57,6 +57,25 @@ export async function exportSearchPage(fetchPage, root = process.cwd()) {
   return true
 }
 
+/**
+ * The home page reads neither the session nor the URL, so one file serves everyone. A page that
+ * failed leaves no file, and the Worker answers as before. „Przepis dnia” is frozen in the file,
+ * so the file records its day (see writeContentVersion) and the cron asks for a build after
+ * Polish midnight.
+ */
+export async function exportHomePage(fetchPage, root = process.cwd()) {
+  const file = join(root, 'public/index.html')
+  rmSync(file, { force: true })
+  const page = await fetchPage().catch(() => null)
+  if (page?.status !== 200 || !page.html.includes('"@type":"WebSite"') || !page.html.includes('</html>')) return false
+  writeFileSync(file, page.html)
+  return true
+}
+
+/** The Europe/Warsaw civil day as YYYY-MM-DD; the same key as warsawDayKey in src/lib/recipe-of-the-day.ts. */
+export const warsawDay = (date = new Date()) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+
 /** Every read the export makes lands here, and OpenNext uploads all of it to R2 on each deploy. */
 export function clearDataCache(root = process.cwd()) {
   rmSync(join(root, '.next/cache/fetch-cache'), { recursive: true, force: true })
@@ -67,9 +86,13 @@ export function versionToSave(version, exported, total) {
   return exported >= total * COMPLETE_SHARE ? version : null
 }
 
-/** Which content the saved pages hold. The Worker's cron compares it with the database. */
-export function writeContentVersion(version, root = process.cwd()) {
-  writeFileSync(join(root, 'public/recipe-files-version.json'), JSON.stringify({ version }))
+/**
+ * Which content the saved pages hold. The Worker's cron compares it with the database. `day` is
+ * the Warsaw day of the saved home page, or null when there is none: the cron then has no daily
+ * rebuild to ask for.
+ */
+export function writeContentVersion(version, day = null, root = process.cwd()) {
+  writeFileSync(join(root, 'public/recipe-files-version.json'), JSON.stringify({ version, day }))
 }
 
 function supabase() {
@@ -111,14 +134,16 @@ async function main() {
   const listed = JSON.parse(readFileSync('scripts/recipe-files.json', 'utf8'))
   const version = await contentVersion().catch(() => null)
   const slugs = listed === 'all' ? await publicSlugs() : listed
-  const exported = slugs.length === 0 ? await clearFiles() : await exportFromServer(slugs)
-  writeContentVersion(versionToSave(version, exported.length, slugs.length))
+  const day = warsawDay()
+  const { exported, home } = slugs.length === 0 ? await clearFiles() : await exportFromServer(slugs)
+  writeContentVersion(versionToSave(version, exported.length, slugs.length), home ? day : null)
   return exported
 }
 
 async function clearFiles() {
   await exportSearchPage(async () => null)
-  return exportRecipeFiles([])
+  await exportHomePage(async () => null)
+  return { exported: await exportRecipeFiles([]), home: false }
 }
 
 async function exportFromServer(slugs) {
@@ -132,7 +157,10 @@ async function exportFromServer(slugs) {
       return { status: response.status, html: await response.text() }
     }
     if (!(await exportSearchPage(() => open('/szukaj')))) console.error('[recipe-files] /szukaj stays on the Worker')
-    return await exportRecipeFiles(slugs, (slug) => open(`/przepis/${slug}`), { deadline: Date.now() + TIME_LIMIT_MS })
+    const home = await exportHomePage(() => open('/'))
+    if (!home) console.error('[recipe-files] / stays on the Worker')
+    const exported = await exportRecipeFiles(slugs, (slug) => open(`/przepis/${slug}`), { deadline: Date.now() + TIME_LIMIT_MS })
+    return { exported, home }
   } finally {
     server.kill()
     clearDataCache()

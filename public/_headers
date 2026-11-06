@@ -3,7 +3,7 @@
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Recipes and search served as static files. The Worker does not run for them, so its middleware cannot
+# Recipes, search and the home page served as static files. The Worker does not run for them, so its middleware cannot
 # add these. src/lib/public-headers.test.ts keeps them equal to securityHeaders().
 /przepis/*
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://wvrlgddgdddwmgzbvtij.supabase.co wss://wvrlgddgdddwmgzbvtij.supabase.co; frame-src https://www.youtube-nocookie.com
@@ -13,6 +13,13 @@
   Strict-Transport-Security: max-age=63072000; includeSubDomains
 
 /szukaj
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://wvrlgddgdddwmgzbvtij.supabase.co wss://wvrlgddgdddwmgzbvtij.supabase.co; frame-src https://www.youtube-nocookie.com
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+
+/
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://wvrlgddgdddwmgzbvtij.supabase.co wss://wvrlgddgdddwmgzbvtij.supabase.co; frame-src https://www.youtube-nocookie.com
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
