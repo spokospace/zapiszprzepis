@@ -6,6 +6,24 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### Always Use HTTPS włączone w strefie (22:02 UTC)
+
+**Jak:** za zgodą właściciela przełącznik SSL/TLS → Edge Certificates → Always Use HTTPS włączony w panelu (token projektu nie ma uprawnień do ustawień strefy). Sprawdzenie `curl -I` po kilkunastu sekundach.
+
+**Wynik:** `http://zapiszprzepis.pl/przepis/zapiekanka`, ten sam adres z `?x=1`, `http://www.zapiszprzepis.pl/` i `http://zapiszprzepis.pl/` odpowiadają 301 na `https://` z tą samą ścieżką i zapytaniem. Przed zmianą było 200. Wersja https nadal 200. Przełączenie zadziałało w ciągu około 20 sekund.
+
+**Przy okazji (`pnpm smoke:prod` zaraz potem, czerwony):** `/` 8 z 10 prób 503, `/login` 9 z 10 prób 503, a krok „recipes” zgłosił, że sitemap nie zawiera adresów. Ręcznie chwilę później: `/` 200, `/przepis/zapiekanka` 200, `/sitemap.xml` 200, `/login` 503. Strony główna i `/login` idą przez Workera, więc to ten sam znany problem 1102, a nie skutek przekierowania (503, nie pętla przekierowań). To kilka minut po czterech błędach z 21:38.
+
+**Nie dowodzi:** że przekierowanie nie ma żadnych skutków ubocznych (np. HSTS nie włączono, zostaje do osobnej decyzji). Czerwony smoke nie jest powtórzony po 30 cichych minutach, więc nie wiem, czy `/` i `/login` wracają same. Nie kontynuuję prób obciążających produkcję.
+
+### Worker po przepisach i `/szukaj` jako plikach: stan o 22:00
+
+**Jak:** Cloudflare GraphQL (`workersInvocationsAdaptive`), skrypt `zapiszprzepis`, okno od 12:15 do 22:00 UTC. Wersja `89a871db` (wdrożona 21:09), poprzednie wersje `78af6b56` (14:21) i `191b152b` (18:31).
+
+**Wynik:** 4 przekroczenia limitu CPU (`exceededResources`), wszystkie w minutach 21:38 (3) i 21:39 (1) na wersji `89a871db`, czyli około 30 minut po wdrożeniu. Wcześniej w oknie 0. Pozostałe: 4142 udane, 74 rozłączenia klienta, 1 rozłączenie strumienia. Mediana CPU udanych 6,4 ms, p90 29,9 ms w tym ujęciu. Wcześniejszy odczyt „38,3 ms mediana, p90 264 ms” pochodzi z innego widoku panelu, więc liczb nie należy porównywać bez ustalenia, czym się różnią (kwantyle GraphQL liczą też crony i żądania zasobów).
+
+**Nie dowodzi:** nie wiem, które adresy dały te 4 błędy (GraphQL nie podaje ścieżki; potrzebne Workers Logs), więc nie wiem, czy to strona główna, kategoria albo `/_next/image`. Cztery żądania nie wystarczą do wniosku o trendzie, ale kończą serię „0 błędów” z notatki wieczornej.
+
 ### Uper SEO: analiza sitemapy po plikach dla wszystkich przepisów i `/szukaj`
 
 **Jak:** ten sam analizator właściciela co rano, 946 adresów, start po 17:54, eksport CSV o 18:04. Wersja `78af6b56`, od ostatniego wdrożenia minęło ponad 3,5 godziny. Dane o Workerze z Cloudflare GraphQL, odczyt o 18:05. Po analizie `pnpm smoke:prod`.
