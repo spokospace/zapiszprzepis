@@ -6,6 +6,14 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### Strona główna jako plik na produkcji (PR #732)
+
+**Jak:** podgląd gałęzi przed scaleniem (nagłówki, treść, przeglądarka), po scaleniu i buildzie `master` pięć żądań `/` z tego komputera oraz `pnpm smoke:prod`. Plik wersji na produkcji: `{"version":1,"day":"2026-11-07"}`.
+
+**Wynik:** `/` odpowiada 200 w 0,07-0,10 s (pierwsze żądanie 0,25 s), bez nagłówka `x-opennext`, z danymi `WebSite`. Na podglądzie strona w przeglądarce miała H1, kategorie, „Ostatnio dodane” i 5 kart, bez błędów w konsoli. `pnpm smoke:prod` przeszedł (`✓`: 3 strony po 10 prób, 19 plików, 30 przepisów).
+
+**Nie dowodzi:** że „Przepis dnia” zmieni się po północy: dzienny build po polskiej północy jest w kodzie i testach jednostkowych, ale nie był jeszcze widziany na produkcji (do sprawdzenia po 22:00 UTC). Widok zalogowanego na stronie głównej z pliku nie był sprawdzany. Zwykłe żądanie `curl` to nie ruch: nie wiem, czy `/` wytrzyma szczyt, ale nie startuje już Workera. Kategorie dalej idą przez Workera.
+
 ### Always Use HTTPS włączone w strefie (22:02 UTC)
 
 **Jak:** za zgodą właściciela przełącznik SSL/TLS → Edge Certificates → Always Use HTTPS włączony w panelu (token projektu nie ma uprawnień do ustawień strefy). Sprawdzenie `curl -I` po kilkunastu sekundach.
