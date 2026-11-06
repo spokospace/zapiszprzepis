@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { clearDataCache, exportRecipeFiles, exportSearchPage, versionToSave } from '../../scripts/export-recipe-files.mjs'
+import { clearDataCache, exportHomePage, exportRecipeFiles, exportSearchPage, versionToSave, warsawDay } from '../../scripts/export-recipe-files.mjs'
 
 const PAGE = '<html><script type="application/ld+json">{"@type":"Recipe"}</script></html>'
 
@@ -31,6 +31,41 @@ describe('exportSearchPage', () => {
     expect(await exportSearchPage(fetchPage, dir)).toBe(false)
     expect(existsSync(join(dir, 'public/szukaj.html'))).toBe(false)
     rmSync(dir, { recursive: true })
+  })
+})
+
+describe('exportHomePage', () => {
+  const root = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'home-file-'))
+    mkdirSync(join(dir, 'public'))
+    return dir
+  }
+
+  it('saves a finished page', async () => {
+    const dir = root()
+    const html = '<html><script type="application/ld+json">{"@type":"WebSite"}</script></html>'
+    expect(await exportHomePage(async () => ({ status: 200, html }), dir)).toBe(true)
+    expect(readFileSync(join(dir, 'public/index.html'), 'utf8')).toBe(html)
+    rmSync(dir, { recursive: true })
+  })
+
+  it.each([
+    ['an error page', async () => ({ status: 500, html: '<html>"@type":"WebSite"</html>' })],
+    ['a page without the site data', async () => ({ status: 200, html: '<html>inna</html>' })],
+    ['no answer', async () => Promise.reject(new Error('down'))],
+  ])('leaves no file after %s, so the Worker answers', async (_name, fetchPage) => {
+    const dir = root()
+    writeFileSync(join(dir, 'public/index.html'), 'old')
+    expect(await exportHomePage(fetchPage, dir)).toBe(false)
+    expect(existsSync(join(dir, 'public/index.html'))).toBe(false)
+    rmSync(dir, { recursive: true })
+  })
+})
+
+describe('warsawDay', () => {
+  it('rolls over at Polish midnight, not UTC', () => {
+    expect(warsawDay(new Date('2026-11-06T22:59:00Z'))).toBe('2026-11-06')
+    expect(warsawDay(new Date('2026-11-06T23:00:00Z'))).toBe('2026-11-07')
   })
 })
 

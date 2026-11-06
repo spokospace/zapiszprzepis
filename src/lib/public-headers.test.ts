@@ -11,14 +11,16 @@ describe('public/_headers', () => {
   })
 
   it('leaves everything else, such as sw.js, on the revalidating default', () => {
-    expect(rules.match(/^\//gm)).toHaveLength(3)
+    expect(rules.match(/^\//gm)).toHaveLength(4)
     expect(rules).not.toMatch(/^\/przepis\/\*(?:\r?\n\s+.*)*Cache-Control/m)
   })
 
   it('gives recipe files the headers the middleware gives a rendered page', () => {
-    const block = rules.slice(rules.indexOf('/przepis/*'))
-    for (const [name, value] of securityHeaders({ supabaseUrl: PRODUCTION_SUPABASE_URL })) {
-      expect(block).toContain(`  ${name}: ${value}`)
+    for (const path of ['/przepis/*', '/szukaj', '/']) {
+      const block = rules.split(/\r?\n\r?\n/).find((b) => b.split(/\r?\n/).find((line) => line.startsWith('/')) === path) ?? ''
+      for (const [name, value] of securityHeaders({ supabaseUrl: PRODUCTION_SUPABASE_URL })) {
+        expect(block, path).toContain(`  ${name}: ${value}`)
+      }
     }
   })
 })

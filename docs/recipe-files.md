@@ -22,6 +22,10 @@ Build z deploy hooka nikt nie ogląda, a GitHub Actions nie ma minut. Dlatego cr
 - `FAILED` = to samo co czerwony `pnpm smoke:prod`: Builds → Retry ostatniego builda `master`, potem `pnpm smoke:prod`.
 - Kontrola nie zastępuje `pnpm smoke:prod` po zmianie sekretu: ten sam cron ją uruchomi, bo zmiana sekretu też tworzy wersję.
 
+## Strona główna jako plik
+
+`/` jest zapisywana jak przepisy, jako `public/index.html`. „Przepis dnia” jest w pliku zamrożony, więc `recipe-files-version.json` zapisuje też `day` (dzień warszawski zapisanej strony), a cron co 5 minut prosi o build po polskiej północy (w ramach tych samych limitów: raz na 10 minut, 12 na dobę). Gdy `/` nie wyeksportuje się, `day` to `null`, strona zostaje na Workerze i dziennego builda nie ma. Kategorie (`/przepisy/{kategoria}`) nadal idą przez Workera: czytają `?tag=` i `?strona=` po stronie serwera, więc plik odpowiadałby na każdy wariant adresu tą samą treścią.
+
 ## Pilne zdjęcie jednej strony
 
 Dla sprawy prawnej albo danych, które nie mogą czekać na build. Sprawdzone 2026-11-06 na przepisie podawanym z pliku: reguła wygrywa z plikiem, działa w kilkadziesiąt sekund od zapisania i obejmuje też adresy z query string, HTTP i ukośnikiem na końcu (ten przez przekierowanie). Po jej usunięciu przepis wraca od razu.
