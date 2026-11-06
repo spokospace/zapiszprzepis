@@ -142,6 +142,7 @@ Forem is the closest match: the same cached HTML for everyone, with user data fr
 16. Owner: apply the migration, create the deploy hook, save it as the `RECIPE_FILES_DEPLOY_HOOK` secret.
 17. Set `scripts/recipe-files.json` to `"all"`.
 18. Still open: HTTP to HTTPS at the zone, the `.rsc` rewrite rule, image delivery, a check of automatic builds in place of the manual `pnpm smoke:prod`, then categories and home.
+19. `/szukaj` as a file: a static page reads the address and searches in the browser, and `export-recipe-files.mjs` saves it as `public/szukaj.html`. One query per search; „Pokaż kolejne” and „Kategoria” narrow the same rows.
 
 ### Phase 4
-19. Detailed after Phase 3.
+20. Detailed after Phase 3.

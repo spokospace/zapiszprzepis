@@ -10,7 +10,7 @@ const REFLOW = /reflow\.spec\.ts/
 const PHONE = /(menu-drawer|system-font)\.spec\.ts/
 const LAYOUT = /(recipe-layout|recipe-list-bar)\.spec\.ts/
 // Needs a production server (see the spec): `next dev` does not prefetch loading.tsx.
-const SKELETON = /recipe-skeleton\.spec\.ts/
+const SKELETON = /(recipe|search)-skeleton\.spec\.ts/
 const IMAGE_ALLOWLIST = /image-optimizer-allowlist\.spec\.ts/
 
 export default defineConfig({

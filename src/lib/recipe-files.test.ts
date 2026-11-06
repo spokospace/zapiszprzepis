@@ -2,9 +2,37 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { clearDataCache, exportRecipeFiles, versionToSave } from '../../scripts/export-recipe-files.mjs'
+import { clearDataCache, exportRecipeFiles, exportSearchPage, versionToSave } from '../../scripts/export-recipe-files.mjs'
 
 const PAGE = '<html><script type="application/ld+json">{"@type":"Recipe"}</script></html>'
+
+describe('exportSearchPage', () => {
+  const root = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'search-file-'))
+    mkdirSync(join(dir, 'public'))
+    return dir
+  }
+
+  it('saves a finished page', async () => {
+    const dir = root()
+    const html = '<html><h1>Szukaj przepisu</h1></html>'
+    expect(await exportSearchPage(async () => ({ status: 200, html }), dir)).toBe(true)
+    expect(readFileSync(join(dir, 'public/szukaj.html'), 'utf8')).toBe(html)
+    rmSync(dir, { recursive: true })
+  })
+
+  it.each([
+    ['an error page', async () => ({ status: 500, html: '<html>Szukaj przepisu</html>' })],
+    ['a page without the search', async () => ({ status: 200, html: '<html>inna</html>' })],
+    ['no answer', async () => Promise.reject(new Error('down'))],
+  ])('leaves no file after %s, so the Worker answers', async (_name, fetchPage) => {
+    const dir = root()
+    writeFileSync(join(dir, 'public/szukaj.html'), 'old')
+    expect(await exportSearchPage(fetchPage, dir)).toBe(false)
+    expect(existsSync(join(dir, 'public/szukaj.html'))).toBe(false)
+    rmSync(dir, { recursive: true })
+  })
+})
 
 describe('scripts/recipe-files.json', () => {
   it('lists each recipe once, as a slug that is safe in a file name', () => {

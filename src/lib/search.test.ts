@@ -1,5 +1,20 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
-import { categoryFacets, parseSearchParams, searchRecipes, suggestRecipes } from './search'
+import {
+  categoryFacets,
+  loadSearchRows,
+  narrowSearch,
+  parseSearchParams,
+  publicSearchClient,
+  suggestRecipes,
+  type SearchClient,
+  type SearchParams,
+} from './search'
+
+/** What the search screen does with the two steps. */
+async function searchRecipes(client: SearchClient, params: SearchParams) {
+  const loaded = await loadSearchRows(client, params)
+  return 'error' in loaded ? loaded : narrowSearch(loaded.rows, params)
+}
 
 function client(rpc: ReturnType<typeof vi.fn>) {
   return { rpc } as any
@@ -138,6 +153,23 @@ describe('searchRecipes', () => {
     expect(await searchRecipes(client(rpc), { q: 'zupa', scope: 'wszystkie', page: 1, category: null })).toEqual({
       error: 'function does not exist',
     })
+  })
+})
+
+describe('publicSearchClient', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const args = { p_query: 'zupa', p_scope: 'all', p_limit: 140 } as const
+
+  it('passes the rows on', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => [{ id: 1 }] })))
+    expect(await publicSearchClient.rpc('search_recipes', args)).toEqual({ data: [{ id: 1 }], error: null })
+  })
+
+  it('reports a refused request or no connection as an error, never throwing', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 503 })))
+    expect(await publicSearchClient.rpc('search_recipes', args)).toEqual({ data: null, error: { message: 'status 503' } })
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('offline'))))
+    expect(await publicSearchClient.rpc('search_recipes', args)).toEqual({ data: null, error: { message: 'offline' } })
   })
 })
 

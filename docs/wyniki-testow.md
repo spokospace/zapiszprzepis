@@ -6,6 +6,16 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### `/szukaj` jako plik: przed zmianą i skeleton
+
+**Stan przed zmianą:** `/szukaj?q=ser` na produkcji, 3 żądania: 1,40 s, 1,27 s, 0,50 s, każde z renderem na Workerze. Samo `search_recipes` z przeglądarki 0,10-0,25 s. Próba jest mała, kierunek wyraźny.
+
+**Skeleton:** `e2e/search-skeleton.spec.ts` mierzy zapisany plik i stan ładowania przy 360-1920 px. Pierwsza wersja nie zgadzała się z wynikami, choć wyglądała dobrze: zakładki miały 68 px zamiast 60, pole 56 zamiast 60, a lista lądowała 8-29 px obok. Rozmiary były zgadywane, pomiar je poprawił. Po poprawkach 6 z 6 przechodzi.
+
+**Pomyłka po drodze:** tytuł karty nie zmieniał się na produkcyjnym buildzie, choć kod go ustawiał, bo tytuł strony dochodził później i go nadpisywał. Na serwerze deweloperskim wyglądało to podobnie, ale dopiero build to potwierdził. Tytuł ustawiamy teraz też po nadejściu wyników.
+
+**Nie dowodzi:** skeleton zakłada gościa z filtrem „Kategoria”. Zalogowany ma dodatkowy wiersz „Szukaj w:”, więc u niego lista przesuwa się po wczytaniu. Pusty `/szukaj` przez chwilę pokazuje karty skeletonu, bo plik nie zna adresu.
+
 ### Wyszukiwarka: migracja wgrana na produkcję (PR #724)
 
 **Jak:** migracja i test `supabase/tests/search_word_similarity.sql` w jednej transakcji o 13:19, potem przeładowanie schematu. Zapytania jako gość przez publiczne API, zakresy zalogowanego w bloku cofniętym wyjątkiem, ekran kontem QA na lokalnym dev (ta sama baza).
