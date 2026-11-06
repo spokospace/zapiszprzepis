@@ -93,8 +93,8 @@ export type SearchOutcome =
 const SEARCH_MAX_ROWS = SEARCH_MAX_PAGES * SEARCH_PAGE_SIZE
 
 /**
- * The one recipe search (E01-S05): the search_recipes RPC matches every word
- * against the title and ingredient names, title hits first, then newest.
+ * The one recipe search (E01-S05): the search_recipes RPC finds every word, in any
+ * Polish form, in the title and ingredient names, closest title first.
  *
  * It reads every reachable match (140, the paging cap) in one call, so the
  * "Kategoria" filter (E01-S22) can count the categories and narrow the list
