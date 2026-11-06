@@ -76,7 +76,7 @@ Forem is the closest match: the same cached HTML for everyone, with user data fr
 - `_headers` is generated from `securityHeaders()`. HTTP to HTTPS moves to the zone, because `custom-worker.ts` no longer runs on these URLs.
 - A separate assets Worker on routes, with a service binding to the app for misses, would keep content builds away from the app. This fits Astro only and is untested, so the pilot checks it.
 - Refresh: triggers fill a change table (`updated_at` cannot show hard deletes), the cron calls a Deploy Hook at most once per 10 minutes, up to the daily cap in Q2, a watermark advances only after a successful smoke test, and each build bumps the service worker version.
-- Kill switch: a zone redirect rule for one URL, used for legal removal. Not yet checked in the docs.
+- Kill switch: a zone redirect rule for one URL, used for legal removal, described in `docs/recipe-files.md`. Cloudflare's docs put Single Redirects first among request phases but do not say where Workers static assets sit, so it needs one live test on this zone.
 
 **One source of truth.** If two renderers exist: a pure `buildRecipeView(recipe)`, shared `RecipePageBody`, `HomeBody` and `CategoryBody`, `headTags(metadata)`, `recipe-split.ts`, and a parity test comparing Next.js and static output.
 
@@ -141,7 +141,7 @@ Forem is the closest match: the same cached HTML for everyone, with user data fr
 15. Refresh, simpler than the change table above: triggers move one `content_version` number, the build saves the number it read in `recipe-files-version.json`, and the five-minute cron calls the deploy hook when the deployed number is behind, at most once per 10 minutes and 12 times a day. A failed build needs no watermark: the deployed number stays behind.
 16. Owner: apply the migration, create the deploy hook, save it as the `RECIPE_FILES_DEPLOY_HOOK` secret.
 17. Set `scripts/recipe-files.json` to `"all"`.
-18. Still open: kill switch for one URL, HTTP to HTTPS at the zone, the `.rsc` rewrite rule, image delivery, a check of automatic builds in place of the manual `pnpm smoke:prod`, then categories and home.
+18. Still open: a live test of the kill switch, HTTP to HTTPS at the zone, the `.rsc` rewrite rule, image delivery, a check of automatic builds in place of the manual `pnpm smoke:prod`, then categories and home.
 
 ### Phase 4
 19. Detailed after Phase 3.
