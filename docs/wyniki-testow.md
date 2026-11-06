@@ -6,9 +6,9 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
-### Limit CPU od 21:10 do 23:10 UTC: poprawka do stanu z 22:00
+### Przekroczenia limitów zasobów od 21:10 do 23:10 UTC: poprawka do stanu z 22:00
 
-**Jak:** Cloudflare GraphQL, `exceededResources` po minutach, od 21:10 UTC do odczytu o ok. 23:10.
+**Jak:** Cloudflare GraphQL, `exceededResources` po minutach, od 21:10 UTC do odczytu o ok. 23:10. Sam wynik nie wskazuje limitu przekroczonego w poszczególnych zdarzeniach (`exceededResources` obejmuje też inne limity niż CPU); że to limit CPU, potwierdza tylko treść błędu 1102, którą widziałem przy `/login` w moim smoke teście.
 
 **Wynik:** 55 przekroczeń w pięciu minutach: 21:38 (3), 21:39 (1), 21:59 (9), 22:00 (23), 22:02 (19), wszystkie na wersji `89a871db`. Od 22:03 do odczytu 0, także po trzech nowszych wersjach (PR #731 i #732). W tym samym oknie 3039 udanych. Wpis z 22:00 mówił o 4 błędach, bo był odczytany przed 21:59.
 
@@ -22,7 +22,7 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 **Wynik:** `/` odpowiada 200 w 0,07-0,10 s (pierwsze żądanie 0,25 s), bez nagłówka `x-opennext`, z danymi `WebSite`. Na podglądzie strona w przeglądarce miała H1, kategorie, „Ostatnio dodane” i 5 kart, bez błędów w konsoli. `pnpm smoke:prod` przeszedł (`✓`: 3 strony po 10 prób, 19 plików, 30 przepisów).
 
-**Nie dowodzi:** że „Przepis dnia” zmieni się po północy: dzienny build po polskiej północy jest w kodzie i testach jednostkowych, ale nie był jeszcze widziany na produkcji (do sprawdzenia po 22:00 UTC). Widok zalogowanego na stronie głównej z pliku nie był sprawdzany. Zwykłe żądanie `curl` to nie ruch: nie wiem, czy `/` wytrzyma szczyt, ale nie startuje już Workera. Kategorie dalej idą przez Workera.
+**Nie dowodzi:** że „Przepis dnia” zmieni się po północy: dzienny build po polskiej północy jest w kodzie i testach jednostkowych, ale nie był jeszcze widziany na produkcji (do sprawdzenia po 23:00 UTC z zapasem na build: północ w Warszawie to zimą 23:00 UTC). Widok zalogowanego na stronie głównej z pliku nie był sprawdzany. Zwykłe żądanie `curl` to nie ruch: nie wiem, czy `/` wytrzyma szczyt, ale nie startuje już Workera. Kategorie dalej idą przez Workera.
 
 ### Always Use HTTPS włączone w strefie (22:02 UTC)
 
