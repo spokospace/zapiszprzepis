@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 import { getSiteUrl } from '@/lib/site-url'
 import { listCanonicalRecipes, listPublicProfileUsernames } from '@/lib/public-recipe'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
-import { recipePath, categoryPath, profilePath, SEARCH_PATH, LEGAL_PATHS } from '@/lib/routes'
+import { recipePath, categoryPath, profilePath, LEGAL_PATHS } from '@/lib/routes'
 
 /** Edge-cache the sitemap for an hour so crawlers hit cache, not the Worker/DB. */
 export const revalidate = 3600
@@ -20,7 +20,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticEntries: MetadataRoute.Sitemap = [
     { url: url('/'), changeFrequency: 'daily', priority: 1 },
-    { url: url(SEARCH_PATH), changeFrequency: 'weekly', priority: 0.3 },
     ...RECIPE_CATEGORIES.map((c) => ({
       url: url(categoryPath(c.value)),
       changeFrequency: 'daily' as const,
