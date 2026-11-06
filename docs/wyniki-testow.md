@@ -6,6 +6,25 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### Uper SEO: analiza sitemapy po plikach dla wszystkich przepisów i `/szukaj`
+
+**Jak:** ten sam analizator właściciela co rano, 946 adresów, start po 17:54, eksport CSV o 18:04. Wersja `78af6b56`, od ostatniego wdrożenia minęło ponad 3,5 godziny. Dane o Workerze z Cloudflare GraphQL, odczyt o 18:05. Po analizie `pnpm smoke:prod`.
+
+**Wynik:** 946 z 946 adresów odpowiedziało 200, bez błędów i bez ponowień, także 925 przepisów, 13 kategorii i strona główna. Rano było 6 błędów 503 na 444 sprawdzone adresy, a końcowy wynik tamtej analizy nie jest znany. `pnpm smoke:prod` przeszedł zaraz po analizie (`✓`).
+
+Dane Cloudflare (wersja `78af6b56`, godzina):
+
+| Godzina | Udane | Limit CPU | Rozłączenia |
+|---|---|---|---|
+| 17:00 (w tym analiza) | 210 | 0 | 0 |
+| 18:00 (do odczytu o 18:05) | 4 | 0 | 0 |
+
+Dla porównania rano, w godzinie analizy: 525 udanych, 82 przekroczenia limitu CPU, 24 rozłączenia.
+
+**Przy okazji:** `/szukaj` jest w sitemapie, choć ma `noindex`. 43 grupy przepisów mają ten sam tytuł (np. „Ciasteczka owsiane” z sufiksami `-2`, `-3`, `-4` w adresie).
+
+**Nie dowodzi:** analizator czyta tylko dokumenty HTML, bez zdjęć i bez nawigacji w aplikacji. Tylko około 20 z 946 adresów trafia do Workera, więc wynik nie mówi, że strona główna i kategorie wytrzymają większy ruch. Poranny wynik to stan odczytany w trakcie analizy, więc porównanie liczb jest przybliżone. Dane Cloudflare mogą być próbkowane, a godzina 18:00 jest niepełna. To jedna analiza, a nie seria.
+
 ### `/szukaj` jako plik na produkcji (PR #726)
 
 **Jak:** scalenie o 14:09, build `master` gotowy o 14:12. Pięć żądań `/szukaj?q=ser`, ten sam przebieg gościa co na podglądzie (desktop i Pixel 7), `pnpm smoke:prod`.
