@@ -18,6 +18,8 @@ const PARALLEL = 8
 // A build may run 20 minutes. Recipes left when this runs out stay on the Worker.
 const TIME_LIMIT_MS = 10 * 60_000
 const PAGE_SIZE = 1000
+// One recipe that never exports must not cost 12 builds a day; an outage or the time limit must.
+const COMPLETE_SHARE = 0.99
 
 // The status is sent before the page is rendered, so a page that failed half way is still a 200.
 // The recipe's structured data is written only once the recipe has been read.
@@ -45,6 +47,11 @@ export async function exportRecipeFiles(slugs, fetchPage, { root = process.cwd()
 /** Every read the export makes lands here, and OpenNext uploads all of it to R2 on each deploy. */
 export function clearDataCache(root = process.cwd()) {
   rmSync(join(root, '.next/cache/fetch-cache'), { recursive: true, force: true })
+}
+
+/** A short export saves no version, so the cron asks for another build, within its daily limit. */
+export function versionToSave(version, exported, total) {
+  return exported >= total * COMPLETE_SHARE ? version : null
 }
 
 /** Which content the saved pages hold. The Worker's cron compares it with the database. */
@@ -90,13 +97,13 @@ async function waitForServer() {
 async function main() {
   const listed = JSON.parse(readFileSync('scripts/recipe-files.json', 'utf8'))
   const version = await contentVersion().catch(() => null)
-  const exported = listed.length === 0 ? await exportRecipeFiles([]) : await exportFromServer(listed)
-  writeContentVersion(version)
+  const slugs = listed === 'all' ? await publicSlugs() : listed
+  const exported = slugs.length === 0 ? await exportRecipeFiles([]) : await exportFromServer(slugs)
+  writeContentVersion(versionToSave(version, exported.length, slugs.length))
   return exported
 }
 
-async function exportFromServer(listed) {
-  const slugs = listed === 'all' ? await publicSlugs() : listed
+async function exportFromServer(slugs) {
   // A build cache could bring back the last build's entries, with the old recipes in them.
   clearDataCache()
   const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', String(PORT)], { stdio: 'inherit' })

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { clearDataCache, exportRecipeFiles } from '../../scripts/export-recipe-files.mjs'
+import { clearDataCache, exportRecipeFiles, versionToSave } from '../../scripts/export-recipe-files.mjs'
 
 const PAGE = '<html><script type="application/ld+json">{"@type":"Recipe"}</script></html>'
 
@@ -12,6 +12,17 @@ describe('scripts/recipe-files.json', () => {
     const slugs = listed === 'all' ? [] : listed
     expect(new Set(slugs).size).toBe(slugs.length)
     for (const slug of slugs) expect(slug).toMatch(/^[a-z0-9-]+$/)
+  })
+})
+
+describe('versionToSave', () => {
+  it('keeps the version when one recipe in a hundred is missing, or none are', () => {
+    expect(versionToSave(7, 99, 100)).toBe(7)
+    expect(versionToSave(7, 0, 0)).toBe(7)
+  })
+
+  it('saves no version after a short export, so the cron asks again', () => {
+    expect(versionToSave(7, 98, 100)).toBeNull()
   })
 })
 

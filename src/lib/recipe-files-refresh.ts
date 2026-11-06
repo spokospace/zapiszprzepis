@@ -20,7 +20,7 @@ export type RecipeFilesState = {
 
 const utcDay = (now: Date) => now.toISOString().slice(0, 10)
 
-/** `deployed` is null when the live build has no version: it predates this or could not read one. */
+/** `deployed` is null when the live build has no version: it predates this, could not read one, or left many recipes out. */
 export function shouldRequestBuild(state: RecipeFilesState, deployed: number | null, now: Date): boolean {
   if (deployed !== null && deployed >= state.content_version) return false
   if (state.builds_day === utcDay(now) && state.builds_today >= DAILY_BUILDS) return false
@@ -52,9 +52,7 @@ export async function requestRecipeFilesBuild(env: CronEnv, fetchFn: Fetch = fet
     const [state] = (await res.json()) as RecipeFilesState[]
     if (!shouldRequestBuild(state, deployed, now)) return
 
-    const build = await fetchFn(hook, { method: 'POST' })
-    if (!build.ok) throw new Error(`deploy hook responded ${build.status}`)
-
+    // Counted before the call: if saving failed after it, the limits would not hold.
     const today = utcDay(now)
     const saved = await fetchFn(`${table}?id=eq.true`, {
       method: 'PATCH',
@@ -66,6 +64,9 @@ export async function requestRecipeFilesBuild(env: CronEnv, fetchFn: Fetch = fet
       }),
     })
     if (!saved.ok) throw new Error(`state update: Supabase responded ${saved.status}`)
+
+    const build = await fetchFn(hook, { method: 'POST' })
+    if (!build.ok) throw new Error(`deploy hook responded ${build.status}`)
     console.log(`recipe-files: build requested for content version ${state.content_version}`)
   } catch (error) {
     console.error('recipe-files: refresh failed', error)

@@ -51,15 +51,25 @@ describe('requestRecipeFilesBuild', () => {
     const { calls, fetchFn } = fakeFetch()
     await requestRecipeFilesBuild(env(4), fetchFn, NOW)
     expect(calls.filter((call) => call.url === HOOK)).toHaveLength(1)
-    expect(JSON.parse(calls.at(-1)?.body ?? '{}')).toEqual({ build_requested_at: NOW.toISOString(), builds_day: '2026-11-06', builds_today: 3 })
+    expect(JSON.parse(calls.find((call) => call.body)?.body ?? '{}')).toEqual({ build_requested_at: NOW.toISOString(), builds_day: '2026-11-06', builds_today: 3 })
   })
 
-  it('does not count a build the hook refused, and does not throw', async () => {
+  it('counts the request before calling the hook, and does not throw when the hook refuses', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { calls, fetchFn } = fakeFetch(500)
     await requestRecipeFilesBuild(env(4), fetchFn, NOW)
-    expect(calls.some((call) => call.body)).toBe(false)
+    expect(calls.findIndex((call) => call.body)).toBeLessThan(calls.findIndex((call) => call.url === HOOK))
     expect(error).toHaveBeenCalled()
+    error.mockRestore()
+  })
+
+  it('does not call the hook when the request cannot be counted', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { calls, fetchFn } = fakeFetch()
+    const failingSave = async (url: string, init?: RequestInit) =>
+      init?.method === 'PATCH' ? new Response(null, { status: 500 }) : fetchFn(url, init)
+    await requestRecipeFilesBuild(env(4), failingSave, NOW)
+    expect(calls.some((call) => call.url === HOOK)).toBe(false)
     error.mockRestore()
   })
 
