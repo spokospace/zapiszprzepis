@@ -32,6 +32,21 @@ Reguła nie sięga do pamięci telefonu: kto otworzył przepis wcześniej, może
 
 Plik zniknie też bez reguły, po buildzie. Reguła skraca czas z kilkunastu minut do chwili jej zapisania.
 
+## HTTP na HTTPS dla adresów z plików (do ustawienia w strefie)
+
+Stan z 2026-11-06: `http://zapiszprzepis.pl/przepis/zapiekanka` odpowiada 200 bez przekierowania, bo `custom-worker.ts` (który robił to przekierowanie) nie działa na adresach podawanych z plików. Strefa nie ma włączonego „Always Use HTTPS”. Zmiana dotyczy całej strefy, więc robi ją właściciel.
+
+1. Cloudflare → strefa `zapiszprzepis.pl` → SSL/TLS → Edge Certificates → **Always Use HTTPS** → włącz.
+2. Sprawdź:
+   ```bash
+   curl -sI http://zapiszprzepis.pl/przepis/zapiekanka
+   curl -sI http://www.zapiszprzepis.pl/
+   ```
+   Oba mają odpowiedzieć `301` z `Location: https://…`.
+3. Sprawdź, że nic nie zapętla się z regułą kill switch (302 na `/` powyżej) i że `pnpm smoke:prod` przechodzi.
+
+Opcjonalnie dodaj **Automatic HTTPS Rewrites** (SSL/TLS → Edge Certificates), jeśli gdzieś zostały adresy `http://` w treści. Cofnięcie: wyłącz przełącznik.
+
 ## Powrót do Workera
 
 `[]` w `scripts/recipe-files.json` i build `master`: wszystkie przepisy znów idą przez Workera.
