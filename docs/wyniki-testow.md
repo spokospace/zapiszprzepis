@@ -6,6 +6,16 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### Limit CPU od 21:10 do 23:10 UTC: poprawka do stanu z 22:00
+
+**Jak:** Cloudflare GraphQL, `exceededResources` po minutach, od 21:10 UTC do odczytu o ok. 23:10.
+
+**Wynik:** 55 przekroczeń w pięciu minutach: 21:38 (3), 21:39 (1), 21:59 (9), 22:00 (23), 22:02 (19), wszystkie na wersji `89a871db`. Od 22:03 do odczytu 0, także po trzech nowszych wersjach (PR #731 i #732). W tym samym oknie 3039 udanych. Wpis z 22:00 mówił o 4 błędach, bo był odczytany przed 21:59.
+
+**Przyczyny:** 22:02 (19) zbiega się z moim `pnpm smoke:prod` (`/login` 503 w 9 z 10 prób), a smoke test sam jest obciążeniem. 21:59-22:00 (32) nie mam czym wyjaśnić: w tych minutach tylko odczytywałem dane z API, bez ruchu na stronie. Nie znam adresów, bo GraphQL ich nie podaje.
+
+**Nie dowodzi:** że błędy ustały dzięki #731 i #732: cisza po 22:03 to dwie godziny, nocą, i bez próby obciążenia. Nie wiem, czy 21:59-22:00 to ruch zewnętrzny (bot, analizator), czy skutek mojego włączenia HTTPS o 22:02 (zaczęło się wcześniej, więc raczej nie).
+
 ### Strona główna jako plik na produkcji (PR #732)
 
 **Jak:** podgląd gałęzi przed scaleniem (nagłówki, treść, przeglądarka), po scaleniu i buildzie `master` pięć żądań `/` z tego komputera oraz `pnpm smoke:prod`. Plik wersji na produkcji: `{"version":1,"day":"2026-11-07"}`.
