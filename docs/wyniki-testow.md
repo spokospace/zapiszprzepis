@@ -6,6 +6,24 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-06
 
+### Przekroczenia limitów zasobów od 21:10 do 23:10 UTC: poprawka do stanu z 22:00
+
+**Jak:** Cloudflare GraphQL, `exceededResources` po minutach, od 21:10 UTC do odczytu o ok. 23:10. Sam wynik nie wskazuje limitu przekroczonego w poszczególnych zdarzeniach (`exceededResources` obejmuje też inne limity niż CPU); że to limit CPU, potwierdza tylko treść błędu 1102, którą widziałem przy `/login` w moim smoke teście.
+
+**Wynik:** 55 przekroczeń w pięciu minutach: 21:38 (3), 21:39 (1), 21:59 (9), 22:00 (23), 22:02 (19), wszystkie na wersji `89a871db`. Od 22:03 do odczytu 0, także po trzech nowszych wersjach (PR #731 i #732). W tym samym oknie 3039 udanych. Wpis z 22:00 mówił o 4 błędach, bo był odczytany przed 21:59.
+
+**Przyczyny:** 22:02 (19) zbiega się z moim `pnpm smoke:prod` (`/login` 503 w 9 z 10 prób), a smoke test sam jest obciążeniem. 21:59-22:00 (32) nie mam czym wyjaśnić: w tych minutach tylko odczytywałem dane z API, bez ruchu na stronie. Nie znam adresów, bo GraphQL ich nie podaje.
+
+**Nie dowodzi:** że błędy ustały dzięki #731 i #732: cisza po 22:03 to dwie godziny, nocą, i bez próby obciążenia. Nie wiem, czy 21:59-22:00 to ruch zewnętrzny (bot, analizator), czy skutek mojego włączenia HTTPS o 22:02 (zaczęło się wcześniej, więc raczej nie).
+
+### Strona główna jako plik na produkcji (PR #732)
+
+**Jak:** podgląd gałęzi przed scaleniem (nagłówki, treść, przeglądarka), po scaleniu i buildzie `master` pięć żądań `/` z tego komputera oraz `pnpm smoke:prod`. Plik wersji na produkcji: `{"version":1,"day":"2026-11-07"}`.
+
+**Wynik:** `/` odpowiada 200 w 0,07-0,10 s (pierwsze żądanie 0,25 s), bez nagłówka `x-opennext`, z danymi `WebSite`. Na podglądzie strona w przeglądarce miała H1, kategorie, „Ostatnio dodane” i 5 kart, bez błędów w konsoli. `pnpm smoke:prod` przeszedł (`✓`: 3 strony po 10 prób, 19 plików, 30 przepisów).
+
+**Nie dowodzi:** że „Przepis dnia” zmieni się po północy: dzienny build po polskiej północy jest w kodzie i testach jednostkowych, ale nie był jeszcze widziany na produkcji (do sprawdzenia po 23:00 UTC z zapasem na build: północ w Warszawie to zimą 23:00 UTC). Widok zalogowanego na stronie głównej z pliku nie był sprawdzany. Zwykłe żądanie `curl` to nie ruch: nie wiem, czy `/` wytrzyma szczyt, ale nie startuje już Workera. Kategorie dalej idą przez Workera.
+
 ### Always Use HTTPS włączone w strefie (22:02 UTC)
 
 **Jak:** za zgodą właściciela przełącznik SSL/TLS → Edge Certificates → Always Use HTTPS włączony w panelu (token projektu nie ma uprawnień do ustawień strefy). Sprawdzenie `curl -I` po kilkunastu sekundach.
