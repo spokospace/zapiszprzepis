@@ -75,3 +75,4 @@ scripts/data-fixes/*
 
 # Written by scripts/export-recipe-files.mjs after next build
 /public/przepis/
+/public/recipe-files-version.json

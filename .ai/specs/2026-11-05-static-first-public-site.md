@@ -134,5 +134,14 @@ Forem is the closest match: the same cached HTML for everyone, with user data fr
 12. If it misses the targets, finish the Astro candidate for the same recipes, with shared bodies, and measure it the same way.
 13. The owner picks from the numbers.
 
-### Phases 3 and 4
-14. Detailed after the pilot, since the steps depend on the chosen option.
+**Result (2026-11-06):** the owner chose Next.js files. Phone at 4x CPU and slow 4G, same recipes: LCP 1660 ms against 2156 ms on the Worker, TBT 191 ms against 243 ms, CLS 0. HTML median 0.09 s against 0.96 s, with no Worker. Not proven: resilience to 503, since Worker recipes also passed every test run at night.
+
+### Phase 3
+14. Export at scale: 8 pages in parallel, a 10-minute limit, a page counts only with its `Recipe` structured data (the status is sent before the render), and `.next/cache/fetch-cache` is removed, because OpenNext would upload it to R2 on every deploy.
+15. Refresh, simpler than the change table above: triggers move one `content_version` number, the build saves the number it read in `recipe-files-version.json`, and the five-minute cron calls the deploy hook when the deployed number is behind, at most once per 10 minutes and 12 times a day. A failed build needs no watermark: the deployed number stays behind.
+16. Owner: apply the migration, create the deploy hook, save it as the `RECIPE_FILES_DEPLOY_HOOK` secret.
+17. Set `scripts/recipe-files.json` to `"all"`.
+18. Still open: kill switch for one URL, HTTP to HTTPS at the zone, the `.rsc` rewrite rule, image delivery, a check of automatic builds in place of the manual `pnpm smoke:prod`, then categories and home.
+
+### Phase 4
+19. Detailed after Phase 3.
