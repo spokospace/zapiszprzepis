@@ -11,7 +11,7 @@ describe('public/_headers', () => {
   })
 
   it('leaves everything else, such as sw.js, on the revalidating default', () => {
-    expect(rules.match(/^\//gm)).toHaveLength(2)
+    expect(rules.match(/^\//gm)).toHaveLength(3)
     expect(rules).not.toMatch(/^\/przepis\/\*(?:\r?\n\s+.*)*Cache-Control/m)
   })
 

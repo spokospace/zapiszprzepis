@@ -1,132 +1,23 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
-import { createSupabaseServerClient, getCurrentUser } from '@/lib/supabase/server'
-import { getFullAccess } from '@/lib/full-access'
-import { searchPath } from '@/lib/routes'
-import { parseSearchParams, searchRecipes } from '@/lib/search'
-import { recipesNoun } from '@/app/components/app-menu-model'
-import { PageContainer } from '@/app/components/page-container'
-import { HomeSearch } from '@/app/components/home/home-search'
-import { SearchScopeSwitch } from '@/app/components/search/search-scope'
-import { SearchResults } from '@/app/components/search/search-results'
-import { SearchCategoryFilter, type CategoryOption } from '@/app/components/search/search-category-filter'
-import { SearchTabs } from '@/app/components/search/search-tabs'
-import { CategoryGrid } from '@/app/components/home/category-grid'
+import { SearchScreen } from './_components/search-screen'
 import { SearchScreenBar } from './_components/search-screen-bar'
-import { RecentSearchList, RecordRecentSearch } from './_components/recent-searches'
-import { QuickSearchBar } from './_components/quick-search-bar'
-import { SearchSuggestions } from './_components/search-suggestions'
+import { SearchSkeleton } from './_components/search-skeleton'
 
-type SearchParams = Promise<{
-  q?: string | string[]
-  zakres?: string | string[]
-  strona?: string | string[]
-  kategoria?: string | string[]
-}>
-
-export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
-  const { q } = parseSearchParams(await searchParams, false)
-  // Result pages are endless permutations of the same recipes: keep them out of indexes.
-  return { title: q ? `„${q}” — Szukaj · Zapisz Przepis` : 'Szukaj · Zapisz Przepis', robots: { index: false } }
-}
+// Result pages are endless permutations of the same recipes: keep them out of indexes.
+export const metadata: Metadata = { title: 'Szukaj · Zapisz Przepis', robots: { index: false } }
 
 /**
- * The one recipe search (E01-S05), public: a guest searches everyone's recipes,
- * a signed-in user can narrow it to "Moje" or "Ulubione". Matching runs in the
- * search_recipes RPC. The results can be narrowed to one category (E01-S22, C2) and
- * sit in the „W serwisie” tab beside an on-demand „Na blogach” search (E01-S30). Below lg it is a full screen of its
- * own (handoff v8 screen 4, E01-S26): „✕ Zamknij” instead of the app header, recent
- * searches and categories before a query, and quick-search chips above the keyboard.
+ * Static: it reads no session and no address on the server, so the build can save it as a
+ * file (scripts/export-recipe-files.mjs). The search itself is SearchScreen, in the browser.
  */
-export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
-  const [user, raw] = await Promise.all([getCurrentUser(), searchParams])
-  const { q, scope, page, category } = parseSearchParams(raw, Boolean(user))
-  const supabase = await createSupabaseServerClient()
-  const outcome = await searchRecipes(supabase, { q, scope, page, category })
-  const rows = 'rows' in outcome ? outcome.rows : []
-
-  const hasFullAccess = user && q && 'rows' in outcome ? await getFullAccess(supabase) : false
-
-  // "Kategoria" only when there is something to narrow, or a filter to undo.
-  const categoryOptions: CategoryOption[] =
-    'rows' in outcome && (outcome.categories.length > 1 || category)
-      ? [
-          { value: null, label: 'Wszystkie', count: outcome.totalAll, href: searchPath(q, scope) },
-          ...outcome.categories.map((c) => ({ ...c, href: searchPath(q, scope, 1, c.value) })),
-        ]
-      : []
-
+export default function SearchPage() {
   return (
     <main className="min-h-screen bg-white pb-36 lg:pb-0">
       <SearchScreenBar />
-      {user && <RecordRecentSearch q={q} />}
-      <PageContainer className="flex flex-col gap-4 py-6">
-        {/* From lg the app header carries the one search field (E01-S17 follow-up), so the
-            page drops its own; below lg this is the full-screen search's field. key: a new
-            query (or "Wyczyść") remounts the field with the new value. */}
-        <div className="flex flex-col gap-4 lg:hidden">
-          <HomeSearch key={q} id="search-page-field" defaultValue={q} scope={scope} autoFocus={!q} compact />
-          <SearchSuggestions key={`s-${q}`} fieldId="search-page-field" initialValue={q} />
-        </div>
-        {/* With results, „Szukaj w:” moves into the „W serwisie” tab (E01-S30). */}
-        {user && !(q && 'rows' in outcome) && <SearchScopeSwitch q={q} scope={scope} />}
-        {!q ? (
-          <>
-            <p className="text-[19px] text-ink-soft">
-              Wpisz nazwę dania albo składnik, np. „pierogi” albo „cukinia”.
-            </p>
-            {user && <RecentSearchList />}
-            <div className="lg:hidden">
-              <CategoryGrid columns={2} title="Albo wybierz kategorię" />
-            </div>
-          </>
-        ) : 'error' in outcome ? (
-          <p role="alert" className="text-[19px] text-danger">
-            Wyszukiwanie chwilowo nie działa. Spróbuj za chwilę.
-          </p>
-        ) : (
-          <SearchTabs
-            key={q}
-            q={q}
-            localCount={`${outcome.total} ${recipesNoun(outcome.total)}`}
-            hasLocalResults={rows.length > 0}
-            isAuthenticated={Boolean(user)}
-            hasFullAccess={hasFullAccess}
-          >
-            {user && <SearchScopeSwitch q={q} scope={scope} />}
-            {/* Kept with no matches while a category filter is on, so it can be undone. */}
-            {(rows.length > 0 || category) && (
-              <SearchCategoryFilter options={categoryOptions} selected={category}>
-                <p role="status" className="text-[19px] text-ink">
-                  <strong>
-                    {outcome.total} {recipesNoun(outcome.total)}
-                  </strong>{' '}
-                  dla „{q}”
-                </p>
-              </SearchCategoryFilter>
-            )}
-            {rows.length > 0 ? (
-              <SearchResults
-                q={q}
-                scope={scope}
-                page={page}
-                category={category}
-                rows={rows}
-                total={outcome.total}
-              />
-            ) : (
-              <div>
-                <h2 id="no-results-heading" className="text-[22px] font-bold break-words text-ink">
-                  Nie mamy jeszcze przepisu „{q}”
-                </h2>
-                <p className="mt-1 text-[17px] text-ink-soft">
-                  Sprawdź pisownię albo wpisz jeden składnik, np. „dynia”.
-                </p>
-              </div>
-            )}
-          </SearchTabs>
-        )}
-      </PageContainer>
-      <QuickSearchBar key={q} fieldId="search-page-field" initialValue={q} isAuthenticated={Boolean(user)} />
+      <Suspense fallback={<SearchSkeleton />}>
+        <SearchScreen />
+      </Suspense>
     </main>
   )
 }

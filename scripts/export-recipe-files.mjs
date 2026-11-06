@@ -2,7 +2,7 @@
 // which OpenNext copies to the Worker's static assets. /przepis/{slug} then finds
 // przepis/{slug}.html and never starts the Worker. Any failure leaves that recipe on the Worker,
 // so this never fails a build. recipe-files.json is a list of slugs, or "all" for every public
-// recipe; [] serves every recipe from the Worker again.
+// recipe; [] serves every recipe and /szukaj from the Worker again.
 //
 // Not generateStaticParams: on a static route a slug outside the list that reads the session
 // answers 500. A saved page is the same stream a live one is: the skeleton from loading.tsx,
@@ -42,6 +42,19 @@ export async function exportRecipeFiles(slugs, fetchPage, { root = process.cwd()
   }
   await Promise.all(Array.from({ length: PARALLEL }, work))
   return exported
+}
+
+/**
+ * /szukaj reads the query in the browser, so one file serves every search. A page that failed
+ * leaves no file, and the Worker answers as before.
+ */
+export async function exportSearchPage(fetchPage, root = process.cwd()) {
+  const file = join(root, 'public/szukaj.html')
+  rmSync(file, { force: true })
+  const page = await fetchPage().catch(() => null)
+  if (page?.status !== 200 || !page.html.includes('Szukaj przepisu') || !page.html.includes('</html>')) return false
+  writeFileSync(file, page.html)
+  return true
 }
 
 /** Every read the export makes lands here, and OpenNext uploads all of it to R2 on each deploy. */
@@ -98,9 +111,14 @@ async function main() {
   const listed = JSON.parse(readFileSync('scripts/recipe-files.json', 'utf8'))
   const version = await contentVersion().catch(() => null)
   const slugs = listed === 'all' ? await publicSlugs() : listed
-  const exported = slugs.length === 0 ? await exportRecipeFiles([]) : await exportFromServer(slugs)
+  const exported = slugs.length === 0 ? await clearFiles() : await exportFromServer(slugs)
   writeContentVersion(versionToSave(version, exported.length, slugs.length))
   return exported
+}
+
+async function clearFiles() {
+  await exportSearchPage(async () => null)
+  return exportRecipeFiles([])
 }
 
 async function exportFromServer(slugs) {
@@ -109,14 +127,12 @@ async function exportFromServer(slugs) {
   const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', String(PORT)], { stdio: 'inherit' })
   try {
     await waitForServer()
-    return await exportRecipeFiles(
-      slugs,
-      async (slug) => {
-        const response = await fetch(`http://localhost:${PORT}/przepis/${slug}`, { redirect: 'manual' })
-        return { status: response.status, html: await response.text() }
-      },
-      { deadline: Date.now() + TIME_LIMIT_MS },
-    )
+    const open = async (path) => {
+      const response = await fetch(`http://localhost:${PORT}${path}`, { redirect: 'manual' })
+      return { status: response.status, html: await response.text() }
+    }
+    if (!(await exportSearchPage(() => open('/szukaj')))) console.error('[recipe-files] /szukaj stays on the Worker')
+    return await exportRecipeFiles(slugs, (slug) => open(`/przepis/${slug}`), { deadline: Date.now() + TIME_LIMIT_MS })
   } finally {
     server.kill()
     clearDataCache()

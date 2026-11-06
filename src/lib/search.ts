@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { SEARCH_SCOPES, type SearchScope } from '@/lib/routes'
 import { isRecipeCategory, type RecipeCategory } from '@/lib/recipe-categories'
 import { categoryCounts, type CategoryCount } from '@/lib/public-profile'
@@ -73,21 +72,47 @@ export interface SearchResult {
   cook_time_minutes: number | null
 }
 
-type SearchRow = SearchResult & { total_count: number }
+export type SearchRow = SearchResult & { total_count: number }
 
 /** One option of the "Kategoria" filter: a category among the matches, with how many. */
 export type SearchCategoryFacet = CategoryCount
 
-export type SearchOutcome =
-  | {
-      rows: SearchResult[]
-      /** Matches in the filtered list. */
-      total: number
-      /** Matches in every category: the "Wszystkie" option. */
-      totalAll: number
-      categories: SearchCategoryFacet[]
+export interface SearchResults {
+  rows: SearchResult[]
+  /** Matches in the filtered list. */
+  total: number
+  /** Matches in every category: the "Wszystkie" option. */
+  totalAll: number
+  categories: SearchCategoryFacet[]
+}
+
+/** What search needs from a client: the public one below, or supabase-js with the reader's session. */
+export interface SearchClient {
+  rpc(
+    fn: 'search_recipes',
+    args: { p_query: string; p_scope: 'all' | 'mine' | 'fav'; p_limit: number },
+  ): PromiseLike<{ data: unknown; error: { message: string } | null }>
+}
+
+/**
+ * The public key in a plain request: the Worker is not involved and a guest does not
+ * download supabase-js. Never throws; a failure comes back as `error`.
+ */
+export const publicSearchClient: SearchClient = {
+  async rpc(fn, args) {
+    try {
+      const response = await fetch(`${PUBLIC_SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: { apikey: PUBLIC_SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(args),
+      })
+      if (!response.ok) return { data: null, error: { message: `status ${response.status}` } }
+      return { data: await response.json(), error: null }
+    } catch (e) {
+      return { data: null, error: { message: e instanceof Error ? e.message : String(e) } }
     }
-  | { error: string }
+  },
+}
 
 /** Every row "Pokaż kolejne" can ever reach; also the RPC's own cap. */
 const SEARCH_MAX_ROWS = SEARCH_MAX_PAGES * SEARCH_PAGE_SIZE
@@ -96,18 +121,15 @@ const SEARCH_MAX_ROWS = SEARCH_MAX_PAGES * SEARCH_PAGE_SIZE
  * The one recipe search (E01-S05): the search_recipes RPC finds every word, in any
  * Polish form, in the title and ingredient names, closest title first.
  *
- * It reads every reachable match (140, the paging cap) in one call, so the
- * "Kategoria" filter (E01-S22) can count the categories and narrow the list
- * without a second query or an RPC change. Returns the first `page` ×
- * SEARCH_PAGE_SIZE rows of the (filtered) list and its total: the RPC's exact
- * window count unfiltered, the count among those 140 when filtered.
+ * It reads every reachable match (140, the paging cap) in one call, so "Pokaż kolejne" and
+ * the "Kategoria" filter (E01-S22) work on these rows without another query.
  */
-export async function searchRecipes(
-  supabase: SupabaseClient,
-  { q, scope, page, category }: SearchParams,
-): Promise<SearchOutcome> {
-  if (!q) return { rows: [], total: 0, totalAll: 0, categories: [] }
-  const { data, error } = await supabase.rpc('search_recipes', {
+export async function loadSearchRows(
+  client: SearchClient,
+  { q, scope }: Pick<SearchParams, 'q' | 'scope'>,
+): Promise<{ rows: SearchRow[] } | { error: string }> {
+  if (!q) return { rows: [] }
+  const { data, error } = await client.rpc('search_recipes', {
     p_query: q,
     p_scope: RPC_SCOPE[scope],
     p_limit: SEARCH_MAX_ROWS,
@@ -116,7 +138,17 @@ export async function searchRecipes(
     console.error('[search] search_recipes failed:', error.message)
     return { error: error.message }
   }
-  const all = (data ?? []) as SearchRow[]
+  return { rows: (data ?? []) as SearchRow[] }
+}
+
+/**
+ * The first `page` × SEARCH_PAGE_SIZE of the (filtered) rows and their total: the RPC's
+ * exact window count unfiltered, the count among those 140 when filtered.
+ */
+export function narrowSearch(
+  all: SearchRow[],
+  { page, category }: Pick<SearchParams, 'page' | 'category'>,
+): SearchResults {
   const matching = category ? all.filter((r) => inCategory(r, category)) : all
   // Every row carries the same window count; it rides along unused on the rows.
   const totalAll = all.length ? Number(all[0].total_count) : 0
@@ -148,25 +180,21 @@ export interface RecipeSuggestion {
  * Up to SUGGEST_LIMIT recipes for a half-typed query, from the same public search
  * as the results (every recipe, title hits first). Empty below SUGGEST_MIN_LENGTH
  * letters or on any error: suggestions are a convenience, never a failure.
- *
- * Runs in the browser with the public key, in a plain request: the Worker is not involved
- * and a guest does not download supabase-js for a list of four titles.
  */
 export async function suggestRecipes(raw: string): Promise<RecipeSuggestion[]> {
   const q = raw.trim().slice(0, MAX_QUERY_LENGTH).trim()
   if (q.length < SUGGEST_MIN_LENGTH) return []
-  try {
-    const response = await fetch(`${PUBLIC_SUPABASE_URL}/rest/v1/rpc/search_recipes`, {
-      method: 'POST',
-      headers: { apikey: PUBLIC_SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_query: q, p_scope: 'all', p_limit: SUGGEST_LIMIT }),
-    })
-    if (!response.ok) throw new Error(`status ${response.status}`)
-    const rows = (await response.json()) as SearchRow[]
-    return rows.slice(0, SUGGEST_LIMIT).map(({ slug, title, image_url, category }) => ({ slug, title, image_url, category }))
-  } catch (e) {
-    console.error('[search] suggestions failed:', e instanceof Error ? e.message : e)
+  const { data, error } = await publicSearchClient.rpc('search_recipes', {
+    p_query: q,
+    p_scope: 'all',
+    p_limit: SUGGEST_LIMIT,
+  })
+  if (error) {
+    console.error('[search] suggestions failed:', error.message)
     return []
   }
+  return (data as SearchRow[])
+    .slice(0, SUGGEST_LIMIT)
+    .map(({ slug, title, image_url, category }) => ({ slug, title, image_url, category }))
 }
 
