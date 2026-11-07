@@ -82,7 +82,7 @@ html[data-session] .session-slot {
  * the page never reach Google (ZMIANY_prototyp §1). Variable 200–800; the two subsets
  * and their unicode-ranges mirror Google's CSS so Polish diacritics (ł ą ę ś ż ź ć ń)
  * resolve. font-display: optional + a preload (root layout): the font is there for the first
- * paint or the page keeps its fallback for that view, so text never swaps and rewraps (#739).
+ * paint or the page keeps its fallback for that view, so text never swaps and rewraps (#744).
  * 'Atkinson Fallback' is Arial resized to Atkinson's widths (measured per weight on a Polish
  * sample: 400 0.98, 600 0.96, 700 0.98, 800 0.89), so the fallback wraps like the real font.
  */

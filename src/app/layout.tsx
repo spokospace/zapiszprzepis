@@ -55,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   // Both subsets (Polish letters live in latin-ext) ask for the file with the HTML, so the
-  // font is there for the first paint and text does not rewrap when it arrives (#739).
+  // font is there for the first paint and text does not rewrap when it arrives (#744).
   for (const subset of FONT_SUBSETS) {
     preload(`/fonts/atkinson-hyperlegible-next-${subset}.woff2`, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
   }

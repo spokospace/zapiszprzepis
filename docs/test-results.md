@@ -6,7 +6,7 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-07
 
-### Strona główna: przeskoki od podmiany czcionki i od nieznanego imienia (#739)
+### Strona główna: przeskoki od podmiany czcionki i od nieznanego imienia (#744)
 
 **Jak:** lokalny `next dev`, Playwright (Chromium headless, Pixel 7, szerokości 360/375/412/430/768/1280 px), sieć 400 KB/s + 150 ms, CPU ×4, konto QA `free` z zaślepioną odpowiedzią Supabase (`profiles_private` → imię „Mateusz”/„Ania”). Rejestrator `requestAnimationFrame` zapisywał przy każdej zmianie: tekst i wysokość `h1`, podtytuł, pozycję pola szukania i sekcji pod hero, liczbę wczytanych plików czcionki.
 
