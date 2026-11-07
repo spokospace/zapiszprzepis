@@ -4,6 +4,32 @@ Dziennik pomiarów produkcji i prób rozwiązań. Nowe wpisy na górze, godziny 
 
 Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichymi minutami, bo błędy trwają dłużej niż samo obciążenie. Pomiary zrobione kilka minut po sobie nie są porównywalne.
 
+## 2026-11-07
+
+### Czy Google widzi przepisy: Search Console i HTML pliku
+
+**Jak:** tabela `search_console_daily` (kopia raportu Search Console, zapisywana przez cron Workera), wiersze `page` od 29.10 do 6.11. Osobno plik `public/przepis/zapiekanka.html` z lokalnego builda: dane `Recipe` w JSON-LD i miejsce, w którym stoi tekst składników.
+
+**Wynik:** 338 różnych adresów `/przepis/…` miało wyświetlenia w Google w ciągu 9 dni (dziennie 30-157 adresów, 44-270 wyświetleń, 0-5 kliknięć). JSON-LD `Recipe` w pliku ma nazwę, opis, obraz, 7 składników i 7 kroków. Tekst składnika stoi też w samym HTML-u, w blokach `hidden`, które skrypt `$RC` odsłania (15 takich bloków), więc nie zależy od JavaScriptu przeglądarki w sensie dostępności tekstu w pliku.
+
+**Nie dowodzi:** że Google indeksuje całą treść widoczną po wykonaniu skryptu. Nie miałem dostępu do Search Console dla `zapiszprzepis.pl` (konto serwisowe z moich instrukcji widzi tylko spoko.space, catalog.polo.blue i uper.pl), więc nie zrobiłem Inspekcji adresu URL ani nie widziałem, jaką wersję strony Google zapisał. Nie wiem, czy liczba kliknięć jest niska z powodu pozycji, czy treści. Dane z 6.11 są niepełne (30 adresów).
+
+### Zdjęcia: liczby do decyzji o `/_next/image`
+
+**Jak:** zapytanie tylko do odczytu o `storage.objects` przez Management API (token projektu).
+
+**Wynik:** jeden bucket `recipe-images`: 3763 plików, 1255 MB razem. Średnio 342 KB na plik, mediana 209 KB, największy 5073 KB. Przy limicie 5 GB transferu w miesiącu daje to około 15 000 pobrań oryginału o średniej wielkości (około 500 dziennie), czyli około 4 razy tyle, ile jest plików w całym buckecie (15 000 / 3763). Dziś każde zdjęcie na liście i w przepisie idzie przez `/_next/image` na Workerze, a Supabase oddaje oryginał tylko przy trafieniu poza pamięć podręczną.
+
+**Decyzja właściciela (2026-11-07):** opcja 1, zdjęcia zostają na `/_next/image` na Workerze. Opcje 2 i 3 zostają opisane poniżej jako zapas, gdyby obrazy okazały się przyczyną błędów limitu.
+
+**Opcje:**
+
+1. Zostawić `/_next/image` na Workerze: transfer z Supabase zależy od trafień w pamięć podręczną Cloudflare (zmniejszone obrazy, ale bez pomiaru, czy mniej niż w opcji 3), ale Worker dalej wykonuje te żądania (zasób CPU, nie liczony tu). Gdy zmniejszanie rzuci wyjątek albo zwróci 5xx, Worker przekierowuje na oryginał w Supabase i nie zapisuje tego przekierowania, więc powtarzające się błędy podają pełne obrazy i podnoszą transfer.
+2. Zdjęcia bezpośrednio z Supabase, bez zmniejszania: Worker odciążony, ale lista 24 kart to około 8 MB oryginałów na wejście, więc 5 GB wystarczyłoby na około 600 wejść w miesiącu. To jest wyliczenie z samych rozmiarów: przy 100 pełnych wejściach na listę w miesiącu wychodzi około 0,8 GB, czyli poniżej limitu. Czy to za mało, zależy od ruchu w miesiącu, pamięci podręcznej przeglądarek i CDN oraz innego transferu z Supabase, których tu nie mierzyłem, więc opcji 2 nie wykluczam samymi liczbami.
+3. Zmniejszone kopie zapisane raz przy imporcie (kilka szerokości w Supabase Storage) i podawane bezpośrednio: Worker odciążony, transfer zależy od rozmiaru kopii i liczby pobrań (30-60 KB na kartę to niepotwierdzony przykład; rozmiar kopii trzeba zmierzyć przed decyzją), ale wymaga migracji istniejących 3763 plików i zmian w imporcie.
+
+**Nie dowodzi:** nie znam bieżącego zużycia transferu w Supabase ani liczby żądań `/_next/image` na dobę (GraphQL Workera nie dzieli po ścieżce). Przed wyborem opcji 3 trzeba odczytać z panelu Supabase (Usage → Egress) zużycie z tego miesiąca i z Cloudflare liczbę żądań obrazów; opcję 2 trzeba ocenić z tych samych danych o ruchu.
+
 ## 2026-11-06
 
 ### Przekroczenia limitów zasobów od 21:10 do 23:10 UTC: poprawka do stanu z 22:00
