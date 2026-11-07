@@ -345,6 +345,7 @@ export type Database = {
           ingredient_fingerprint: string | null
           ingredients: Json
           meta_description: string | null
+          meta_title: string | null
           prep_time_minutes: number | null
           servings: number | null
           slug: string
@@ -380,6 +381,7 @@ export type Database = {
           ingredient_fingerprint?: string | null
           ingredients?: Json
           meta_description?: string | null
+          meta_title?: string | null
           prep_time_minutes?: number | null
           servings?: number | null
           slug: string
@@ -415,6 +417,7 @@ export type Database = {
           ingredient_fingerprint?: string | null
           ingredients?: Json
           meta_description?: string | null
+          meta_title?: string | null
           prep_time_minutes?: number | null
           servings?: number | null
           slug?: string
@@ -685,6 +688,7 @@ export type Database = {
           ingredients: Json | null
           last_modified: string | null
           meta_description: string | null
+          meta_title: string | null
           prep_time_minutes: number | null
           servings: number | null
           slug: string | null

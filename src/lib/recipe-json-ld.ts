@@ -18,6 +18,8 @@ export interface RecipeForJsonLd {
   title: string
   description: string | null
   meta_description?: string | null
+  /** Hand-written SEO <title> base (#745); only the page metadata reads it. */
+  meta_title?: string | null
   /** The public cover (archived CDN URL). The gallery and step photos are NOT here. */
   image_url: string | null
   ingredients: unknown
