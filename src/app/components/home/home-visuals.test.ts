@@ -98,11 +98,12 @@ describe('HomeSearch looks (E01-S20)', () => {
   })
 
   it('keeps „Powiedz” out of the attached field', () => {
-    // The Web Speech API is absent on the server, so the voice row is not rendered; either
-    // way no „Powiedz” button may sit inside the field frame (the old lg:inline-flex one).
+    // The voice row is in the server HTML (CSS shows it where the Web Speech API exists, #737),
+    // below the field frame; no „Powiedz” button may sit inside the frame (the old lg:inline-flex one).
     const html = render(createElement(HomeSearch, { id: 'v', attached: true, tone: 'action' }))
     expect(html).not.toContain('lg:inline-flex')
-    expect(html).not.toContain('albo')
+    expect(html.indexOf('voice-row')).toBeGreaterThan(html.indexOf('type="submit"'))
+    expect(html).toContain('albo')
   })
 
   it('renders the C1 member label and a single "Szukaj" submit', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { FIRST_NAME_MAX, greetingName, validateFirstName } from './first-name'
+import { FIRST_NAME_MAX, getGreetingName, greetingName, validateFirstName } from './first-name'
 import { greeting } from './vocative'
 
 describe('validateFirstName', () => {
@@ -43,5 +43,24 @@ describe('greetingName', () => {
     // reason "Imię" exists ("Kuchnia Marka" → "Kuchnio").
     expect(greeting(greetingName(null, 'Marek Nowak'))).toBe('Dzień dobry, Marku!')
     expect(greeting(greetingName(null, null))).toBe('Dzień dobry!')
+  })
+})
+
+describe('getGreetingName', () => {
+  const client = (profile: { data: unknown; error: unknown }, priv: { data: unknown; error: unknown }) =>
+    ({
+      from: (table: string) => ({
+        select: () => ({ eq: () => ({ maybeSingle: async () => (table === 'profiles' ? profile : priv) }) }),
+      }),
+    }) as never
+
+  it('reads the private first name, then the display name', async () => {
+    const ok = client({ data: { display_name: 'Marek Nowak' }, error: null }, { data: { first_name: 'Ania' }, error: null })
+    expect(await getGreetingName(ok, 'u1')).toBe('Ania')
+  })
+
+  it('answers null for a reader without a name, and undefined when the read failed (#737)', async () => {
+    expect(await getGreetingName(client({ data: null, error: null }, { data: null, error: null }), 'u1')).toBeNull()
+    expect(await getGreetingName(client({ data: null, error: { message: 'x' } }, { data: null, error: null }), 'u1')).toBeUndefined()
   })
 })

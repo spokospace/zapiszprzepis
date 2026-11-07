@@ -42,10 +42,12 @@ export function greetingName(
  * Read both names for the signed-in home greeting. A failed private read
  * (e.g. before the S13 migration) falls back to the display name.
  */
-export async function getGreetingName(supabase: SupabaseClient, userId: string): Promise<string | null> {
-  const [{ data: profile }, { data: priv }] = await Promise.all([
+export async function getGreetingName(supabase: SupabaseClient, userId: string): Promise<string | null | undefined> {
+  const [{ data: profile, error }, { data: priv }] = await Promise.all([
     supabase.from('profiles').select('display_name').eq('id', userId).maybeSingle<{ display_name: string }>(),
     supabase.from('profiles_private').select('first_name').eq('id', userId).maybeSingle<{ first_name: string | null }>(),
   ])
+  // undefined = the read failed: not an answer, so callers must not treat it as "no name" (#737).
+  if (error) return undefined
   return greetingName(priv?.first_name, profile?.display_name)
 }

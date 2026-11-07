@@ -21,12 +21,19 @@ export function searchChipsHeading(hasRecent: boolean): string {
   return hasRecent ? bindOrphans('Ostatnio i często szukane') : 'Często szukane'
 }
 
+export const GREETING_LEAD = 'Czego dziś szukasz'
+
 /**
  * The home H1 (handoff 14): "Czego dziś szukasz, Aniu?". `vocative` is the user's
  * name in the vocative case (E01-S12); unknown or blank falls back to the guest's
  * "Czego dziś szukasz?", never to a guessed or nominative form.
  */
 export function homeGreeting(vocative: string | null | undefined): string {
+  return `${GREETING_LEAD}${greetingSuffix(vocative)}?`
+}
+
+/** „, Aniu” or '' — the part of the H1 that depends on the reader, kept in its own span (#737). */
+export function greetingSuffix(vocative: string | null | undefined): string {
   const name = vocative?.trim()
-  return name ? `Czego dziś szukasz, ${name}?` : 'Czego dziś szukasz?'
+  return name ? `, ${name}` : ''
 }

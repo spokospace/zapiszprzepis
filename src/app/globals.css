@@ -5,6 +5,59 @@ html[data-session] .session-pending {
   visibility: hidden;
 }
 
+/*
+ * Home hero without a jump (#737). Everything here is decided before the first paint by the
+ * inline scripts in the root layout: data-session (a session cookie), data-greet (a cached
+ * greeting answer, with its name in --zp-greeting) and data-speech (a speech recognizer).
+ */
+/* The cached name shows until the component renders the real one into the span. */
+.greet-name:empty::after {
+  content: var(--zp-greeting, '');
+}
+
+.greet-off::after {
+  content: none;
+}
+
+/* A reader with a session and no cached answer waits for the name instead of watching the text swap. */
+html[data-session]:not([data-greet]) .greeting-pending {
+  visibility: hidden;
+}
+
+/* The reader is known and the name still is not (or is another account's): hidden, cache or not. */
+.greeting-held {
+  visibility: hidden;
+}
+
+/* The two subtitles; the cookie picks one, so the member's does not wait for the session. */
+.hero-sub-member {
+  display: none;
+}
+
+html[data-session] .hero-sub-member {
+  display: inline;
+}
+
+html[data-session] .hero-sub-guest {
+  display: none;
+}
+
+/* Two lines kept on a phone, where the name wraps the heading; wider screens fit one. */
+@media (max-width: 767px) {
+  html[data-session] .hero-title:not(.is-guest) {
+    min-height: calc(2 * 1.05em);
+  }
+}
+
+/* The „albo / Powiedz” row is in the page HTML and shown only where speech recognition exists. */
+.voice-row {
+  display: none;
+}
+
+html[data-speech] .voice-row {
+  display: flex;
+}
+
 /* Space kept for what such a reader is about to get; a guest never sees it. */
 .session-slot {
   display: none;

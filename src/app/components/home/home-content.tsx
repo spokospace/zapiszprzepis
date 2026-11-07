@@ -1,21 +1,22 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { PageContainer } from '@/app/components/page-container'
 import { FavoriteAddedNotice } from '@/app/components/favorite-button'
 import { LoadingStatus, RecipeGridSkeleton } from '@/app/components/recipe-card-skeleton'
 import { RecipeRow } from './recipe-row'
-import { loadBrowserClient, useBrowserSession } from '@/lib/browser-session'
+import { browserSession, loadBrowserClient, useBrowserSession } from '@/lib/browser-session'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
-import { homeGreeting } from '@/lib/home'
+import { GREETING_LEAD, greetingSuffix } from '@/lib/home'
+import { readGreetingCache, writeGreetingCache } from '@/lib/greeting-cache'
 import { getMemberHome, type MemberHomeData } from '@/lib/member-home'
 import type { MenuSummary } from '@/lib/menu-summary'
 import { ADD_RECIPE_PATH } from '@/lib/routes'
 import { vocative } from '@/lib/vocative'
 
-const NOTHING: MemberHomeData = { greetingName: null, mine: [], favorites: [] }
+const NOTHING: MemberHomeData = { greetingName: undefined, mine: [], favorites: [] }
 
 /** Keeps the rows on screen when the reader comes back to the home, while they reload. */
 let lastLoaded: { userId: string; home: MemberHomeData } | null = null
@@ -31,7 +32,16 @@ function useMemberHome(userId: string | null): MemberHomeData | null {
       .catch(() => NOTHING)
       .then((home) => {
         lastLoaded = { userId, home }
-        if (current) setLoaded(lastLoaded)
+        if (!current) return
+        // Only while this reader is still signed in (a sign-out ends the effect, and its cleared
+        // cache must not come back), and a failed read is not an answer (#737).
+        // The store clears the cache and publishes the guest before this effect's cleanup runs, so also
+        // ask it who is signed in right now.
+        const now = browserSession.getSnapshot()
+        if (home.greetingName !== undefined && now.status === 'user' && now.userId === userId) {
+          writeGreetingCache(userId, vocative(home.greetingName))
+        }
+        setLoaded(lastLoaded)
       })
     return () => {
       current = false
@@ -40,6 +50,23 @@ function useMemberHome(userId: string | null): MemberHomeData | null {
 
   return loaded?.userId === userId ? loaded.home : null
 }
+
+/**
+ * The greeting name this browser remembers for this reader (#737): the vocative, '' for "no
+ * name", null when unknown or when the entry belongs to someone else. Read in render, which
+ * is safe because `userId` is only set after hydration, so the first renders still match the
+ * server HTML (where CSS shows the same name from `--zp-greeting`).
+ */
+function useCachedGreeting(userId: string | null): string | null {
+  return useMemo(() => {
+    if (!userId) return null
+    const cached = readGreetingCache()
+    return cached?.userId === userId ? cached.name : null
+  }, [userId])
+}
+
+/** Gives up waiting for the name after this long and shows the plain greeting. */
+const GREETING_WAIT_MS = 3000
 
 /** The address bar's one-shot asks, which the shared page cannot read on the server. */
 function useHomeParams(): number | null {
@@ -62,7 +89,26 @@ function useHomeParams(): number | null {
  * left-aligned (handoff 14, 3c/3d: padding 28/16/24, gap 14, H1 36 px). „Przepis dnia” is no longer in here — it is its
  * own block under a rule, rendered by the page after the hero.
  */
-function Hero({ id, title, subtitle, children }: { id: string; title: string; subtitle: ReactNode; children: ReactNode }) {
+function Hero({
+  id,
+  title,
+  titlePending,
+  titleHeld,
+  titleGuest,
+  subtitle,
+  children,
+}: {
+  id: string
+  title: ReactNode
+  /** The heading waits for the reader's name: hidden (CSS) for a reader with a session and no cached answer. */
+  titlePending: boolean
+  /** Hidden whatever the cache says: the reader is known and still has no name to show. */
+  titleHeld: boolean
+  /** The session turned out to be a guest's (a stale cookie): no reserved height. */
+  titleGuest: boolean
+  subtitle: ReactNode
+  children: ReactNode
+}) {
   return (
     <section aria-labelledby={id} className="bg-white">
       <PageContainer className="flex flex-col items-start gap-3.5 pt-7 pb-6 md:items-center md:gap-[18px] md:pt-16 md:pb-[52px] md:text-center">
@@ -71,7 +117,7 @@ function Hero({ id, title, subtitle, children }: { id: string; title: string; su
             and widened the page (#448). The subtitle needs the same cap as the heading. */}
         <h1
           id={id}
-          className="max-w-full text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]"
+          className={`hero-title ${titlePending ? 'greeting-pending' : ''} ${titleHeld ? 'greeting-held' : ''} ${titleGuest ? 'is-guest' : ''} max-w-full text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]`}
         >
           {title}
         </h1>
@@ -81,6 +127,8 @@ function Hero({ id, title, subtitle, children }: { id: string; title: string; su
     </section>
   )
 }
+
+const MEMBER_SUBTITLE = 'Szukaj w swoich przepisach i ulubionych albo we wszystkich.'
 
 const GUEST_SUBTITLE = (
   <>
@@ -165,13 +213,45 @@ export function HomeContent({
   const menu = session.status === 'user' ? session.menu : undefined
   const home = useMemberHome(userId)
   const favoriteAdded = useHomeParams()
+  const cachedName = useCachedGreeting(userId)
+  // The database's answer wins over the remembered one.
+  const name = home && home.greetingName !== undefined ? (vocative(home.greetingName) ?? '') : cachedName
+  const [gaveUp, setGaveUp] = useState(false)
+  useEffect(() => {
+    if (!userId || name !== null) return
+    const timer = setTimeout(() => setGaveUp(true), GREETING_WAIT_MS)
+    return () => clearTimeout(timer)
+  }, [userId, name])
+  const guest = session.status === 'guest'
 
   return (
     <>
       <Hero
         id="hero-heading"
-        title={homeGreeting(vocative(home?.greetingName ?? null))}
-        subtitle={userId ? 'Szukaj w swoich przepisach i ulubionych albo we wszystkich.' : GUEST_SUBTITLE}
+        titlePending={!guest && name === null && !gaveUp}
+        // Once the session is read the span is React's: CSS must not paint a remembered name over
+        // it (another account's, or one the database no longer has).
+        titleHeld={userId !== null && name === null && !gaveUp}
+        titleGuest={guest}
+        title={
+          <>
+            {GREETING_LEAD}
+            {/* Empty until the name is known; CSS paints the remembered one meanwhile. */}
+            <span className={`greet-name ${guest || userId !== null ? 'greet-off' : ''}`}>{greetingSuffix(name)}</span>?
+          </>
+        }
+        subtitle={
+          guest ? (
+            GUEST_SUBTITLE
+          ) : (
+            // Both are in the page HTML; the session cookie (html[data-session]) picks the member's
+            // before the first paint, so it does not wait for the session to be read.
+            <>
+              <span className="hero-sub-guest">{GUEST_SUBTITLE}</span>
+              <span className="hero-sub-member">{MEMBER_SUBTITLE}</span>
+            </>
+          )
+        }
       >
         {search}
       </Hero>

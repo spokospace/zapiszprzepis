@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AUTH_COOKIE_SCRIPT } from "@/lib/auth-cookie";
+import { GREETING_SCRIPT } from "@/lib/greeting-cache";
+import { SPEECH_SCRIPT } from "@/lib/speech";
 import { HOME_DESCRIPTION, HOME_TITLE } from "@/lib/home-meta";
 import { PWARegister } from "./components/pwa-register";
 import { SiteFooter } from "./components/site-footer";
@@ -55,7 +57,7 @@ export default function RootLayout({
       {/* Full width so section backgrounds (the home hero, the header border) reach the
           viewport edges; content stays centred at 1152 px via PageContainer (E01-S31 §4). */}
       <body className="min-h-full flex flex-col w-full">
-        <script dangerouslySetInnerHTML={{ __html: AUTH_COOKIE_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: `${AUTH_COOKIE_SCRIPT};${GREETING_SCRIPT};${SPEECH_SCRIPT}` }} />
         <TimerProvider>
           {children}
           <TimerCards />
