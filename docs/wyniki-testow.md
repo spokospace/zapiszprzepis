@@ -18,15 +18,15 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 **Jak:** zapytanie tylko do odczytu o `storage.objects` przez Management API (token projektu).
 
-**Wynik:** jeden bucket `recipe-images`: 3763 plików, 1255 MB razem. Średnio 342 KB na plik, mediana 209 KB, największy 5073 KB. Przy limicie 5 GB transferu w miesiącu daje to około 15 000 pobrań oryginału o średniej wielkości (około 500 dziennie), czyli około 3,7 razy tyle co liczba plików w całym buckecie. Dziś każde zdjęcie na liście i w przepisie idzie przez `/_next/image` na Workerze, a Supabase oddaje oryginał tylko przy trafieniu poza pamięć podręczną.
+**Wynik:** jeden bucket `recipe-images`: 3763 plików, 1255 MB razem. Średnio 342 KB na plik, mediana 209 KB, największy 5073 KB. Przy limicie 5 GB transferu w miesiącu daje to około 15 000 pobrań oryginału o średniej wielkości (około 500 dziennie), czyli około 4 razy tyle, ile jest plików w całym buckecie (15 000 / 3763). Dziś każde zdjęcie na liście i w przepisie idzie przez `/_next/image` na Workerze, a Supabase oddaje oryginał tylko przy trafieniu poza pamięć podręczną.
 
 **Opcje (decyzja Twoja):**
 
-1. Zostawić `/_next/image` na Workerze: najmniejszy transfer z Supabase i zmniejszone obrazy, ale Worker dalej wykonuje te żądania (to zasób CPU, nie liczony tu).
-2. Zdjęcia bezpośrednio z Supabase, bez zmniejszania: Worker odciążony, ale lista 24 kart to około 8 MB oryginałów na wejście, więc 5 GB wystarczyłoby na około 600 wejść w miesiącu. Zbyt mało.
-3. Zmniejszone kopie zapisane raz przy imporcie (kilka szerokości w Supabase Storage) i podawane bezpośrednio: Worker odciążony, transfer mały (około 30-60 KB na kartę), ale wymaga migracji istniejących 3763 plików i zmian w imporcie.
+1. Zostawić `/_next/image` na Workerze: zwykle najmniejszy transfer z Supabase (zmniejszone obrazy, trafienia w pamięć podręczną Cloudflare), ale Worker dalej wykonuje te żądania (zasób CPU, nie liczony tu). Gdy zmniejszanie rzuci wyjątek albo zwróci 5xx, Worker przekierowuje na oryginał w Supabase i nie zapisuje tego przekierowania, więc powtarzające się błędy podają pełne obrazy i podnoszą transfer.
+2. Zdjęcia bezpośrednio z Supabase, bez zmniejszania: Worker odciążony, ale lista 24 kart to około 8 MB oryginałów na wejście, więc 5 GB wystarczyłoby na około 600 wejść w miesiącu. To jest wyliczenie z samych rozmiarów: przy 100 pełnych wejściach na listę w miesiącu wychodzi około 0,8 GB, czyli poniżej limitu. Czy to za mało, zależy od ruchu w miesiącu, pamięci podręcznej przeglądarek i CDN oraz innego transferu z Supabase, których tu nie mierzyłem, więc opcji 2 nie wykluczam samymi liczbami.
+3. Zmniejszone kopie zapisane raz przy imporcie (kilka szerokości w Supabase Storage) i podawane bezpośrednio: Worker odciążony, transfer zależy od rozmiaru kopii i liczby pobrań (30-60 KB na kartę to niepotwierdzony przykład; rozmiar kopii trzeba zmierzyć przed decyzją), ale wymaga migracji istniejących 3763 plików i zmian w imporcie.
 
-**Nie dowodzi:** nie znam bieżącego zużycia transferu w Supabase ani liczby żądań `/_next/image` na dobę (GraphQL Workera nie dzieli po ścieżce). Przed wyborem opcji 3 trzeba odczytać z panelu Supabase (Usage → Egress) zużycie z tego miesiąca i z Cloudflare liczbę żądań obrazów; opcja 2 odpada już z samych liczb powyżej.
+**Nie dowodzi:** nie znam bieżącego zużycia transferu w Supabase ani liczby żądań `/_next/image` na dobę (GraphQL Workera nie dzieli po ścieżce). Przed wyborem opcji 3 trzeba odczytać z panelu Supabase (Usage → Egress) zużycie z tego miesiąca i z Cloudflare liczbę żądań obrazów; opcję 2 trzeba ocenić z tych samych danych o ruchu.
 
 ## 2026-11-06
 
