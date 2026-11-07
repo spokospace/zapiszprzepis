@@ -20,7 +20,8 @@
 --
 -- Idempotent: safe to re-run.
 --
--- Rollback (manual): re-create public_recipes without meta_title by re-running the
+-- Rollback (manual): drop function public.admin_set_meta_title_as(uuid, bigint, text,
+-- text, bigint); re-create public_recipes without meta_title by re-running the
 -- view block of 20261104100000_recipe_extra_categories.sql after `drop view
 -- public.public_recipes`, then:
 --   alter table public.recipes
@@ -119,3 +120,60 @@ revoke all on public.public_recipes from anon, authenticated;
 grant select on public.public_recipes to anon, authenticated;
 
 select public.assert_public_view_boundary();
+
+-- ── Staff edit: recipes_set_meta_title (MCP), audited ──────────────────────
+-- Titles are content: they are written through this function (or the dashboard),
+-- never committed to the repository. An empty or blank title clears the override.
+-- Gated by recipes.edit (admin and moderator, 20261028100000). Returns the slug for
+-- cache invalidation.
+
+create or replace function public.admin_set_meta_title_as(
+  p_actor uuid,
+  p_recipe bigint,
+  p_meta_title text,
+  p_via text default 'panel',
+  p_token_id bigint default null
+)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  old_title text;
+  v_slug text;
+  new_title text := nullif(btrim(coalesce(p_meta_title, '')), '');
+begin
+  if not public.staff_can(p_actor, 'recipes.edit') then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  if char_length(new_title) > 70 then
+    raise exception 'invalid_input' using errcode = '22023';
+  end if;
+
+  select meta_title, slug into old_title, v_slug from public.recipes where id = p_recipe for update;
+  if not found then
+    raise exception 'not_found' using errcode = 'P0002';
+  end if;
+
+  update public.recipes set meta_title = new_title where id = p_recipe;
+
+  perform public.staff_audit(
+    p_actor, p_via, p_token_id, 'recipes', 'set_meta_title', p_recipe::text,
+    jsonb_build_object('meta_title', old_title),
+    jsonb_build_object('meta_title', new_title)
+  );
+  return v_slug;
+end;
+$$;
+
+revoke all on function public.admin_set_meta_title_as(uuid, bigint, text, text, bigint) from public, anon, authenticated;
+grant execute on function public.admin_set_meta_title_as(uuid, bigint, text, text, bigint) to service_role;
+
+do $$
+begin
+  if has_function_privilege('anon', 'public.admin_set_meta_title_as(uuid,bigint,text,text,bigint)', 'execute')
+     or has_function_privilege('authenticated', 'public.admin_set_meta_title_as(uuid,bigint,text,text,bigint)', 'execute') then
+    raise exception 'admin_set_meta_title_as is executable by an API role';
+  end if;
+end $$;
