@@ -42,10 +42,20 @@ html[data-session] .hero-sub-guest {
   display: none;
 }
 
-/* Two lines kept on a phone, where the name wraps the heading; wider screens fit one. */
-@media (max-width: 767px) {
-  html[data-session] .hero-title:not(.is-guest) {
+/*
+ * A reader whose name is not cached yet (the first visit on a device) gets the heading's
+ * room before the name arrives: two lines up to lg, where a name wraps it; wider screens fit one.
+ */
+@media (max-width: 1023px) {
+  html[data-session]:not([data-greet]) .hero-title:not(.is-guest) {
     min-height: calc(2 * 1.05em);
+  }
+}
+
+/* On the narrowest phones a name usually takes a third line. */
+@media (max-width: 399px) {
+  html[data-session]:not([data-greet]) .hero-title:not(.is-guest) {
+    min-height: calc(3 * 1.05em);
   }
 }
 
@@ -71,13 +81,16 @@ html[data-session] .session-slot {
  * Atkinson Hyperlegible Next (OFL), self-hosted from /public/fonts so the build and
  * the page never reach Google (ZMIANY_prototyp §1). Variable 200–800; the two subsets
  * and their unicode-ranges mirror Google's CSS so Polish diacritics (ł ą ę ś ż ź ć ń)
- * resolve. Arial/Helvetica is the fallback until it loads (font-display: swap).
+ * resolve. font-display: optional + a preload (root layout): the font is there for the first
+ * paint or the page keeps its fallback for that view, so text never swaps and rewraps (#739).
+ * 'Atkinson Fallback' is Arial resized to Atkinson's widths (measured per weight on a Polish
+ * sample: 400 0.98, 600 0.96, 700 0.98, 800 0.89), so the fallback wraps like the real font.
  */
 @font-face {
   font-family: 'Atkinson Hyperlegible Next';
   font-style: normal;
   font-weight: 200 800;
-  font-display: swap;
+  font-display: optional;
   src: url('/fonts/atkinson-hyperlegible-next-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
@@ -85,9 +98,28 @@ html[data-session] .session-slot {
   font-family: 'Atkinson Hyperlegible Next';
   font-style: normal;
   font-weight: 200 800;
-  font-display: swap;
+  font-display: optional;
   src: url('/fonts/atkinson-hyperlegible-next-latin-ext.woff2') format('woff2');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Atkinson Fallback';
+  font-weight: 200 599;
+  src: local('Arial'), local('ArialMT'), local('Helvetica');
+  size-adjust: 98.5%;
+}
+@font-face {
+  font-family: 'Atkinson Fallback';
+  font-weight: 600 799;
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Helvetica Bold');
+  size-adjust: 97%;
+}
+@font-face {
+  font-family: 'Atkinson Fallback';
+  font-weight: 800 900;
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Helvetica Bold');
+  size-adjust: 89%;
 }
 
 :root {
@@ -161,7 +193,7 @@ html[data-session] .session-slot {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Atkinson Hyperlegible Next', Arial, Helvetica, sans-serif;
+  font-family: 'Atkinson Hyperlegible Next', 'Atkinson Fallback', Arial, Helvetica, sans-serif;
   /*
    * Reflow (WCAG 1.4.10): a word longer than its line (a run-together title, a long
    * query or domain) breaks instead of scrolling the page sideways. Inherited by all
