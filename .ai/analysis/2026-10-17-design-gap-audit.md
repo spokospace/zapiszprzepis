@@ -1,6 +1,6 @@
 # Audyt zgodności z finalnym handoffem projektu (2026-10-17)
 
-Zakres: ekrany E01 już wdrożone na `master` (S01–S07, S09, S11–S14, S16, S18 + nagłówek mobilny) porównane z `.ai/design/przebudowa-handoff/README.md` i `designs/*.dc.html` (styl 1c, nawigacja 1a). Poza zakresem: S08, S10, S15, S17 (w toku).
+Zakres: ekrany E01 już wdrożone na `master` (S01–S07, S09, S11–S14, S16, S18 + nagłówek mobilny) porównane z `.ai/design/redesign-handoff/README.md` i `designs/*.dc.html` (styl 1c, nawigacja 1a). Poza zakresem: S08, S10, S15, S17 (w toku).
 
 **Metoda i ograniczenia.** Porównanie kodu z `master` (commit f128a26) z README. Produkcja nie była osobno oglądana (kod jest źródłem prawdy; zachowania zależne od konfiguracji — np. włączone providery OAuth — oznaczono „do sprawdzenia na produkcji”). Pliki `.dc.html` czytano przez README; wymiary pikselowe pochodzą z README. Zero zmian w kodzie, zero zapisów do bazy.
 

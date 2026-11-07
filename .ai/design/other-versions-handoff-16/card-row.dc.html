@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;gap:14px;font-family:'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;color:#111827">
+  <sc-if value="{{ row.showHead }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-height:48px;border-top:1px solid #111827;padding-top:14px">
+      <span style="font-size:28px;font-weight:700;line-height:1.2">{{ row.title }}</span>
+      <sc-if value="{{ row.deskNav }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <button type="button" onClick="{{ row.prev }}" aria-disabled="{{ row.prevDis }}" style="height:48px;padding:0 14px;border-radius:999px;border:2px solid #111827;background:#fff;color:#111827;display:flex;align-items:center;gap:6px;font:700 16px 'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;cursor:pointer;opacity:{{ row.prevOp }}">{{ row.icL }}Poprzednie</button>
+          <button type="button" onClick="{{ row.next }}" aria-disabled="{{ row.nextDis }}" style="height:48px;padding:0 14px;border-radius:999px;border:2px solid #111827;background:#fff;color:#111827;display:flex;align-items:center;gap:6px;font:700 16px 'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;cursor:pointer;opacity:{{ row.nextOp }}">Następne{{ row.icR }}</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{ row.isDesk }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:{{ row.cols }};gap:32px 24px">
+      <sc-for list="{{ row.cards }}" as="c" hint-placeholder-count="4">
+        <dc-import name="recipe-card" c="{{ c }}" hint-size="100%,300px"></dc-import>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ row.isMob }}" hint-placeholder-val="{{ false }}">
+    <div ref="{{ row.ref }}" style="display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin-right:-16px;padding-right:16px;padding-bottom:4px">
+      <sc-for list="{{ row.cards }}" as="c" hint-placeholder-count="2">
+        <div style="flex:0 0 270px;scroll-snap-align:start"><dc-import name="recipe-card" c="{{ c }}" hint-size="270px,300px"></dc-import></div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ row.mobNav }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:8px">
+        <button type="button" onClick="{{ row.prev }}" style="flex:1;height:56px;border-radius:999px;border:2px solid #111827;background:#fff;color:#111827;display:flex;align-items:center;justify-content:center;gap:6px;font:700 17px 'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;cursor:pointer">{{ row.icL }}Poprzednie</button>
+        <button type="button" onClick="{{ row.next }}" style="flex:1;height:56px;border-radius:999px;border:2px solid #111827;background:#fff;color:#111827;display:flex;align-items:center;justify-content:center;gap:6px;font:700 17px 'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;cursor:pointer">Następne{{ row.icR }}</button>
+      </div>
+    </sc-if>
+  </sc-if>
+  <sc-if value="{{ row.hasLink }}" hint-placeholder-val="{{ true }}">
+    <button type="button" onClick="{{ row.onLink }}" style="align-self:{{ row.linkAlign }};height:{{ row.linkH }};padding:0 4px;border:0;background:none;color:#111827;text-decoration:underline;text-underline-offset:5px;display:flex;align-items:center;justify-content:center;font:700 18px 'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;cursor:pointer">{{ row.link }}</button>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1000,&quot;height&quot;:420},&quot;row&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}"></script>
+</body>
+</html>

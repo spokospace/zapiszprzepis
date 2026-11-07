@@ -1,6 +1,6 @@
 # E01-S15 — Notifications: fullscreen view + home banner (screen 5)
 
-Issue: #217 · Epic: #201 · Backlog: `.ai/specs/backlog-przebudowa.md` (E01-S15) · **Design authority:** `.ai/design/przebudowa-handoff/README.md` §5 + `designs/Powiadomienia.dc.html` · Depends on: S01 (merged), extends S-06 `notification-bell.tsx` · Related: #226 (bell holds back signed-in pages) · Risk: **medium** (new route, one additive migration, changes to the retry/dismiss path)
+Issue: #217 · Epic: #201 · Backlog: `.ai/specs/backlog-przebudowa.md` (E01-S15) · **Design authority:** `.ai/design/redesign-handoff/README.md` §5 + `designs/notifications.dc.html` · Depends on: S01 (merged), extends S-06 `notification-bell.tsx` · Related: #226 (bell holds back signed-in pages) · Risk: **medium** (new route, one additive migration, changes to the retry/dismiss path)
 
 > Revised 2026-10-17 against the owner's final handoff (merged to master after the first draft). Where this spec differs from the handoff, the difference is listed under "Deviations from the handoff".
 
@@ -116,7 +116,7 @@ No new endpoints. Server actions:
 
 ## 📝 UI/UX
 
-Look reference: `designs/Powiadomienia.dc.html` (screen 5a). Single column, `max-w-2xl`.
+Look reference: `designs/notifications.dc.html` (screen 5a). Single column, `max-w-2xl`.
 
 1. **"← Wróć"** (18 px bold, 56 px target; `router.back()`, `/` without history) and **H1 "Powiadomienia"** 28 px bold, `tabIndex={-1}`.
 2. **Focus management.** The H1 takes focus on arrival. After "Spróbuj ponownie" / "Usuń" / "Usuń przeczytane" focus moves to the first section heading still on the page, or the H1; a visible `role="status"` line confirms ("Ponawiamy dodawanie przepisu.", "Usunięto."). A removed node is never focused.

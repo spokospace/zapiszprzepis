@@ -1,6 +1,6 @@
 # Przebudowa: publiczna aplikacja, wyszukiwarka, przepis, dostęp (WCAG 2.2 AA)
 
-Projekt i specyfikacja: folder `design_handoff_zapiszprzepis_przebudowa/` (README.md + `designs/*.dc.html`, otwierają się w przeglądarce). Zasady z `ZASADY_PROJEKTU.md` dopisać do `CLAUDE.md`.
+Projekt i specyfikacja: folder `design_handoff_zapiszprzepis_przebudowa/` (README.md + `designs/*.dc.html`, otwierają się w przeglądarce). Zasady z `design-rules.md` dopisać do `CLAUDE.md`.
 
 ## Cel
 Aplikacja publiczna: gość przegląda i szuka, zalogowany (Facebook/Google) ma ulubione i galerię, dodawanie przepisów tylko z pełnym dostępem (kod lub płatność). Czytelność dla starszych osób, WCAG 2.2 AA na każdym ekranie.
@@ -12,7 +12,7 @@ Warianty wybrane w README, sekcja „Decyzje (finalne)”: 1c + nawigacja MENU z
 ### Fundamenty
 - [ ] Tokeny: `#c2410c` dla przycisków z białym tekstem (zamiast `#f97316`), tekst pomocniczy min. `#374151` / 16 px, treść 19 px, cele dotyku min. 48 px, focus 3 px, podkreślone linki
 - [ ] Strony publiczne (start, wyszukiwarka, kategoria, przepis, profil) poza grupą `(authenticated)`; RLS: odczyt przepisów dla `anon`
-- [ ] Nagłówek poniżej lg (handoff v8): napis „Zapisz Przepis” · „Szukaj” · „MENU” dla wszystkich; „Dodaj” tylko od lg; „Powiadomienia” w MENU (#323)
+- [ ] Nagłówek zalogowanego: „Dodaj” · „Powiadomienia” · „MENU” z podpisami; gość: „Zaloguj się” · „MENU”
 - [ ] Menu: sekcje „Moje” i „Wszystkie przepisy według kategorii”
 
 ### Model danych

@@ -15,7 +15,7 @@ import { clearReadShares, openReadyShare } from './actions'
 type Busy = { id: number | 'all' | 'read'; kind: 'retry' | 'dismiss' } | null
 
 /**
- * Screen 5 (E01-S15, handoff `Powiadomienia.dc.html`). Focus: the H1 takes
+ * Screen 5 (E01-S15, handoff `notifications.dc.html`). Focus: the H1 takes
  * focus on arrival, so keyboard and screen-reader users start at the top of
  * the new view rather than on the bell they came from. After an action the
  * card leaves its section; once the refreshed list is in, focus goes to the

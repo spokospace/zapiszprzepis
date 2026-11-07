@@ -1,6 +1,6 @@
 # E01-S23 — Gendered wording in public texts (Dodała/Dodał)
 
-Source doc: .ai/design/przebudowa-handoff/README.md
+Source doc: .ai/design/redesign-handoff/README.md
 Refs #290 (epic #201). Owner decision: `.ai/analysis/2026-10-17-design-gap-audit.md`, "Do decyzji" pt 1.
 
 ## Goal

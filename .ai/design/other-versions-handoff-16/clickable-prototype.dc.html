@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>Zapisz Przepis · prototyp klikalny</title>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#e7e3dd;font-family:'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}button{font-family:inherit}@keyframes zpFade{from{opacity:0}to{opacity:1}}@keyframes zpSlide{from{transform:translateX(100%)}to{transform:translateX(0)}}@media (prefers-reduced-motion:reduce){*{animation-duration:1ms!important}}</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:16px;box-sizing:border-box">
+  <div style="width:100%;max-width:1100px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <span style="font-size:16px;font-weight:700;color:#374151">Prototyp klikalny · dane przykładowe</span>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <div role="group" aria-label="Urządzenie" style="display:flex;border:2px solid #4b5563;border-radius:999px;overflow:hidden;background:#fff">
+        <button type="button" onClick="{{ setDesk }}" aria-pressed="{{ isDesk }}" style="height:44px;padding:0 14px;border:0;background:{{ tbDeskBg }};color:{{ tbDeskFg }};font-size:16px;font-weight:700;cursor:pointer">Desktop</button>
+        <button type="button" onClick="{{ setMob }}" aria-pressed="{{ isMob }}" style="height:44px;padding:0 14px;border:0;border-left:2px solid #4b5563;background:{{ tbMobBg }};color:{{ tbMobFg }};font-size:16px;font-weight:700;cursor:pointer">Telefon</button>
+      </div>
+      <div role="group" aria-label="Użytkownik" style="display:flex;border:2px solid #4b5563;border-radius:999px;overflow:hidden;background:#fff">
+        <button type="button" onClick="{{ setGuest }}" aria-pressed="{{ isGuest }}" style="height:44px;padding:0 14px;border:0;background:{{ tbGuestBg }};color:{{ tbGuestFg }};font-size:16px;font-weight:700;cursor:pointer">Gość</button>
+        <button type="button" onClick="{{ setLogged }}" aria-pressed="{{ isLogged }}" style="height:44px;padding:0 14px;border:0;border-left:2px solid #4b5563;background:{{ tbLogBg }};color:{{ tbLogFg }};font-size:16px;font-weight:700;cursor:pointer">Zalogowana (Tola)</button>
+      </div>
+      <button type="button" onClick="{{ reset }}" style="height:48px;padding:0 14px;border:2px solid #111827;border-radius:999px;background:#fff;font-size:16px;font-weight:700;cursor:pointer">Od nowa</button>
+    </div>
+  </div>
+
+  <div style="position:relative;width:{{ frameW }};max-width:100%;height:{{ frameH }};box-sizing:border-box;border:{{ frameBorder }};border-radius:{{ frameRadius }};background:#fff;overflow:hidden;box-shadow:0 10px 40px rgba(17,24,39,.15)">
+    <div ref="{{ scrollRef }}" style="height:100%;overflow-y:auto;overflow-x:hidden">
+
+      <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}">
+        <header style="position:sticky;top:0;z-index:5;background:#fff">
+          <div style="border-bottom:1px solid #111827;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <button type="button" onClick="{{ goHome }}" aria-label="Zapisz Przepis — strona główna" style="border:0;background:none;padding:0 4px;height:48px;cursor:pointer;font-size:24px;font-weight:700;color:#111827">Zapisz <span style="color:#c2410c">Przepis</span></button>
+            <div style="display:flex;align-items:center;gap:12px">
+              <button type="button" onClick="{{ goFav }}" aria-current="{{ favCurrent }}" style="height:48px;padding:0 12px;border:0;background:none;border-radius:999px;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827;cursor:pointer;text-decoration:{{ favDeco }}" style-hover="text-decoration:underline"><span style="color:#9a3412;display:flex">{{ I.heart }}</span>Ulubione</button>
+              <sc-if value="{{ isLogged }}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{ goAdd }}" style="height:48px;padding:0 16px;box-sizing:border-box;border-radius:999px;border:2px solid #c2410c;background:#fff;color:#9a3412;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;cursor:pointer" style-hover="background:#fff7ed">{{ I.plus }}Dodaj przepis</button>
+              </sc-if>
+              <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ loginOnly }}" style="height:48px;padding:0 16px;box-sizing:border-box;border-radius:999px;border:2px solid #c2410c;background:#fff;color:#9a3412;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;cursor:pointer" style-hover="background:#fff7ed">{{ I.login }}Zaloguj się</button>
+              </sc-if>
+              <button type="button" onClick="{{ openMenu }}" aria-expanded="{{ menuOpen }}" style="position:relative;height:48px;padding:0 8px;border:0;background:none;display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;color:#111827;cursor:pointer">{{ I.menu }}Menu<sc-if value="{{ isLogged }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="position:absolute;top:8px;left:22px;width:10px;height:10px;border-radius:999px;background:#c2410c;border:2px solid #fff"></span></sc-if></button>
+            </div>
+          </div>
+          <nav aria-label="Kategorie" style="position:relative;border-bottom:1px solid #111827;display:flex;align-items:center">
+            <sc-if value="{{ catCanL }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ catL }}" aria-label="Poprzednie kategorie" style="position:absolute;left:0;top:0;bottom:0;z-index:2;padding:0 64px 0 12px;border:0;background:linear-gradient(90deg,#fff 0,#fff calc(100% - 56px),rgba(255,255,255,0) 100%);display:flex;align-items:center;gap:4px;font-size:16px;font-weight:700;color:#111827;cursor:pointer">{{ I.chevL }}Wstecz</button>
+            </sc-if>
+            <div ref="{{ catRef }}" onScroll="{{ catOnScroll }}" style="flex:1;display:flex;column-gap:20px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;padding:4px 170px 4px 20px;scroll-padding:0 170px">
+            <sc-for list="{{ cats }}" as="k" hint-placeholder-count="12">
+              <button type="button" onClick="{{ k.go }}" aria-current="{{ k.cur }}" style="height:48px;padding:0 6px;border:0;background:none;display:flex;align-items:center;gap:5px;font-size:16px;font-weight:700;color:{{ k.color }};white-space:nowrap;cursor:pointer;text-decoration:{{ k.deco }};text-underline-offset:4px" style-hover="color:#9a3412;text-decoration:underline"><span style="color:#9a3412;display:flex">{{ k.ic }}</span>{{ k.l }}</button>
+            </sc-for>
+            </div>
+            <sc-if value="{{ catCanR }}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{ catR }}" aria-label="Następne kategorie" style="position:absolute;right:0;top:0;bottom:0;z-index:2;padding:0 12px 0 64px;border:0;background:linear-gradient(270deg,#fff 0,#fff calc(100% - 56px),rgba(255,255,255,0) 100%);display:flex;align-items:center;gap:4px;font-size:16px;font-weight:700;color:#111827;cursor:pointer">Więcej{{ I.chevRs }}</button>
+            </sc-if>
+          </nav>
+        </header>
+      </sc-if>
+
+      <sc-if value="{{ isMob }}" hint-placeholder-val="{{ false }}">
+        <header style="position:sticky;top:0;z-index:5;background:#fff;border-bottom:2px solid #e5e7eb;padding:4px 8px 4px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ goHome }}" aria-label="Zapisz Przepis — strona główna" style="border:0;background:none;padding:0;height:48px;cursor:pointer;font-size:22px;font-weight:700;color:#111827">Zapisz <span style="color:#c2410c">Przepis</span></button>
+          </sc-if>
+          <sc-if value="{{ notHome }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ back }}" aria-label="{{ backAria }}" style="min-width:0;max-width:calc(100% - 140px);height:48px;padding:0 12px 0 0;border:0;background:none;display:flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#111827;cursor:pointer"><span style="display:flex;flex-shrink:0">{{ I.arrowL }}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ backShort }}</span></button>
+          </sc-if>
+          <div style="display:flex;gap:2px">
+            <button type="button" onClick="{{ goSearchFocus }}" style="min-width:64px;height:56px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:16px;font-weight:700;color:#111827;cursor:pointer">{{ I.search }}Szukaj</button>
+            <button type="button" onClick="{{ openMenu }}" aria-expanded="{{ menuOpen }}" style="position:relative;min-width:64px;height:56px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:16px;font-weight:700;color:#111827;cursor:pointer">{{ I.menu }}Menu<sc-if value="{{ isLogged }}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="position:absolute;top:8px;right:12px;width:10px;height:10px;border-radius:999px;background:#c2410c;border:2px solid #fff"></span></sc-if></button>
+          </div>
+        </header>
+      </sc-if>
+
+      <main>
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff;padding:{{ heroPad }};display:grid;grid-template-columns:{{ heroCols }};gap:{{ heroGap }};align-items:end">
+            <div style="display:flex;flex-direction:column;align-items:{{ heroAlign }};gap:14px;text-align:{{ heroText }};min-width:0">
+            <sc-if value="{{ isLogged }}" hint-placeholder-val="{{ true }}">
+              <h1 style="margin:0;font-size:{{ h1Size }};font-weight:800;line-height:1.05">Dzień dobry, Tolu!</h1>
+              <span style="font-size:19px;color:#374151;line-height:1.45">Szukaj w swoich przepisach i ulubionych albo we wszystkich</span>
+            </sc-if>
+            <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+              <h1 style="margin:0;font-size:{{ h1Size }};font-weight:800;line-height:1.05">Czego dziś szukasz?</h1>
+              <span style="font-size:19px;color:#374151;line-height:1.45">Przepisy zapisane ze stron, YouTube i Facebooka</span>
+            </sc-if>
+            <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:720px">
+              <form role="search" onSubmit="{{ onSearchSubmit }}" style="width:100%;height:{{ fieldH }};box-sizing:border-box;margin:0;background:#fff;border:2px solid #111827;border-radius:999px;display:flex;align-items:center;padding-right:4px;overflow:hidden">
+                <label style="display:flex;align-items:center;padding:0 4px 0 20px;color:#374151">{{ I.search }}<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Szukaj przepisu</span>
+                </label>
+                <input ref="{{ qRef }}" value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ sugFocus }}" onBlur="{{ sugBlur }}" onKeyDown="{{ sugKey }}" type="search" role="combobox" aria-expanded="{{ sugShow }}" aria-controls="sug-list" aria-activedescendant="{{ sugActiveId }}" aria-autocomplete="list" autoComplete="off" enterKeyHint="search" aria-label="Szukaj przepisu" placeholder="{{ qPlaceholder }}" style="flex:1;min-width:0;border:0;outline-offset:-3px;background:transparent;padding:0 8px;font:18px 'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;color:#111827"/>
+                <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ voice }}" style="align-self:center;height:44px;margin-right:8px;padding:0 12px;border-radius:999px;border:2px solid #111827;background:#fff;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:#111827;cursor:pointer;white-space:nowrap">{{ I.mic }}Powiedz</button>
+                </sc-if>
+                <button type="submit" style="height:calc(100% - 8px);border-radius:999px;padding:0 {{ goPad }};border:0;background:#c2410c;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;cursor:pointer;white-space:nowrap" style-hover="background:#9a3412">Szukaj</button>
+              </form>
+                <sc-if value="{{ sugShow }}" hint-placeholder-val="{{ false }}">
+                  <div onMouseDown="{{ keepFocus }}" onMouseLeave="{{ sugLeave }}" style="position:absolute;top:calc({{ fieldH }} + 6px);left:0;right:0;z-index:8;text-align:left;background:#fff;border:2px solid #6b7280;border-radius:16px;box-shadow:0 12px 28px rgba(17,24,39,.18);padding:8px 0;max-height:440px;overflow-y:auto;animation:zpFade .15s ease-out">
+                    <span id="sug-label" style="display:block;padding:4px 16px 8px;font-size:16px;font-weight:700;color:#374151">{{ sugLabel }}</span>
+                    <div role="listbox" id="sug-list" aria-labelledby="sug-label">
+                      <sc-if value="{{ sugBrowsing }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 8px">
+                          <sc-for list="{{ sugOpts }}" as="o" hint-placeholder-count="5">
+                            <div role="option" id="{{ o.id }}" aria-selected="{{ o.sel }}" onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="min-height:48px;box-sizing:border-box;padding:0 16px;border-radius:999px;border:2px solid {{ o.border }};background:{{ o.bg }};display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827;cursor:pointer;white-space:nowrap">{{ o.ic }}{{ o.label }}</div>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ sugTyping }}" hint-placeholder-val="{{ false }}">
+                        <sc-for list="{{ sugOpts }}" as="o" hint-placeholder-count="3">
+                          <div role="option" id="{{ o.id }}" aria-selected="{{ o.sel }}" onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="min-height:64px;box-sizing:border-box;padding:8px 16px;border-top:{{ o.sep }};background:{{ o.bg }};display:flex;align-items:center;gap:12px;cursor:pointer;color:{{ o.fg }}">
+                            <sc-if value="{{ o.isRecipe }}" hint-placeholder-val="{{ true }}">
+                              <span style="width:48px;height:48px;flex-shrink:0;border-radius:10px;background:repeating-linear-gradient(135deg,#fdf0e4 0 6px,#fbe6d3 6px 12px)"></span>
+                              <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:19px;font-weight:700;line-height:1.3">{{ o.label }}</span><span style="font-size:16px;color:#374151">{{ o.cat }}</span></span>
+                            </sc-if>
+                            <sc-if value="{{ o.isAll }}" hint-placeholder-val="{{ false }}">
+                              {{ o.ic }}<span style="font-size:18px;font-weight:700;text-decoration:underline">{{ o.label }}</span>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-if>
+              <sc-if value="{{ isMob }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ voice }}" style="height:48px;padding:0 14px;border-radius:999px;border:2px solid #111827;background:#fff;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#111827;cursor:pointer">{{ I.mic }}Powiedz, czego szukasz</button>
+              </sc-if>
+            </div>
+            </div>
+            <div role="link" tabIndex="0" onClick="{{ day.open }}" onKeyDown="{{ day.onKey }}" aria-label="{{ day.aria }}" style="display:flex;flex-direction:column;gap:10px;cursor:pointer;min-width:0" style-hover="opacity:.92">
+              <div style="position:relative;height:{{ dayH }};margin:{{ dayMargin }};border-radius:{{ dayRadius }};overflow:hidden;background:repeating-linear-gradient(135deg,#e5e7eb 0 12px,#d1d5db 12px 24px)">
+                <span style="position:absolute;right:14px;top:14px;font:12px monospace;color:#374151">zdjęcie przepisu dnia</span>
+                <span style="position:absolute;left:1px;bottom:6px;max-width:calc(100% - 12px);box-sizing:border-box;padding:4px 12px 4px 10px;border-radius:0 2px 2px 0;border:0;background:#fff;color:#111827;font-size:16px;font-weight:700;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden">{{ day.srcEl }}<span style="overflow:hidden;text-overflow:ellipsis">{{ day.a }}</span></span>
+              </div>
+              <span style="font-size:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9a3412">Przepis dnia</span>
+              <span style="font-size:{{ dayTitle }};font-weight:700;line-height:1.15;text-wrap:pretty">{{ day.t }}</span>
+              <span style="font-size:17px;color:#374151;line-height:1.35">{{ day.s }}</span>
+            </div>
+          </div>
+          <div style="padding:{{ pagePad }};display:flex;flex-direction:column;gap:32px">
+            <sc-if value="{{ isMob }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <h2 style="margin:0;font-size:26px;font-weight:700;border-top:1px solid #111827;padding-top:14px">Kategorie</h2>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                  <sc-for list="{{ cats }}" as="k" hint-placeholder-count="9">
+                    <button type="button" onClick="{{ k.go }}" style="min-height:76px;border-radius:4px;background:#fff;border:1px solid #111827;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:16px;font-weight:700;color:#111827;cursor:pointer;padding:6px"><span style="color:#9a3412;display:flex">{{ k.ic }}</span>{{ k.l }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isLogged }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:12px;background:#fff;border:2px solid #9a3412;border-radius:4px;padding:2px 12px 2px 16px">
+                  <span style="color:#9a3412;display:flex">{{ I.alert }}</span>
+                  <span style="flex:1;font-size:17px;line-height:1.4"><b>Nie udało się dodać 32 przepisów</b> · możesz spróbować ponownie</span>
+                  <a href="notifications.dc.html" style="font-size:17px;font-weight:700;min-height:48px;display:flex;align-items:center;padding:0 4px">Zobacz w powiadomieniach</a>
+                </div>
+              </sc-if>
+              <sc-if value="{{ isMob }}" hint-placeholder-val="{{ false }}">
+                <a href="notifications.dc.html" style="display:flex;align-items:center;gap:12px;background:#fff;border:2px solid #9a3412;border-radius:4px;padding:10px 12px 10px 14px;text-decoration:none;color:#111827">
+                  <span style="color:#9a3412;display:flex">{{ I.alert }}</span>
+                  <span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><b style="font-size:17px;line-height:1.3">Nie udało się dodać 32 przepisów</b><span style="font-size:16px;color:#374151;line-height:1.35">Dotknij, żeby spróbować ponownie</span></span>
+                  <span style="color:#9a3412;display:flex">{{ I.chevR }}</span>
+                </a>
+              </sc-if>
+              <dc-import name="card-row" row="{{ rowMine }}" hint-size="100%,380px"></dc-import>
+              <sc-if value="{{ hasFavs }}" hint-placeholder-val="{{ true }}">
+                <dc-import name="card-row" row="{{ rowFav }}" hint-size="100%,380px"></dc-import>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+              <dc-import name="card-row" row="{{ rowNew }}" hint-size="100%,380px"></dc-import>
+              <div style="background:#fff;border-top:1px solid #111827;padding:16px 0 0;display:flex;flex-direction:column;gap:12px;align-items:flex-start">
+                <h2 style="margin:0;font-size:28px;font-weight:700">Zapisuj przepisy z linku</h2>
+                <span style="font-size:17px;color:#374151;line-height:1.5;max-width:560px">Wklej link ze strony, YouTube albo Facebooka, a przepis zapisze się w aplikacji Zapisz Przepis razem ze zdjęciem i składnikami.</span>
+                <button type="button" onClick="{{ loginOnly }}" style="height:56px;padding:0 22px;border:0;border-radius:999px;background:#c2410c;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">{{ I.login }}Zaloguj się</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isRecipe }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:{{ pagePad }};display:flex;flex-direction:column;gap:28px">
+            <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-8px 0 -10px;flex-wrap:wrap">
+              <button type="button" onClick="{{ back }}" style="height:48px;padding:0 12px 0 4px;border:0;background:none;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827;cursor:pointer" style-hover="text-decoration:underline">{{ I.arrowL }}{{ backLabel }}<sc-if value="{{ posLabel }}" hint-placeholder-val="{{ false }}"><span style="font-weight:400;color:#374151">· {{ posLabel }}</span></sc-if></button>
+              <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}">
+                <nav aria-label="Okruszki" style="display:flex;align-items:center;gap:6px;font-size:16px"><button type="button" onClick="{{ goHome }}" style="min-height:48px;padding:0;border:0;background:none;font-size:16px;color:#9a3412;text-decoration:underline;cursor:pointer">Przepisy</button><span aria-hidden="true" style="color:#374151">›</span><button type="button" onClick="{{ goRecipeCat }}" aria-current="page" style="min-height:48px;padding:0;border:0;background:none;font-size:16px;font-weight:700;color:#9a3412;text-decoration:underline;cursor:pointer">{{ r.cat }}</button></nav>
+              </sc-if>
+            </div>
+            </sc-if>
+            <div style="display:grid;grid-template-columns:{{ recipeCols }};gap:{{ recipeGap }};align-items:start">
+              <div style="position:relative;height:{{ recipeImgH }};border-radius:4px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                <span style="position:absolute;right:12px;top:10px;font:12px monospace;color:#9a3412">zdjęcie główne</span>
+                <sc-if value="{{ r.hasUrl }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ openSource }}" aria-label="{{ r.srcAria }}" style="position:absolute;left:1px;bottom:0;max-width:calc(100% - 12px);min-height:48px;padding:0 0 6px;border:0;background:none;display:flex;align-items:flex-end;cursor:pointer;font:inherit" style-hover="opacity:.9"><span style="box-sizing:border-box;padding:4px 12px 4px 10px;border-radius:0 2px 2px 0;background:#fff;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;max-width:100%">{{ r.srcEl }}<span style="text-decoration:underline;text-underline-offset:3px;overflow:hidden;text-overflow:ellipsis">{{ r.a }}</span>{{ I.ext }}</span></button>
+                </sc-if>
+                <sc-if value="{{ r.noUrl }}" hint-placeholder-val="{{ false }}">
+                  <span style="position:absolute;left:1px;bottom:6px;max-width:calc(100% - 12px);box-sizing:border-box;padding:4px 12px 4px 10px;border-radius:0 2px 2px 0;background:#fff;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden">{{ r.srcEl }}<span style="overflow:hidden;text-overflow:ellipsis">{{ r.a }}</span></span>
+                </sc-if>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:6px"><h1 style="margin:0;font-size:{{ titleSize }};font-weight:700;line-height:1.15;text-wrap:pretty">{{ r.t }}</h1><span style="font-size:19px;color:#374151">{{ r.s }}</span></div>
+                <sc-if value="{{ isMob }}" hint-placeholder-val="{{ false }}"><span style="font-size:16px;color:#374151">{{ r.cat }} · {{ r.timeLabel }}</span></sc-if>
+                <span style="font-size:16px;color:#374151">{{ r.addedVerb }} <a href="public-profile.dc.html" style="display:inline-block;padding:12px 2px;margin:-12px 0">{{ r.by }}</a></span>
+                <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}"><dl style="margin:0;display:flex;gap:28px;flex-wrap:wrap">
+                  <div style="display:flex;flex-direction:column;gap:2px"><dt style="font-size:16px;color:#374151">Przygotowanie</dt><dd style="margin:0;font-size:19px;font-weight:700">{{ r.prepLabel }}</dd></div>
+                  <div style="display:flex;flex-direction:column;gap:2px"><dt style="font-size:16px;color:#374151">{{ r.cookWord }}</dt><dd style="margin:0;font-size:19px;font-weight:700">{{ r.cookLabel }}</dd></div>
+                  <div style="display:flex;flex-direction:column;gap:2px"><dt style="font-size:16px;color:#374151">Łącznie</dt><dd style="margin:0;font-size:19px;font-weight:700">{{ r.timeLabel }}</dd></div>
+                </dl></sc-if>
+                <sc-if value="{{ r.desc }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:19px;line-height:1.55;text-wrap:pretty">{{ r.desc }}</p></sc-if>
+                <sc-if value="{{ hasVersions }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ toVersions }}" style="align-self:flex-start;min-height:48px;margin:2px 0;padding:0;border:0;background:none;font-size:17px;font-weight:700;color:#9a3412;cursor:pointer;text-align:left" style-hover="text-decoration:underline">{{ versionsLink }}</button>
+                </sc-if>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <sc-if value="{{ rIsFav }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ toggleCurFav }}" aria-pressed="true" style="flex:1;min-width:150px;height:56px;border:2px solid #c2410c;background:#c2410c;color:#fff;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;cursor:pointer">{{ I.heartFill }}W ulubionych</button>
+                  </sc-if>
+                  <sc-if value="{{ rNotFav }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ toggleCurFav }}" aria-pressed="false" style="flex:1;min-width:150px;height:56px;border:2px solid #c2410c;background:#fff;color:#9a3412;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;cursor:pointer" style-hover="background:#fff7ed">{{ I.heart }}Dodaj do ulubionych</button>
+                  </sc-if>
+                  <button type="button" onClick="{{ share }}" style="flex:1;min-width:150px;height:56px;border:2px solid #111827;background:#fff;color:#111827;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;cursor:pointer" style-hover="background:#f3f4f6">{{ I.share }}Udostępnij</button>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+                <div style="flex:1;min-width:260px;max-width:{{ tsMax }};display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:14px;background:#f3f4f6;padding:8px 8px 8px 16px">
+                  <span id="text-size-label" style="font-size:16px;font-weight:700">Wielkość tekstu</span>
+                  <div role="group" aria-labelledby="text-size-label" style="display:flex;gap:8px">
+                    <sc-for list="{{ tsOpts }}" as="o" hint-placeholder-count="3">
+                      <button type="button" aria-pressed="{{ o.on }}" aria-label="{{ o.aria }}" onClick="{{ o.pick }}" style="min-height:48px;min-width:52px;padding:0 12px;border-radius:999px;border:2px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }};font-size:{{ o.size }};font-weight:700;line-height:1;cursor:pointer">{{ o.l }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+                <sc-if value="{{ hasChecked }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ clearChecks }}" style="min-height:48px;padding:0 4px;border:0;background:none;font-size:17px;font-weight:700;color:#9a3412;text-decoration:underline;cursor:pointer">Wyczyść zaznaczenia</button>
+                </sc-if>
+              </div>
+              <button type="button" onClick="{{ startCook }}" aria-haspopup="dialog" style="min-height:58px;border:0;border-radius:999px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 20px;font-size:19px;font-weight:700;cursor:pointer" style-hover="background:#374151">{{ I.chef }}Tryb gotowania</button>
+              <div style="display:grid;grid-template-columns:{{ cookCols }};gap:{{ cookGap }};align-items:start">
+                <section aria-labelledby="ing-h" style="background:{{ ingBg }};border:{{ ingBorder }};border-radius:4px;padding:{{ ingPad }}">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-bottom:8px"><h2 id="ing-h" style="margin:0;font-size:24px;font-weight:700">Składniki</h2><span style="font-size:16px;color:#374151">{{ servings }}</span></div>
+                  <sc-for list="{{ ings }}" as="g" hint-placeholder-count="6">
+                    <sc-if value="{{ g.sec }}" hint-placeholder-val="{{ false }}"><h3 style="margin:{{ g.secMargin }};font-size:17px;font-weight:700;color:#374151">{{ g.sec }}</h3></sc-if>
+                    <label style="min-height:56px;display:flex;align-items:center;gap:14px;border-bottom:1.5px solid #e5e7eb;padding:6px 4px;cursor:pointer">
+                      <input type="checkbox" checked="{{ g.on }}" onChange="{{ g.toggle }}" style="width:32px;height:32px;margin:0;flex-shrink:0;accent-color:#15803d;cursor:pointer"/>
+                      <span style="flex:1;min-width:0;font-size:{{ ingSize }};line-height:1.35;color:{{ g.color }};text-decoration:{{ g.deco }}">{{ g.name }}</span>
+                      <b style="max-width:45%;text-align:right;font-size:{{ ingSize }};color:{{ g.color }};text-decoration:{{ g.deco }}">{{ g.amount }}</b>
+                    </label>
+                  </sc-for>
+                </section>
+                <section aria-labelledby="steps-h">
+                  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin:0 0 12px">
+                    <h2 id="steps-h" style="margin:0;font-size:24px;font-weight:700">Przygotowanie</h2>
+                    <sc-if value="{{ hasStepPhotos }}" hint-placeholder-val="{{ false }}">
+                      <div role="group" aria-label="Zdjęcia kroków" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                        <span style="font-size:17px;font-weight:700">Zdjęcia kroków</span>
+                        <div style="display:flex;border:2px solid #6b7280;border-radius:12px;overflow:hidden">
+                          <sc-for list="{{ photoOpts }}" as="o" hint-placeholder-count="2"><button type="button" aria-pressed="{{ o.on }}" onClick="{{ o.pick }}" style="height:48px;min-width:88px;padding:0 14px;border:0;background:{{ o.bg }};color:{{ o.fg }};font:inherit;font-size:17px;font-weight:700;cursor:pointer">{{ o.l }}</button></sc-for>
+                        </div>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:20px">
+                    <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+                      <li style="display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;color:#9a3412">Krok {{ s.n }}</span><span style="font-size:{{ stepSize }};line-height:1.6">{{ s.t }}</span><sc-if value="{{ s.showImg }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ s.openLb }}" aria-haspopup="dialog" aria-label="{{ s.lbAria }}" style="display:block;margin:6px 0 0;padding:0;border:0;width:100%;max-width:{{ stepImgMax }};aspect-ratio:4/3;border-radius:4px;overflow:hidden;background:repeating-linear-gradient(135deg,#fdf0e4 0 12px,#fbe6d3 12px 24px);cursor:zoom-in" style-hover="opacity:.92"></button></sc-if></li>
+                    </sc-for>
+                  </ol>
+                </section>
+              </div>
+            </div>
+
+            <sc-if value="{{ hasNav }}" hint-placeholder-val="{{ true }}">
+              <div style="height:1px;background:#111827"></div>
+              <nav aria-label="Sąsiednie przepisy" style="display:grid;grid-template-columns:{{ navCols }};gap:12px">
+              <sc-if value="{{ hasPrev }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ goPrev }}" style="min-height:64px;box-sizing:border-box;padding:8px 16px 8px 14px;border:1px solid #111827;border-radius:4px;background:#fff;display:flex;align-items:center;gap:12px;cursor:pointer;text-align:left;color:#111827" style-hover="background:#f9fafb">{{ I.arrowL }}
+                <span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:16px;color:#374151">{{ prevKicker }}</span><span style="font-size:18px;font-weight:700;line-height:1.3">{{ prevTitle }}</span></span>
+              </button>
+              </sc-if>
+              <sc-if value="{{ nextSpacer }}" hint-placeholder-val="{{ false }}"><span></span></sc-if>
+              <sc-if value="{{ hasNext }}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{ goNext }}" style="min-height:64px;box-sizing:border-box;padding:8px 14px 8px 16px;border:1px solid #111827;border-radius:4px;background:#fff;display:flex;align-items:center;gap:12px;cursor:pointer;text-align:left;color:#111827" style-hover="background:#f9fafb">
+                <span style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:16px;color:#374151">{{ nextKicker }}</span><span style="font-size:18px;font-weight:700;line-height:1.3">{{ nextTitle }}</span></span>{{ I.arrowR }}
+              </button>
+              </sc-if>
+              </nav>
+            </sc-if>
+            <sc-if value="{{ hasVersions }}" hint-placeholder-val="{{ true }}">
+              <div ref="{{ verRef }}" style="height:2px;background:#e5e7eb"></div>
+              <section aria-labelledby="inne-h" style="display:flex;flex-direction:column;gap:16px">
+                <div style="display:flex;flex-direction:column;gap:4px"><h2 id="inne-h" style="margin:0;font-size:24px;font-weight:700">{{ versionsTitle }}</h2><span style="font-size:16px;color:#374151">Czym różnią się od tego przepisu</span></div>
+                <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}">
+                  <div role="group" aria-labelledby="kolejnosc-l" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+                    <span id="kolejnosc-l" style="margin-right:4px;font-size:16px;font-weight:700;color:#374151">Kolejność:</span>
+                    <sc-for list="{{ sortOpts }}" as="o" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ o.pick }}" aria-current="{{ o.cur }}" style="height:48px;padding:0 18px;border-radius:999px;border:2px solid {{ o.border }};background:{{ o.bg }};color:{{ o.fg }};font-size:16px;font-weight:700;cursor:pointer">{{ o.pill }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ isMob }}" hint-placeholder-val="{{ false }}">
+                  <div onKeyDown="{{ sortKey }}" style="position:relative;display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+                    <button type="button" ref="{{ sortBtnRef }}" onClick="{{ toggleSort }}" aria-haspopup="listbox" aria-expanded="{{ sortOpen }}" style="height:48px;max-width:100%;padding:0 14px;border:2px solid #111827;border-radius:999px;background:#fff;color:#111827;display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;cursor:pointer">{{ I.sort }}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="font-weight:400;color:#374151">Kolejność:</span> {{ sortLabel }}</span>{{ I.chevD }}</button>
+                    <sc-if value="{{ sortOpen }}" hint-placeholder-val="{{ false }}">
+                      <div role="listbox" aria-label="Kolejność" style="align-self:stretch;border:2px solid #4b5563;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;background:#fff;box-shadow:0 8px 24px rgba(17,24,39,.12)">
+                        <sc-for list="{{ sortOpts }}" as="o" hint-placeholder-count="3">
+                          <button type="button" role="option" aria-selected="{{ o.cur }}" onClick="{{ o.pick }}" style="height:56px;padding:0 16px;border:0;border-top:{{ o.sep }};background:{{ o.rowBg }};display:flex;align-items:center;justify-content:space-between;font-size:17px;font-weight:{{ o.weight }};color:#111827;cursor:pointer;text-align:left">{{ o.label }}{{ o.checkEl }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <dc-import name="card-row" row="{{ rowVer }}" hint-size="100%,420px"></dc-import>
+              </section>
+            </sc-if>
+
+            <sc-if value="{{ hasRecipeTags }}" hint-placeholder-val="{{ true }}">
+              <div style="height:2px;background:#e5e7eb"></div>
+              <section aria-labelledby="tagi-h" style="display:flex;flex-direction:column;gap:14px">
+                <h2 id="tagi-h" style="margin:0;font-size:24px;font-weight:700">Zobacz więcej przepisów:</h2>
+                <div style="display:flex;flex-wrap:wrap;gap:8px">
+                  <sc-for list="{{ recipeTags }}" as="tg" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ tg.go }}" style="height:52px;padding:0 18px;border-radius:999px;border:2px solid #111827;background:#fff;color:#9a3412;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;cursor:pointer" style-hover="background:#fff7ed">{{ icTag }}{{ tg.t }}</button>
+                  </sc-for>
+                </div>
+              </section>
+            </sc-if>
+            <sc-if value="{{ hasSimilar }}" hint-placeholder-val="{{ true }}">
+              <div style="height:2px;background:#e5e7eb"></div>
+              <dc-import name="card-row" row="{{ rowSim }}" hint-size="100%,380px"></dc-import>
+            </sc-if>
+            <sc-if value="{{ rIsOwner }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #e5e7eb;padding-top:32px">
+                <button type="button" onClick="{{ refreshRecipe }}" style="min-height:48px;padding:0 18px;border:2px solid #111827;border-radius:999px;background:#fff;font-size:17px;font-weight:700;color:#111827;cursor:pointer">Odśwież przepis</button>
+                <button type="button" onClick="{{ deleteRecipe }}" style="min-height:48px;padding:0 18px;border:2px solid #b91c1c;border-radius:999px;background:#fff;font-size:17px;font-weight:700;color:#b91c1c;cursor:pointer">Usuń przepis</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isList }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:{{ pagePad }};display:flex;flex-direction:column;gap:20px">
+            <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ false }}">
+              <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:720px">
+                <form role="search" onSubmit="{{ onSearchSubmit }}" style="width:100%;height:{{ fieldH }};box-sizing:border-box;margin:0;background:#fff;border:2px solid #c2410c;border-radius:16px;display:flex;align-items:stretch;overflow:hidden;box-shadow:0 2px 0 rgba(154,52,18,.12)">
+                  <label style="display:flex;align-items:center;padding:0 4px 0 14px;color:#374151">{{ I.search }}<span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Szukaj przepisu</span>
+                  </label>
+                  <input value="{{ q }}" onChange="{{ onQ }}" onFocus="{{ sugFocus }}" onBlur="{{ sugBlur }}" onKeyDown="{{ sugKey }}" type="search" role="combobox" aria-expanded="{{ sugShow }}" aria-controls="sug-list" aria-activedescendant="{{ sugActiveId }}" aria-autocomplete="list" autoComplete="off" enterKeyHint="search" aria-label="Szukaj przepisu" placeholder="{{ qPlaceholder }}" style="flex:1;min-width:0;border:0;outline-offset:-3px;background:transparent;padding:0 8px;font:18px 'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;color:#111827"/>
+                  <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ voice }}" style="align-self:center;height:44px;margin-right:8px;padding:0 12px;border-radius:999px;border:2px solid #111827;background:#fff;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700;color:#111827;cursor:pointer;white-space:nowrap">{{ I.mic }}Powiedz</button>
+                  </sc-if>
+                  <button type="submit" style="height:calc(100% - 8px);border-radius:999px;padding:0 {{ goPad }};border:0;background:#c2410c;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;cursor:pointer;white-space:nowrap" style-hover="background:#9a3412">Szukaj</button>
+                </form>
+                <sc-if value="{{ sugShow }}" hint-placeholder-val="{{ false }}">
+                  <div onMouseDown="{{ keepFocus }}" onMouseLeave="{{ sugLeave }}" style="position:absolute;top:calc({{ fieldH }} + 6px);left:0;right:0;z-index:8;text-align:left;background:#fff;border:2px solid #6b7280;border-radius:16px;box-shadow:0 12px 28px rgba(17,24,39,.18);padding:8px 0;max-height:440px;overflow-y:auto;animation:zpFade .15s ease-out">
+                    <span id="sug-label" style="display:block;padding:4px 16px 8px;font-size:16px;font-weight:700;color:#374151">{{ sugLabel }}</span>
+                    <div role="listbox" id="sug-list" aria-labelledby="sug-label">
+                      <sc-if value="{{ sugBrowsing }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 8px">
+                          <sc-for list="{{ sugOpts }}" as="o" hint-placeholder-count="5">
+                            <div role="option" id="{{ o.id }}" aria-selected="{{ o.sel }}" onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="min-height:48px;box-sizing:border-box;padding:0 16px;border-radius:999px;border:2px solid {{ o.border }};background:{{ o.bg }};display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827;cursor:pointer;white-space:nowrap">{{ o.ic }}{{ o.label }}</div>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ sugTyping }}" hint-placeholder-val="{{ false }}">
+                        <sc-for list="{{ sugOpts }}" as="o" hint-placeholder-count="3">
+                          <div role="option" id="{{ o.id }}" aria-selected="{{ o.sel }}" onClick="{{ o.pick }}" onMouseEnter="{{ o.hover }}" style="min-height:64px;box-sizing:border-box;padding:8px 16px;border-top:{{ o.sep }};background:{{ o.bg }};display:flex;align-items:center;gap:12px;cursor:pointer;color:{{ o.fg }}">
+                            <sc-if value="{{ o.isRecipe }}" hint-placeholder-val="{{ true }}">
+                              <span style="width:48px;height:48px;flex-shrink:0;border-radius:10px;background:repeating-linear-gradient(135deg,#fdf0e4 0 6px,#fbe6d3 6px 12px)"></span>
+                              <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:19px;font-weight:700;line-height:1.3">{{ o.label }}</span><span style="font-size:16px;color:#374151">{{ o.cat }}</span></span>
+                            </sc-if>
+                            <sc-if value="{{ o.isAll }}" hint-placeholder-val="{{ false }}">
+                              {{ o.ic }}<span style="font-size:18px;font-weight:700;text-decoration:underline">{{ o.label }}</span>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ isMob }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ voice }}" style="height:48px;padding:0 14px;border-radius:999px;border:2px solid #111827;background:#fff;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#111827;cursor:pointer">{{ I.mic }}Powiedz, czego szukasz</button>
+                </sc-if>
+              </div>
+            </sc-if>
+            <div style="display:flex;align-items:center;gap:14px">
+              <sc-if value="{{ isCat }}" hint-placeholder-val="{{ false }}"><span style="width:52px;height:52px;flex-shrink:0;border-radius:999px;background:#fff7ed;display:flex;align-items:center;justify-content:center;color:#9a3412">{{ catIcon }}</span></sc-if>
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                <h1 style="margin:0;font-size:{{ titleSize }};font-weight:700;line-height:1.15">{{ listTitle }}</h1>
+                <sc-if value="{{ listSub }}" hint-placeholder-val="{{ false }}"><span style="font-size:17px;color:#374151;line-height:1.45">{{ listSub }}</span></sc-if>
+              </div>
+            </div>
+            <sc-if value="{{ hasTags }}" hint-placeholder-val="{{ false }}">
+              <nav aria-labelledby="tags-h">
+                <h2 id="tags-h" style="margin:0 0 {{ tagHMb }};font-size:{{ tagHSize }};font-weight:700">{{ tagQuestion }}</h2>
+                <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}"><p style="margin:0 0 12px;font-size:16px;color:#374151;line-height:1.4">Możesz zaznaczyć kilka. Pokażemy przepisy, które pasują do wszystkich.</p></sc-if>
+                <div style="position:relative">
+                <div ref="{{ tagRef }}" onScroll="{{ tagOnScroll }}" style="display:flex;flex-wrap:{{ tagWrap }};gap:8px;overflow-x:{{ tagOverflow }};margin-right:{{ tagBleed }};padding-right:{{ tagBleed2 }};margin-left:{{ tagBleed }};padding-left:{{ tagBleed2 }};scroll-padding-inline-start:{{ tagBleed2 }};scrollbar-width:none;scroll-snap-type:x proximity;scroll-padding-inline-end:{{ tagScrollPad }}">
+                  <sc-for list="{{ tagChips }}" as="t" hint-placeholder-count="6">
+                    <button type="button" aria-pressed="{{ t.on }}" aria-disabled="{{ t.dis }}" onClick="{{ t.toggle }}" style="cursor:{{ t.cur }};flex-shrink:0;white-space:nowrap;scroll-snap-align:start;min-height:48px;padding:0 16px;border-radius:999px;border:2px solid {{ t.border }};background:{{ t.bg }};color:{{ t.fg }};display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;cursor:pointer">{{ t.label }}<span style="font-size:16px;font-weight:400;opacity:.8">{{ t.count }}</span></button>
+                  </sc-for>
+                  <sc-if value="{{ tagMore }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ toggleTagsAll }}" aria-expanded="{{ tagsExpanded }}" style="min-height:48px;padding:0 4px;border:0;background:none;font-size:17px;font-weight:700;color:#111827;text-decoration:underline;text-underline-offset:4px;cursor:pointer">{{ tagMoreLabel }}</button>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ tagCanR }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ tagMoreR }}" aria-label="Więcej tagów" style="position:absolute;right:-16px;top:0;bottom:0;padding:0 16px 0 44px;border:0;background:linear-gradient(270deg,#fff 0,#fff calc(100% - 40px),rgba(255,255,255,0));display:flex;align-items:center;gap:2px;font-size:16px;font-weight:700;color:#111827;cursor:pointer;font-family:inherit">Więcej{{ I.chevR }}</button>
+                </sc-if>
+                </div>
+              </nav>
+            </sc-if>
+            <sc-if value="{{ showTagStatus }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;border-radius:4px;padding:{{ tagStatusPad }};background:{{ tagStatusBg }}">
+                <p role="status" aria-live="polite" style="margin:0;min-width:0;font-size:{{ tagStatusSize }};line-height:1.35;color:#111827">{{ tagStatus }}</p>
+                <sc-if value="{{ tagsActive }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ clearTags }}" style="min-height:48px;padding:0 16px;border:2px solid #111827;border-radius:999px;background:#fff;font-size:17px;font-weight:700;color:#111827;cursor:pointer"><span aria-hidden="true">× </span>Wyczyść</button>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ needLogin }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff7ed;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;align-items:flex-start;max-width:560px">
+                <span style="font-size:19px;line-height:1.45">{{ loginWhy }}</span>
+                <button type="button" onClick="{{ loginOnly }}" style="height:56px;padding:0 22px;border:0;border-radius:999px;background:#c2410c;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">{{ I.login }}Zaloguj się przez Google lub Facebook</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ listEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="border:2px dashed #d1d5db;border-radius:14px;padding:24px;font-size:17px;color:#374151;line-height:1.5">{{ emptyText }}</div>
+            </sc-if>
+            <div style="display:grid;grid-template-columns:{{ gridCols }};gap:16px">
+              <sc-for list="{{ listCards }}" as="c" hint-placeholder-count="4">
+                <dc-import name="recipe-card" c="{{ c }}" hint-size="100%,320px"></dc-import>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isAdd }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:{{ pagePad }};display:flex;flex-direction:column;gap:20px;max-width:640px">
+            <h1 style="margin:0;font-size:{{ titleSize }};font-weight:700">Dodaj przepis</h1>
+            <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff7ed;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px;align-items:flex-start">
+                <span style="font-size:19px;line-height:1.45">Zaloguj się, żeby dodawać przepisy.</span>
+                <button type="button" onClick="{{ loginOnly }}" style="height:56px;padding:0 22px;border:0;border-radius:999px;background:#c2410c;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">{{ I.login }}Zaloguj się</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isLogged }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label for="add-url" style="font-size:19px;font-weight:700">Link do przepisu</label>
+                <input id="add-url" value="{{ addUrl }}" onChange="{{ onAddUrl }}" onKeyDown="{{ onAddKey }}" placeholder="https://" inputMode="url" style="height:56px;box-sizing:border-box;padding:0 14px;border:2px solid #4b5563;border-radius:12px;font:19px 'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;color:#111827"/>
+                <span style="font-size:16px;color:#374151;line-height:1.45">Wklej link ze strony, YouTube albo Facebooka. Spróbuj: aniagotuje.pl/ciasto-marchewkowe (przepis, który już jest) albo dowolny inny link.</span>
+              </div>
+              <button type="button" onClick="{{ submitAdd }}" style="align-self:flex-start;height:56px;padding:0 24px;border:0;border-radius:999px;background:#c2410c;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">{{ I.plus }}Zapisz przepis</button>
+              <sc-if value="{{ addMsg }}" hint-placeholder-val="{{ false }}">
+                <div role="status" style="border:2px solid #166534;border-radius:14px;padding:14px 16px;font-size:17px;line-height:1.5;display:flex;flex-direction:column;gap:8px;align-items:flex-start"><span>{{ addMsg }}</span><button type="button" onClick="{{ openAdded }}" style="min-height:48px;padding:0;border:0;background:none;font-size:17px;font-weight:700;color:#9a3412;text-decoration:underline;cursor:pointer">Otwórz przepis</button></div>
+              </sc-if>
+            </sc-if>
+          </div>
+        </sc-if>
+      </main>
+      <sc-if value="{{ isDesk }}" hint-placeholder-val="{{ true }}">
+        <footer style="margin-top:48px;border-top:2px solid #e5e7eb;background:#f9fafb;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font-size:19px;font-weight:700">Zapisz <span style="color:#c2410c">Przepis</span></span>
+            <span style="font-size:16px;color:#374151">© 2026 zapiszprzepis.pl</span>
+          </div>
+          <nav aria-label="Informacje prawne" style="display:flex;gap:24px;flex-wrap:wrap">
+            <a href="https://zapiszprzepis.pl/regulamin" target="_blank" rel="noopener" style="min-height:48px;display:flex;align-items:center;font-size:17px">Regulamin</a>
+            <a href="https://zapiszprzepis.pl/polityka-prywatnosci" target="_blank" rel="noopener" style="min-height:48px;display:flex;align-items:center;font-size:17px">Polityka prywatności</a>
+            <a href="https://zapiszprzepis.pl/usuwanie-danych" target="_blank" rel="noopener" style="min-height:48px;display:flex;align-items:center;font-size:17px">Usuwanie danych</a>
+          </nav>
+        </footer>
+      </sc-if>
+      <sc-if value="{{ isMob }}" hint-placeholder-val="{{ false }}"><div style="height:40px"></div></sc-if>
+    </div>
+
+    <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ closeMenu }}" style="position:absolute;inset:0;z-index:20;background:rgba(17,24,39,.45);display:flex;justify-content:flex-end;animation:zpFade .2s ease-out">
+        <div role="dialog" aria-label="Menu" onClick="{{ stop }}" onKeyDown="{{ menuKey }}" style="width:{{ menuW }};max-width:100%;height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden;box-shadow:-12px 0 32px rgba(17,24,39,.18);animation:zpSlide .28s cubic-bezier(.2,.8,.2,1)">
+          <div style="position:sticky;top:0;z-index:2;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 20px;border-bottom:2px solid #e5e7eb">
+            <span style="font-size:22px;font-weight:700">Menu</span>
+            <button type="button" ref="{{ menuCloseRef }}" onClick="{{ closeMenu }}" style="height:48px;padding:0 12px;border:0;background:none;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827;cursor:pointer">{{ I.x }}Zamknij</button>
+          </div>
+          <div style="flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column">
+            <div style="padding:10px 0;border-bottom:2px solid #e5e7eb">
+              <button type="button" onClick="{{ menuHome }}" aria-current="{{ homeCurrent }}" style="width:100%;min-height:56px;padding:0 20px;border:0;background:none;display:flex;align-items:center;gap:14px;font-size:19px;font-weight:700;color:#111827;cursor:pointer;text-align:left" style-hover="background:#f3f4f6">{{ I.home }}<span style="flex:1">Strona główna</span></button>
+            </div>
+            <sc-if value="{{ isLogged }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:14px 0 10px;border-bottom:2px solid #e5e7eb;display:flex;flex-direction:column">
+                <span style="padding:0 20px 6px;font-size:16px;font-weight:700;color:#374151">Twoje konto</span>
+                <sc-for list="{{ myItems }}" as="m" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ m.go }}" style="min-height:56px;padding:0 20px;border:0;background:none;display:flex;align-items:center;gap:14px;font-size:19px;font-weight:700;color:#111827;cursor:pointer;text-align:left" style-hover="background:#f3f4f6">{{ m.ic }}<span style="flex:1">{{ m.l }}</span><sc-if value="{{ m.count }}" hint-placeholder-val="{{ false }}"><span style="min-width:24px;padding:3px 10px;border-radius:999px;background:#f3f4f6;font-size:16px;font-weight:700;text-align:center">{{ m.count }}</span></sc-if><sc-if value="{{ m.badge }}" hint-placeholder-val="{{ false }}"><span aria-label="{{ m.badgeAria }}" style="min-width:28px;height:28px;box-sizing:border-box;padding:0 9px;border-radius:999px;background:#c2410c;color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ m.badge }}</span></sc-if></button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isGuest }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:16px 20px;border-bottom:2px solid #e5e7eb;display:flex;flex-direction:column;gap:10px">
+                <span style="font-size:17px;color:#374151;line-height:1.45">Zaloguj się, żeby mieć ulubione i dodawać przepisy.</span>
+                <button type="button" onClick="{{ loginOnly }}" style="height:56px;border:0;border-radius:999px;background:#c2410c;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;font-weight:700;cursor:pointer">{{ I.login }}Zaloguj się</button>
+              </div>
+            </sc-if>
+            <div style="padding:14px 20px 20px;display:flex;flex-direction:column;gap:8px">
+              <span style="padding-bottom:2px;font-size:16px;font-weight:700;color:#374151">Wszystkie przepisy według kategorii</span>
+              <div style="display:grid;grid-template-columns:{{ menuCatCols }};column-gap:16px;border-top:1px solid #d1d5db">
+                <sc-for list="{{ cats }}" as="k" hint-placeholder-count="12">
+                  <button type="button" onClick="{{ k.go }}" style="min-height:56px;padding:0 4px;border:0;border-bottom:1px solid #d1d5db;background:none;border-radius:0;display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700;color:#111827;cursor:pointer;text-align:left" style-hover="background:#f9fafb"><span style="color:#9a3412;display:flex">{{ k.icM }}</span>{{ k.l }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <sc-if value="{{ isLogged }}" hint-placeholder-val="{{ true }}">
+            <div style="position:sticky;bottom:0;background:#fff;border-top:2px solid #e5e7eb;display:grid;grid-template-columns:1fr 1fr">
+              <button type="button" onClick="{{ goSettings }}" style="height:64px;border:0;border-right:2px solid #e5e7eb;background:none;display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:700;color:#111827;cursor:pointer" style-hover="background:#f3f4f6">{{ I.settings }}Ustawienia</button>
+              <button type="button" onClick="{{ logout }}" style="height:64px;border:0;background:none;display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:700;color:#111827;cursor:pointer" style-hover="background:#f3f4f6">{{ I.logout }}Wyloguj</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ lbOn }}" hint-placeholder-val="{{ false }}">
+      <div role="dialog" aria-modal="true" aria-labelledby="lb-title" onKeyDown="{{ lbKey }}" onClick="{{ lbClose }}" style="position:absolute;inset:0;z-index:26;background:rgba(17,24,39,.94);color:#fff;display:flex;flex-direction:column;animation:zpFade .2s ease-out">
+        <div onClick="{{ stop }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 8px 20px">
+          <span id="lb-title" style="font-size:19px;font-weight:700">{{ lbTitle }}</span>
+          <button type="button" ref="{{ lbCloseRef }}" onClick="{{ lbClose }}" style="height:48px;padding:0 14px;border:0;border-radius:999px;background:none;color:#fff;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;cursor:pointer">{{ I.x }}Zamknij</button>
+        </div>
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:16px;padding:8px 16px;overflow-y:auto;overflow-x:hidden">
+          <div onClick="{{ stop }}" role="img" aria-label="{{ lbAlt }}" style="height:min(56vh,calc(100% - 96px),660px);min-height:140px;width:auto;max-width:100%;aspect-ratio:4/3;flex-shrink:0;border-radius:4px;background:repeating-linear-gradient(135deg,#fdf0e4 0 12px,#fbe6d3 12px 24px)"></div>
+          <p onClick="{{ stop }}" style="margin:0;max-width:720px;font-size:19px;line-height:1.55;text-wrap:pretty">{{ lbText }}</p>
+        </div>
+        <div onClick="{{ stop }}" style="display:flex;gap:8px;padding:12px 16px 20px;justify-content:center">
+          <button type="button" onClick="{{ lbPrev }}" aria-disabled="{{ lbPrevDis }}" style="flex:1;max-width:220px;height:56px;border:2px solid #fff;border-radius:999px;background:none;color:#fff;font-size:17px;font-weight:700;cursor:pointer;opacity:{{ lbPrevOp }}">‹ Poprzednie</button>
+          <button type="button" onClick="{{ lbNext }}" aria-disabled="{{ lbNextDis }}" style="flex:1;max-width:220px;height:56px;border:2px solid #fff;border-radius:999px;background:none;color:#fff;font-size:17px;font-weight:700;cursor:pointer;opacity:{{ lbNextOp }}">Następne ›</button>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ cookOn }}" hint-placeholder-val="{{ false }}">
+      <div role="dialog" aria-modal="true" aria-labelledby="cook-title" onKeyDown="{{ cookKey }}" style="position:absolute;inset:0;z-index:25;background:#111827;color:#fff">
+        <div style="max-width:768px;height:100%;margin:0 auto;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 8px 8px 20px">
+            <h2 id="cook-title" style="margin:0;min-width:0;font-size:17px;font-weight:700;color:#e5e7eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.t }}</h2>
+            <button type="button" ref="{{ cookCloseRef }}" onClick="{{ endCook }}" style="min-height:56px;flex-shrink:0;padding:0 14px;border:0;border-radius:999px;background:none;display:flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#fff;cursor:pointer" style-hover="background:rgba(255,255,255,.1)">{{ I.x26 }}Zakończ</button>
+          </div>
+          <div role="progressbar" aria-label="Postęp przepisu" aria-valuemin="1" aria-valuemax="{{ cookTotal }}" aria-valuenow="{{ cookNow }}" aria-valuetext="{{ cookLabel }}" style="display:flex;height:8px;gap:6px;padding:0 20px">
+            <sc-for list="{{ cookSegs }}" as="g" hint-placeholder-count="6"><span style="flex:1;height:100%;border-radius:999px;background:{{ g.bg }}"></span></sc-for>
+          </div>
+          <div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:20px;padding:28px 20px 16px">
+            <div aria-live="polite" style="display:flex;flex-direction:column;gap:20px;min-height:0">
+              <p style="margin:0;font-size:22px;font-weight:700;color:#fdba74">{{ cookLabel }}</p>
+              <sc-if value="{{ cookImg }}" hint-placeholder-val="{{ false }}"><div role="img" aria-label="{{ cookImgAlt }}" style="flex-shrink:0;height:min(34vh,300px);max-width:420px;width:100%;border-radius:4px;background:repeating-linear-gradient(135deg,#fdf0e4 0 12px,#fbe6d3 12px 24px)"></div></sc-if>
+              <p style="margin:0;min-height:0;overflow-y:auto;font-size:30px;line-height:1.45;font-weight:600;text-wrap:pretty">{{ cookText }}</p>
+            </div>
+            <p style="margin:0;display:flex;align-items:center;gap:8px;font-size:17px;color:#d1d5db">{{ I.sun }}Ekran nie wygaśnie podczas gotowania</p>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:10px;padding:16px">
+            <button type="button" onClick="{{ cookPrev }}" disabled="{{ cookFirst }}" style="min-height:72px;border:2px solid #4b5563;border-radius:16px;background:none;color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;font-size:20px;font-weight:700;cursor:pointer;opacity:{{ cookPrevOp }}">{{ I.arrowL24 }}Wstecz</button>
+            <button type="button" onClick="{{ cookNext }}" style="min-height:72px;border:0;border-radius:16px;background:#ea580c;color:#111827;display:flex;align-items:center;justify-content:center;gap:6px;font-size:22px;font-weight:700;cursor:pointer">{{ cookNextLabel }}{{ cookNextIcon }}</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:30;width:max-content;max-width:calc(100% - 32px);box-sizing:border-box;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#111827;color:#fff;border-radius:14px;padding:12px 16px;font-size:17px;line-height:1.4;box-shadow:0 8px 24px rgba(17,24,39,.25)">
+        <span>{{ toast.text }}</span>
+        <sc-if value="{{ toast.action }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ toast.onAction }}" style="min-height:44px;padding:0 4px;border:0;background:none;color:#fff;font-size:17px;font-weight:700;text-decoration:underline;cursor:pointer">{{ toast.action }}</button>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const KEY = 'zp.proto.v1';
+const W = 'Globe', FB = 'Facebook', YT = 'Youtube', BK = 'BookOpen', US = 'User';
+const RECIPES = [
+  { id: 1, t: 'Pączko bułeczki z piekarnika', s: 'z marmoladą różaną', a: 'Facebook · Kulinarna Wiola', src: FB, url: 1, cat: 'Desery', prep: 30, cook: 25, cookWord: 'Pieczenie', dish: 'pączki', min: 115, pop: 40, by: 'Tola', mine: 1 },
+  { id: 2, t: 'Na dwóch mąkach, z konfiturą', s: 'Pączki', a: 'Facebook · Ala K.', src: FB, url: 1, cat: 'Desery', dish: 'pączki', min: 100, pop: 85, by: 'Ala K.', plus: 'mąka krupczatka, ekstrakt z wanilii, sól, alkohol', minus: 'olej, kwaśna śmietana, jajko' },
+  { id: 3, t: 'Z dżemem i skórką pomarańczową', s: 'Pączki', a: 'eatismokosa.wordpress.com', src: W, url: 1, cat: 'Desery', dish: 'pączki', min: 115, pop: 22, by: 'Marek W.', plus: 'dżem porzeczkowy, skórka pomarańczowa', minus: 'olej, kwaśna śmietana' },
+  { id: 4, t: 'Zaparzane, z dżemem malinowym', s: 'Pączki luksusowe', a: 'okolicepalnika.pl', src: W, url: 1, cat: 'Desery', dish: 'pączki', min: 110, pop: 61, by: 'Ania K.', plus: 'mąka pszenna, spirytus, sól', minus: 'mąka tortowa, kwaśna śmietana' },
+  { id: 5, t: 'Mini kasztanki na śmietanie', s: 'Mini pączusie', a: 'Facebook · Kulinarna Wiola', src: FB, url: 1, cat: 'Desery', dish: 'pączki', min: 110, pop: 15, by: 'Ewa S.', plus: 'spirytus, ekstrakt waniliowy', minus: 'olej, jajko, ciepła woda' },
+  { id: 6, t: 'Pączki serowe w 20 minut', s: 'z twarogu, bez drożdży', a: 'kwestiasmaku.com', src: W, url: 1, cat: 'Desery', dish: 'pączki', min: 40, pop: 74, by: 'Ania K.', plus: 'twaróg, proszek do pieczenia', minus: 'drożdże, mleko, marmolada' },
+  { id: 7, t: 'Ciasto marchewkowe', s: 'z musem jabłkowym', a: 'aniagotuje.pl', src: W, url: 1, cat: 'Ciasta', prep: 30, cook: 30, desc: 'Ciasto marchewkowe z dodatkiem musu jabłkowego, przypraw korzennych i kremem z serka oraz masła, idealne na deser do kawy.', min: 90, pop: 50, by: 'Tola', mine: 1 },
+  { id: 8, t: 'Przystawka z ciasta francuskiego', s: 'z ogórkami kiszonymi i mozzarellą', a: 'Facebook', src: FB, url: 1, cat: 'Przekąski', min: 35, pop: 12, by: 'Tola', mine: 1 },
+  { id: 9, t: 'Wiejski garnek z ziemniakami i kiełbasą', s: 'z boczkiem i kapustą', a: 'e-przepisykulinarne.pl', src: W, url: 1, cat: 'Obiady', min: 90, pop: 33, by: 'Tola', mine: 1 },
+  { id: 10, t: 'Racuchy pączkowe', s: 'na Tłusty czwartek', a: 'obzarciuch.pl', src: W, url: 1, cat: 'Desery', min: 60, pop: 44, by: 'Ewa S.' },
+  { id: 11, t: 'Bułeczki drożdżowe', s: 'z budyniem', a: 'Facebook · Kulinarna Wiola', src: FB, url: 1, cat: 'Desery', min: 120, pop: 28, by: 'Ala K.' },
+  { id: 12, t: 'Drożdżówki z kruszonką', s: 'z serem', a: 'kwestiasmaku.com', src: W, url: 1, cat: 'Desery', min: 130, pop: 39, by: 'Marek W.' },
+  { id: 13, t: 'Rogaliki maślane', s: 'z powidłami śliwkowymi', a: 'Z książki kucharskiej', src: BK, cat: 'Ciasteczka', min: 75, pop: 18, by: 'Ewa S.' },
+  { id: 14, t: 'Krem z dyni', s: 'z imbirem i mleczkiem kokosowym', a: 'YouTube · Gotuj z Martą', src: YT, url: 1, cat: 'Zupy', min: 45, pop: 66, by: 'Ania K.' },
+  { id: 15, t: 'Sernik babci', s: 'z rodzynkami', a: 'Przepis od: Babcia Hela', src: US, cat: 'Ciasta', min: 150, pop: 57, by: 'Tola', mine: 1 },
+  { id: 16, t: 'Chleb na zakwasie', s: 'z ziarnami słonecznika', a: 'zakwasownia.pl', src: W, url: 1, cat: 'Pieczywo', min: 240, pop: 31, by: 'Marek W.' },
+  { id: 17, t: 'Kotlety mielone', s: 'z cebulką', a: 'YouTube · Gotuj z Martą', src: YT, url: 1, cat: 'Obiady', min: 40, pop: 70, by: 'Ala K.' },
+  { id: 18, t: 'Owsianka pieczona', s: 'z jabłkiem i cynamonem', a: 'jadlonomia.com', src: W, url: 1, cat: 'Śniadania', min: 35, pop: 26, by: 'Ewa S.' },
+  { id: 19, t: 'Sałatka grecka', s: 'z fetą i oliwkami', a: 'aniagotuje.pl', src: W, url: 1, cat: 'Sałatki', min: 15, pop: 41, by: 'Tola', mine: 1 },
+  { id: 20, t: 'Pierniczki', s: 'z miodem', a: 'Z książki kucharskiej', src: BK, cat: 'Ciasteczka', min: 60, pop: 37, by: 'Ania K.' },
+  { id: 21, t: 'Rosół', s: 'na trzech mięsach', a: 'Przepis od: Mama Ali', src: US, cat: 'Zupy', min: 180, pop: 52, by: 'Ala K.' },
+  { id: 22, t: 'Tarta z porami', s: 'z serem kozim', a: 'kwestiasmaku.com', src: W, url: 1, cat: 'Przekąski', min: 70, pop: 20, by: 'Marek W.' },
+];
+RECIPES.push(
+  { id: 23, t: 'Zapiekanka z ciasta francuskiego', s: 'z kurczakiem i warzywami', a: 'Facebook', src: FB, url: 1, cat: 'Obiady', min: 50, pop: 46, by: 'Ewa S.' },
+  { id: 24, t: 'Filet z kurczaka w musztardowym sosie', s: 'z ziemniakami', a: 'Facebook · Kulinarna Wiola', src: FB, url: 1, cat: 'Obiady', min: 40, pop: 58, by: 'Ala K.' },
+  { id: 25, t: 'Kurczak zapiekany', s: 'z papryką', a: 'Facebook', src: FB, url: 1, cat: 'Obiady', min: 60, pop: 36, by: 'Marek W.' },
+  { id: 26, t: 'Klopsiki duszone w młodej kapuście', s: 'z koperkiem', a: 'kulinarneprzeboje.pl', src: W, url: 1, cat: 'Obiady', min: 70, pop: 29, by: 'Ania K.' },
+  { id: 27, t: 'Roladki drobiowe z serem', s: 'w boczku', a: 'aguslegotuje.pl', src: W, url: 1, cat: 'Obiady', min: 55, pop: 33, by: 'Tola' },
+  { id: 28, t: 'Naleśniki', s: 'z twarogiem na słodko', a: 'Facebook · Kulinarna Wiola', src: FB, url: 1, cat: 'Obiady', min: 30, pop: 62, by: 'Ewa S.' },
+);
+const TAGS = { 1: ['drożdżowe','pieczone'], 2: ['drożdżowe','smażone'], 3: ['drożdżowe','smażone'], 4: ['drożdżowe','smażone'], 5: ['smażone'], 6: ['szybkie','z twarogiem','smażone'],
+  10: ['drożdżowe','smażone'], 11: ['drożdżowe','pieczone'], 12: ['drożdżowe','pieczone'], 7: ['pieczone','z owocami'], 15: ['pieczone','z twarogiem'],
+  9: ['mięsne','jednogarnkowe'], 17: ['mięsne','smażone','szybkie'], 23: ['mięsne','pieczone'], 24: ['mięsne','szybkie'], 25: ['mięsne','pieczone'], 26: ['mięsne','jednogarnkowe'], 27: ['mięsne','pieczone','z serem'], 28: ['wegetariańskie','smażone','szybkie','z twarogiem'],
+  14: ['wegetariańskie','szybkie'], 21: ['mięsne'], 8: ['szybkie','pieczone'], 22: ['wegetariańskie','pieczone'], 13: ['pieczone'], 20: ['pieczone','świąteczne'], 16: ['pieczone'], 18: ['wegetariańskie','szybkie','pieczone'], 19: ['wegetariańskie','szybkie'] };
+RECIPES.forEach((r, i) => { r.date = 100 - i; r.tags = TAGS[r.id] || []; });
+const CATS = [['Obiady','Utensils'],['Zupy','Soup'],['Desery','CakeSlice'],['Ciasta','Cake'],['Ciasteczka','Cookie'],['Śniadania','Coffee'],['Pieczywo','Croissant'],['Przekąski','Sandwich'],['Sałatki','Salad'],['Napoje','CupSoda'],['Syropy i napary','GlassWater'],['Inne','UtensilsCrossed']];
+const SORTS = [['popularne','Najpopularniejsze'],['nowe','Najnowsze'],['szybkie','Najszybsze']];
+const MINE_SEED = [1, 7, 8, 9, 15, 19];
+const SWEET = { serv: 'na 12 sztuk', groups: [[null, [['mąka pszenna typ 650','500 g'],['mleko','250 ml'],['drożdże świeże','25 g'],['cukier','80 g'],['masło','80 g'],['żółtka','3 szt.'],['marmolada różana','200 g']]]],
+  steps: ['Drożdże rozetrzyj z łyżką cukru, dolej ciepłe mleko i odstaw na 10 minut.','Do miski wsyp mąkę, dodaj żółtka, resztę cukru i rozczyn. Wyrabiaj ciasto około 10 minut.','Dodaj roztopione masło i wyrabiaj, aż ciasto przestanie kleić się do rąk. Odstaw do wyrośnięcia na godzinę.','Podziel ciasto na 12 części, każdą spłaszcz, nałóż łyżeczkę marmolady i zlep brzegi.','Ułóż bułeczki na blasze z papierem, przykryj i odstaw na 20 minut.','Piecz w 180°C przez 20–25 minut, aż się zarumienią. Po ostudzeniu posyp cukrem pudrem.'] };
+const CARROT = { serv: '', groups: [['Ciasto', [['mąka pszenna tortowa','250 g'],['olej roślinny','180 ml'],['jajka','4 szt.'],['marchewka','300 g'],['mus jabłkowy bez cukru','120 g'],['cukier trzcinowy','150 g'],['cukier zwykły','100 g'],['proszek do pieczenia','2 łyżeczki'],['soda oczyszczona','1 łyżeczka'],['ekstrakt z wanilii','1 łyżeczka'],['cynamon','1.5 łyżeczki'],['sól','0.5 łyżeczki'],['imbir','0.5 łyżeczki'],['gałka muszkatołowa','0.25 łyżeczki']]],
+  ['Krem', [['serek Philadelphia lub mascarpone','250 g'],['masło','150 g'],['cukier puder','150 g'],['ekstrakt z wanilii lub pasta waniliowa','1 łyżeczka'],['orzechy włoskie','']]]],
+  steps: ['Przesiać mąkę do miski.','Dodać proszek do pieczenia, sodę oczyszczoną, sól, cynamon, imbir i gałkę muszkatołową.','Wymieszać składniki sypkie.','Zetrzeć marchewkę na grubych oczkach.','Wbić jajka do miski z marchewką.','Wsypać cukry i wlać olej oraz mus jabłkowy.','Wymieszać mokre składniki.','Dodać mieszankę sypkich składników do mokrej masy i wymieszać.','Przelać ciasto do formy wyłożonej papierem do pieczenia.','Piec w piekarniku nagrzanym do 175 stopni przez 30-35 minut.','Sprawdzić patyczkiem, czy ciasto jest upieczone.','Ostudzić ciasto przed krojeniem.','Przygotować krem: ubić serek z masłem, dodać cukier puder i ekstrakt z wanilii.','Na jeden blat ciasta wyłożyć połowę kremu, przykryć drugim blatem i posmarować resztą kremu.','Opcjonalnie: udekorować orzechami włoskimi.'] };
+const SAVORY = { serv: 'na 4 porcje', groups: [[null, [['ziemniaki','800 g'],['cebula','1 szt.'],['marchew','2 szt.'],['olej','2 łyżki'],['sól i pieprz','do smaku'],['natka pietruszki','pęczek']]]],
+  steps: ['Warzywa obierz i pokrój w kostkę.','Na oleju zeszklij cebulę, dodaj pozostałe warzywa i podsmaż 5 minut.','Podlej wodą lub bulionem i duś pod przykryciem 25 minut.','Dopraw solą i pieprzem, posyp natką i podawaj.'] };
+const STEP_PHOTOS = { carrot: [0, 3, 5, 7], sweet: [1, 3, 4] };
+const TS = [['A', 1, '17px'], ['A+', 1.15, '19px'], ['A++', 1.3, '22px']];
+function cookData(r) { if (r.id === 7) return CARROT; return ['Desery','Ciasta','Ciasteczka','Pieczywo','Śniadania'].includes(r.cat) ? SWEET : SAVORY; }
+
+function timeLabel(m) { const h = Math.floor(m / 60), r = m % 60; return h ? (h + ' godz.' + (r ? ' ' + r + ' min' : '')) : r + ' min'; }
+function przepisy(n) { if (n === 1) return 'przepis'; const d = n % 10, t = n % 100; return (d >= 2 && d <= 4 && (t < 12 || t > 14)) ? 'przepisy' : 'przepisów'; }
+
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    let s = {};
+    try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+    this.state = {
+      device: s.device || 'desk', logged: s.logged ?? true, favs: s.favs || [2, 10, 14], sort: s.sort || 'popularne',
+      textLevel: s.textLevel || 'A', stepPhotos: s.stepPhotos ?? true, checks: {}, cook: null, extra: s.extra || [], screen: { n: 'home' }, hist: [], menu: false, catsOpen: false, sortOpen: false,
+      q: '', toast: null, offs: {}, addUrl: '', addMsg: null, addedId: null, lucide: !!window.lucide,
+    };
+    this.scrollRef = React.createRef(); this.qRef = React.createRef(); this.verRef = React.createRef();
+    this.sortBtnRef = React.createRef(); this.menuCloseRef = React.createRef(); this.tagRef = React.createRef(); this.lbCloseRef = React.createRef();
+    this.rowRefs = {}; this.catRef = React.createRef(); this.cookCloseRef = React.createRef();
+  }
+  componentDidMount() {
+    if (!window.lucide) { const t = () => window.lucide ? this.setState({ lucide: true }) : setTimeout(t, 80); t(); }
+  }
+  componentDidUpdate(pp, ps) {
+    if (this.tagRef && this.tagRef.current && !this._tq) { this._tq = true; requestAnimationFrame(() => { this._tq = false; this.tagCheck(); }); }
+    const { device, logged, favs, sort, extra, textLevel } = this.state;
+    try { localStorage.setItem(KEY, JSON.stringify({ device, logged, favs, sort, extra, textLevel })); } catch (e) {}
+    if (!ps.cook && this.state.cook && this.cookCloseRef.current) this.cookCloseRef.current.focus();
+    if (ps.screen !== this.state.screen && this.scrollRef.current) this.scrollRef.current.scrollTop = 0;
+    this.catCheck(this.catRef.current);
+    if (!ps.menu && this.state.menu && this.menuCloseRef.current) this.menuCloseRef.current.focus();
+  }
+  catCheck(el) {
+    if (!el) return;
+    const l = el.scrollLeft > 4, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    if (l !== !!this.state.catL || r !== (this.state.catR !== false)) this.setState({ catL: l, catR: r });
+  }
+  ic(name, size = 20, fill) {
+    const L = window.lucide && window.lucide.icons; if (!L) return null;
+    const node = L[name]; if (!node) return null;
+    const kids = Array.isArray(node[0]) ? node : (node[2] || []);
+    return React.createElement('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: fill || 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true', focusable: 'false', style: { flexShrink: 0, display: 'block' } },
+      kids.map((k, i) => React.createElement(k[0], Object.assign({}, k[1], { key: i }))));
+  }
+  all() { return RECIPES.concat(this.state.extra); }
+  byId(id) { return this.all().find(r => r.id === id); }
+  isMine(r) { return !!r.mine || this.state.extra.some(e => e.id === r.id); }
+  showToast(text, action, onAction) {
+    clearTimeout(this.tt);
+    this.setState({ toast: { text, action, onAction } });
+    this.tt = setTimeout(() => this.setState({ toast: null }), action ? 7000 : 3500);
+  }
+  go(screen) { this.setState(st => ({ catTags: screen.n === 'cat' && st.screen.cat === screen.cat ? st.catTags : [], hist: st.hist.concat([st.screen]), screen, menu: false, sortOpen: false, catsOpen: false, sug: false, act: -1 })); }
+  tagCheck() { const el = this.tagRef.current; if (!el) return; const r = el.scrollLeft + el.clientWidth < el.scrollWidth - 4; if (r !== (this.state.tagR !== false)) this.setState({ tagR: r }); }
+  backIdx(st) { let j = st.hist.length - 1; if (st.screen.n === 'recipe') while (j > 0 && st.hist[j].n === 'recipe') j--; return j; }
+  back() { this.setState(st => { const j = this.backIdx(st); return j >= 0 ? { screen: st.hist[j], hist: st.hist.slice(0, j), lb: null } : { screen: { n: 'home' } }; }); }
+  login(favId) {
+    this.setState(st => ({ logged: true, favs: favId && !st.favs.includes(favId) ? st.favs.concat([favId]) : st.favs, menu: false }));
+    this.showToast(favId ? 'Zalogowano jako Tola. Przepis jest w Ulubionych.' : 'Zalogowano jako Tola (symulacja).');
+  }
+  toggleFav(id) {
+    if (!this.state.logged) { this.showToast('Zaloguj się, żeby zapisać ulubione.', 'Zaloguj się', () => this.login(id)); return; }
+    const on = this.state.favs.includes(id);
+    this.setState(st => ({ favs: on ? st.favs.filter(f => f !== id) : st.favs.concat([id]) }));
+    this.showToast(on ? 'Usunięto z Ulubionych.' : 'Dodano do Ulubionych.');
+  }
+  card(r, imgH, diffBase) {
+    const fav = this.state.logged && this.state.favs.includes(r.id);
+    const open = () => this.go({ n: 'recipe', id: r.id });
+    const c = {
+      t: r.t, s: r.s, a: r.a, imgH: imgH + 'px', srcEl: this.ic(r.src, 18), isFav: fav,
+      heartEl: this.ic('Heart', 22, fav ? 'currentColor' : null),
+      favLabel: fav ? 'Usuń z ulubionych' : 'Dodaj do ulubionych',
+      favBg: fav ? '#c2410c' : '#fff', favBorder: fav ? '#c2410c' : '#6b7280', favColor: fav ? '#fff' : '#9a3412',
+      onOpen: open, onKey: e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(); } },
+      onFav: e => { e.stopPropagation(); this.toggleFav(r.id); },
+    };
+    if (diffBase) {
+      const d = r.min - diffBase.min;
+      c.time = timeLabel(r.min) + (d < 0 ? ' (krócej)' : d > 0 ? ' (dłużej)' : '');
+      if (diffBase.id === 1) { c.plus = r.plus; c.minus = r.minus; }
+    }
+    return c;
+  }
+  row(key, items, o) {
+    const desk = this.state.device === 'desk';
+    const off = this.state.offs[key] || 0;
+    const ref = this.rowRefs[key] || (this.rowRefs[key] = React.createRef());
+    const setOff = v => this.setState(st => ({ offs: Object.assign({}, st.offs, { [key]: v }) }));
+    const imgH = desk ? (o.deskH || 180) : 170;
+    const showAll = desk && o.all;
+    const cards = (desk && !showAll ? items.slice(off, off + 4) : items).map(r => this.card(r, imgH, o.diff));
+    const deskNav = desk && !showAll && items.length > 4;
+    const prevDis = desk ? off === 0 : false, nextDis = desk ? off + 4 >= items.length : false;
+    const scroll = dx => ref.current && ref.current.scrollBy({ left: dx, behavior: 'smooth' });
+    return {
+      title: o.title || '', showHead: desk ? !!(o.title || deskNav) : !!o.title, isDesk: desk, isMob: !desk, cards, deskNav,
+      mobNav: !desk && items.length > 1, ref, prevDis, nextDis, prevOp: prevDis ? 0.45 : 1, nextOp: nextDis ? 0.45 : 1,
+      prev: () => desk ? (!prevDis && setOff(Math.max(0, off - 4))) : scroll(-282),
+      next: () => desk ? (!nextDis && setOff(off + 4)) : scroll(282),
+      hasLink: !!o.link, link: o.link || '', onLink: o.onLink, linkH: desk ? '48px' : '56px', linkAlign: desk ? 'flex-start' : 'stretch',
+      cols: o.cols || 'repeat(auto-fill,minmax(200px,1fr))',
+      icL: this.ic('ChevronLeft', 18), icR: this.ic('ChevronRight', 18),
+    };
+  }
+  sorted(list) {
+    const k = this.state.sort, a = list.slice();
+    if (k === 'nowe') a.sort((x, y) => y.date - x.date);
+    else if (k === 'szybkie') a.sort((x, y) => x.min - y.min);
+    else a.sort((x, y) => y.pop - x.pop);
+    return a;
+  }
+  renderVals() {
+    const st = this.state, desk = st.device === 'desk', logged = st.logged, sc = st.screen;
+    const ic = (n, s, f) => this.ic(n, s, f);
+    const I = {
+      heart: ic('Heart', 22), heartFill: ic('Heart', 22, 'currentColor'), plus: ic('Plus', 20), menu: ic('Menu', 24), search: ic('Search', 22),
+      mic: ic('Mic', 18), share: ic('Share2', 20), ext: ic('ExternalLink', 18), alert: ic('CircleAlert', 22), x: ic('X', 22), home: ic('House', 24),
+      chef: ic('ChefHat', 24), x26: ic('X', 26), sun: ic('Sun', 20), arrowL24: ic('ArrowLeft', 24), sparkle: ic('Sparkles', 18), shuffle: ic('Shuffle', 18), settings: ic('Settings', 22), logout: ic('LogOut', 22), sort: ic('ArrowDownUp', 18), chevD: ic('ChevronDown', 18), arrowR: ic('ArrowRight', 24), chevR: ic('ChevronRight', 22), chevRs: ic('ChevronRight', 20), chevL: ic('ChevronLeft', 20), arrowL: ic('ArrowLeft', 22), login: ic('LogIn', 20),
+    };
+    const all = this.all();
+    const cats = CATS.map(([l, i]) => {
+      const cur = sc.n === 'cat' && sc.cat === l;
+      return { l, icM: ic(i, 22), ic: ic(i, desk ? 18 : 22), cur: cur ? 'page' : undefined, deco: cur ? 'underline' : 'none', color: cur ? '#9a3412' : '#111827', go: () => this.go({ n: 'cat', cat: l }) };
+    });
+    const mine = all.filter(r => this.isMine(r)).sort((a, b) => b.date - a.date);
+    const favList = logged ? st.favs.map(id => this.byId(id)).filter(Boolean) : [];
+    const deskH = 170;
+
+    let r = null, rv = {}, versions = [], similar = [];
+    if (sc.n === 'recipe') {
+      r = this.byId(sc.id) || RECIPES[0];
+      const fav = logged && st.favs.includes(r.id);
+      rv = { t: r.t, s: r.s, a: r.a, srcEl: ic(r.src, desk ? 20 : 18), hasUrl: !!r.url, noUrl: !r.url, timeLabel: timeLabel(r.min), by: r.by,
+        addedVerb: /a$/.test(r.by.split(' ')[0]) ? 'Dodała' : 'Dodał', srcAria: 'Otwórz oryginał: ' + r.a + ' (nowa karta)', cat: r.cat, desc: r.desc || '',
+        prepLabel: timeLabel(r.prep || Math.round(r.min / 10) * 5), cookLabel: timeLabel(r.cook || (r.min - Math.round(r.min / 10) * 5)), cookWord: r.cookWord || 'Gotowanie' };
+      rv.isFav = fav;
+      if (r.dish) versions = this.sorted(all.filter(x => x.dish === r.dish && x.id !== r.id));
+      similar = all.filter(x => x.cat === r.cat && x.id !== r.id && (!r.dish || x.dish !== r.dish)).sort((a, b) => b.pop - a.pop);
+    }
+    const catCount = r ? all.filter(x => x.cat === r.cat).length : 0;
+
+    let tagInfo = null, listCards = [], listTitle = '', listSub = '', needLogin = false, loginWhy = '', emptyText = '';
+    const listImg = desk ? 180 : 210;
+    if (sc.n === 'cat') {
+      const L = all.filter(x => x.cat === sc.cat).sort((a, b) => b.pop - a.pop);
+      const sel = st.catTags || [], F = L.filter(x => sel.every(t => (x.tags || []).includes(t)));
+      const counts = {}; F.forEach(x => new Set(x.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+      const order = Array.from(new Set(L.flatMap(x => x.tags || [])));
+      const base = {}; L.forEach(x => new Set(x.tags || []).forEach(t => { base[t] = (base[t] || 0) + 1; }));
+      const facets = order.map(t => ({ t, c: counts[t] || 0, on: sel.includes(t) })).sort((a, b) => (base[b.t] || 0) - (base[a.t] || 0));
+      const shown = (st.tagsAll || !desk) ? facets : facets.slice(0, 8);
+      const andJoin = a => a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' i ' + a[a.length - 1];
+      tagInfo = { chips: shown.map(f => { const dis = !f.on && f.c === 0; return { label: (f.on ? '✓ ' : '') + f.t, count: String(f.c), on: f.on, dis, bg: f.on ? '#111827' : dis ? '#f3f4f6' : '#fff', fg: f.on ? '#fff' : dis ? '#4b5563' : '#111827', border: f.on ? '#111827' : dis ? '#d1d5db' : '#6b7280', cur: dis ? 'default' : 'pointer',
+          toggle: () => { if (dis) return; this.setState(s => ({ catTags: f.on ? (s.catTags || []).filter(x => x !== f.t) : (s.catTags || []).concat([f.t]) }), () => this.tagCheck()); } }; }),
+        more: desk && facets.length > 8, moreLabel: st.tagsAll ? 'Pokaż mniej' : 'Pokaż wszystkie (' + facets.length + ')',
+        status: sel.length ? F.length + ' ' + przepisy(F.length) + ': ' + andJoin(sel) : 'Wszystkie: ' + F.length + ' ' + przepisy(F.length),
+        active: sel.length > 0, show: sel.length > 0 || F.length > 0, q: 'Jakie ' + (sc.cat === 'Inne' ? 'przepisy' : sc.cat.toLowerCase()) + '?' };
+      listTitle = sc.cat; listSub = L.length + ' ' + przepisy(L.length) + ' w kategorii'; listCards = F.map(x => this.card(x, listImg));
+      emptyText = 'Brak przepisów z tymi tagami. Odznacz jeden z tagów albo wyczyść wybór, żeby zobaczyć wszystkie przepisy: ' + sc.cat + '.';
+      if (!L.length) emptyText = 'W tej kategorii nie ma jeszcze przepisów.';
+    } else if (sc.n === 'fav') {
+      listTitle = 'Ulubione' + (logged ? ' (' + favList.length + ')' : '');
+      if (!logged) { needLogin = true; loginWhy = 'Zaloguj się, żeby zapisywać ulubione przepisy i mieć je na każdym urządzeniu.'; }
+      else { listCards = favList.map(x => this.card(x, listImg)); emptyText = 'Nie masz jeszcze ulubionych. Dotknij serduszka na karcie przepisu.'; }
+    } else if (sc.n === 'mine') {
+      listTitle = 'Moje przepisy (' + mine.length + ')'; listSub = 'Przepisy, które dodałaś jako pierwsza osoba';
+      listCards = mine.map(x => this.card(x, listImg));
+    } else if (sc.n === 'search') {
+      const q = (sc.q || '').trim().toLowerCase();
+      const L = q ? all.filter(x => (x.t + ' ' + x.s + ' ' + (x.dish || '') + ' ' + x.cat + ' ' + x.a).toLowerCase().includes(q.replace(/i$/, ''))) : [];
+      listTitle = q ? 'Wyniki: „' + sc.q.trim() + '” (' + L.length + ')' : 'Szukaj';
+      listCards = L.map(x => this.card(x, listImg));
+      emptyText = q ? 'Nic nie znaleźliśmy. Spróbuj innego słowa, np. „pączki” albo „dynia”.' : 'Wpisz nazwę dania lub składnik.';
+    }
+
+    const menuItems = (logged ? [
+      { l: 'Moje przepisy', i: 'BookOpen', go: () => this.go({ n: 'mine' }) },
+      { l: 'Ulubione', i: 'Heart', go: () => this.go({ n: 'fav' }) },
+      { l: 'Dodaj przepis', i: 'Plus', go: () => this.go({ n: 'add' }) },
+    ] : [{ l: 'Zaloguj się', i: 'LogIn', go: () => this.login() }])
+      .concat(desk ? [] : [{ l: 'Kategorie', i: 'LayoutGrid', go: () => this.setState(s => ({ catsOpen: !s.catsOpen })), sub: st.catsOpen, after: ic(st.catsOpen ? 'ChevronUp' : 'ChevronDown', 20) }])
+      .concat(logged ? [
+        { l: 'Powiadomienia (1)', i: 'Bell', go: () => { window.location.href = 'notifications.dc.html'; } },
+        { l: 'Ustawienia', i: 'Settings', go: () => { window.location.href = 'profile-settings.dc.html'; } },
+        { l: 'Wyloguj się', i: 'LogOut', go: () => { this.setState({ logged: false, menu: false }); this.showToast('Wylogowano.'); } },
+      ] : [])
+      .map(m => Object.assign({ ic: ic(m.i, 22), after: null, sub: false }, m));
+
+    const sortOpts = SORTS.map(([k, label], i) => {
+      const cur = st.sort === k;
+      return { label, cur, pill: (cur ? '✓ ' : '') + label, bg: cur ? '#111827' : '#fff', fg: cur ? '#fff' : '#111827', border: cur ? '#111827' : '#4b5563',
+        rowBg: cur ? '#f3f4f6' : '#fff', weight: cur ? 700 : 400, sep: i ? '1px solid #d1d5db' : '0', checkEl: cur ? ic('Check', 20) : null,
+        pick: () => { this.setState({ sort: k, sortOpen: false, offs: Object.assign({}, st.offs, { ver: 0 }) }); if (this.rowRefs.ver && this.rowRefs.ver.current) this.rowRefs.ver.current.scrollLeft = 0; if (this.sortBtnRef.current) this.sortBtnRef.current.focus(); } };
+    });
+    const tb = on => on ? ['#111827', '#fff'] : ['#fff', '#111827'];
+    const prevScreen = st.hist[st.hist.length - 1], backScreen = st.hist[this.backIdx(st)];
+    const backNames = { home: 'Strona główna', cat: prevScreen && prevScreen.cat, fav: 'Ulubione', mine: 'Moje przepisy', search: 'Wyniki wyszukiwania', recipe: 'Poprzedni przepis', add: 'Dodaj przepis' };
+    const isList = ['cat', 'fav', 'mine', 'search'].includes(sc.n);
+
+    return {
+      I, cats, isDesk: desk, isMob: !desk, isLogged: logged, isGuest: !logged,
+      tbDeskBg: tb(desk)[0], tbDeskFg: tb(desk)[1], tbMobBg: tb(!desk)[0], tbMobFg: tb(!desk)[1],
+      tbGuestBg: tb(!logged)[0], tbGuestFg: tb(!logged)[1], tbLogBg: tb(logged)[0], tbLogFg: tb(logged)[1],
+      setDesk: () => this.setState({ device: 'desk', menu: false }), setMob: () => this.setState({ device: 'mob', menu: false }),
+      setGuest: () => this.setState({ logged: false, menu: false }), setLogged: () => this.setState({ logged: true, menu: false }),
+      reset: () => { this.setState({ favs: [2, 10, 14], extra: [], sort: 'popularne', screen: { n: 'home' }, hist: [], offs: {}, q: '', addUrl: '', addMsg: null, menu: false }); },
+      frameW: desk ? '1100px' : '390px', frameH: desk ? 'calc(100vh - 100px)' : '820px', frameBorder: desk ? '1px solid #d1d5db' : '10px solid #111827', frameRadius: desk ? '14px' : '40px',
+      scrollRef: this.scrollRef, qRef: this.qRef, verRef: this.verRef, sortBtnRef: this.sortBtnRef, menuCloseRef: this.menuCloseRef,
+      goHome: () => this.go({ n: 'home' }), goFav: () => this.go({ n: 'fav' }), goAdd: () => this.go({ n: 'add' }), loginOnly: () => this.login(),
+      favCurrent: sc.n === 'fav' ? 'page' : undefined, favDeco: sc.n === 'fav' ? 'underline' : 'none',
+      goSearchFocus: () => { if (sc.n !== 'home' && sc.n !== 'search') this.go({ n: 'home' }); setTimeout(() => { const el = this.scrollRef.current && this.scrollRef.current.querySelector('input[aria-label="Szukaj przepisu"]'); if (el) el.focus(); }, 60); },
+      menuOpen: st.menu, openMenu: () => this.setState({ menu: true }), closeMenu: () => this.setState({ menu: false, catsOpen: false }),
+      stop: e => e.stopPropagation(), menuKey: e => { if (e.key === 'Escape') this.setState({ menu: false }); },
+      catRef: this.catRef, catCanL: !!st.catL, catCanR: st.catR !== false,
+      catOnScroll: e => this.catCheck(e.currentTarget),
+      catL: () => { const el = this.catRef.current; if (el) el.scrollBy({ left: -(el.clientWidth - 160) }); },
+      catR: () => { const el = this.catRef.current; if (el) el.scrollBy({ left: el.clientWidth - 160 }); },
+      ...this.dayVals(desk),
+      ...this.cookVals(r, desk),
+      myItems: [
+        { l: 'Moje przepisy', i: 'BookOpen', count: String(mine.length), go: () => this.go({ n: 'mine' }) },
+        { l: 'Ulubione', i: 'Heart', count: String(favList.length), go: () => this.go({ n: 'fav' }) },
+        { l: 'Dodaj przepis', i: 'Plus', go: () => this.go({ n: 'add' }) },
+        { l: 'Powiadomienia', i: 'Bell', badge: '1', badgeAria: '1 nowe powiadomienie', go: () => { window.location.href = 'notifications.dc.html'; } },
+      ].map(m => Object.assign({ ic: ic(m.i, 24), count: '', badge: '', badgeAria: '' }, m)),
+      goSettings: () => { window.location.href = 'profile-settings.dc.html'; },
+      logout: () => { this.setState({ logged: false, menu: false }); this.showToast('Wylogowano.'); },
+      menuHome: () => { this.setState({ screen: { n: 'home' }, hist: [], menu: false, catsOpen: false }); }, homeCurrent: sc.n === 'home' ? 'page' : undefined,
+      menuItems, menuW: desk ? '460px' : '100%', menuCatCols: 'repeat(2,minmax(0,1fr))',
+      isHome: sc.n === 'home', notHome: sc.n !== 'home', isRecipe: sc.n === 'recipe', isList, isSearch: sc.n === 'search', isAdd: sc.n === 'add',
+      heroPad: desk ? '44px 28px 36px' : '24px 16px', h1Size: desk ? '50px' : '32px', titleSize: desk ? '34px' : '28px', pagePad: desk ? '28px' : '20px 16px',
+      searchDir: desk ? 'row' : 'column', gridCols: desk ? 'repeat(auto-fill,minmax(220px,1fr))' : 'minmax(0,1fr)',
+      q: st.q, onQ: e => this.setState({ q: e.target.value }),
+      onQKey: e => { if (e.key === 'Enter') this.go({ n: 'search', q: st.q }); },
+      doSearch: () => this.go({ n: 'search', q: st.q }),
+      onSearchSubmit: e => { e.preventDefault(); this.go({ n: 'search', q: st.q }); },
+      ...this.sugVals(ic),
+      fieldH: desk ? '60px' : '56px', goPad: desk ? '26px' : '18px',
+      qPlaceholder: desk ? 'Danie lub składnik' : 'np. pączki',
+      voice: () => { this.setState({ q: 'pączki' }); this.showToast('Usłyszeliśmy: „pączki”'); setTimeout(() => this.go({ n: 'search', q: 'pączki' }), 700); },
+      hasFavs: favList.length > 0,
+      rowMine: this.row('mine', mine.slice(0, 8), { title: 'Ostatnio dodane przez Ciebie', link: 'Wszystkie moje (' + mine.length + ') →', onLink: () => this.go({ n: 'mine' }), deskH }),
+      rowFav: this.row('fav', favList, { title: 'Ulubione', link: 'Wszystkie ulubione (' + favList.length + ') →', onLink: () => this.go({ n: 'fav' }), deskH }),
+      rowNew: this.row('new', all.slice().sort((a, b) => b.date - a.date).slice(0, 8), { title: 'Ostatnio dodane', deskH }),
+      r: rv, rIsFav: !!rv.isFav, rNotFav: !rv.isFav, rIsOwner: !!(r && logged && this.isMine(r)),
+      refreshRecipe: () => this.showToast('Odświeżam przepis — zmiany pojawią się za chwilę.'),
+      deleteRecipe: () => this.showToast('Nie można usunąć: inni mają ten przepis w ulubionych.'),
+      ...this.navVals(r, sc, prevScreen, desk),
+      canBack: st.hist.length > 0, backShort: (() => { const l = (backScreen && (backScreen.n === 'cat' ? backScreen.cat : backNames[backScreen.n])) || 'Strona główna'; return ({ 'Wyniki wyszukiwania': 'Wyniki', 'Poprzedni przepis': 'Wróć' })[l] || l; })(), backAria: 'Wróć: ' + ((backScreen && (backScreen.n === 'cat' ? backScreen.cat : backNames[backScreen.n])) || 'Strona główna'), backLabel: (backScreen && (backScreen.n === 'cat' ? backScreen.cat : backNames[backScreen.n])) || 'Strona główna', back: () => this.back(),
+      recipeCols: desk ? 'minmax(0,1.1fr) minmax(0,1fr)' : 'minmax(0,1fr)', recipeGap: desk ? '28px' : '18px', recipeImgH: desk ? '320px' : '240px',
+      openSource: () => this.showToast('W aplikacji otworzy się ' + (r ? r.a : '') + ' w nowej karcie.'),
+      toggleCurFav: () => r && this.toggleFav(r.id),
+      share: () => { this.showToast('Link do przepisu skopiowany.'); },
+      hasVersions: versions.length > 0, versionsLink: r && r.dish ? 'Inne wersje ' + ({ 'pączki': 'pączków' }[r.dish] || r.dish) + ' (' + versions.length + ') ↓' : '',
+      versionsTitle: r && r.dish ? 'Inne wersje ' + ({ 'pączki': 'pączków' }[r.dish] || r.dish) + ' (' + versions.length + ')' : '',
+      hasRecipeTags: !!(r && TAGS[r.id] && TAGS[r.id].length),
+      recipeTags: r && TAGS[r.id] ? TAGS[r.id].map(t => ({ t, go: () => { this.go({ n: 'cat', cat: r.cat }); this.setState({ catTags: [t] }); } })) : [],
+      icTag: ic('Tag', 20),
+      toVersions: () => { const s = this.scrollRef.current, t = this.verRef.current; if (s && t) s.scrollTo({ top: t.offsetTop - (desk ? 130 : 80), behavior: 'smooth' }); },
+      sortOpts, sortOpen: st.sortOpen, sortLabel: (SORTS.find(s => s[0] === st.sort) || SORTS[0])[1],
+      toggleSort: () => this.setState(s => ({ sortOpen: !s.sortOpen })),
+      sortKey: e => { if (e.key === 'Escape' && st.sortOpen) { this.setState({ sortOpen: false }); this.sortBtnRef.current && this.sortBtnRef.current.focus(); } },
+      rowVer: this.row('ver', versions, { diff: r, all: true, deskH: 220, cols: 'repeat(3,minmax(0,1fr))' }),
+      hasSimilar: similar.length > 0,
+      rowSim: r ? this.row('sim', similar.slice(0, 8), { title: 'Podobne: ' + r.cat.toLowerCase(), link: 'Wszystkie ' + r.cat.toLowerCase() + ' (' + catCount + ') →', onLink: () => this.go({ n: 'cat', cat: r.cat }) }) : this.row('sim', [], {}),
+      isCat: sc.n === 'cat', catIcon: sc.n === 'cat' ? ic((CATS.find(c => c[0] === sc.cat) || [0, 'Utensils'])[1], 28) : null,
+      hasTags: !!(tagInfo && tagInfo.chips.length), tagChips: tagInfo ? tagInfo.chips : [], tagStatus: tagInfo ? tagInfo.status : '', tagsActive: !!(tagInfo && tagInfo.active), showTagStatus: !!(tagInfo && tagInfo.show), tagStatusBg: tagInfo && tagInfo.active ? '#fff7ed' : '#f3f4f6',
+      tagMore: !!(tagInfo && tagInfo.more), tagMoreLabel: tagInfo ? tagInfo.moreLabel : '', tagsExpanded: !!st.tagsAll, toggleTagsAll: () => this.setState(s => ({ tagsAll: !s.tagsAll })), tagQuestion: tagInfo ? tagInfo.q : '',
+      clearTags: () => this.setState({ catTags: [] }),
+      tagRef: this.tagRef, tagOnScroll: () => this.tagCheck(), tagCanR: !desk && st.tagR !== false && !!(tagInfo && tagInfo.chips.length > 2),
+      tagMoreR: () => { const el = this.tagRef.current; if (el) el.scrollBy({ left: el.clientWidth - 120, behavior: 'smooth' }); },
+      tagScrollPad: desk ? '0' : '120px',
+      tagWrap: desk ? 'wrap' : 'nowrap', tagOverflow: desk ? 'visible' : 'auto', tagBleed: desk ? '0' : '-16px', tagBleed2: desk ? '0' : '16px', tagHSize: desk ? '19px' : '17px', tagHMb: desk ? '0' : '8px',
+      tagStatusPad: desk ? '12px 16px' : '4px 4px 4px 12px', tagStatusSize: desk ? '18px' : '17px',
+      listCards, listTitle, listSub, needLogin, loginWhy, listEmpty: !needLogin && listCards.length === 0, emptyText,
+      addUrl: st.addUrl, onAddUrl: e => this.setState({ addUrl: e.target.value, addMsg: null }),
+      onAddKey: e => { if (e.key === 'Enter') this.submitAdd(); },
+      submitAdd: () => this.submitAdd(), addMsg: st.addMsg, openAdded: () => st.addedId && this.go({ n: 'recipe', id: st.addedId }),
+      toast: st.toast,
+    };
+  }
+  navVals(r, sc, prev, desk) {
+    if (!r) return { hasNext: false, hasPrev: false, hasNav: false, posLabel: '' };
+    const all = this.all();
+    let list, name;
+    if (prev && prev.n === 'cat') { list = all.filter(x => x.cat === prev.cat).sort((a, b) => b.pop - a.pop); name = prev.cat; }
+    else if (prev && prev.n === 'fav') { list = this.state.favs.map(id => this.byId(id)).filter(Boolean); name = 'Ulubione'; }
+    else if (prev && prev.n === 'mine') { list = all.filter(x => this.isMine(x)).sort((a, b) => b.date - a.date); name = 'Moje przepisy'; }
+    else { list = all.filter(x => x.cat === r.cat).sort((a, b) => b.pop - a.pop); name = r.cat; }
+    const i = list.findIndex(x => x.id === r.id), nx = i >= 0 ? list[i + 1] : null;
+    const fromList = !!(prev && ['cat', 'fav', 'mine', 'search'].includes(prev.n)), pv = fromList && i > 0 ? list[i - 1] : null;
+    return {
+      posLabel: i >= 0 && prev && ['cat', 'fav', 'mine'].includes(prev.n) ? (i + 1) + ' z ' + list.length : '',
+      hasNext: !!nx, nextTitle: nx ? nx.t : '', nextKicker: desk ? 'Następny na liście: ' + name : 'Następny przepis',
+      goNext: () => nx && this.setState(st => ({ screen: { n: 'recipe', id: nx.id } })),
+      nextSpacer: !!(desk && nx && !pv), hasPrev: !!pv, prevTitle: pv ? pv.t : '', prevKicker: 'Poprzedni', hasNav: !!(nx || pv),
+      goPrev: () => pv && this.setState(st => ({ screen: { n: 'recipe', id: pv.id } })),
+      navCols: desk ? (pv && nx ? 'repeat(2,minmax(0,1fr))' : pv ? 'minmax(0,420px)' : 'minmax(0,1fr) minmax(0,420px)') : 'minmax(0,1fr)',
+      nextAlign: desk ? 'flex-end' : 'stretch', nextW: desk ? '420px' : 'auto',
+      goRecipeCat: () => this.go({ n: 'cat', cat: r.cat }),
+    };
+  }
+  cookVals(r, desk) {
+    const st = this.state, f = (TS.find(t => t[0] === st.textLevel) || TS[0])[1];
+    if (!r) return { tsOpts: [], ings: [], steps: [], cookOn: false };
+    const d = cookData(r), checked = st.checks[r.id] || [], ck = st.cook;
+    const setChecks = a => this.setState(s => ({ checks: Object.assign({}, s.checks, { [r.id]: a }) }));
+    const n = d.steps.length, i = ck ? ck.i : 0;
+    const ph = d === CARROT ? STEP_PHOTOS.carrot : d === SWEET ? STEP_PHOTOS.sweet : [], showPh = ph.length > 0 && st.stepPhotos;
+    const setPh = v => { this.setState({ stepPhotos: v }); try { const o = JSON.parse(localStorage.getItem(KEY) || '{}'); o.stepPhotos = v; localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
+    const endCook = () => { this.setState({ cook: null }); try { this.wake && this.wake.release(); } catch (e) {} };
+    const next = () => i >= n - 1 ? endCook() : this.setState({ cook: { i: i + 1 } });
+    const prev = () => i > 0 && this.setState({ cook: { i: i - 1 } });
+    return {
+      tsMax: desk ? '420px' : '100%',
+      tsOpts: TS.map(([l, _f, size]) => { const on = st.textLevel === l; return { l, on, size, aria: 'Wielkość tekstu ' + l, bg: on ? '#111827' : '#fff', fg: on ? '#fff' : '#111827', border: on ? '#111827' : '#6b7280', pick: () => this.setState({ textLevel: l }) }; }),
+      hasChecked: checked.length > 0, clearChecks: () => setChecks([]),
+      servings: d.serv, ingSize: Math.round(19 * f) + 'px', stepSize: Math.round(19 * f) + 'px', 
+      ings: d.groups.flatMap(([sec, items], gi) => items.map((it, ii) => ({ it, sec: ii === 0 ? sec : null, gi }))).map(({ it: [name, amount], sec, gi }, k) => { const on = checked.includes(k); return { name, amount, on, sec, secMargin: gi ? '20px 0 4px' : '0 0 4px', color: on ? '#4b5563' : '#111827', deco: on ? 'line-through' : 'none', toggle: () => setChecks(on ? checked.filter(x => x !== k) : checked.concat([k])) }; }),
+      steps: d.steps.map((t, k) => ({ n: k + 1, t, showImg: showPh && ph.includes(k), lbAria: 'Powiększ zdjęcie do kroku ' + (k + 1), openLb: () => { this.lbReturn = document.activeElement; this.setState({ lb: ph.indexOf(k) }); setTimeout(() => this.lbCloseRef.current && this.lbCloseRef.current.focus(), 50); } })),
+      ...(() => { const on = st.lb != null && st.lb >= 0 && st.lb < ph.length, li = on ? st.lb : 0, k = ph[li] ?? 0;
+        const close = () => { this.setState({ lb: null }); const r = this.lbReturn; setTimeout(() => r && r.focus && r.focus(), 30); };
+        const mv = dl => { const nx = li + dl; if (nx >= 0 && nx < ph.length) this.setState({ lb: nx }); };
+        return { lbOn: on, lbTitle: 'Krok ' + (k + 1) + ' · zdjęcie ' + (li + 1) + ' z ' + ph.length, lbAlt: 'Zdjęcie do kroku ' + (k + 1), lbText: d.steps[k] || '',
+          lbClose: close, lbCloseRef: this.lbCloseRef, lbPrev: () => mv(-1), lbNext: () => mv(1),
+          lbPrevDis: li === 0, lbNextDis: li >= ph.length - 1, lbPrevOp: li === 0 ? '.45' : '1', lbNextOp: li >= ph.length - 1 ? '.45' : '1',
+          lbKey: e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') mv(-1); else if (e.key === 'ArrowRight') mv(1); } }; })(),
+      hasStepPhotos: ph.length > 0, stepImgMax: desk ? '520px' : '100%', stepImgRadius: desk ? '12px' : '10px',
+      photoOpts: [['Pokaż', true], ['Ukryj', false]].map(([l, v]) => { const on = st.stepPhotos === v; return { l, on, pick: () => setPh(v), bg: on ? '#111827' : '#fff', fg: on ? '#fff' : '#111827' }; }),
+      cookImg: showPh && ph.includes(i), cookImgAlt: 'Zdjęcie do kroku ' + (i + 1),
+      cookCols: desk ? 'minmax(0,1fr) minmax(0,1.6fr)' : 'minmax(0,1fr)', cookGap: desk ? '48px' : '28px',
+      ingBg: desk ? '#f9fafb' : 'transparent', ingBorder: desk ? '1px solid #e5e7eb' : '0', ingPad: desk ? '24px' : '0',
+      startCook: () => { this.setState({ cook: { i: 0 } }); try { navigator.wakeLock && navigator.wakeLock.request('screen').then(w => { this.wake = w; }).catch(() => {}); } catch (e) {} },
+      cookOn: !!ck, endCook, cookPrev: prev, cookNext: next, cookCloseRef: this.cookCloseRef,
+      cookKey: e => { if (e.key === 'Escape') endCook(); else if (e.key === 'ArrowRight') next(); else if (e.key === 'ArrowLeft') prev(); },
+      cookLabel: 'Krok ' + (i + 1) + ' z ' + n, cookText: d.steps[i], cookTotal: n, cookNow: i + 1,
+      cookSegs: n <= 12 ? d.steps.map((_, k) => ({ bg: k <= i ? '#f97316' : '#4b5563' })) : [{ bg: 'linear-gradient(90deg,#f97316 ' + Math.round((i + 1) / n * 100) + '%,#4b5563 0)' }],
+      cookNextIcon: i >= n - 1 ? this.ic('Check', 26) : this.ic('ArrowRight', 26),
+      cookFirst: i === 0, cookPrevOp: i === 0 ? 0.5 : 1, cookNextLabel: i >= n - 1 ? 'Gotowe' : 'Dalej', cookPad: desk ? '40px 32px' : '24px 20px',
+    };
+  }
+  dayVals(desk) {
+    const all = this.all().filter(x => x.src !== YT), d = new Date(), seed = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5) * 7 + d.getFullYear();
+    const r = all[seed % all.length];
+    const open = () => this.go({ n: 'recipe', id: r.id });
+    return {
+      day: { t: r.t, s: r.s, a: r.a, srcEl: this.ic(r.src, 18), aria: 'Przepis dnia: ' + r.t, open, onKey: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } } },
+      rerollDay: e => { e.stopPropagation(); this.setState(s => ({ dayRoll: (s.dayRoll || 0) + 1 })); },
+      heroCols: desk ? 'repeat(auto-fit,minmax(min(100%,400px),1fr))' : 'minmax(0,1fr)', heroGap: desk ? '32px' : '20px', heroAlign: desk ? 'flex-start' : 'center', heroText: desk ? 'left' : 'center', dayH: desk ? '240px' : '220px', dayMargin: desk ? '0' : '0 -16px', dayRadius: desk ? '4px' : '0', dayTitle: desk ? '26px' : '24px',
+      dayDir: desk ? 'row' : 'column', dayAlign: desk ? 'center' : 'stretch', dayImgW: desk ? '120px' : '96px', dayImgH: desk ? '84px' : '72px',
+    };
+  }
+  sugOptions() {
+    const q = (this.state.q || '').trim();
+    if (q.length < 2) return ['pączki', 'dynia'].map((t, i) => ({ kind: 'recent', id: 'sug-r' + i, label: t }))
+      .concat(['rosół', 'sernik', 'kotlety'].map((t, i) => ({ kind: 'popular', id: 'sug-p' + i, label: t })));
+    const ql = q.toLowerCase().replace(/i$/, '');
+    const m = this.all().filter(x => (x.t + ' ' + x.s + ' ' + (x.dish || '') + ' ' + x.cat).toLowerCase().includes(ql)).sort((a, b) => b.pop - a.pop).slice(0, 4);
+    return m.map(x => ({ kind: 'recipe', id: 'sug-' + x.id, label: x.t, cat: x.cat, rid: x.id })).concat([{ kind: 'all', id: 'sug-all', label: 'Pokaż wszystkie wyniki dla „' + q + '”', q }]);
+  }
+  sugSelect(o) {
+    this.setState({ sug: false, act: -1 });
+    if (o.kind === 'recipe') this.go({ n: 'recipe', id: o.rid });
+    else { const q = o.q || o.label; this.setState({ q }); this.go({ n: 'search', q }); }
+  }
+  sugVals(ic) {
+    const st = this.state, opts = this.sugOptions(), browsing = (st.q || '').trim().length < 2;
+    const show = !!st.sug && opts.length > 0, act = show ? (st.act ?? -1) : -1;
+    return {
+      sugShow: show, sugBrowsing: browsing, sugTyping: !browsing, sugLabel: browsing ? 'Ostatnio i często szukane' : 'Podpowiedzi',
+      sugActiveId: act >= 0 && opts[act] ? opts[act].id : undefined,
+      sugFocus: () => this.setState({ sug: true, act: -1 }), sugBlur: () => this.setState({ sug: false, act: -1 }),
+      sugLeave: () => this.setState({ act: -1 }), keepFocus: e => e.preventDefault(),
+      sugKey: e => {
+        const n = opts.length;
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const d = e.key === 'ArrowDown' ? 1 : -1; this.setState(s => ({ sug: true, act: (s.act ?? -1) < 0 ? (d > 0 ? 0 : n - 1) : ((s.act + d + n) % n) })); }
+        else if (e.key === 'Enter' && act >= 0 && opts[act]) { e.preventDefault(); this.sugSelect(opts[act]); }
+        else if (e.key === 'Escape' && show) { e.preventDefault(); this.setState({ sug: false, act: -1 }); }
+        else if (!st.sug && e.key.length === 1) this.setState({ sug: true });
+      },
+      sugOpts: opts.map((o, i) => {
+        const sel = i === act, chip = o.kind === 'recent' || o.kind === 'popular';
+        return Object.assign({}, o, {
+          sel, isRecipe: o.kind === 'recipe', isAll: o.kind === 'all',
+          ic: chip ? ic(o.kind === 'recent' ? 'History' : 'TrendingUp', 20) : o.kind === 'all' ? ic('Search', 20) : null,
+          border: o.kind === 'recent' ? '#4b5563' : '#c2410c',
+          bg: sel ? (chip ? '#fde7d4' : '#f3f4f6') : (o.kind === 'popular' ? '#fff7ed' : '#fff'),
+          fg: o.kind === 'all' ? '#9a3412' : '#111827', sep: i ? '1px solid #e5e7eb' : '0',
+          pick: () => this.sugSelect(o), hover: () => this.setState({ act: i }),
+        });
+      }),
+    };
+  }
+  submitAdd() {
+    const u = (this.state.addUrl || '').trim();
+    if (!u) { this.showToast('Wklej link do przepisu.'); return; }
+    let host = u.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] || u;
+    if (/aniagotuje\.pl\/ciasto/.test(u)) {
+      const ex = RECIPES.find(r => r.id === 7);
+      this.setState(st => ({ favs: st.favs.includes(7) ? st.favs : st.favs.concat([7]), addMsg: 'Ten przepis już jest w aplikacji Zapisz Przepis: „' + ex.t + '”. Dodaliśmy go do Twoich Ulubionych.', addedId: 7 }));
+      return;
+    }
+    const id = 1000 + this.state.extra.length;
+    const nr = { id, t: 'Nowy przepis z ' + host, s: 'pobrany z linku', a: host, src: /youtu/.test(host) ? YT : /facebook/.test(host) ? FB : W, url: 1, cat: 'Obiady', min: 60, pop: 0, by: 'Tola', mine: 1, date: 200 + id };
+    this.setState(st => ({ extra: st.extra.concat([nr]), addMsg: 'Zapisano przepis „' + nr.t + '”. Jest w Moich przepisach.', addedId: id, addUrl: '' }));
+  }
+}
+</script>
+</body>
+</html>

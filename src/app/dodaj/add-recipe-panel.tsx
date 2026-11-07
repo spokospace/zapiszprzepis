@@ -3,7 +3,7 @@ import { AddFromLinkForm } from './add-from-link-form'
 import type { AddRecipeError } from '@/lib/routes'
 import { bindOrphans } from '@/lib/polish-typography'
 
-// A7 wording from the design handoff (.ai/design/przebudowa-handoff, Propozycja A),
+// A7 wording from the design handoff (.ai/design/redesign-handoff, Propozycja A),
 // with Polish one-letter words bound to the next word (see bindOrphans).
 const STEPS = [
   'Wklejasz link, my spisujemy przepis po polsku.',

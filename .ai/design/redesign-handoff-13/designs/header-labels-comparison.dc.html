@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#e7e3dd;font-family:'Atkinson Hyperlegible Next',Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}</style>
+</helmet>
+<section id="1" style="padding:48px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+    <span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Nagłówek mobile · podpisy ikon</span>
+    <div style="font-size:30px;font-weight:700;line-height:1.15">Wielkie litery czy zwykła pisownia?</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Ekran 390 px, strona główna i podstrona. W obu wersjach podpisy mają 16 px. Dziś w prototypie mają 13 px, czyli mniej niż przyjęte minimum dla tekstu pomocniczego.</div>
+  </div>
+  <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ opts }}" as="o" hint-placeholder-count="2">
+      <div id="{{ o.id }}" style="display:flex;flex-direction:column;gap:14px;width:390px;max-width:100%">
+        <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">{{ o.id }}</span><span style="font-size:17px;font-weight:700">{{ o.name }}</span></div>
+        <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(17,24,39,.1)">
+          <div style="height:64px;padding:0 4px 0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #111827">
+            <span style="font-size:22px;font-weight:800">Zapisz <span style="color:#c2410c">Przepis</span></span>
+            <div style="display:flex;gap:2px">
+              <span style="min-width:64px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:16px;font-weight:700;letter-spacing:{{ o.ls }}"><i data-lucide="search" width="24" height="24"></i>{{ o.search }}</span>
+              <span style="position:relative;min-width:64px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:16px;font-weight:700;letter-spacing:{{ o.ls }}"><i data-lucide="menu" width="24" height="24"></i>{{ o.menu }}<span style="position:absolute;top:8px;right:14px;width:10px;height:10px;border-radius:999px;background:#c2410c;border:2px solid #fff"></span></span>
+            </div>
+          </div>
+          <div style="padding:20px 16px;display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:28px;font-weight:800">Dzień dobry, Tolu!</span>
+            <span style="font-size:17px;color:#374151">Szukaj w swoich przepisach i ulubionych albo we wszystkich</span>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(17,24,39,.1)">
+          <div style="height:64px;padding:0 4px 0 8px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #111827">
+            <span style="height:48px;padding:0 8px;display:flex;align-items:center;gap:6px;font-size:18px;font-weight:700;letter-spacing:{{ o.ls }}"><i data-lucide="arrow-left" width="24" height="24"></i>{{ o.back }}</span>
+            <div style="display:flex;gap:2px">
+              <span style="min-width:64px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:16px;font-weight:700;letter-spacing:{{ o.ls }}"><i data-lucide="search" width="24" height="24"></i>{{ o.search }}</span>
+              <span style="min-width:64px;height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:16px;font-weight:700;letter-spacing:{{ o.ls }}"><i data-lucide="menu" width="24" height="24"></i>{{ o.menu }}</span>
+            </div>
+          </div>
+          <div style="padding:20px 16px"><span style="font-size:26px;font-weight:800">Ciasto marchewkowe</span></div>
+        </div>
+        <div style="font-size:16px;color:#374151;line-height:1.5;text-wrap:pretty">{{ o.note }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() { const r = () => window.lucide ? lucide.createIcons() : setTimeout(r, 100); r(); }
+  renderVals() {
+    return { opts: [
+      { id: '1a', name: 'Wielkie litery: SZUKAJ · MENU', search: 'SZUKAJ', menu: 'MENU', back: 'WRÓĆ', ls: '0.04em',
+        note: 'Wygląda jak etykieta i mocniej odcina się od treści. Słowo czyta się jednak wolniej, bo wszystkie litery mają tę samą wysokość. „SZUKAJ” jest też szersze i przy 320 px zostaje mniej miejsca na logo.' },
+      { id: '1b', name: 'Zwykła pisownia: Szukaj · Menu', search: 'Szukaj', menu: 'Menu', back: 'Wróć', ls: '0',
+        note: 'Tak samo jak pozostałe przyciski w aplikacji („Dodaj przepis”, „Ulubione”, „Wróć”). Kształt słowa rozpoznaje się szybciej, co pomaga starszym i słabowidzącym. Polecam tę wersję.' },
+    ] };
+  }
+}
+</script>
+</body>
+</html>

@@ -21,7 +21,7 @@ PR #199) and **S03b** (#220 — `/przepis/{slug}` + 301; spec authored in this r
 
 Re-sync 2026-10-19: no new issues filed. Ten issues opened under #201 after the
 first run (mostly from the design-gap audit `.ai/analysis/2026-10-17-design-gap-audit.md`,
-design authority `.ai/design/przebudowa-handoff/README.md`) were adopted:
+design authority `.ai/design/redesign-handoff/README.md`) were adopted:
 the `Backlog source:` / `Backlog id:` lines were added to their bodies, with an
 adoption comment on each. S15–S17 statuses were refreshed to closed.
 S04–S11, S13, S14 were closed the same day on the owner's confirmation: their
@@ -29,8 +29,8 @@ implementation PRs had merged but referenced the issues with `Refs`, so GitHub
 never closed them. Only S12 (#205) stays open, waiting on #299 / #288.
 
 Extension 2026-10-19 (handoff v8): four new stories S24–S27 filed from the
-owner's design handoff v8, imported to `.ai/design/przebudowa-handoff/`
-(`ZMIANY_nawigacja_mobile.md`, `ISSUE_lupa_szukaj.md`, screen 4 in README) — the
+owner's design handoff v8, imported to `.ai/design/redesign-handoff/`
+(`changes-mobile-navigation.md`, `issue-search-icon.md`, screen 4 in README) — the
 two-word name „Zapisz Przepis”, the mobile header with „Szukaj” instead of
 „Dodaj” and a text-only logo (supersedes the #328/#331 mobile-logo rule),
 full-screen `/szukaj` and voice search. No adoptions: no open or closed issue

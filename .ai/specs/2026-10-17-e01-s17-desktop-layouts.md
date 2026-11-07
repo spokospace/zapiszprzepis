@@ -1,7 +1,7 @@
 # E01-S17 — Desktop layouts (A8, A9)
 
 > Issue: #219 · Epic: #201 · Backlog: `.ai/specs/backlog-przebudowa.md` (E01-S17, refs A8/A9) · Depends on: S01 (tokens), S04 (home, #247), S05 (search, #262), S07 (recipe page, #245). All of them are live.
-> Design reference: `.ai/design/przebudowa-handoff/designs/Propozycja A.dc.html` (frames A8, A9) and `README.md` § "Desktop (A8, A9)". Where this spec and the prototype differ, the prototype wins unless a Resolved assumption says otherwise.
+> Design reference: `.ai/design/redesign-handoff/designs/proposal-a.dc.html` (frames A8, A9) and `README.md` § "Desktop (A8, A9)". Where this spec and the prototype differ, the prototype wins unless a Resolved assumption says otherwise.
 
 ## 📝 TLDR
 

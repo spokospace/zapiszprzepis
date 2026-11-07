@@ -19,7 +19,7 @@ Owner decisions after #595 (2026-10-28), each in its own follow-up PR:
 
 - Readers on a phone (the target group includes older people) have to scroll past a separate gallery section to see the recipe's other photos, and the steps cannot be marked as done. Only ingredients can.
 - The other versions of a dish are behind a yellow bar that does not say what the versions differ in.
-- The current design does not match the 2026-10-28 owner handoff, which is the design authority for this change (`ZASADY_PROJEKTU.md` and the README are embedded in issue #590 and copied to `.ai/specs/assets/recipe-page-handoff/`).
+- The current design does not match the 2026-10-28 owner handoff, which is the design authority for this change (`design-rules.md` and the README are embedded in issue #590 and copied to `.ai/specs/assets/recipe-page-handoff/`).
 
 Evidence: `src/app/przepis/[slug]/_components/recipe-checklists.tsx` (the step list has no state; only ingredients use `useSessionStorage`), `dish-versions-bar.tsx` (the "Mamy jeszcze N…" text), `locked-gallery.tsx` (the separate "Zdjęcia" block).
 
@@ -58,7 +58,7 @@ None. No schema change, no migration, no new query, no server action. Step ticks
 
 ## 📝 UI/UX
 
-Design reference: `.ai/specs/assets/recipe-page-handoff/Strona przepisu - nowy design.dc.html` (with `support.js`), and the README in the same folder. Where the design and `ZASADY_PROJEKTU.md` disagree, the rules win; the disagreements are listed in the handoff and resolved in the table below.
+Design reference: `.ai/specs/assets/recipe-page-handoff/Strona przepisu - nowy design.dc.html` (with `support.js`), and the README in the same folder. Where the design and `design-rules.md` disagree, the rules win; the disagreements are listed in the handoff and resolved in the table below.
 
 Key behaviours:
 
@@ -84,7 +84,7 @@ Key behaviours:
 
 - **Blast radius:** one route, its `_components`, and the tests next to them. Shared components used elsewhere (`RecipeCard`, `card-carousel.tsx`) are not changed by this spec; the "Podobne" and "Inne wersje" cards keep their current structure.
 - **Recent changes on the same files:** #210 and #404 shipped earlier versions of this page; this spec changes the same files again. Merge conflicts are expected in `recipe-header.tsx` and `dish-versions.tsx` if other work lands first.
-- **Accessibility regressions:** the handoff's colours and sizes are checked against the WCAG rules in `ZASADY_PROJEKTU.md`, not taken as given. The step buttons are the main new interactive element and get keyboard and screen-reader tests.
+- **Accessibility regressions:** the handoff's colours and sizes are checked against the WCAG rules in `design-rules.md`, not taken as given. The step buttons are the main new interactive element and get keyboard and screen-reader tests.
 - **Rollback:** revert the PR; no data changes.
 
 ## 📋 Phasing
@@ -114,9 +114,9 @@ Phase 2 — step ticks with progress, sessionStorage persistence, and the access
 
 | # | Question | Default applied | Why |
 |---|----------|-----------------|-----|
-| A1 | Blocking on #590: the handoff removes the separate "Zdjęcia" section, but #210 requires the gallery to stay locked for guests. Does the lock also cover the thumbnails? | **Yes.** The lock covers the main photo gallery and its thumbnails for guests; the signed-in user sees all. | Keeps the rule from #210 and the access model in `ZASADY_PROJEKTU.md` (the gallery is for signed-in users). The handoff's thumbnail row is kept for signed-in users. Confirmed by the issue's stated default. |
+| A1 | Blocking on #590: the handoff removes the separate "Zdjęcia" section, but #210 requires the gallery to stay locked for guests. Does the lock also cover the thumbnails? | **Yes.** The lock covers the main photo gallery and its thumbnails for guests; the signed-in user sees all. | Keeps the rule from #210 and the access model in `design-rules.md` (the gallery is for signed-in users). The handoff's thumbnail row is kept for signed-in users. Confirmed by the issue's stated default. |
 | A2 | Blocking on #590: the handoff keeps "Wielkość tekstu" on the recipe page, but FR #485 moved it to `/wyswietlanie` and a test enforces that. Which one wins? | **FR #485 wins.** The control stays on `/wyswietlanie` and is not added to the recipe page. | An earlier decision the owner already made; the test is the guard for it. Confirmed by the issue's stated default. |
-| A3 | Non-blocking: text colour `#374151`, underlined links, "Ma dodatkowo / Nie ma" with words not colour alone. | Project rules apply. | `ZASADY_PROJEKTU.md` is authoritative over the mock. |
+| A3 | Non-blocking: text colour `#374151`, underlined links, "Ma dodatkowo / Nie ma" with words not colour alone. | Project rules apply. | `design-rules.md` is authoritative over the mock. |
 | A4 | Non-blocking: the "Inne wersje" list vs the shared card. | Keep the shared card's structure; the comparison line is added inside the existing component. | Handoff item 4 is marked for owner decision; this is the reversible option. |
 | A5 | Non-blocking: the button label "Zacznij gotować" instead of "Tryb gotowania". | Label changes; behaviour does not. | Handoff item 7. |
 | A6 | Ingredient grouping bug ("Ciasto", dried yeast as a separate row). | Out of scope. Reported in the PR; data is not edited by hand. | Parser or data issue, not layout. |

@@ -14,7 +14,7 @@ Today the app renders the 2026-10-20 handoff (#404). Observed in the repo at `ma
 
 The owner wants the app to match the new handoff, mainly corner radii, tiles and the menu, on **all** screens (including ones the prototype does not show). Because the radii are scattered, a screen-by-screen edit would leave inconsistencies; the work needs a token-first order.
 
-**Limitation:** the handoff zip (`ZMIANY_prototyp_klikalny.md`, `designs/*.dc.html`) is **not in the repository** (no `designs/` directory). This spec transcribes the values stated in issue #418; the "visual comparison with the prototype" acceptance step needs the owner to supply the files (see Q6).
+**Limitation:** the handoff zip (`changes-clickable-prototype.md`, `designs/*.dc.html`) is **not in the repository** (no `designs/` directory). This spec transcribes the values stated in issue #418; the "visual comparison with the prototype" acceptance step needs the owner to supply the files (see Q6).
 
 ## 📝 Proposed Solution
 
@@ -58,7 +58,7 @@ Rule set from the handoff (§10 "Kierunek wizualny 1b"), as transcribed in #418:
 
 **Accessibility (unchanged bar, all phases).** WCAG 2.2 AA: text ≥ 4.5:1, UI components and field borders ≥ 3:1, touch targets ≥ 48 px, visible focus (`outline: 3px solid #1d4ed8; offset 2px`), underlined links, no horizontal scroll at 320 px (`pnpm test:reflow`). Removing the card frame is allowed because the photo is the affordance; focus outline must still wrap the whole card link.
 
-Prototype: not available in the repo (see Problem Statement).
+Prototype: `.ai/design/redesign-handoff-13/designs/clickable-prototype.dc.html` and `modern-look-proposals.dc.html` (variant 1b); main instruction `.ai/design/redesign-handoff-13/changes-clickable-prototype.md`. The handoff was added to the repo after this spec was written; the limitation under Problem Statement is resolved.
 
 ## 📝 Edge Cases & Failure Scenarios
 

@@ -100,7 +100,7 @@ Authorization: every route requires the signed-in session. Timers are addressed 
 
 ## 📝 UI/UX
 
-Source of truth for visuals is the handoff README and `ZASADY_PROJEKTU.md`. Summary:
+Source of truth for visuals is the handoff README and `design-rules.md`. Summary:
 
 - **Step trigger.** The duration in the step text is a button styled as a link: Lucide `Timer` 18 px, 800 weight, `#9a3412`, 2 px underline with 4 px offset, 10 px vertical padding with −10 px margin. `aria-label` "Włącz minutnik: {name}, {min} min".
 - **Running state.** Green text `#15803d` and a badge (`#dcfce7` / `#14532d`, 15 px, `tabular-nums`) with the remaining time. A second click does nothing.
@@ -108,7 +108,7 @@ Source of truth for visuals is the handoff README and `ZASADY_PROJEKTU.md`. Summ
 - **Menu.** A "Minutniki" section at the top of the panel, a count badge on the Menu button, a custom timer (1–180 min), and a notification status line (on / off / not asked yet).
 - **Keep screen on.** `role="switch"`, Screen Wake Lock API, re-acquired on `visibilitychange`; hidden when the API is unavailable.
 - **Consent.** Shown only to signed-in users, asked once, at the first timer start, and only when `PushManager` exists and `Notification.permission === 'default'`. Guests see the in-page timer and a status line saying notifications are for signed-in users. The "Tak" button calls `Notification.requestPermission()` before any other `await` in the click handler. Esc or "Nie" records the refusal in `localStorage`; the timer still starts.
-- **Accessibility.** WCAG 2.2 AA per `ZASADY_PROJEKTU.md`: targets ≥ 48 px where the handoff says so (44 px minimum for inline controls, as in the handoff), focus `3px solid #1d4ed8`, announced end of timer, reduced-motion respected.
+- **Accessibility.** WCAG 2.2 AA per `design-rules.md`: targets ≥ 48 px where the handoff says so (44 px minimum for inline controls, as in the handoff), focus `3px solid #1d4ed8`, announced end of timer, reduced-motion respected.
 
 ## 📝 Edge Cases & Failure Scenarios
 - **Device clock skew.** `endsAt` is computed on the client from `Date.now()`. The server schedules from that absolute time. Skew of a few seconds is accepted; the card shows the server-independent countdown.
