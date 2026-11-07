@@ -16,7 +16,7 @@ const urls = (entries: Awaited<ReturnType<typeof sitemap>>) => entries.map((e) =
 describe('sitemap.xml', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('lists home, categories, legal, search, recipes and profiles', async () => {
+  it('lists home, categories, legal, recipes and profiles, but not the noindex search page', async () => {
     vi.mocked(listCanonicalRecipes).mockResolvedValue([
       { slug: 'sernik', lastModified: '2026-06-01T00:00:00Z' },
       { slug: 'piernik', lastModified: '2026-03-01T00:00:00Z' },
@@ -27,14 +27,14 @@ describe('sitemap.xml', () => {
     const all = urls(entries)
 
     expect(all).toContain('https://zapiszprzepis.pl/')
-    expect(all).toContain('https://zapiszprzepis.pl/szukaj')
+    expect(all.some((u) => u.endsWith('/szukaj'))).toBe(false)
     expect(all).toContain('https://zapiszprzepis.pl/przepis/sernik')
     expect(all).toContain('https://zapiszprzepis.pl/u/ania')
     for (const c of RECIPE_CATEGORIES) expect(all).toContain(`https://zapiszprzepis.pl/przepisy/${c.value}`)
     for (const p of LEGAL_PATHS) expect(all).toContain(`https://zapiszprzepis.pl${p}`)
 
-    // 1 home + 1 search + 13 categories + 3 legal + 2 recipes + 2 profiles
-    expect(entries).toHaveLength(2 + RECIPE_CATEGORIES.length + LEGAL_PATHS.length + 2 + 2)
+    // 1 home + 13 categories + 3 legal + 2 recipes + 2 profiles
+    expect(entries).toHaveLength(1 + RECIPE_CATEGORIES.length + LEGAL_PATHS.length + 2 + 2)
 
     const sernik = entries.find((e) => e.url.endsWith('/przepis/sernik'))
     expect(sernik?.lastModified).toEqual(new Date('2026-06-01T00:00:00Z'))
@@ -48,7 +48,7 @@ describe('sitemap.xml', () => {
     expect(all).toContain('https://zapiszprzepis.pl/')
     expect(all.some((u) => u.includes('/przepis/'))).toBe(false)
     expect(all.some((u) => u.includes('/u/'))).toBe(false)
-    // home + search + 13 categories + 3 legal
-    expect(all).toHaveLength(2 + RECIPE_CATEGORIES.length + LEGAL_PATHS.length)
+    // home + 13 categories + 3 legal
+    expect(all).toHaveLength(1 + RECIPE_CATEGORIES.length + LEGAL_PATHS.length)
   })
 })
