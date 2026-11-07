@@ -37,15 +37,16 @@ Po każdym buildzie `master` (Workers Builds) i po każdej zmianie zmiennej albo
 - Sekret zmieniaj, gdy żaden build nie trwa, i od razu po nim zrób Retry buildu `master` + `pnpm smoke:prod`.
 - Dowolny adres jako argument: `pnpm smoke:prod https://<version>-zapiszprzepis.<subdomain>.workers.dev`.
 
-## Wyniki testów zapisuj na bieżąco w `docs/wyniki-testow.md`
+## Wyniki testów zapisuj na bieżąco w `docs/test-results.md`
 
-Każdy pomiar produkcji, test obciążeniowy, próbę migracji i porównanie rozwiązań dopisz do [docs/wyniki-testow.md](docs/wyniki-testow.md) od razu po wykonaniu: co mierzono, jak, wynik i czego wynik nie dowodzi. Nowe wpisy na górze, godziny w UTC.
+Każdy pomiar produkcji, test obciążeniowy, próbę migracji i porównanie rozwiązań dopisz do [docs/test-results.md](docs/test-results.md) od razu po wykonaniu: co mierzono, jak, wynik i czego wynik nie dowodzi. Nowe wpisy na górze, godziny w UTC.
 
 **Dlaczego:** właściciel chce mieć kontekst w repozytorium (decyzja 2026-11-06). Wyniki zostające w czacie albo w pamięci agenta giną dla kolejnych sesji.
 
 **Jak stosować:**
 - Dopisz wpis w tym samym PR, którego dotyczy pomiar. Pomiar po scaleniu: osobny PR tylko z dokumentacją.
 - Nieudane próby i odrzucone rozwiązania też zapisuj, z powodem.
+- Pliki z wynikami i badaniami mają angielskie nazwy (`test-results.md`, `static-architecture-research-2026-11.md`); treść może zostać po polsku.
 - Rutynowych przebiegów `pnpm test`, `lint` i `typecheck` nie zapisuj. `pnpm smoke:prod` dopisz, gdy jest częścią pomiaru albo wyszedł czerwony.
 
 ## Dostęp agenta do Cloudflare
