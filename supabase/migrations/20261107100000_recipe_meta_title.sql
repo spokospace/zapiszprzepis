@@ -35,7 +35,7 @@ begin
   if not exists (select 1 from pg_constraint where conname = 'recipes_meta_title_len') then
     alter table public.recipes
       add constraint recipes_meta_title_len
-      check (meta_title is null or char_length(meta_title) between 1 and 70);
+      check (meta_title is null or char_length(btrim(meta_title)) between 1 and 70);
   end if;
 end $$;
 

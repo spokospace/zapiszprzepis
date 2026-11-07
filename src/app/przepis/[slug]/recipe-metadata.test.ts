@@ -37,6 +37,12 @@ describe('recipeMetadata', () => {
     expect(recipeMetadata({ ...base, description: 'x'.repeat(61) }, SITE).title).toBe('Croissanty · Zapisz Przepis')
   })
 
+  it('leaves out a sentence-like description', () => {
+    expect(recipeMetadata({ ...base, description: 'Ciasto ma chrupiącą kratkę.' }, SITE).title).toBe(
+      'Croissanty · Zapisz Przepis',
+    )
+  })
+
   it('uses a hand-written meta_title over the variant line', () => {
     const meta = recipeMetadata({ ...base, description: 'z masłem', meta_title: ' Croissanty jak z Paryża ' }, SITE)
     expect(meta.title).toBe('Croissanty jak z Paryża · Zapisz Przepis')
