@@ -20,7 +20,9 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 **Wynik:** jeden bucket `recipe-images`: 3763 plików, 1255 MB razem. Średnio 342 KB na plik, mediana 209 KB, największy 5073 KB. Przy limicie 5 GB transferu w miesiącu daje to około 15 000 pobrań oryginału o średniej wielkości (około 500 dziennie), czyli około 4 razy tyle, ile jest plików w całym buckecie (15 000 / 3763). Dziś każde zdjęcie na liście i w przepisie idzie przez `/_next/image` na Workerze, a Supabase oddaje oryginał tylko przy trafieniu poza pamięć podręczną.
 
-**Opcje (decyzja Twoja):**
+**Decyzja właściciela (2026-11-07):** opcja 1, zdjęcia zostają na `/_next/image` na Workerze. Opcje 2 i 3 zostają opisane poniżej jako zapas, gdyby obrazy okazały się przyczyną błędów limitu.
+
+**Opcje:**
 
 1. Zostawić `/_next/image` na Workerze: transfer z Supabase zależy od trafień w pamięć podręczną Cloudflare (zmniejszone obrazy, ale bez pomiaru, czy mniej niż w opcji 3), ale Worker dalej wykonuje te żądania (zasób CPU, nie liczony tu). Gdy zmniejszanie rzuci wyjątek albo zwróci 5xx, Worker przekierowuje na oryginał w Supabase i nie zapisuje tego przekierowania, więc powtarzające się błędy podają pełne obrazy i podnoszą transfer.
 2. Zdjęcia bezpośrednio z Supabase, bez zmniejszania: Worker odciążony, ale lista 24 kart to około 8 MB oryginałów na wejście, więc 5 GB wystarczyłoby na około 600 wejść w miesiącu. To jest wyliczenie z samych rozmiarów: przy 100 pełnych wejściach na listę w miesiącu wychodzi około 0,8 GB, czyli poniżej limitu. Czy to za mało, zależy od ruchu w miesiącu, pamięci podręcznej przeglądarek i CDN oraz innego transferu z Supabase, których tu nie mierzyłem, więc opcji 2 nie wykluczam samymi liczbami.

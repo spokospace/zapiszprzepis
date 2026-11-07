@@ -141,7 +141,7 @@ Forem is the closest match: the same cached HTML for everyone, with user data fr
 15. Refresh, simpler than the change table above: triggers move one `content_version` number, the build saves the number it read in `recipe-files-version.json`, and the five-minute cron calls the deploy hook when the deployed number is behind, at most once per 10 minutes and 12 times a day. A failed build needs no watermark: the deployed number stays behind.
 16. Owner: apply the migration, create the deploy hook, save it as the `RECIPE_FILES_DEPLOY_HOOK` secret.
 17. Set `scripts/recipe-files.json` to `"all"`.
-18. Still open: HTTP to HTTPS at the zone, the `.rsc` rewrite rule, image delivery, a check of automatic builds in place of the manual `pnpm smoke:prod`, then categories and home.
+18. Done on 2026-11-06/07: HTTP to HTTPS at the zone (Always Use HTTPS), a post-deploy check on the cron (#731), home as a file (#732). Image delivery: the owner kept `/_next/image` on the Worker (2026-11-07; numbers in `docs/wyniki-testow.md`). Still open: the `.rsc` rewrite rule and categories (they read `?tag` and `?strona` on the server, so they need client filtering first).
 19. `/szukaj` as a file: a static page reads the address and searches in the browser, and `export-recipe-files.mjs` saves it as `public/szukaj.html`. One query per search; „Pokaż kolejne” and „Kategoria” narrow the same rows.
 
 ### Phase 4
