@@ -7,7 +7,7 @@ import { PageContainer } from '@/app/components/page-container'
 import { FavoriteAddedNotice } from '@/app/components/favorite-button'
 import { LoadingStatus, RecipeGridSkeleton } from '@/app/components/recipe-card-skeleton'
 import { RecipeRow } from './recipe-row'
-import { loadBrowserClient, useBrowserSession } from '@/lib/browser-session'
+import { browserSession, loadBrowserClient, useBrowserSession } from '@/lib/browser-session'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
 import { GREETING_LEAD, greetingSuffix } from '@/lib/home'
 import { readGreetingCache, writeGreetingCache } from '@/lib/greeting-cache'
@@ -35,7 +35,12 @@ function useMemberHome(userId: string | null): MemberHomeData | null {
         if (!current) return
         // Only while this reader is still signed in (a sign-out ends the effect, and its cleared
         // cache must not come back), and a failed read is not an answer (#737).
-        if (home.greetingName !== undefined) writeGreetingCache(userId, vocative(home.greetingName))
+        // The store clears the cache and publishes the guest before this effect's cleanup runs, so also
+        // ask it who is signed in right now.
+        const now = browserSession.getSnapshot()
+        if (home.greetingName !== undefined && now.status === 'user' && now.userId === userId) {
+          writeGreetingCache(userId, vocative(home.greetingName))
+        }
         setLoaded(lastLoaded)
       })
     return () => {
