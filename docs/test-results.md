@@ -6,6 +6,16 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-07
 
+### Strona główna: przeskoki od podmiany czcionki i od nieznanego imienia (#744)
+
+**Jak:** lokalny `next dev`, Playwright (Chromium headless, Pixel 7, szerokości 360/375/412/430/768/1280 px), sieć 400 KB/s + 150 ms, CPU ×4, konto QA `free` z zaślepioną odpowiedzią Supabase (`profiles_private` → imię „Mateusz”/„Ania”). Rejestrator `requestAnimationFrame` zapisywał przy każdej zmianie: tekst i wysokość `h1`, podtytuł, pozycję pola szukania i sekcji pod hero, liczbę wczytanych plików czcionki.
+
+**Wynik przed poprawką:** przy 412 px z imieniem w cache nagłówek miał 3 wiersze (113 px) w pierwszej klatce i 2 wiersze (76 px) po wczytaniu czcionki: pole szukania skakało o 38 px. Przyczyna: `font-display: swap` i zapasowy Arial Bold, o ok. 11% szerszy niż Atkinson 800. Bez cache przy 375 px nagłówek ukryty miał 2 wiersze, a po imieniu 3 (+38 px); przy 768 px 1 wiersz zamiast 2 (+50 px).
+
+**Wynik po poprawce:** plik czcionki jest preładowany (oba podzbiory, widoczny `fl:2` ok. 0,7 s nawet przy ograniczonej sieci), `font-display: optional`, zapasowa czcionka `Atkinson Fallback` z `size-adjust` (400: 98,5%, 600-700: 97%, 800: 89%), rezerwa wysokości nagłówka dla czytelnika bez cache (2 wiersze do 1023 px, 3 wiersze do 399 px). Z cache oraz bez cache: zero zmian wysokości nagłówka i pozycji sekcji w każdej mierzonej szerokości. `pnpm test:reflow`: 114 zielonych.
+
+**Nie dowodzi:** pomiaru na prawdziwym telefonie (Android podstawia Roboto zamiast Arial, więc `size-adjust` jest tam przybliżeniem), ani zachowania przy imionach dłuższych niż „Mateusz” przy 360 px bez cache. Pierwsze wejście na nowym urządzeniu nadal czeka na imię z bazy (nagłówek ukryty z zarezerwowanym miejscem); pełne usunięcie wymagałoby zapisania imienia przy logowaniu po stronie serwera.
+
 ### Strona główna: skoki powitania i wiersza „Powiedz” (#737)
 
 **Jak:** lokalny `pnpm dev` w oknie 375 px, `PerformanceObserver`/`layout-shift` po załadowaniu; gość oraz konto QA `free` (`/api/dev/login`). Dla konta zalogowanego ręcznie ustawiony wpis `zp-greeting` w `localStorage` z imieniem „Mateuszu”.

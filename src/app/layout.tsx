@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { preload } from "react-dom";
 import { AUTH_COOKIE_SCRIPT } from "@/lib/auth-cookie";
 import { GREETING_SCRIPT } from "@/lib/greeting-cache";
 import { SPEECH_SCRIPT } from "@/lib/speech";
@@ -46,11 +47,18 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
+const FONT_SUBSETS = ["latin", "latin-ext"] as const;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Both subsets (Polish letters live in latin-ext) ask for the file with the HTML, so the
+  // font is there for the first paint and text does not rewrap when it arrives (#744).
+  for (const subset of FONT_SUBSETS) {
+    preload(`/fonts/atkinson-hyperlegible-next-${subset}.woff2`, { as: "font", type: "font/woff2", crossOrigin: "anonymous" });
+  }
   return (
     // suppressHydrationWarning: AUTH_COOKIE_SCRIPT marks <html> before React hydrates it.
     <html lang="pl" className="h-full antialiased" suppressHydrationWarning>
