@@ -1,6 +1,6 @@
 # Zmiana: zdjęcia przy krokach przepisu (dane i import)
 
-Dla Claude Code. Repo `spokospace/zapiszprzepis`. **Wygląd** (lista kroków, lightbox, tryb gotowania) opisuje `ZMIANY_prototyp_klikalny.md` pkt 8a. Ten plik opisuje dane, import i testy.
+Dla Claude Code. Repo `spokospace/zapiszprzepis`. **Wygląd** (lista kroków, lightbox, tryb gotowania) opisuje `changes-clickable-prototype.md` pkt 8a. Ten plik opisuje dane, import i testy.
 
 ## 1. Dane
 - Tylko część przepisów ma zdjęcia kroków, a w nich tylko część kroków.

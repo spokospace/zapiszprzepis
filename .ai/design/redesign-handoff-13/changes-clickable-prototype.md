@@ -2,9 +2,9 @@
 
 _Aktualizacja 21.10.2026 — zastępuje poprzednią wersję tego pliku._
 
-Dla Claude Code. Repo `spokospace/zapiszprzepis` (master, Next.js App Router + Tailwind). Ten plik jest **najnowszy** i ma pierwszeństwo przed `ZMIANY_karty_zrodlo_strona_glowna.md` tam, gdzie się różnią (nagłówek desktop pkt 4a, strona główna pkt 4).
+Dla Claude Code. Repo `spokospace/zapiszprzepis` (master, Next.js App Router + Tailwind). Ten plik jest **najnowszy** i ma pierwszeństwo przed `changes-cards-source-home.md` tam, gdzie się różnią (nagłówek desktop pkt 4a, strona główna pkt 4).
 
-Referencja: `Zapisz Przepis - prototyp klikalny.html` (jeden plik, działa offline) albo `designs/Prototyp klikalny.dc.html` (otwórz w przeglądarce; przełączniki Desktop / Telefon, Gość / Zalogowana). Karty: `designs/Karta przepisu.dc.html`, rzędy: `designs/Rząd kart.dc.html`. Pliki HTML to **referencje**, nie kod do skopiowania.
+Referencja: `Zapisz Przepis - prototyp klikalny.html` (jeden plik, działa offline) albo `designs/clickable-prototype.dc.html` (otwórz w przeglądarce; przełączniki Desktop / Telefon, Gość / Zalogowana). Karty: `designs/recipe-card.dc.html`, rzędy: `designs/card-row.dc.html`. Pliki HTML to **referencje**, nie kod do skopiowania.
 
 **Zasada nadrzędna: nie zmieniać istniejącej logiki.** Wszystko, co już działa na produkcji, zostaje 1:1 (np. `cooking-mode.tsx`, `recipe-checklists.tsx`, `text-size-controls.tsx`, `tag-filter.tsx` + `category-tags.ts`, `dish-versions-sort.tsx` na desktopie, `header-search.tsx` + panel podpowiedzi, `app-menu`, `RecipeListBar` / `RecipeListNav`, akcje właściciela). Prototyp tylko je odtwarza. Zmieniamy wyłącznie to, co opisano niżej.
 
@@ -15,7 +15,7 @@ Referencja: `Zapisz Przepis - prototyp klikalny.html` (jeden plik, działa offli
 - Jeden krój na całej stronie: **Atkinson Hyperlegible Next** (Google Fonts, OFL, polskie znaki), przez `next/font/google`.
 - Grubości: tytuły i nagłówki 700–800, przyciski i etykiety 600–700, treść 400.
 - Fallback: `Arial, Helvetica, sans-serif`.
-- Powód: znaki I / l / 1 i O / 0 są nie do pomylenia (ważne przy ilościach w składnikach). Porównanie: `designs/Kroje pisma - porownanie.dc.html` (2a vs 2b — wybrany 2b).
+- Powód: znaki I / l / 1 i O / 0 są nie do pomylenia (ważne przy ilościach w składnikach). Porównanie: `designs/typefaces-comparison.dc.html` (2a vs 2b — wybrany 2b).
 
 ## 2. Nagłówek desktop (≥ 1024 px)
 
@@ -36,7 +36,7 @@ Układ bez zmian względem produkcji: strona główna — logo-napis + „Szukaj
 - napis mówi, dokąd: „← Desery”, „← Ulubione”, „← Moje przepisy”, „← Wyniki”, „← Strona główna”; `max-width: calc(100% - 140px)`, `text-overflow: ellipsis`; `aria-label="Wróć: {pełna nazwa}"`.
 - implementacja: trzymaj w stanie/sessionStorage „punkt powrotu” (ostatni nie-przepisowy URL) aktualizowany przy wejściu na listę; „Następny / Poprzedni przepis” go nie zmienia. Gdy brak punktu → `/`.
 
-Zmiana: podpisy pod ikonami **zwykłą pisownią** („Menu”, nie „MENU”) i **16 px** bold (dziś 13 px), przyciski min. 64 × 56 px. Porównanie: `designs/Podpisy w nagłowku - porownanie.dc.html` (wybrane 1b).
+Zmiana: podpisy pod ikonami **zwykłą pisownią** („Menu”, nie „MENU”) i **16 px** bold (dziś 13 px), przyciski min. 64 × 56 px. Porównanie: `designs/header-labels-comparison.dc.html` (wybrane 1b).
 
 ## 4. Menu (drawer)
 
@@ -81,7 +81,7 @@ Komunikat „Nie udało się dodać” i blok dla gościa: radius 4 px (blok go�
 
 ## 6. Karty (`RecipeCard`)
 
-Budowa bez zmian (`ZMIANY_karty_zrodlo_strona_glowna.md` pkt 1). Zmiany (styl 1b):
+Budowa bez zmian (`changes-cards-source-home.md` pkt 1). Zmiany (styl 1b):
 - **karta bez ramki i bez tła** — samo zdjęcie + tekst pod nim; zdjęcie **radius 4 px**, `overflow: hidden`, **bez obrysu**,
 - pod zdjęciem (`padding: 10px 0 4px`, gap 6): tytuł **21 px bold**, podpis **17 px** `#374151`,
 - hover: `opacity: .92`; focus: domyślny widoczny outline przeglądarki (karta to link),
@@ -92,7 +92,7 @@ Siatki desktop: `repeat(auto-fill, minmax(200–220px, 1fr))` zamiast sztywnych 
 ## 7. Strona przepisu — bez zmian logiki
 
 Odtworzone 1:1 z produkcji: `RecipeListBar` + okruszki (desktop), czasy (Przygotowanie / Gotowanie lub Pieczenie / Łącznie; mobile jedna linijka „Kategoria · czas”), opis, „Wielkość tekstu A / A+ / A++”, „Tryb gotowania” (dialog z `cooking-mode.tsx`), składniki z odhaczaniem i grupami, kroki, „Następny na liście” / „Następny przepis”, wersje dania, podobne, „Odśwież / Usuń przepis” dla właściciela.
-Jedyna zmiana: żółta ramka `DishVersionsBar` → link „Inne przepisy na {danie} ({n}) ↓” (już opisane w `ZMIANY_karty_zrodlo_strona_glowna.md` pkt 3) oraz sortowanie wersji na mobile jako lista rozwijana (pkt 4b tamże).
+Jedyna zmiana: żółta ramka `DishVersionsBar` → link „Inne przepisy na {danie} ({n}) ↓” (już opisane w `changes-cards-source-home.md` pkt 3) oraz sortowanie wersji na mobile jako lista rozwijana (pkt 4b tamże).
 Link „Dodała {imię}”: zwiększony obszar kliknięcia (`padding: 12px 2px; margin: -12px 0`).
 
 **Zmiany wyglądu na stronie przepisu (styl 1b):**
@@ -113,7 +113,7 @@ Nowa: linia górna 2 px `#e5e7eb`, tło `#f9fafb`, padding `20px 28px`. Lewo: �
 
 ## 8a. Zdjęcia przy krokach
 
-Szczegóły danych i importu: `ZMIANA_zdjecia_krokow.md`. Wygląd w aktualnej wersji:
+Szczegóły danych i importu: `change-step-photos.md`. Wygląd w aktualnej wersji:
 - zdjęcie pod tekstem kroku, 4:3, **radius 4 px**, bez ramki i **bez podpisu/plakietki** na liście, mobile 100% / desktop max 520 px,
 - zdjęcie to `<button aria-haspopup="dialog" aria-label="Powiększ zdjęcie do kroku {n}">`, `cursor: zoom-in`,
 - przełącznik „Zdjęcia kroków: Pokaż / Ukryj” (pigułki 48 px) tylko gdy przepis ma zdjęcia kroków; wybór w `localStorage`,
@@ -139,7 +139,7 @@ Logika `tag-filter.tsx` + `category-tags.ts` bez zmian (AND, liczniki). Zmiany:
 
 ## 10. Kierunek wizualny 1b — wdrożony w całości
 
-`designs/Nowoczesny wygląd - propozycje.dc.html`, wariant **1b** (czysty, kontrastowy). Zasady do stosowania na **wszystkich** ekranach (także tych, których prototyp nie pokazuje):
+`designs/modern-look-proposals.dc.html`, wariant **1b** (czysty, kontrastowy). Zasady do stosowania na **wszystkich** ekranach (także tych, których prototyp nie pokazuje):
 - **Przyciski = pigułki** (`border-radius: 999px`); główne: tło `#c2410c`, tekst biały; drugorzędne: białe z ramką 2 px `#111827`; „Dodaj przepis” w nagłówku: obrys `#c2410c`.
 - **Kafle, karty, zdjęcia, ramki informacyjne = 4 px** (`border-radius: 4px`), ramki 1 px `#111827` tam, gdzie kafel potrzebuje granicy; zdjęcia bez obrysu.
 - **Sekcje** oddzielone linią 1 px `#111827` nad nagłówkiem 26–28 px; tła sekcji białe (bez `#fff7ed`).

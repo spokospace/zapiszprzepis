@@ -1,6 +1,6 @@
 # E01-S20 — Home page visuals per design handoff (C1/A1)
 
-Source doc: .ai/design/przebudowa-handoff/README.md
+Source doc: .ai/design/redesign-handoff/README.md
 Issue: #280 (epic #201). Gaps: .ai/analysis/2026-10-17-design-gap-audit.md §1.
 
 ## Goal

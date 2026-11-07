@@ -69,7 +69,7 @@ None. No schema change, no migration, no new query, no write. The steps are the 
 
 Mockup (pre-handoff draft; the handoff's C4 supersedes its colours and placement): `.ai/specs/assets/e01-s08-cooking-mode/mockup.html` (rendered: `mockup-01-step.png` mid-recipe, `mockup-02-last.png` last step). Current recipe page: `current-01-recipe-actions.png`.
 
-**Design authority:** the owner's handoff `.ai/design/przebudowa-handoff/` (1c), screens C3 item 7 and C4. It reached master after this spec was first written. Where the two differ, the handoff wins. Departures are listed under *Handoff alignment* below.
+**Design authority:** the owner's handoff `.ai/design/redesign-handoff/` (1c), screens C3 item 7 and C4. It reached master after this spec was first written. Where the two differ, the handoff wins. Departures are listed under *Handoff alignment* below.
 
 **Entry** (C3 item 7): directly under "Wielkość tekstu" and above "Składniki", a full-width 58 px button, white on `#111827` (`bg-ink`), with a `ChefHat` icon (`aria-hidden`) + "Tryb gotowania", `aria-haspopup="dialog"`. It is not rendered when the recipe has no steps. `RecipeChecklists` already owns the text-size row, so it renders the button (a new `title` prop), and `RecipeActions` keeps only the heart.
 

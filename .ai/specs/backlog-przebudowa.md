@@ -2,7 +2,7 @@
 
 > Format: Open Mercato (`om-backlog`) — epik `E01`, stories `E01-Sxx` z kryteriami Given/When/Then, linią `Epic:`, zależnościami i etykietami SDLC (kategoria / priorytet / ryzyko). To **dry-run** backlogu do zatwierdzenia — issue w GitHubie jeszcze nie są zakładane. Po akceptacji podziału: `om-prepare-issue` / `om-backlog` zakładają po jednym issue na story.
 >
-> Źródło: `design_handoff_zapiszprzepis_przebudowa/` (README.md + ZASADY_PROJEKTU.md), handoff z `spokospace/zapiszprzepis`.
+> Źródło: `design_handoff_zapiszprzepis_przebudowa/` (README.md + design-rules.md), handoff z `spokospace/zapiszprzepis`.
 > Stan kodu odniesienia: branch `fix/auth-email-links-token-hash`, Next.js App Router + Supabase + Tailwind v4, Inngest, Cloudflare Workers.
 
 ---
@@ -14,7 +14,7 @@
 **Zakres (Now):** stories E01-S01 … E01-S17 poniżej.
 
 **Poza zakresem (Non-goals):**
-- Wariant **1b** (dolny pasek zakładek + stały panel boczny) — nie wdrażać, chyba że zostanie wybrany (`Propozycja B.dc.html`).
+- Wariant **1b** (dolny pasek zakładek + stały panel boczny) — nie wdrażać, chyba że zostanie wybrany (`proposal-b.dc.html`).
 - Dodawanie przepisów ze **zdjęcia / zrzutu ekranu / książki** — w UI tylko stan „wkrótce” (wyszarzone).
 - Płatność za pełny dostęp — ekran 3c pokazuje „Zobacz pełny dostęp” jako placeholder; sama bramka płatności to osobny epik.
 - Obserwowanie profili, komentarze, oceny (gwiazdka świadomie odrzucona).
@@ -25,7 +25,7 @@
 - `READABILITY` — treść 19 px (mobile), tekst pomocniczy ≥ 16 px `#374151`, przyciski główne 56–60 px.
 - `COLOR` — pomarańcz akcji z białym tekstem to `#c2410c` (nigdy `#f97316` — 2,8:1).
 - `VARIANT` — docelowy styl 1c, struktura 1a; pliki `.dc.html` to referencja wyglądu, nie kod.
-- Pierwsza story wdrożeniowa (`E01-S01`) dopisuje te zasady do `CLAUDE.md` repo (ZASADY_PROJEKTU.md).
+- Pierwsza story wdrożeniowa (`E01-S01`) dopisuje te zasady do `CLAUDE.md` repo (design-rules.md).
 
 **Zależności zewnętrzne epiku:**
 - Rejestracja aplikacji w **Meta for Developers** (Facebook Login) + klient OAuth w **Google Cloud** + włączenie obu providerów w Supabase (blokuje `E01-S12`).
@@ -113,14 +113,14 @@ Fala 3:
 ## Stories
 
 ### E01-S01 — Design system i tokeny czytelności
-**Epic:** E01 · **Kategoria:** refactor, feature · **Priorytet:** high · **Ryzyko:** low · **Ref:** `Propozycja C`, sekcja „Design Tokens”, `ZASADY_PROJEKTU.md`
+**Epic:** E01 · **Kategoria:** refactor, feature · **Priorytet:** high · **Ryzyko:** low · **Ref:** `Propozycja C`, sekcja „Design Tokens”, `design-rules.md`
 
 Fundament wizualny: tokeny kolorów/typografii, bazowe prymitywy (przycisk, karta, chip, pole), widoczny focus, cele dotyku, skala „Wielkość tekstu” A/A+/A++ w `localStorage`. Dopisuje zasady projektu do `CLAUDE.md`.
 
 - **Given** dowolny ekran w nowym stylu, **When** używa koloru/typografii/odstępu, **Then** pochodzą z jednego zestawu tokenów (Tailwind theme / CSS vars) zgodnych z „Design Tokens”, bez `#f97316` na białym tekście.
 - **Given** użytkownik korzysta z klawiatury, **When** fokusuje element interaktywny, **Then** widoczny jest kontur `3px #1d4ed8` z offsetem 2 px.
 - **Given** treść przepisu, **When** użytkownik wybierze A / A+ / A++, **Then** skala 1 / 1,15 / 1,3 zapisuje się w `localStorage` i wraca po powrocie.
-- **Given** `CLAUDE.md`, **When** story zakończona, **Then** zawiera zasady z `ZASADY_PROJEKTU.md` (WCAG, czytelność, kolory, model).
+- **Given** `CLAUDE.md`, **When** story zakończona, **Then** zawiera zasady z `design-rules.md` (WCAG, czytelność, kolory, model).
 - **Pliki:** `src/app/globals.css`/theme Tailwind, nowy katalog prymitywów w `src/app/components/ui/`, hook/util `text-scale`, `CLAUDE.md`.
 - **Uwaga:** brak nowej trasy; weryfikacja na istniejących ekranach + Storybook/przykład.
 

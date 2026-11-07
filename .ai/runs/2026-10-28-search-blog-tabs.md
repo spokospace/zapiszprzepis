@@ -1,6 +1,6 @@
 # Execution plan — search-blog-tabs (E01-S30, #346, epic #201)
 
-Source doc: `.ai/design/przebudowa-handoff/designs/Wyszukiwarka.dc.html` („Dwie zakładki”, „Wynik z bloga, który już mamy”, „Zapis z bloga”, „Gość”)
+Source doc: `.ai/design/redesign-handoff/designs/search.dc.html` („Dwie zakładki”, „Wynik z bloga, który już mamy”, „Zapis z bloga”, „Gość”)
 
 ## Goal
 

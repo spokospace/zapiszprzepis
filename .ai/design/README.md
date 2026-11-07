@@ -12,12 +12,12 @@ The owner's design handoffs (Claude Design exports) live in this folder as **des
 
 | Folder | Date | Covers | Main instruction |
 |---|---|---|---|
-| `przebudowa-handoff/` | v8, 2026-10-20 | Navigation, search, recipe page, profile, access (variants 1a/1b/1c). Older; most of it is built. | `README.md`, `ZASADY_PROJEKTU.md` |
-| `przebudowa-handoff-13/` | 2026-10-21 | Visual style **1b** on every screen (pills, 4 px tiles, flat menu, section rules), header and menu, "← Wróć", recipe-of-the-day, cards and source tab, previous/next, step photos, tag filters on a phone, footer. | `ZMIANY_prototyp_klikalny.md` (main), `ZMIANA_zdjecia_krokow.md` (step-photo data) |
-| `hero-wyszukiwarka-handoff-14/` | 2026-10-21 | The home hero: one column, search first (variants 3a/3b desktop, 3c/3d phone). | `README.md` |
-| `inne-wersje-handoff-16/` | 2026-10-21 | "Inne wersje {dania}" and "Zobacz więcej przepisów" on the recipe page. The same files were delivered as handoffs 16 and 17. | `README.md` |
+| `redesign-handoff/` | v8, 2026-10-20 | Navigation, search, recipe page, profile, access (variants 1a/1b/1c). Older; most of it is built. | `README.md`, `design-rules.md` |
+| `redesign-handoff-13/` | 2026-10-21 | Visual style **1b** on every screen (pills, 4 px tiles, flat menu, section rules), header and menu, "← Wróć", recipe-of-the-day, cards and source tab, previous/next, step photos, tag filters on a phone, footer. | `changes-clickable-prototype.md` (main), `change-step-photos.md` (step-photo data) |
+| `home-hero-handoff-14/` | 2026-10-21 | The home hero: one column, search first (variants 3a/3b desktop, 3c/3d phone). | `README.md` |
+| `other-versions-handoff-16/` | 2026-10-21 | "Inne wersje {dania}" and "Zobacz więcej przepisów" on the recipe page. The same files were delivered as handoffs 16 and 17. | `README.md` |
 
-The `Zapisz Przepis - prototyp klikalny.html` bundle of handoff 13 (1.3 MB, generated) is not committed; its sources are `przebudowa-handoff-13/designs/Prototyp klikalny.dc.html`. The logos inside `designs/public/` are mockup assets: the app uses `src/app/components/brand-logo.tsx` only (see `CLAUDE.md`).
+The `Zapisz Przepis - prototyp klikalny.html` bundle of handoff 13 (1.3 MB, generated) is not committed; its sources are `redesign-handoff-13/designs/clickable-prototype.dc.html`. The logos inside `designs/public/` are mockup assets: the app uses `src/app/components/brand-logo.tsx` only (see `CLAUDE.md`).
 
 ## What was built from them (as of 2026-11-04)
 
@@ -43,6 +43,6 @@ The `Zapisz Przepis - prototyp klikalny.html` bundle of handoff 13 (1.3 MB, gene
 - Visual comparison with the mockups and `pnpm test:reflow` were not run during the work (no `.env.local` in the cloud sessions): worth a manual pass at 320 / 390 / 767 px and on desktop.
 
 ## Working notes for agents
-- Start from `CLAUDE.md`, then the handoff's main instruction for the screen. Quote only values you read in the handoff; if it is silent, follow `ZASADY_PROJEKTU.md` and the tokens in `src/app/globals.css`.
+- Start from `CLAUDE.md`, then the handoff's main instruction for the screen. Quote only values you read in the handoff; if it is silent, follow `design-rules.md` and the tokens in `src/app/globals.css`.
 - A handoff step that changes logic ("do not change existing logic" is the handoff's own rule) becomes its own issue; do not smuggle it into a styling PR.
-- When a new handoff arrives, import it as a new folder here (decode the `#UXXXX` file names that unzip leaves for non-ASCII letters), add a row to the tables above and link it from the spec's `Prototype:` line.
+- When a new handoff arrives, import it as a new folder here (decode the `#UXXXX` file names that unzip leaves for non-ASCII letters, then rename every file and directory to English kebab-case without spaces; in `*.dc.html` also rename the `<dc-import name="…">` values, because the name is the file name), add a row to the tables above and link it from the spec's `Prototype:` line.

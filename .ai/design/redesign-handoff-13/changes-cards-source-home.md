@@ -2,9 +2,9 @@
 
 Dla Claude Code. Repo `spokospace/zapiszprzepis` (master, Next.js App Router + Tailwind). Ten plik **nadpisuje** wcześniejsze opisy kart i źródła w `README.md` (sekcje „Źródło zamiast loginu”, karta wyniku C2, przepis C3 pkt 11, profil `/u`, desktop A8/A9).
 
-Projekt referencyjny: `designs/Źródło przepisu.dc.html` (sekcje 8, 9, 10, 11). Wdrożony przykład mobile: `designs/Propozycja C - wysoka czytelność.dc.html` (C2, C3). Pliki HTML to **referencje**, nie kod do skopiowania — odtworzyć w komponentach repo (`recipe-card.tsx`, `favorite-button.tsx`, `recipes/[slug]/page.tsx`, `components/home/*`, `app-header.tsx`, `brand-logo.tsx`).
+Projekt referencyjny: `designs/recipe-source.dc.html` (sekcje 8, 9, 10, 11). Wdrożony przykład mobile: `designs/proposal-c-high-readability.dc.html` (C2, C3). Pliki HTML to **referencje**, nie kod do skopiowania — odtworzyć w komponentach repo (`recipe-card.tsx`, `favorite-button.tsx`, `recipes/[slug]/page.tsx`, `components/home/*`, `app-header.tsx`, `brand-logo.tsx`).
 
-Zasady: `ZASADY_PROJEKTU.md` (zaktualizowane — przenieść do `CLAUDE.md` w repo). WCAG 2.2 AA, cele dotyku min. 48 px, pomocniczy tekst min. 16 px `#374151`.
+Zasady: `design-rules.md` (zaktualizowane — przenieść do `CLAUDE.md` w repo). WCAG 2.2 AA, cele dotyku min. 48 px, pomocniczy tekst min. 16 px `#374151`.
 
 ---
 
@@ -85,7 +85,7 @@ Ramka karty: 2 px `#e5e7eb`, radius 16, tło `#fff`. W siatce karty mają równ�
 ## 4. Strona główna (desktop; mobile analogicznie z karuzelami)
 
 Gość i zalogowany mają **ten sam układ**:
-1. Nagłówek (bez zmian z `ZMIANY_nawigacja_mobile.md`).
+1. Nagłówek (bez zmian z `changes-mobile-navigation.md`).
 2. Hero `#fff7ed`, wyśrodkowany: H1 36–46 px bold, podtytuł 17 px `#374151`, pole 56–64 px (ramka 2 px `#c2410c`, „Powiedz”) + „Szukaj” `#c2410c`.
 3. Sekcje z kartami (pkt 1–2).
 4. Kategorie: desktop — pasek kategorii w nagłówku (pkt 4a); mobile — 9 kafli pod hero, min-height 76 px, tło `#fff7ed`, ramka 2 px `#fed7aa`, ikona 22 px + nazwa 16 px bold `#9a3412`.
@@ -98,7 +98,7 @@ Gość i zalogowany mają **ten sam układ**:
 - Usunąć: drugą wyszukiwarkę pod nagłówkiem na desktopie (zostaje jedna — w hero), trzy wiersze „Moje przepisy / Ulubione / Dodaj przepis”, kafle kategorii w kolorze `#fff7ed` pod nimi.
 - Nagłówek desktop: patrz pkt 4a.
 - Hero: „Dzień dobry, {imię w wołaczu}!” + „Szukaj w swoich przepisach i ulubionych albo we wszystkich” + pole.
-- Komunikat o nieudanych dodaniach (`failed-shares`, grupa „Wymaga uwagi” w Powiadomieniach): zamiast czerwonej ramki `#fef2f2` z „{n} przepisy wymagają uwagi” — ramka 2 px `#9a3412` na białym tle, ikona `AlertCircle` `#9a3412`, tekst 17 px: „**Nie udało się dodać {n} {przepisu/przepisów}** · możesz spróbować ponownie” + link „Zobacz w powiadomieniach” → ekran Powiadomień (tam „Spróbuj ponownie” / „Usuń” per wpis). Odmiana liczby jak w `Powiadomienia.dc.html`. Pokazywać tylko gdy n > 0.
+- Komunikat o nieudanych dodaniach (`failed-shares`, grupa „Wymaga uwagi” w Powiadomieniach): zamiast czerwonej ramki `#fef2f2` z „{n} przepisy wymagają uwagi” — ramka 2 px `#9a3412` na białym tle, ikona `AlertCircle` `#9a3412`, tekst 17 px: „**Nie udało się dodać {n} {przepisu/przepisów}** · możesz spróbować ponownie” + link „Zobacz w powiadomieniach” → ekran Powiadomień (tam „Spróbuj ponownie” / „Usuń” per wpis). Odmiana liczby jak w `notifications.dc.html`. Pokazywać tylko gdy n > 0.
 - Sekcje (rzędy kart, pkt 2): „Ostatnio dodane przez Ciebie” + link „Wszystkie moje ({n}) →”, „Ulubione” + „Wszystkie ulubione ({n}) →” (serduszka wypełnione). Pustą sekcję ukryć; jeśli obie puste — kafel „Dodaj pierwszy przepis”.
 - Na desktopie bez kafli kategorii na stronie (są w pasku nagłówka); na mobile kafle jak u gościa.
 

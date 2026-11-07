@@ -10,7 +10,7 @@ Git commit subjects **and** bodies, and every issue and PR title, description an
 - English in commit subjects and bodies, including the phase-end ritual `<type>(<change-id>): <phase title> (p<N>)` — translate the Polish phase title from `plan.md` to a short English phrase rather than copying verbatim.
 - The epilogue commit's "close out plan" body is also English.
 - When proposing a commit message via `AskUserQuestion`, draft it in English; the user can still override.
-- Issues and PRs: title, body and every comment in English. Polish UI copy is quoted verbatim in quotes or backticks (e.g. „Dodaj do ulubionych”, `Dodała/Dodał`); the surrounding sentence is English. Polish design-handoff names (`Wersje przepisu.dc.html`) stay as they are.
+- Issues and PRs: title, body and every comment in English. Polish UI copy is quoted verbatim in quotes or backticks (e.g. „Dodaj do ulubionych”, `Dodała/Dodał`); the surrounding sentence is English. Design-handoff files under `.ai/design/` have English kebab-case names (`recipe-versions.dc.html`, `changes-mobile-navigation.md`; no spaces or Polish letters), while their content stays Polish because the site is in Polish. When importing a handoff, rename its files and directories; in `.dc.html` files the `<dc-import name="…">` value is the file name, so rename it too.
 - Existing Polish issue bodies (e.g. epic #201) are not rewritten just for language; translate a section only when the issue is edited for another reason.
 - `plan.md`, `change.md`, specs under `.ai/specs/`, and chat stay in whichever language they were started in.
 

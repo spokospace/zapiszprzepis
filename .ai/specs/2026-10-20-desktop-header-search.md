@@ -1,7 +1,7 @@
 # Desktop header search — one visible field that opens a search panel
 
 > Epic: E01 (przebudowa) · Supersedes: S17 resolved assumption **A8** ("Signed-in header search … Rendered everywhere") · Touches: `components/app-header.tsx`, `components/header-search.tsx` (rewrite), new `components/header-search-panel.tsx`, and the desktop state of `szukaj/page.tsx`.
-> Design reference: `.ai/design/przebudowa-handoff/designs/Propozycja A.dc.html` (A8 header), `ISSUE_lupa_szukaj.md` (mobile full-screen search — reused here as the desktop panel's content).
+> Design reference: `.ai/design/redesign-handoff/designs/proposal-a.dc.html` (A8 header), `issue-search-icon.md` (mobile full-screen search — reused here as the desktop panel's content).
 > Decisions settled with the owner (2026-10-20): visible field that opens a panel (not icon-only, not a plain field); header search on every signed-in page; guests unchanged; `/szukaj` desktop reworked so nothing duplicates the field.
 
 ## 📝 TLDR
@@ -22,7 +22,7 @@ Current desktop (`lg`+) behavior, from the code:
 - **It is the only search affordance, yet it is passive.** The header field submits but offers nothing the page fields do (no recent, popular, live suggestions, or voice), so on pages without their own field (recipe, settings, …) the signed-in user gets a weaker search than on `/szukaj`.
 - **Prominence.** The report questioned whether the navbar should carry *such a large* field. Resolved: keep it **visible** (evidence below) but make it do more, and remove the competing page fields instead of shrinking it to an icon.
 
-This duplication was never a deliberate product decision: S17 set it with the autonomous default **A8** ("Rendered everywhere … distinct landmark labels avoid ambiguity"), a reversible assumption flagged for human override — overridden here. The mobile handoff (`ISSUE_lupa_szukaj.md`) governs only below `lg`.
+This duplication was never a deliberate product decision: S17 set it with the autonomous default **A8** ("Rendered everywhere … distinct landmark labels avoid ambiguity"), a reversible assumption flagged for human override — overridden here. The mobile handoff (`issue-search-icon.md`) governs only below `lg`.
 
 ### Evidence for a visible field (not an icon, not a hidden modal)
 
@@ -100,7 +100,7 @@ No public contract changes, so nothing in `BACKWARD_COMPATIBILITY.md` applies.
 - **Guests.** Unchanged: „Przepisy" + „Kategorie ▾" on desktop; the home hero (760×64) is their search entry. No header field, no panel.
 - **No horizontal scroll** at 1024 / 1280 / 1440; the panel never widens the page (it is absolutely positioned, clipped to the viewport).
 
-Prototype: none new; the header field matches S17 A8's field, the panel content matches the mobile full-screen search (`ISSUE_lupa_szukaj.md`).
+Prototype: none new; the header field matches S17 A8's field, the panel content matches the mobile full-screen search (`issue-search-icon.md`).
 
 ## 📝 Edge Cases & Failure Scenarios
 

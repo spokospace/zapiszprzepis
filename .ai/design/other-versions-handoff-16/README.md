@@ -7,8 +7,8 @@ Strona przepisu na zapiszprzepis.pl, dwie sekcje pod treścią przepisu:
 
 ## About the Design Files
 Pliki to **referencje projektowe w HTML**, nie kod produkcyjny. Odtwórz je w repo `spokospace/zapiszprzepis` (Next.js, `src/app`) z użyciem istniejących komponentów (karta przepisu, karuzela, sortowanie). Otwórz pliki .dc.html w przeglądarce (wymagają `support.js` obok).
-- `Inne wersje - propozycja.dc.html` – statyczna makieta: 4a desktop, 4b telefon.
-- `Prototyp klikalny.dc.html` – działający prototyp (wejdź w „Pączko bułeczki z piekarnika”); używa `Rząd kart.dc.html` i `Karta przepisu.dc.html`.
+- `other-versions-proposal.dc.html` – statyczna makieta: 4a desktop, 4b telefon.
+- `clickable-prototype.dc.html` – działający prototyp (wejdź w „Pączko bułeczki z piekarnika”); używa `card-row.dc.html` i `recipe-card.dc.html`.
 
 ## Fidelity
 High-fidelity: układ, typografia, kolory, wymiary. Zdjęcia to placeholdery.

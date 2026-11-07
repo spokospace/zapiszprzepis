@@ -1,7 +1,7 @@
 # Execution plan — Recipe page design fidelity (C3 / A4 / A5 / A9)
 
-Source doc: .ai/design/przebudowa-handoff/README.md (sections "C3 / A4 / A5 — Przepis", "Desktop (A8, A9)", "Design Tokens")
-Design files: `Propozycja C - wysoka czytelność.dc.html` (C3), `Propozycja A.dc.html` (A4, A5, A9)
+Source doc: .ai/design/redesign-handoff/README.md (sections "C3 / A4 / A5 — Przepis", "Desktop (A8, A9)", "Design Tokens")
+Design files: `proposal-c-high-readability.dc.html` (C3), `proposal-a.dc.html` (A4, A5, A9)
 Epic: #201 (Refs only — never a closing keyword)
 Branch: `claude/admiring-goldberg-rbngtn` (the session's designated branch; replaces the default `feat/<slug>`)
 

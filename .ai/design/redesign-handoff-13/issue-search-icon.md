@@ -1,6 +1,6 @@
 # Lupa „Szukaj” w nagłówku (mobile), „Dodaj” tylko dla pełnego dostępu, wyszukiwanie na całym ekranie
 
-Projekt: `designs/Wyszukiwarka.dc.html` (ekran 4), `designs/Propozycja C - wysoka czytelność.dc.html` (nagłówek 1c). README: sekcja „4 — Wyszukiwarka na pełnym ekranie”.
+Projekt: `designs/search.dc.html` (ekran 4), `designs/proposal-c-high-readability.dc.html` (nagłówek 1c). README: sekcja „4 — Wyszukiwarka na pełnym ekranie”.
 
 ## Nazwa
 - **Nazwa:** wszędzie „Zapisz Przepis” (dwa słowa, wielkie litery) — w nagłówku (napis: „Zapisz” `#111827`, „Przepis” `#c2410c`, odstęp `margin-left:.28em`), na logowaniu, w tytułach stron (`… · Zapisz Przepis`), e-mailach, `manifest.json` i `aria-label`. W zdaniach z odmianą: „w aplikacji Zapisz Przepis”. Adres = „zapiszprzepis.pl”. Zamienić wszystkie „ZapiszPrzepis” w UI i `LogoWordmark`.

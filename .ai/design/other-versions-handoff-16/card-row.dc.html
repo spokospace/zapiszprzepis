@@ -22,14 +22,14 @@
   <sc-if value="{{ row.isDesk }}" hint-placeholder-val="{{ true }}">
     <div style="display:grid;grid-template-columns:{{ row.cols }};gap:32px 24px">
       <sc-for list="{{ row.cards }}" as="c" hint-placeholder-count="4">
-        <dc-import name="Karta przepisu" c="{{ c }}" hint-size="100%,300px"></dc-import>
+        <dc-import name="recipe-card" c="{{ c }}" hint-size="100%,300px"></dc-import>
       </sc-for>
     </div>
   </sc-if>
   <sc-if value="{{ row.isMob }}" hint-placeholder-val="{{ false }}">
     <div ref="{{ row.ref }}" style="display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin-right:-16px;padding-right:16px;padding-bottom:4px">
       <sc-for list="{{ row.cards }}" as="c" hint-placeholder-count="2">
-        <div style="flex:0 0 270px;scroll-snap-align:start"><dc-import name="Karta przepisu" c="{{ c }}" hint-size="270px,300px"></dc-import></div>
+        <div style="flex:0 0 270px;scroll-snap-align:start"><dc-import name="recipe-card" c="{{ c }}" hint-size="270px,300px"></dc-import></div>
       </sc-for>
     </div>
     <sc-if value="{{ row.mobNav }}" hint-placeholder-val="{{ true }}">

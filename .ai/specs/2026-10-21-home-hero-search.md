@@ -14,7 +14,7 @@ The audience is mostly older adults. Observed on `master` (`3796761`):
 
 The handoff's own claim is that a visible label, search as the single task and "Często szukane" next to the field are easier for older users; no usage data exists in the repo to confirm it (it is the owner's design decision).
 
-**Limitation:** the handoff files (`design_handoff_hero_wyszukiwarka/README.md`, `Hero - propozycje.dc.html`) are not in the repository. This spec transcribes the README as quoted in issue #426. The README also names files that do not exist: `notification-bell.tsx` (today the notifications entry is the "Powiadomienia" row and counter in `app-menu.tsx`, and the Menu-button dot) and `recipe-search.tsx` (the field is `home-search.tsx`).
+**Limitation:** the handoff files (`design_handoff_hero_wyszukiwarka/README.md`, `hero-proposals.dc.html`) are not in the repository. This spec transcribes the README as quoted in issue #426. The README also names files that do not exist: `notification-bell.tsx` (today the notifications entry is the "Powiadomienia" row and counter in `app-menu.tsx`, and the Menu-button dot) and `recipe-search.tsx` (the field is `home-search.tsx`).
 
 ## 📝 Proposed Solution
 
@@ -57,7 +57,7 @@ Values are the handoff README's, checked against `CLAUDE.md` where noted.
 
 **Suggestions panel.** The handoff says the suggestions panel "opens under the field at the block width". On `master` the home field has **no** suggestions: `header-search.tsx` / `header-search-panel.tsx` serve the signed-in desktop header on pages other than `/` (the header search is hidden on `/`). Showing suggestions on the hero field would be a new feature; this spec does not add it (see Q4).
 
-Prototype: `.ai/design/hero-wyszukiwarka-handoff-14/Hero - propozycje.dc.html` (section "1c rozbudowane", ids 3a–3d) and `README.md`. The handoff was added to the repo after this spec was written; the limitation under Problem Statement is resolved.
+Prototype: `.ai/design/home-hero-handoff-14/hero-proposals.dc.html` (section "1c rozbudowane", ids 3a–3d) and `README.md`. The handoff was added to the repo after this spec was written; the limitation under Problem Statement is resolved.
 
 ## 📝 Edge Cases & Failure Scenarios
 

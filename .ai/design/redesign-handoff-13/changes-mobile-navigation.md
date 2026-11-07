@@ -1,6 +1,6 @@
 # Instrukcja zmian: nagłówek mobile, wyszukiwanie, nazwa
 
-Dla Claude Code. Repo `spokospace/zapiszprzepis`, stan wyjściowy: master z 19.10.2026 (po #323, powiadomienia już w menu). Projekty: `designs/Propozycja C - wysoka czytelność.dc.html` (1c), `designs/Wyszukiwarka.dc.html` (4). Zasady: `CLAUDE.md` / `ZASADY_PROJEKTU.md`. WCAG 2.2 AA, cele dotyku min. 48 px.
+Dla Claude Code. Repo `spokospace/zapiszprzepis`, stan wyjściowy: master z 19.10.2026 (po #323, powiadomienia już w menu). Projekty: `designs/proposal-c-high-readability.dc.html` (1c), `designs/search.dc.html` (4). Zasady: `CLAUDE.md` / `design-rules.md`. WCAG 2.2 AA, cele dotyku min. 48 px.
 
 ## 1. Nazwa „Zapisz Przepis”
 - Wszędzie „Zapisz Przepis” (dwa słowa, wielkie litery) zamiast „ZapiszPrzepis”: nagłówek, logowanie (3a, /signup), tytuły stron (`… · Zapisz Przepis`), e-maile, `manifest.json` (`name`, `short_name`), `aria-label`, strony prawne.

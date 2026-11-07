@@ -5,7 +5,7 @@ Nowa górna część strony głównej zapiszprzepis.pl. Cel: prosta, bardzo czyt
 Zaakceptowane: **3a (desktop, gość)** i **3b (desktop, zalogowana)**. 3c / 3d (telefon) to propozycja do potwierdzenia — na mobile można zostawić obecny układ, jeśli nie ma decyzji.
 
 ## About the Design Files
-Pliki w paczce to **referencje projektowe w HTML** (makiety), nie kod produkcyjny. Zadanie: odtworzyć je w istniejącym kodzie repo `spokospace/zapiszprzepis` (Next.js, `src/app`) z użyciem jego komponentów i wzorców. Otwórz `Hero - propozycje.dc.html` w przeglądarce; sekcja na górze („1c rozbudowane”) zawiera 3a–3d. Niższe sekcje (2a–2d, 1a–1c) to odrzucone warianty.
+Pliki w paczce to **referencje projektowe w HTML** (makiety), nie kod produkcyjny. Zadanie: odtworzyć je w istniejącym kodzie repo `spokospace/zapiszprzepis` (Next.js, `src/app`) z użyciem jego komponentów i wzorców. Otwórz `hero-proposals.dc.html` w przeglądarce; sekcja na górze („1c rozbudowane”) zawiera 3a–3d. Niższe sekcje (2a–2d, 1a–1c) to odrzucone warianty.
 
 ## Fidelity
 **High-fidelity** dla układu, typografii, kolorów i wymiarów. Zdjęcie przepisu dnia to placeholder (paski) — w kodzie prawdziwe zdjęcie.
@@ -85,5 +85,5 @@ Bez nowego stanu. Wołacz w H1 z istniejącego profilu (to samo źródło co dot
 - Zdjęcie przepisu dnia: z danych przepisu (placeholder w makiecie).
 
 ## Files
-- `Hero - propozycje.dc.html` – makiety (sekcja „1c rozbudowane”, id `3a`–`3d`). Otwórz bezpośrednio w przeglądarce (wymaga `support.js` obok).
+- `hero-proposals.dc.html` – makiety (sekcja „1c rozbudowane”, id `3a`–`3d`). Otwórz bezpośrednio w przeglądarce (wymaga `support.js` obok).
 - Pliki w repo do zmiany: `src/app/page.tsx`, `src/app/components/home/*`, `src/app/components/recipe-search.tsx` / `header-search.tsx` (tylko wygląd: label, przycisk głosowy poza polem).

@@ -1,6 +1,6 @@
 # E01-S21 — Versions of the same dish (`dish` / `variant_note`)
 
-> Issue: #296 (epic #201). Design authority: `.ai/design/przebudowa-handoff/README.md` → "8 — Wersje tego samego dania", prototype `.ai/design/przebudowa-handoff/designs/Wersje przepisu.dc.html`. Gap: `.ai/analysis/2026-10-17-design-gap-audit.md` §9. Risk: **high**. The change touches the extraction pipeline, the guest-safe `public_recipes` view, and (via #298) a reviewed data migration of production rows. Depends on S07b (recipe-page order), S16 (`SimilarRecipes`), S17 (desktop layout), and the `servings` (#293) and `author_gender_form` (#291) view columns, both live on prod.
+> Issue: #296 (epic #201). Design authority: `.ai/design/redesign-handoff/README.md` → "8 — Wersje tego samego dania", prototype `.ai/design/redesign-handoff/designs/recipe-versions.dc.html`. Gap: `.ai/analysis/2026-10-17-design-gap-audit.md` §9. Risk: **high**. The change touches the extraction pipeline, the guest-safe `public_recipes` view, and (via #298) a reviewed data migration of production rows. Depends on S07b (recipe-page order), S16 (`SimilarRecipes`), S17 (desktop layout), and the `servings` (#293) and `author_gender_form` (#291) view columns, both live on prod.
 >
 > **This document is a spec only.** It does not implement anything or change any data. The backfill of existing recipes is a separate, reviewed data migration tracked in #298 (Phase 2).
 
@@ -196,7 +196,7 @@ What the sample shows:
   - #69 shows that salads named by their ingredients drift towards an over-specific dish ("sałatka z selerem konserwowym" is effectively a singleton). The #298 report's merge candidates and singleton list exist for exactly this. The prompt adds: "a salad or surówka named only by its ingredients and not by an established name → `null`".
 
 ## 📝 UI/UX
-Prototype: `.ai/design/przebudowa-handoff/designs/Wersje przepisu.dc.html` (handoff section 8; the authority, no new mockups).
+Prototype: `.ai/design/redesign-handoff/designs/recipe-versions.dc.html` (handoff section 8; the authority, no new mockups).
 
 **Page order (S07b, C3).** The bar goes inside item 4, after "Źródło" and "Dodała/Dodał", before item 5, the favorites button. The section goes after 12 (Poprzedni / Następny) and before 13 ("Ten przepis jest" / "Podobne"). Rendered: `RecipeListNav` → **`DishVersions`** → `SimilarRecipes`.
 
