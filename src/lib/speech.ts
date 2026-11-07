@@ -30,6 +30,13 @@ export function isSpeechRecognitionSupported(win: object): boolean {
 }
 
 /**
+ * Runs before the first paint: marks <html data-speech> where the recognizer exists, so
+ * the „Powiedz” row is shown (CSS) from the first frame instead of mounting after
+ * hydration and pushing the page down (#737).
+ */
+export const SPEECH_SCRIPT = `if('SpeechRecognition' in window||'webkitSpeechRecognition' in window)document.documentElement.dataset.speech='1'`
+
+/**
  * The phrase heard so far: every result's best alternative, in order. With
  * `interimResults` the last result is still changing; it is shown live on the
  * „Słucham…” screen (E01-S27) and searched once the recognizer ends.

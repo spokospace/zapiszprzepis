@@ -7,6 +7,7 @@ import { Avatar } from '@/app/components/ui/avatar'
 import { Button } from '@/app/components/ui/button'
 import { AVATAR_COLORS } from '@/lib/avatar'
 import { greetingName } from '@/lib/first-name'
+import { clearGreetingCache } from '@/lib/greeting-cache'
 import { greeting } from '@/lib/vocative'
 import { saveProfileSettings, type SettingsFormState } from './actions'
 import { resizeAvatar } from './resize-avatar'
@@ -57,6 +58,8 @@ export function SettingsForm({
     if (result.status === 'success') {
       setPhoto(null)
       setRemovePhoto(false)
+      // The home greeting remembers the old name; the next visit reads the new one (#737).
+      clearGreetingCache()
     }
     return result
   }, initialState)

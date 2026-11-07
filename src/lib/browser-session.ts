@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { hasAuthCookie } from '@/lib/auth-cookie'
 import { getFailedShares, type FailedSharesResult } from '@/lib/failed-shares'
+import { clearGreetingCache } from '@/lib/greeting-cache'
 import { getUserFavoriteIds, insertFavorite, type FavoriteResult } from '@/lib/favorites'
 import { getMenuSummary, type MenuSummary } from '@/lib/menu-summary'
 
@@ -62,6 +63,8 @@ export function createSessionStore(
   function clear() {
     latestLoad++
     loadedAt = 0
+    // Signed out: the next reader on this browser must not see this account's name (#737).
+    clearGreetingCache()
     if (session !== GUEST) publish(GUEST)
   }
 

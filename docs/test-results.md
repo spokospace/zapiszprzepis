@@ -6,6 +6,14 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-07
 
+### Strona główna: skoki powitania i wiersza „Powiedz” (#737)
+
+**Jak:** lokalny `pnpm dev` w oknie 375 px, `PerformanceObserver`/`layout-shift` po załadowaniu; gość oraz konto QA `free` (`/api/dev/login`). Dla konta zalogowanego ręcznie ustawiony wpis `zp-greeting` w `localStorage` z imieniem „Mateuszu”.
+
+**Wynik:** po poprawce 0 wpisów `layout-shift` na stronie głównej: gość (wiersz „Powiedz, czego szukasz” 52 px jest od pierwszej klatki), zalogowany bez cache (nagłówek ukryty, potem tekst) i zalogowany z cache (`--zp-greeting` ustawione przed hydracją, nagłówek widoczny od razu; po odpowiedzi bazy tekst poprawiony bez przesunięcia). `pnpm test:reflow`: 114 testów zielonych.
+
+**Nie dowodzi:** że nic nie miga na prawdziwym telefonie przy wolnej sieci (nie mierzyłem klatka po klatce ani na produkcji), ani że wpis o prawdziwym imieniu działa (konta QA nie mają imienia). Stan sprzed poprawki nie był zmierzony, tylko wyczytany z kodu.
+
 ### Czy Google widzi przepisy: Search Console i HTML pliku
 
 **Jak:** tabela `search_console_daily` (kopia raportu Search Console, zapisywana przez cron Workera), wiersze `page` od 29.10 do 6.11. Osobno plik `public/przepis/zapiekanka.html` z lokalnego builda: dane `Recipe` w JSON-LD i miejsce, w którym stoi tekst składników.

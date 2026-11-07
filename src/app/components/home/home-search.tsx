@@ -44,7 +44,7 @@ const FRAME = { field: 'border-field', action: 'border-ink' } as const
  * The „albo” + „Powiedz, czego szukasz” row (handoff 14): on a phone just the button, sized to
  * its text and centered; from md „albo” and the button side by side, centered under the field.
  */
-export const VOICE_ROW_CLASS = 'mt-3 flex flex-col items-center md:flex-row md:flex-wrap md:justify-center md:gap-x-3.5 md:gap-y-2'
+export const VOICE_ROW_CLASS = 'voice-row mt-3 flex-col items-center md:flex-row md:flex-wrap md:justify-center md:gap-x-3.5 md:gap-y-2'
 
 /**
  * The one search field (E01-S04 home, E01-S05 /szukaj and "Moje przepisy"): a
@@ -92,8 +92,8 @@ export function HomeSearch({
   }
 
   // „Powiedz” buttons share one handler; only the classes and label differ.
-  const voiceButton = (className: string, buttonLabel: string) =>
-    micSupported && (
+  const voiceButton = (className: string, buttonLabel: string, alwaysRendered = false) =>
+    (alwaysRendered || micSupported) && (
       <button type="button" onClick={startListening} className={className}>
         <Mic aria-hidden="true" className="h-[22px] w-[22px] shrink-0" />
         <span className="min-w-0 wrap-anywhere">{buttonLabel}</span>
@@ -134,16 +134,17 @@ export function HomeSearch({
               {submitLabel ?? 'Szukaj'}
             </button>
           </div>
-          {/* „Powiedz” lives outside the field, in its own row; no row at all without the Web Speech API. */}
-          {micSupported && (
-            <div className={VOICE_ROW_CLASS}>
-              <span className="text-[18px] text-ink-soft max-md:hidden">albo</span>
-              {voiceButton(
-                'inline-flex h-[52px] max-w-full items-center justify-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold text-ink hover:bg-surface-3',
-                'Powiedz, czego szukasz',
-              )}
-            </div>
-          )}
+          {/* „Powiedz” lives outside the field, in its own row. The row is in the server HTML and
+              shown by CSS where the Web Speech API exists (html[data-speech], set before the first
+              paint), so it does not mount after hydration and push the page down (#737). */}
+          <div className={VOICE_ROW_CLASS}>
+            <span className="text-[18px] text-ink-soft max-md:hidden">albo</span>
+            {voiceButton(
+              'inline-flex h-[52px] max-w-full items-center justify-center gap-2 rounded-pill border-2 border-ink bg-white px-[18px] text-[18px] font-bold text-ink hover:bg-surface-3',
+              'Powiedz, czego szukasz',
+              true,
+            )}
+          </div>
         </>
       ) : (
         // Below lg the submit wraps to its own full-width line (gap-y = the old mt-3);

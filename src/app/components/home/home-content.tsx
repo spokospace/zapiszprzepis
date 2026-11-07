@@ -9,7 +9,8 @@ import { LoadingStatus, RecipeGridSkeleton } from '@/app/components/recipe-card-
 import { RecipeRow } from './recipe-row'
 import { loadBrowserClient, useBrowserSession } from '@/lib/browser-session'
 import { FAVORITE_ADDED_PARAM, parseRecipeId } from '@/lib/favorites'
-import { homeGreeting } from '@/lib/home'
+import { GREETING_LEAD, greetingSuffix } from '@/lib/home'
+import { readGreetingCache, writeGreetingCache } from '@/lib/greeting-cache'
 import { getMemberHome, type MemberHomeData } from '@/lib/member-home'
 import type { MenuSummary } from '@/lib/menu-summary'
 import { ADD_RECIPE_PATH } from '@/lib/routes'
@@ -31,6 +32,8 @@ function useMemberHome(userId: string | null): MemberHomeData | null {
       .catch(() => NOTHING)
       .then((home) => {
         lastLoaded = { userId, home }
+        // A failed read is not an answer: it must not teach the next page load to show no name.
+        if (home !== NOTHING) writeGreetingCache(userId, vocative(home.greetingName))
         if (current) setLoaded(lastLoaded)
       })
     return () => {
@@ -40,6 +43,25 @@ function useMemberHome(userId: string | null): MemberHomeData | null {
 
   return loaded?.userId === userId ? loaded.home : null
 }
+
+/**
+ * The greeting name this browser remembers for the reader (#737): the vocative, '' for "no
+ * name", null while unknown. Read after hydration; before it the same name is on screen from
+ * CSS (`--zp-greeting`), so nothing changes when this lands.
+ */
+function useCachedGreeting(userId: string | null): string | null {
+  const [name, setName] = useState<string | null>(null)
+  useEffect(() => {
+    if (!userId) return
+    const cached = readGreetingCache()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setName(cached?.userId === userId ? cached.name : null)
+  }, [userId])
+  return userId ? name : null
+}
+
+/** Gives up waiting for the name after this long and shows the plain greeting. */
+const GREETING_WAIT_MS = 3000
 
 /** The address bar's one-shot asks, which the shared page cannot read on the server. */
 function useHomeParams(): number | null {
@@ -62,7 +84,20 @@ function useHomeParams(): number | null {
  * left-aligned (handoff 14, 3c/3d: padding 28/16/24, gap 14, H1 36 px). „Przepis dnia” is no longer in here — it is its
  * own block under a rule, rendered by the page after the hero.
  */
-function Hero({ id, title, subtitle, children }: { id: string; title: string; subtitle: ReactNode; children: ReactNode }) {
+function Hero({
+  id,
+  title,
+  titlePending,
+  subtitle,
+  children,
+}: {
+  id: string
+  title: ReactNode
+  /** The heading waits for the reader's name: hidden (CSS) for a reader with a session and no cached answer. */
+  titlePending: boolean
+  subtitle: ReactNode
+  children: ReactNode
+}) {
   return (
     <section aria-labelledby={id} className="bg-white">
       <PageContainer className="flex flex-col items-start gap-3.5 pt-7 pb-6 md:items-center md:gap-[18px] md:pt-16 md:pb-[52px] md:text-center">
@@ -71,7 +106,7 @@ function Hero({ id, title, subtitle, children }: { id: string; title: string; su
             and widened the page (#448). The subtitle needs the same cap as the heading. */}
         <h1
           id={id}
-          className="max-w-full text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]"
+          className={`hero-title ${titlePending ? 'greeting-pending' : ''} max-w-full text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]`}
         >
           {title}
         </h1>
@@ -81,6 +116,8 @@ function Hero({ id, title, subtitle, children }: { id: string; title: string; su
     </section>
   )
 }
+
+const MEMBER_SUBTITLE = 'Szukaj w swoich przepisach i ulubionych albo we wszystkich.'
 
 const GUEST_SUBTITLE = (
   <>
@@ -165,13 +202,41 @@ export function HomeContent({
   const menu = session.status === 'user' ? session.menu : undefined
   const home = useMemberHome(userId)
   const favoriteAdded = useHomeParams()
+  const cachedName = useCachedGreeting(userId)
+  // The database's answer wins over the remembered one.
+  const name = home ? (vocative(home.greetingName) ?? '') : cachedName
+  const [gaveUp, setGaveUp] = useState(false)
+  useEffect(() => {
+    if (!userId || name !== null) return
+    const timer = setTimeout(() => setGaveUp(true), GREETING_WAIT_MS)
+    return () => clearTimeout(timer)
+  }, [userId, name])
+  const guest = session.status === 'guest'
 
   return (
     <>
       <Hero
         id="hero-heading"
-        title={homeGreeting(vocative(home?.greetingName ?? null))}
-        subtitle={userId ? 'Szukaj w swoich przepisach i ulubionych albo we wszystkich.' : GUEST_SUBTITLE}
+        titlePending={!guest && name === null && !gaveUp}
+        title={
+          <>
+            {GREETING_LEAD}
+            {/* Empty until the name is known; CSS paints the remembered one meanwhile. */}
+            <span className={`greet-name ${guest ? 'greet-off' : ''}`}>{greetingSuffix(name)}</span>?
+          </>
+        }
+        subtitle={
+          guest ? (
+            GUEST_SUBTITLE
+          ) : (
+            // Both are in the page HTML; the session cookie (html[data-session]) picks the member's
+            // before the first paint, so it does not wait for the session to be read.
+            <>
+              <span className="hero-sub-guest">{GUEST_SUBTITLE}</span>
+              <span className="hero-sub-member">{MEMBER_SUBTITLE}</span>
+            </>
+          )
+        }
       >
         {search}
       </Hero>
