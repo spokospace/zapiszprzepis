@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>body{margin:0;background:#f3f1ee;font-family:Arial,Helvetica,sans-serif;color:#111827;-webkit-font-smoothing:antialiased}a{color:#9a3412;text-decoration:underline}a:hover{color:#7c2d12}a:focus-visible,button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}</style>
+</helmet>
+<section id="11" style="padding:48px 48px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">11</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Inne przepisy na … · mobile</span></div>
+    <div style="font-size:30px;font-weight:700;line-height:1.15">Kolejność bez łamania w dwie linijki</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Teraz etykieta „Kolejność:” i trzy pigułki zawijają się: „Najpopularniejsze” zostaje w pierwszym rzędzie, dwie pozostałe spadają niżej i wygląda to jak dwie grupy. Obie propozycje mieszczą się w jednym rzędzie na 360 px i zostawiają cele dotyku 48 px. Wybrana: <a href="#11b">11b</a> (lista rozwijana).</div>
+  </div>
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+
+    <div id="11a" style="display:flex;flex-direction:column;gap:12px;width:375px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">11a</span><span style="font-size:17px;font-weight:700">Przełącznik na całą szerokość</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;overflow:hidden;padding:24px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:700">Inne przepisy na pączki (5)</span><span style="font-size:16px;color:#374151">Czym różnią się od przepisu, który oglądasz</span></div>
+        <div role="group" aria-label="Kolejność" style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:16px;font-weight:700;color:#374151">Kolejność</span>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:2px solid #4b5563;border-radius:12px;overflow:hidden">
+            <span aria-current="true" style="height:48px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;font-size:16px;font-weight:700"><i data-lucide="check" width="18" height="18"></i>Popularne</span>
+            <span style="height:48px;border-left:2px solid #4b5563;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">Najnowsze</span>
+            <span style="height:48px;border-left:2px solid #4b5563;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700">Najszybsze</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-right:-20px"><div style="flex:0 0 270px;height:150px;border:2px solid #e5e7eb;border-radius:16px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)"></div><div style="flex:0 0 270px;height:150px;border:2px solid #e5e7eb;border-radius:16px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)"></div></div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.5;text-wrap:pretty">Jeden zwarty element zamiast trzech pigułek. „Najpopularniejsze” skrócone do „Popularne”, żeby trzy równe pola zmieściły się od 320 px. Wybrane: ciemne tło i ✓, nie sam kolor. Etykieta nad przełącznikiem, nie obok.</div>
+    </div>
+
+    <div id="11b" style="display:flex;flex-direction:column;gap:12px;width:375px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">11b</span><span style="font-size:17px;font-weight:700">Jeden przycisk + lista</span><span style="background:#166534;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px;display:flex;align-items:center;gap:4px"><i data-lucide="check" width="14" height="14"></i>Wybrane</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;overflow:hidden;padding:24px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:700">Inne przepisy na pączki (5)</span><span style="font-size:16px;color:#374151">Czym różnią się od przepisu, który oglądasz</span></div>
+        <span role="button" aria-haspopup="listbox" style="align-self:flex-start;height:48px;padding:0 14px;border:2px solid #4b5563;border-radius:12px;display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700"><i data-lucide="arrow-down-up" width="18" height="18"></i><span><span style="font-weight:400;color:#374151">Kolejność:</span> Najpopularniejsze</span><i data-lucide="chevron-down" width="18" height="18"></i></span>
+        <div style="border:2px solid #4b5563;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(17,24,39,.12)">
+          <span aria-selected="true" style="height:56px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;font-size:17px;font-weight:700;background:#f3f4f6">Najpopularniejsze<i data-lucide="check" width="20" height="20"></i></span>
+          <span style="height:56px;padding:0 16px;display:flex;align-items:center;font-size:17px;border-top:1px solid #d1d5db">Najnowsze</span>
+          <span style="height:56px;padding:0 16px;display:flex;align-items:center;font-size:17px;border-top:1px solid #d1d5db">Najszybsze</span>
+        </div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.5;text-wrap:pretty">Pełne nazwy zostają. Zamknięty przycisk zajmuje jedną linijkę i pokazuje bieżący wybór; po dotknięciu rozwija się lista z wierszami 56 px (pokazana otwarta). Na desktopie zostają pigułki. Wymaga jednego dotknięcia więcej.</div>
+    </div>
+
+  </div>
+</section>
+<section id="10" style="padding:48px 48px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">10</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Strona główna · desktop</span></div>
+    <div style="font-size:30px;font-weight:700;line-height:1.15">Gość i zalogowany na jednym układzie</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Strona gościa jest już dobra: wyszukiwarka, często szukane, kategorie i przepisy. Strona zalogowanego to głównie lista linków, wyszukiwarka i „Dodaj przepis” są na niej dwa razy, a niżej jest pusto. Propozycja: obie wersje mają ten sam układ i tę samą kartę co w sekcji <a href="#9">9</a>, a zmienia się tylko to, co jest pod wyszukiwarką.</div>
+  </div>
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+
+    <div id="10a" style="display:flex;flex-direction:column;gap:12px;width:1000px;max-width:100%">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">10a</span><span style="font-size:17px;font-weight:700">Zalogowany (Tola)</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="border-bottom:2px solid #e5e7eb;padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <div style="display:flex;align-items:center;gap:24px"><span style="font-size:24px;font-weight:700;letter-spacing:0">Zapisz <span style="color:#c2410c">Przepis</span></span></div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span role="link" style="height:48px;padding:0 12px;border-radius:12px;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;color:#111827"><i data-lucide="heart" width="22" height="22" style="color:#9a3412"></i>Ulubione</span>
+            <span style="height:48px;padding:0 16px;box-sizing:border-box;border-radius:12px;border:2px solid #c2410c;color:#9a3412;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700"><i data-lucide="plus" width="20" height="20"></i>Dodaj przepis</span>
+            <span style="position:relative;height:48px;padding:0 8px;display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700"><i data-lucide="menu" width="24" height="24"></i>MENU<span aria-hidden="true" style="position:absolute;top:8px;left:24px;width:10px;height:10px;border-radius:999px;background:#c2410c;border:2px solid #fff"></span></span>
+          </div>
+        </div>
+        <nav aria-label="Kategorie" style="border-bottom:2px solid #e5e7eb;padding:2px 16px;display:flex;flex-wrap:wrap;justify-content:center;column-gap:4px">
+          <sc-for list="{{ homeCats }}" as="k" hint-placeholder-count="9"><span role="link" style="height:48px;padding:0 6px;display:flex;align-items:center;gap:5px;font-size:16px;font-weight:700;color:#111827;white-space:nowrap" style-hover="color:#9a3412;text-decoration:underline"><i data-lucide="{{ k.i }}" width="18" height="18" style="color:#9a3412"></i>{{ k.l }}</span></sc-for>
+        </nav>
+        <div style="background:#fff7ed;padding:32px 28px;display:flex;flex-direction:column;align-items:center;gap:14px">
+          <span style="font-size:36px;font-weight:700">Dzień dobry, Tolu!</span>
+          <span style="font-size:17px;color:#374151">Szukaj w swoich przepisach i ulubionych albo we wszystkich</span>
+          <div style="display:flex;gap:10px;width:100%;max-width:680px">
+            <div style="flex:1;height:56px;background:#fff;border:2px solid #c2410c;border-radius:14px;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px"><i data-lucide="search" width="22" height="22"></i><span style="flex:1;font-size:18px;color:#4b5563">Danie lub składnik, np. dynia</span><span style="height:44px;padding:0 12px;border-radius:10px;border:2px solid #4b5563;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700"><i data-lucide="mic" width="18" height="18"></i>Powiedz</span></div>
+            <span style="height:56px;padding:0 24px;border-radius:14px;background:#c2410c;color:#fff;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700"><i data-lucide="search" width="20" height="20"></i>Szukaj</span>
+          </div>
+        </div>
+        <div style="padding:28px;display:flex;flex-direction:column;gap:32px">
+          <div style="display:flex;align-items:center;gap:12px;background:#fff;border:2px solid #9a3412;border-radius:14px;padding:12px 16px">
+            <i data-lucide="alert-circle" width="22" height="22" style="color:#9a3412;flex-shrink:0"></i>
+            <span style="flex:1;font-size:17px;line-height:1.4"><b>Nie udało się dodać 32 przepisów</b> · możesz spróbować ponownie</span>
+            <a href="#10a" style="font-size:17px;font-weight:700">Zobacz w powiadomieniach</a>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:24px;font-weight:700">Ostatnio dodane przez Ciebie</span><a href="#10a" style="font-size:17px;font-weight:700">Wszystkie moje (755) →</a></div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+              <sc-for list="{{ deskCards }}" as="c" hint-placeholder-count="4">
+                <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+                  <div style="position:relative;height:170px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                    <span role="button" aria-label="Dodaj do ulubionych" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;color:#9a3412"><i data-lucide="heart" width="22" height="22"></i></span>
+                    <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+                  </div>
+                  <div style="padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:19px;font-weight:700;line-height:1.25">{{ c.t }}</span><span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:24px;font-weight:700">Ulubione</span><a href="#10a" style="font-size:17px;font-weight:700">Wszystkie ulubione (48) →</a></div>
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+              <sc-for list="{{ carCards }}" as="c" hint-placeholder-count="4">
+                <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+                  <div style="position:relative;height:170px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                    <span role="button" aria-label="Usuń z ulubionych" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#c2410c;display:flex;align-items:center;justify-content:center;color:#fff"><i data-lucide="heart" width="22" height="22" fill="currentColor"></i></span>
+                    <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+                  </div>
+                  <div style="padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:19px;font-weight:700;line-height:1.25">{{ c.t }}</span><span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.55;max-width:760px;text-wrap:pretty">Nagłówek ma jedną wyszukiwarkę mniej, a „Moje przepisy” i „Ulubione” są linkami w nagłówku zamiast trzech dużych wierszy. Pod wyszukiwarką są dwa rzędy własnych przepisów, a pełne listy otwiera link przy tytule. Czerwona ramka alarmu stała się spokojną ramką, która mówi, co jest nie tak.</div>
+    </div>
+
+    <div id="10b" style="display:flex;flex-direction:column;gap:12px;width:1000px;max-width:100%">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">10b</span><span style="font-size:17px;font-weight:700">Gość · zmiany tylko w kartach</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:16px">
+        <span style="font-size:24px;font-weight:700">Ostatnio dodane</span>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+          <sc-for list="{{ deskCards }}" as="c" hint-placeholder-count="4">
+            <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+              <div style="position:relative;height:170px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                <span role="button" aria-label="Dodaj do ulubionych (wymaga zalogowania)" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;color:#9a3412"><i data-lucide="heart" width="22" height="22"></i></span>
+                <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+              </div>
+              <div style="padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:19px;font-weight:700;line-height:1.25">{{ c.t }}</span><span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="align-self:flex-start;display:flex;align-items:center;gap:12px;background:#111827;color:#fff;border-radius:14px;padding:14px 18px;font-size:17px"><i data-lucide="heart" width="20" height="20"></i>Zaloguj się, żeby zapisać ulubione.<span style="font-weight:700;text-decoration:underline">Zaloguj się</span></div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.55;max-width:760px;text-wrap:pretty">Wszystko poza kartami zostaje jak na obecnej stronie. Karty dostają źródło na zdjęciu i tracą etykietę kategorii, a wysokości się wyrównują. Serduszko u gościa nie przekierowuje od razu. Najpierw pokazuje komunikat (przykład wyżej), żeby nie wyrzucić kogoś ze strony bez uprzedzenia.</div>
+    </div>
+  </div>
+</section>
+<section id="9" style="padding:48px 48px 0;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">9</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Karty przepisów · mobile i desktop</span></div>
+    <div style="font-size:30px;font-weight:700;line-height:1.15">Jedna karta, dwie szerokości</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Wszędzie ta sama budowa: zdjęcie ze źródłem w lewym dolnym rogu (jak w <a href="#8c">8c</a>), samo serduszko w prawym górnym (pełny napis „Dodaj do ulubionych” tylko na stronie przepisu), pod zdjęciem nazwa i podpis. Zmienia się tylko szerokość: na liście mobile karta zajmuje całą szerokość, w karuzeli mobile jest węższa i widać kawałek następnej, a na desktopie siatka i karuzela mają tę samą kartę.</div>
+  </div>
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+    <div id="9a" style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">9a</span><span style="font-size:17px;font-weight:700">Mobile · lista</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <span style="font-size:24px;font-weight:700">Moje przepisy</span>
+        <sc-for list="{{ listCards }}" as="c" hint-placeholder-count="2">
+          <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+            <div style="position:relative;height:210px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+              <span role="button" aria-label="Dodaj do ulubionych" title="Dodaj do ulubionych" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;color:#9a3412"><i data-lucide="heart" width="22" height="22"></i></span>
+              <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+            </div>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:20px;font-weight:700;line-height:1.25">{{ c.t }}</span><span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span></div>
+          </div>
+        </sc-for>
+        <span style="height:56px;border-radius:14px;border:2px solid #4b5563;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700">Pokaż kolejne 24</span>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.5">Jedna kolumna, zdjęcie 210 px. Duże zdjęcie łatwo rozpoznać, a nazwa ma miejsce na dwie linijki.</div>
+    </div>
+
+    <div id="9b" style="display:flex;flex-direction:column;gap:12px;width:390px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">9b</span><span style="font-size:17px;font-weight:700">Mobile · karuzela pod przepisem</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:24px;padding:16px 0 16px 16px;display:flex;flex-direction:column;gap:14px;overflow:hidden">
+        <span style="font-size:22px;font-weight:700">Podobne: drożdżowe desery</span>
+        <div style="display:flex;gap:12px;overflow:hidden">
+          <sc-for list="{{ carCards }}" as="c" hint-placeholder-count="3">
+            <div style="width:270px;flex-shrink:0;border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+              <div style="position:relative;height:170px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                <span role="button" aria-label="Dodaj do ulubionych" title="Dodaj do ulubionych" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;color:#9a3412"><i data-lucide="heart" width="22" height="22"></i></span>
+                <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+              </div>
+              <div style="padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:19px;font-weight:700;line-height:1.25">{{ c.t }}</span><span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:8px;padding-right:16px">
+          <span style="flex:1;height:56px;border-radius:12px;border:2px solid #4b5563;display:flex;align-items:center;justify-content:center;gap:6px;font-size:17px;font-weight:700"><i data-lucide="chevron-left" width="20" height="20"></i>Poprzednie</span>
+          <span style="flex:1;height:56px;border-radius:12px;border:2px solid #4b5563;display:flex;align-items:center;justify-content:center;gap:6px;font-size:17px;font-weight:700">Następne<i data-lucide="chevron-right" width="20" height="20"></i></span>
+        </div>
+        <div style="padding-right:16px"><span style="height:56px;border-radius:12px;border:2px solid #c2410c;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#9a3412">Wszystkie desery (31) →</span></div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.5">Karta 270 px, widać brzeg następnej. Przyciski „Poprzednie / Następne” dla osób, którym trudno przewijać w bok. „Inne przepisy na pączki” używa tej samej karty, z dopisanymi pod podpisem liniami „Ma dodatkowo:” / „Nie ma:”.</div>
+    </div>
+  </div>
+
+  <div id="9c" style="display:flex;flex-direction:column;gap:12px;max-width:1100px">
+    <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">9c</span><span style="font-size:17px;font-weight:700">Desktop · siatka i karuzela z tą samą kartą</span></div>
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:20px">
+      <span style="font-size:28px;font-weight:700">Moje przepisy</span>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+        <sc-for list="{{ deskCards }}" as="c" hint-placeholder-count="4">
+          <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+            <div style="position:relative;height:180px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+              <span role="button" aria-label="Dodaj do ulubionych" title="Dodaj do ulubionych" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;color:#9a3412"><i data-lucide="heart" width="22" height="22"></i></span>
+              <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+            </div>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:19px;font-weight:700;line-height:1.25">{{ c.t }}</span><span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:2px;background:#e5e7eb"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <span style="font-size:22px;font-weight:700">Podobne: drożdżowe desery</span>
+        <div style="display:flex;gap:8px">
+          <span style="height:48px;padding:0 14px;border-radius:12px;border:2px solid #4b5563;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700"><i data-lucide="chevron-left" width="18" height="18"></i>Poprzednie</span>
+          <span style="height:48px;padding:0 14px;border-radius:12px;border:2px solid #4b5563;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700">Następne<i data-lucide="chevron-right" width="18" height="18"></i></span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+        <sc-for list="{{ carCards }}" as="c" hint-placeholder-count="4">
+          <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+            <div style="position:relative;height:180px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+              <span role="button" aria-label="Dodaj do ulubionych" title="Dodaj do ulubionych" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;color:#9a3412"><i data-lucide="heart" width="22" height="22"></i></span>
+              <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+            </div>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:19px;font-weight:700;line-height:1.25">{{ c.t }}</span><span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <span style="align-self:flex-start;height:48px;padding:0 18px;border-radius:12px;border:2px solid #c2410c;display:flex;align-items:center;font-size:17px;font-weight:700;color:#9a3412">Wszystkie desery (31) →</span>
+    </div>
+    <div style="font-size:16px;color:#374151;line-height:1.5;max-width:760px;text-wrap:pretty">Na desktopie karuzela to po prostu jeden rząd siatki z przyciskami: ta sama szerokość karty, ta sama wysokość zdjęcia (180 px), te same plakietki. 4 kolumny od 1024 px, 3 od 768 px, poniżej układ mobile.</div>
+  </div>
+
+  <div id="9d" style="display:flex;flex-direction:column;gap:12px;max-width:1100px">
+    <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">9d</span><span style="font-size:17px;font-weight:700">Desktop · przepis (Pączko bułeczki)</span></div>
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:28px">
+      <div style="display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:start">
+        <div style="position:relative;height:300px;border-radius:16px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+          <span style="position:absolute;right:12px;top:10px;font:12px monospace;color:#9a3412">zdjęcie główne</span>
+          <a href="#9d" aria-label="Otwórz oryginał: Facebook · Kulinarna Wiola (nowa karta)" style="position:absolute;left:12px;bottom:12px;max-width:calc(100% - 24px);box-sizing:border-box;min-height:48px;padding:0 16px;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;gap:8px;font:700 17px Arial;color:#111827;text-decoration:none;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="facebook" width="20" height="20"></i><span style="text-decoration:underline;overflow:hidden;text-overflow:ellipsis">Facebook · Kulinarna Wiola</span><i style="flex-shrink:0" data-lucide="external-link" width="18" height="18"></i></a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:34px;font-weight:700;line-height:1.15">Pączko bułeczki z piekarnika</span><span style="font-size:19px;color:#374151">z marmoladą różaną</span></div>
+          <span style="font-size:17px;color:#374151">Przygotowanie 30 min · Pieczenie 25 min · <b style="color:#111827">Razem 1 godz. 55 min</b></span>
+          <span style="font-size:16px;color:#374151">Dodała <a href="#9d">Tola</a></span>
+          <a href="#9d-inne" style="font-size:17px;font-weight:700;text-decoration:none;margin:10px 0" style-hover="text-decoration:underline">Inne przepisy na pączki (5) ↓</a>
+          <div style="display:flex;gap:10px"><span style="flex:1;height:56px;border:2px solid #c2410c;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;color:#9a3412"><i data-lucide="heart" width="20" height="20"></i>Dodaj do ulubionych</span><span style="flex:1;height:56px;border:2px solid #4b5563;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700"><i data-lucide="share-2" width="20" height="20"></i>Udostępnij</span></div>
+        </div>
+      </div>
+      <div style="height:2px;background:#e5e7eb"></div>
+      <div id="9d-inne" style="display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:700">Inne przepisy na pączki (5)</span><span style="font-size:16px;color:#374151">Czym różnią się od przepisu, który oglądasz</span></div>
+          <div style="display:flex;gap:8px"><span style="height:48px;padding:0 14px;border-radius:12px;border:2px solid #4b5563;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700"><i data-lucide="chevron-left" width="18" height="18"></i>Poprzednie</span><span style="height:48px;padding:0 14px;border-radius:12px;border:2px solid #4b5563;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700">Następne<i data-lucide="chevron-right" width="18" height="18"></i></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:start">
+          <sc-for list="{{ verCards }}" as="c" hint-placeholder-count="4">
+            <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+              <div style="position:relative;height:180px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                <span role="button" aria-label="Dodaj do ulubionych" title="Dodaj do ulubionych" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;color:#9a3412"><i data-lucide="heart" width="22" height="22"></i></span>
+                <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+              </div>
+              <div style="padding:12px;display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:19px;font-weight:700;line-height:1.25">{{ c.t }}</span>
+                <span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span>
+                <span style="font-size:16px;color:#374151;line-height:1.4">{{ c.time }}</span>
+                <span style="font-size:16px;color:#111827;line-height:1.4"><b style="color:#166534">Ma dodatkowo:</b> {{ c.plus }}</span>
+                <span style="font-size:16px;color:#111827;line-height:1.4"><b style="color:#991b1b">Nie ma:</b> {{ c.minus }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height:2px;background:#e5e7eb"></div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <span style="font-size:24px;font-weight:700">Podobne: drożdżowe desery</span>
+          <div style="display:flex;gap:8px"><span style="height:48px;padding:0 14px;border-radius:12px;border:2px solid #4b5563;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700"><i data-lucide="chevron-left" width="18" height="18"></i>Poprzednie</span><span style="height:48px;padding:0 14px;border-radius:12px;border:2px solid #4b5563;display:flex;align-items:center;gap:6px;font-size:16px;font-weight:700">Następne<i data-lucide="chevron-right" width="18" height="18"></i></span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+          <sc-for list="{{ carCards }}" as="c" hint-placeholder-count="4">
+            <div style="border:2px solid #e5e7eb;border-radius:16px;overflow:hidden;display:flex;flex-direction:column">
+              <div style="position:relative;height:180px;background:repeating-linear-gradient(135deg,#fdf0e4 0 10px,#fbe6d3 10px 20px)">
+                <span role="button" aria-label="Dodaj do ulubionych" title="Dodaj do ulubionych" style="position:absolute;right:8px;top:8px;width:48px;height:48px;box-sizing:border-box;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;justify-content:center;color:#9a3412"><i data-lucide="heart" width="22" height="22"></i></span>
+                <span style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);box-sizing:border-box;padding:5px 10px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden"><i style="flex-shrink:0" data-lucide="{{ c.icon }}" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">{{ c.a }}</span></span>
+              </div>
+              <div style="padding:12px;display:flex;flex-direction:column;gap:4px"><span style="font-size:19px;font-weight:700;line-height:1.25">{{ c.t }}</span><span style="font-size:16px;color:#374151;line-height:1.4">{{ c.s }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <span style="align-self:flex-start;height:48px;padding:0 18px;border-radius:12px;border:2px solid #c2410c;display:flex;align-items:center;font-size:17px;font-weight:700;color:#9a3412">Wszystkie desery (31) →</span>
+      </div>
+    </div>
+    <div style="font-size:16px;color:#374151;line-height:1.5;max-width:760px;text-wrap:pretty">Zmiany względem obecnej strony: plakietka źródła na zdjęciu zastępuje „Źródło:” i przycisk „Oryginał”. Żółta ramka „Mamy jeszcze 5 innych przepisów” staje się linkiem do sekcji niżej. „Inne przepisy na pączki” mają tę samą kartę co „Podobne” (zamiast małej miniatury z tekstem), z dopisanymi różnicami. Zielony i czerwony kolor zostają, ale znaczenie niosą słowa „Ma dodatkowo:” / „Nie ma:”.</div>
+  </div>
+</section>
+<section id="8" style="padding:48px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+    <div style="display:flex;align-items:center;gap:10px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">8</span><span style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#374151">Źródło przepisu · przepis i karta na liście</span></div>
+    <div style="font-size:30px;font-weight:700;line-height:1.15">Skąd jest przepis — trzy sposoby pokazania</div>
+    <div style="font-size:16px;color:#374151;line-height:1.55;text-wrap:pretty">Obecnie ten sam link jest w trzech miejscach („Źródło: aniagotuje.pl”, przycisk „Oryginał”, link „Otwórz oryginał” na dole), a na kartach szary napis „aniagotuje.pl” albo samo „Facebook” nie mówi, czym jest. Do tego „Dodała Tola” stoi tuż obok i łatwo pomylić, kto jest autorem.</div>
+  </div>
+
+  <div style="display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+
+    <div id="8a" style="display:flex;flex-direction:column;gap:14px;width:390px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">8a</span><span style="font-size:17px;font-weight:700">Jeden przycisk „Przepis ze strony…”</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:20px 16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:28px;font-weight:700;line-height:1.15">Ciasto marchewkowe</span><span style="font-size:19px;color:#374151">z musem jabłkowym</span></div>
+        <a href="#8a" style="min-height:64px;border:2px solid #6b7280;border-radius:14px;padding:8px 14px;display:flex;align-items:center;gap:12px;text-decoration:none;color:#111827">
+          <i data-lucide="globe" width="26" height="26"></i>
+          <span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;color:#374151">Przepis ze strony</span><span style="font-size:19px;font-weight:700">aniagotuje.pl</span></span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:17px;font-weight:700;color:#9a3412;text-decoration:underline">Otwórz<i data-lucide="external-link" width="18" height="18"></i></span>
+        </a>
+        <span style="font-size:16px;color:#374151">Dodała <a href="#8a">Tola</a></span>
+        <div style="display:flex;gap:8px"><span style="flex:1;height:56px;border:2px solid #c2410c;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;color:#c2410c"><i data-lucide="heart" width="20" height="20"></i>Ulubione</span><span style="flex:1;height:56px;border:2px solid #4b5563;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700"><i data-lucide="share-2" width="20" height="20"></i>Udostępnij</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Ciasto marchewkowe</span><span style="font-size:16px;color:#374151;line-height:1.3">z musem jabłkowym</span><span style="display:flex;gap:6px;align-items:flex-start;font-size:16px;color:#374151;line-height:1.3"><i data-lucide="globe" width="18" height="18" style="flex-shrink:0;margin-top:1px"></i>aniagotuje.pl</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Pączko bułeczki</span><span style="font-size:16px;color:#374151;line-height:1.3">z marmoladą różaną</span><span style="display:flex;gap:6px;align-items:flex-start;font-size:16px;color:#374151;line-height:1.3"><i data-lucide="facebook" width="18" height="18" style="flex-shrink:0;margin-top:1px"></i>Kulinarna Wiola (Facebook)</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Kanapki z szynką</span><span style="font-size:16px;color:#374151;line-height:1.3">i mozzarellą</span><span style="display:flex;gap:6px;align-items:flex-start;font-size:16px;color:#374151;line-height:1.3"><i data-lucide="facebook" width="18" height="18" style="flex-shrink:0;margin-top:1px"></i>Post z Facebooka</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Sernik babci</span><span style="font-size:16px;color:#374151;line-height:1.3">z rodzynkami</span><span style="display:flex;gap:6px;align-items:flex-start;font-size:16px;color:#374151;line-height:1.3"><i data-lucide="book-open" width="18" height="18" style="flex-shrink:0;margin-top:1px"></i>Z książki kucharskiej</span></div></div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.5;text-wrap:pretty"><b style="color:#111827">Plus:</b> jedno miejsce z linkiem, opisane słowami; zastępuje przycisk „Oryginał” i link na dole. Ikona zawsze z podpisem.<br><b style="color:#111827">Minus:</b> zajmuje jeden wiersz więcej nad zdjęciem/opisem.</div>
+    </div>
+
+    <div id="8b" style="display:flex;flex-direction:column;gap:14px;width:390px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">8b</span><span style="font-size:17px;font-weight:700">Zdanie zamiast etykiety</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:20px 16px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:28px;font-weight:700;line-height:1.15">Ciasto marchewkowe</span><span style="font-size:19px;color:#374151">z musem jabłkowym</span></div>
+        <div style="background:#fff7ed;border:2px solid #fdba74;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px">
+          <span style="font-size:19px;line-height:1.45">Przepis pochodzi ze strony <b>aniagotuje.pl</b>. Dodała go <a href="#8b">Tola</a>.</span>
+          <span style="height:56px;border:2px solid #4b5563;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700"><i data-lucide="external-link" width="20" height="20"></i>Zobacz oryginał</span>
+        </div>
+        <div style="display:flex;gap:8px"><span style="flex:1;height:56px;border:2px solid #c2410c;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;color:#c2410c"><i data-lucide="heart" width="20" height="20"></i>Ulubione</span><span style="flex:1;height:56px;border:2px solid #4b5563;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700"><i data-lucide="share-2" width="20" height="20"></i>Udostępnij</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Ciasto marchewkowe</span><span style="font-size:16px;color:#374151;line-height:1.3">z musem jabłkowym</span><span style="font-size:16px;color:#374151;line-height:1.3">ze strony aniagotuje.pl</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Pączko bułeczki</span><span style="font-size:16px;color:#374151;line-height:1.3">z marmoladą różaną</span><span style="font-size:16px;color:#374151;line-height:1.3">z Facebooka: Kulinarna Wiola</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Kanapki z szynką</span><span style="font-size:16px;color:#374151;line-height:1.3">i mozzarellą</span><span style="font-size:16px;color:#374151;line-height:1.3">z Facebooka</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Sernik babci</span><span style="font-size:16px;color:#374151;line-height:1.3">z rodzynkami</span><span style="font-size:16px;color:#374151;line-height:1.3">z książki kucharskiej</span></div></div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.5;text-wrap:pretty"><b style="color:#111827">Plus:</b> czyta się jak zdanie, od razu jasne, kto napisał, a kto zapisał. Najprostsze dla starszych osób.<br><b style="color:#111827">Minus:</b> dłuższy tekst; ramka konkuruje z ramką „Mamy jeszcze 3 inne przepisy”.</div>
+    </div>
+
+    <div id="8c" style="display:flex;flex-direction:column;gap:14px;width:390px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">8c</span><span style="font-size:17px;font-weight:700">Źródło jako podpis zdjęcia</span><span style="font-size:13px;font-weight:700;color:#fff;background:#c2410c;padding:3px 8px;border-radius:6px">wybrane</span></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:14px">
+        <div style="position:relative;height:200px;border-radius:14px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie przepisu
+          <a href="#8c" style="position:absolute;left:10px;bottom:10px;min-height:48px;padding:0 14px;border-radius:999px;background:#fff;border:2px solid #6b7280;display:flex;align-items:center;gap:6px;font:700 16px Arial;color:#111827;text-decoration:none"><i data-lucide="globe" width="18" height="18"></i><span style="text-decoration:underline">aniagotuje.pl</span><i data-lucide="external-link" width="16" height="16"></i></a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:28px;font-weight:700;line-height:1.15">Ciasto marchewkowe</span><span style="font-size:19px;color:#374151">z musem jabłkowym</span><span style="font-size:16px;color:#374151;margin-top:4px">Dodała <a href="#8c">Tola</a></span></div>
+        <div style="display:flex;gap:8px"><span style="flex:1;height:56px;border:2px solid #c2410c;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;color:#c2410c"><i data-lucide="heart" width="20" height="20"></i>Ulubione</span><span style="flex:1;height:56px;border:2px solid #4b5563;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700"><i data-lucide="share-2" width="20" height="20"></i>Udostępnij</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="position:relative;height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px)"><span style="position:absolute;left:6px;bottom:6px;right:6px;padding:4px 8px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:4px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i style="flex-shrink:0" data-lucide="globe" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">aniagotuje.pl</span></span></div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Ciasto marchewkowe</span><span style="font-size:16px;color:#374151;line-height:1.3">z musem jabłkowym</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="position:relative;height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px)"><span style="position:absolute;left:6px;bottom:6px;right:6px;padding:4px 8px;border-radius:8px;background:#fff;font-size:16px;font-weight:700;color:#111827;display:flex;gap:4px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><i style="flex-shrink:0" data-lucide="facebook" width="18" height="18"></i><span style="overflow:hidden;text-overflow:ellipsis">Kulinarna Wiola z Podkarpacia</span></span></div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Pączko bułeczki</span><span style="font-size:16px;color:#374151;line-height:1.3">z marmoladą różaną</span></div></div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.5;text-wrap:pretty"><b style="color:#111827">Plus:</b> znany wzorzec „podpisu zdjęcia”, nie zabiera miejsca w tekście.<br><b style="color:#111827">Długie nazwy:</b> plakietka ma 16 px i jedną linijkę, za długa nazwa kończy się „…”, a pełną widać na stronie przepisu.<br><b style="color:#111827">Minus:</b> dotknięcie zdjęcia może się kojarzyć z powiększeniem, nie z wyjściem na inną stronę.</div>
+    </div>
+    <div id="8d" style="display:flex;flex-direction:column;gap:14px;width:390px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="background:#111827;color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px">8d</span><span style="font-size:17px;font-weight:700">Karty bez źródła</span></div>
+      <div style="font-size:16px;color:#374151;line-height:1.5;text-wrap:pretty">Na liście tylko zdjęcie, nazwa i podpis. Źródło pokazujemy dopiero na stronie przepisu (jak w 8a lub 8b).</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Ciasto marchewkowe</span><span style="font-size:16px;color:#374151;line-height:1.3">z musem jabłkowym</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Pączko bułeczki</span><span style="font-size:16px;color:#374151;line-height:1.3">z marmoladą różaną</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Kanapki z szynką</span><span style="font-size:16px;color:#374151;line-height:1.3">i mozzarellą</span></div></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;display:flex;flex-direction:column"><div style="height:110px;background:repeating-linear-gradient(135deg,#f3f4f6 0 10px,#e5e7eb 10px 20px);display:flex;align-items:center;justify-content:center;font:13px monospace;color:#374151">zdjęcie</div><div style="padding:10px;display:flex;flex-direction:column;gap:6px"><span style="font-size:17px;font-weight:700;line-height:1.2">Sernik babci</span><span style="font-size:16px;color:#374151;line-height:1.3">z rodzynkami</span></div></div>
+      </div>
+      <div style="font-size:16px;color:#374151;line-height:1.5;text-wrap:pretty"><b style="color:#111827">Plus:</b> spokojniejsza lista, równa wysokość kart, brak problemu z długimi nazwami kanałów czy stron.<br><b style="color:#111827">Minus:</b> nie widać od razu, która wersja jest z ulubionej strony. Wyjątek: w „Inne przepisy na…” źródło zostaje, bo tam odróżnia wersje.</div>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:24px;max-width:860px;display:flex;flex-direction:column;gap:14px">
+    <span style="font-size:22px;font-weight:700">Inne rzeczy do poprawy na tych ekranach</span>
+    <ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;font-size:17px;line-height:1.5;color:#111827">
+      <li><b>Błąd na mobile:</b> nachodzące wiersze w składnikach („proszek do pieczenia” / „ekstrakt z wanilii”) i w krokach (brak kroku 2, krok 9 zakrywa krok 10).</li>
+      <li><b>Podwójna informacja o wersjach:</b> ramka „Mamy jeszcze 3 inne przepisy” i sekcja „Inne przepisy na ciasto marchewkowe (3)”. Ramka może być tylko odnośnikiem do sekcji.</li>
+      <li><b>„A / A+ / A++”</b> — niejasne bez kontekstu. Lepiej „Mały / Średni / Duży” z podglądem litery w różnych rozmiarach.</li>
+      <li><b>„Odśwież przepis”</b> nie mówi, co się stanie. Propozycja: „Pobierz ponownie ze strony aniagotuje.pl”.</li>
+      <li><b>Małe szare teksty</b> na kartach, licznikach kategorii i w porównaniu wersji (+ jest / − nie ma) są poniżej 16 px.</li>
+      <li><b>Etykieta kategorii na kartach</b> („Ciasta”, „Desery”) powtarza wybrany filtr. Zamiast niej podpis przepisu, np. „z musem jabłkowym”.</li>
+      <li><b>Kolor zamiast słowa</b> w porównaniu wersji: zielony/czerwony warto wzmocnić słowami „Ma dodatkowo:” / „Nie ma:”.</li>
+    </ol>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount() { const r = () => window.lucide ? lucide.createIcons() : setTimeout(r, 100); r(); }
+  renderVals() {
+    const w = 'globe', fb = 'facebook';
+    return {
+      listCards: [
+        { t: 'Ciasto marchewkowe', s: 'z musem jabłkowym', a: 'aniagotuje.pl', icon: w },
+        { t: 'Pączko bułeczki z piekarnika', s: 'z marmoladą różaną', a: 'Facebook · Kulinarna Wiola', icon: fb },
+      ],
+      carCards: [
+        { t: 'Racuchy pączkowe', s: 'na Tłusty czwartek', a: 'obzarciuch.pl', icon: w },
+        { t: 'Bułeczki drożdżowe', s: 'z budyniem', a: 'Facebook · Kulinarna Wiola', icon: fb },
+        { t: 'Drożdżówki z kruszonką', s: 'z serem', a: 'kwestiasmaku.com', icon: w },
+        { t: 'Rogaliki maślane', s: 'z powidłami śliwkowymi', a: 'Z książki kucharskiej', icon: 'book-open' },
+      ],
+      homeCats: [['Obiady','utensils'],['Zupy','soup'],['Desery','cake-slice'],['Ciasta','cake'],['Ciasteczka','cookie'],['Śniadania','coffee'],['Pieczywo','croissant'],['Przekąski','sandwich'],['Sałatki','salad']].map(([l,i]) => ({ l, i })),
+      verCards: [
+        { t: 'Na dwóch mąkach, z konfiturą', s: 'Pączki', a: 'Facebook · Ala K.', icon: fb, time: '1 godz. 40 min (krócej)', plus: 'mąka krupczatka, ekstrakt z wanilii, sól, alkohol', minus: 'olej, kwaśna śmietana, jajko' },
+        { t: 'Z dżemem i skórką pomarańczową', s: 'Pączki', a: 'eatismokosa.wordpress.com', icon: w, time: '1 godz. 55 min', plus: 'dżem porzeczkowy, skórka pomarańczowa', minus: 'olej, kwaśna śmietana' },
+        { t: 'Zaparzane, z dżemem malinowym', s: 'Pączki luksusowe', a: 'okolicepalnika.pl', icon: w, time: '1 godz. 50 min', plus: 'mąka pszenna, spirytus, sól', minus: 'mąka tortowa, kwaśna śmietana' },
+        { t: 'Mini kasztanki na śmietanie', s: 'Mini pączusie', a: 'Facebook · Kulinarna Wiola', icon: fb, time: '1 godz. 50 min', plus: 'spirytus, ekstrakt waniliowy', minus: 'olej, jajko, ciepła woda' },
+      ],
+      deskCards: [
+        { t: 'Ciasto marchewkowe', s: 'z musem jabłkowym', a: 'aniagotuje.pl', icon: w },
+        { t: 'Pączko bułeczki z piekarnika', s: 'z marmoladą różaną', a: 'Facebook · Kulinarna Wiola', icon: fb },
+        { t: 'Przystawka z ciasta francuskiego', s: 'z ogórkami kiszonymi i mozzarellą', a: 'Facebook', icon: fb },
+        { t: 'Wiejski garnek z ziemniakami i kiełbasą', s: 'z boczkiem i kapustą', a: 'e-przepisykulinarne.pl', icon: w },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
