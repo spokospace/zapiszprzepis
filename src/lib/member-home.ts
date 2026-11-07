@@ -5,7 +5,8 @@ import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
 /** Cards per home row: 4 fills the desktop row (E01-S31 §2, §5). */
 export const HOME_ROW_LIMIT = 4
 
-export type MemberHomeData = { greetingName: string | null; mine: MyRecipeCard[]; favorites: MyRecipeCard[] }
+/** `greetingName` is undefined when the read failed (unlike null: the reader has no name). */
+export type MemberHomeData = { greetingName: string | null | undefined; mine: MyRecipeCard[]; favorites: MyRecipeCard[] }
 
 /**
  * What the signed-in home shows beyond the shared page (E01-S31 §5): the name to greet and

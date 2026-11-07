@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { PageContainer } from '@/app/components/page-container'
@@ -16,7 +16,7 @@ import type { MenuSummary } from '@/lib/menu-summary'
 import { ADD_RECIPE_PATH } from '@/lib/routes'
 import { vocative } from '@/lib/vocative'
 
-const NOTHING: MemberHomeData = { greetingName: null, mine: [], favorites: [] }
+const NOTHING: MemberHomeData = { greetingName: undefined, mine: [], favorites: [] }
 
 /** Keeps the rows on screen when the reader comes back to the home, while they reload. */
 let lastLoaded: { userId: string; home: MemberHomeData } | null = null
@@ -32,9 +32,11 @@ function useMemberHome(userId: string | null): MemberHomeData | null {
       .catch(() => NOTHING)
       .then((home) => {
         lastLoaded = { userId, home }
-        // A failed read is not an answer: it must not teach the next page load to show no name.
-        if (home !== NOTHING) writeGreetingCache(userId, vocative(home.greetingName))
-        if (current) setLoaded(lastLoaded)
+        if (!current) return
+        // Only while this reader is still signed in (a sign-out ends the effect, and its cleared
+        // cache must not come back), and a failed read is not an answer (#737).
+        if (home.greetingName !== undefined) writeGreetingCache(userId, vocative(home.greetingName))
+        setLoaded(lastLoaded)
       })
     return () => {
       current = false
@@ -45,19 +47,17 @@ function useMemberHome(userId: string | null): MemberHomeData | null {
 }
 
 /**
- * The greeting name this browser remembers for the reader (#737): the vocative, '' for "no
- * name", null while unknown. Read after hydration; before it the same name is on screen from
- * CSS (`--zp-greeting`), so nothing changes when this lands.
+ * The greeting name this browser remembers for this reader (#737): the vocative, '' for "no
+ * name", null when unknown or when the entry belongs to someone else. Read in render, which
+ * is safe because `userId` is only set after hydration, so the first renders still match the
+ * server HTML (where CSS shows the same name from `--zp-greeting`).
  */
 function useCachedGreeting(userId: string | null): string | null {
-  const [name, setName] = useState<string | null>(null)
-  useEffect(() => {
-    if (!userId) return
+  return useMemo(() => {
+    if (!userId) return null
     const cached = readGreetingCache()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setName(cached?.userId === userId ? cached.name : null)
+    return cached?.userId === userId ? cached.name : null
   }, [userId])
-  return userId ? name : null
 }
 
 /** Gives up waiting for the name after this long and shows the plain greeting. */
@@ -88,6 +88,8 @@ function Hero({
   id,
   title,
   titlePending,
+  titleHeld,
+  titleGuest,
   subtitle,
   children,
 }: {
@@ -95,6 +97,10 @@ function Hero({
   title: ReactNode
   /** The heading waits for the reader's name: hidden (CSS) for a reader with a session and no cached answer. */
   titlePending: boolean
+  /** Hidden whatever the cache says: the reader is known and still has no name to show. */
+  titleHeld: boolean
+  /** The session turned out to be a guest's (a stale cookie): no reserved height. */
+  titleGuest: boolean
   subtitle: ReactNode
   children: ReactNode
 }) {
@@ -106,7 +112,7 @@ function Hero({
             and widened the page (#448). The subtitle needs the same cap as the heading. */}
         <h1
           id={id}
-          className={`hero-title ${titlePending ? 'greeting-pending' : ''} max-w-full text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]`}
+          className={`hero-title ${titlePending ? 'greeting-pending' : ''} ${titleHeld ? 'greeting-held' : ''} ${titleGuest ? 'is-guest' : ''} max-w-full text-[36px] leading-[1.05] font-extrabold text-ink md:text-[48px] lg:text-[64px] lg:leading-[1.02]`}
         >
           {title}
         </h1>
@@ -204,7 +210,7 @@ export function HomeContent({
   const favoriteAdded = useHomeParams()
   const cachedName = useCachedGreeting(userId)
   // The database's answer wins over the remembered one.
-  const name = home ? (vocative(home.greetingName) ?? '') : cachedName
+  const name = home && home.greetingName !== undefined ? (vocative(home.greetingName) ?? '') : cachedName
   const [gaveUp, setGaveUp] = useState(false)
   useEffect(() => {
     if (!userId || name !== null) return
@@ -218,11 +224,15 @@ export function HomeContent({
       <Hero
         id="hero-heading"
         titlePending={!guest && name === null && !gaveUp}
+        // Once the session is read the span is React's: CSS must not paint a remembered name over
+        // it (another account's, or one the database no longer has).
+        titleHeld={userId !== null && name === null && !gaveUp}
+        titleGuest={guest}
         title={
           <>
             {GREETING_LEAD}
             {/* Empty until the name is known; CSS paints the remembered one meanwhile. */}
-            <span className={`greet-name ${guest ? 'greet-off' : ''}`}>{greetingSuffix(name)}</span>?
+            <span className={`greet-name ${guest || userId !== null ? 'greet-off' : ''}`}>{greetingSuffix(name)}</span>?
           </>
         }
         subtitle={

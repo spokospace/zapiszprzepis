@@ -24,6 +24,11 @@ html[data-session]:not([data-greet]) .greeting-pending {
   visibility: hidden;
 }
 
+/* The reader is known and the name still is not (or is another account's): hidden, cache or not. */
+.greeting-held {
+  visibility: hidden;
+}
+
 /* The two subtitles; the cookie picks one, so the member's does not wait for the session. */
 .hero-sub-member {
   display: none;
@@ -39,7 +44,7 @@ html[data-session] .hero-sub-guest {
 
 /* Two lines kept on a phone, where the name wraps the heading; wider screens fit one. */
 @media (max-width: 767px) {
-  html[data-session] .hero-title {
+  html[data-session] .hero-title:not(.is-guest) {
     min-height: calc(2 * 1.05em);
   }
 }
