@@ -20,7 +20,7 @@ export type HiddenRecipeView =
 // The public_recipes columns, read from the table: staff may see hidden rows there.
 const STAFF_COLUMNS =
   'id, slug, title, description, image_url, category, tags, prep_time_minutes, cook_time_minutes, total_time_minutes, ' +
-  'ingredients, steps, source_type, source_url, source_author, times_estimated, youtube_id, created_at, meta_description, ' +
+  'ingredients, steps, source_type, source_url, source_author, times_estimated, youtube_id, created_at, meta_description, meta_title, ' +
   'servings, dish, dish_accusative, variant_note, updated_at, step_images, image_urls, hidden_at, hidden_reason'
 
 type StaffRow = PublicRecipe & {

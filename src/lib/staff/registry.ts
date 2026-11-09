@@ -185,6 +185,17 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
           ],
         },
       },
+      {
+        name: 'set_meta_title', label: 'Zmień tytuł SEO', permission: 'recipes.edit', destructive: false,
+        mcp: {
+          description: 'Set the SEO <title> of a recipe page (without the " · Zapisz Przepis" suffix, which the site adds). Without one the page uses the recipe title plus its short variant line. An empty string clears it. The page and its static file pick it up on the next recipe-files build.',
+          rpc: 'admin_set_meta_title_as', target: 'recipe_id', finish: finishRecipeSlug,
+          args: [
+            arg.recipeId,
+            { name: 'meta_title', param: 'p_meta_title', type: 'string', maxLength: 70, required: true, description: 'The title, up to 70 characters, e.g. "Słonecznikowiec z karmelizowanym słonecznikiem". Empty string clears it.' },
+          ],
+        },
+      },
     ],
     mcp: {
       list: {

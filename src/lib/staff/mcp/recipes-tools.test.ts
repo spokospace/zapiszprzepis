@@ -26,6 +26,7 @@ describe('recipe MCP tools — what is exposed', () => {
         'recipes_list',
         'recipes_merge',
         'recipes_restore',
+        'recipes_set_meta_title',
         'recipes_set_taxonomy',
         'recipes_unhide',
         'recipes_unmerge',
@@ -38,6 +39,7 @@ describe('recipe MCP tools — what is exposed', () => {
     expect(tool('recipes_hide').permission).toBe('recipes.hide')
     expect(tool('recipes_restore').permission).toBe('recipes.restore')
     expect(tool('recipes_set_taxonomy').permission).toBe('recipes.taxonomy')
+    expect(tool('recipes_set_meta_title').permission).toBe('recipes.edit')
     expect(recipeTools.filter((t) => t.destructive).map((t) => t.name).sort()).toEqual(['recipes_delete', 'recipes_merge', 'recipes_unmerge'])
   })
 
@@ -51,7 +53,7 @@ describe('recipe MCP tools — what is exposed', () => {
   it('every tool calls an admin_*_as function the Phase 2 migrations define', () => {
     const dir = join(process.cwd(), 'supabase', 'migrations')
     const sql = readdirSync(dir)
-      .filter((f) => f.startsWith('20261029'))
+      .filter((f) => f.endsWith('.sql'))
       .map((f) => readFileSync(join(dir, f), 'utf8'))
       .join('\n')
     for (const t of recipeTools) {

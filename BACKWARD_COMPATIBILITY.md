@@ -76,6 +76,8 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 **Recipes in several categories (#689, additive):** `recipes.category` stays the primary; `recipes.extra_categories recipe_category[]` (at most 2, never the primary, CHECK `recipes_extra_categories_valid`) and `recipes.taxonomy_locked_at` are new. `public_recipes` gains one trailing column `extra_categories` (`taxonomy_locked_at` is never exposed). `/recipes?category=`, `/przepisy/{kategoria}` and `?kategoria=` now match primary OR extra; URLs and canonicals are unchanged. `search_recipes` returns an extra column `extra_categories`; `admin_set_taxonomy(_as)` gain a trailing `p_extra_categories` (null = keep, `{}` = clear); the MCP tool `recipes_set_taxonomy` gains the optional `extra_categories` argument and every manual call sets `taxonomy_locked_at`, which stops re-extraction from overwriting category, tags and extra categories. **Breaking:** dropping or renaming any of these, or making `extra_categories` required.
 
+**Recipe SEO titles (#745, additive):** `recipes.meta_title` (nullable, CHECK `recipes_meta_title_len`: 1–70 characters after trimming) and a trailing `public_recipes.meta_title`. `admin_set_meta_title_as` (service role only, permission `recipes.edit`) backs the MCP tool `recipes_set_meta_title`. Extraction never writes the column. **Breaking:** dropping or renaming either, or making the column required.
+
 **Search by similarity (additive):** `search_recipes` keeps its signature and columns, but a word now matches by `pg_trgm` similarity on text without Polish letters instead of as a literal substring, and rows are ordered by closeness to the title instead of newest first. A word inside another word no longer matches („dyni” does not find „budyń”). Words of one or two letters are ignored when a longer word is present.
 
 ## 9. Staff MCP endpoint
@@ -108,6 +110,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 | `recipes_merge` (destructive) | `canonical_id`*, `duplicate_ids`* (list of 1–20 distinct ids) |
 | `recipes_unmerge` (destructive) | `merge_id`* |
 | `recipes_set_taxonomy` | `recipe_id`*, `category`, `tags` (list, from the closed tag list, at most 6; `[]` clears) |
+| `recipes_set_meta_title` | `recipe_id`*, `meta_title`* (up to 70 characters; `""` clears) |
 
 Argument lists are JSON arrays of distinct items; their bounds sit under `items` in the input schema. After a change the caches of the affected recipe pages are emptied, as in the panel.
 

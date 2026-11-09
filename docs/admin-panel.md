@@ -109,7 +109,8 @@ Regenerate `src/lib/supabase.types.ts` afterwards; Phase 2 calls the new functio
 and role**. A moderator's token lists and runs only moderator tools; an admin's lists everything the panel offers. The
 tools are generated from `src/lib/staff/registry.ts`, so a resource added there appears without MCP code. Recipe
 moderation is there: `recipes_list`, `recipes_get`, `recipes_hide`, `recipes_unhide`, `recipes_delete`, `recipes_restore`,
-`recipes_merge`, `recipes_unmerge` and `recipes_set_taxonomy`, each under the permission of its panel button. A change
+`recipes_merge`, `recipes_unmerge` and `recipes_set_taxonomy`, each under the permission of its panel button, and
+`recipes_set_meta_title` (the recipe's SEO title; MCP only for now, permission `recipes.edit`). A change
 empties the page caches of the recipes it touched, the way the panel does (`src/lib/staff/recipe-finish.ts`). The tool and argument names are a contract: see `BACKWARD_COMPATIBILITY.md` §9.
 
 ### Connect

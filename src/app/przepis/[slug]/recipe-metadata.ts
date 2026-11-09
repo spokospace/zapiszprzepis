@@ -5,6 +5,24 @@ import { recipePath } from '@/lib/routes'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 import type { RecipeForJsonLd } from '@/lib/recipe-json-ld'
 
+/** Longer variant lines read as sentences, not as part of a title. */
+const MAX_VARIANT_IN_TITLE = 60
+
+/**
+ * The <title> base, without the site name (#745). Many recipes share a dish name
+ * ("Barszcz ukraiński" from five sources), so the short variant line under the title
+ * ("z białą fasolą") goes into it too. Only a fragment that continues the dish name
+ * (starts lowercase, short) is added; a sentence ("Ciasto ma chrupiącą kratkę.") is not.
+ * A hand-written `meta_title` wins over both.
+ */
+function recipeTitleBase(recipe: Pick<RecipeForJsonLd, 'title' | 'description' | 'meta_title'>): string {
+  const custom = recipe.meta_title?.trim()
+  if (custom) return custom
+  const variant = recipe.description?.trim().replace(/\.+$/, '')
+  const fragment = variant && variant.length <= MAX_VARIANT_IN_TITLE && /^\p{Ll}/u.test(variant)
+  return fragment ? `${recipe.title} ${variant}` : recipe.title
+}
+
 /**
  * The recipe page's <title>, description, canonical and social card. Crawlers and
  * link-preview bots are anonymous, so it describes what a guest sees.
@@ -18,8 +36,8 @@ export function recipeMetadata(recipe: RecipeForJsonLd, siteUrl: string): Metada
   const images = cover ? [{ url: cover, alt: recipe.title }] : undefined
   const canonical = `${siteUrl}${recipePath(recipe.slug)}`
   return {
-    // The site name after the dish, as on the category pages; og:title stays the dish alone.
-    title: `${recipe.title} · ${SITE_NAME}`,
+    // The site name after the title base, as on the category pages; og:title stays the dish alone.
+    title: `${recipeTitleBase(recipe)} · ${SITE_NAME}`,
     description,
     // ?from= list-context variants (E01-S07) must not compete with the canonical URL.
     // Absolute: the root layout sets no metadataBase, so a relative canonical would

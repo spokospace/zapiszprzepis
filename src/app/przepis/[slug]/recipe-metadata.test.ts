@@ -26,6 +26,29 @@ describe('recipeMetadata', () => {
     expect(recipeMetadata(base, SITE).title).toBe('Croissanty · Zapisz Przepis')
   })
 
+  it('adds the variant line to the <title> so same-named dishes differ (#745)', () => {
+    expect(recipeMetadata({ ...base, description: 'z białą fasolą' }, SITE).title).toBe(
+      'Croissanty z białą fasolą · Zapisz Przepis',
+    )
+    expect(recipeMetadata({ ...base, description: ' z masłem. ' }, SITE).title).toBe('Croissanty z masłem · Zapisz Przepis')
+  })
+
+  it('leaves out a variant line too long for a title', () => {
+    expect(recipeMetadata({ ...base, description: 'x'.repeat(61) }, SITE).title).toBe('Croissanty · Zapisz Przepis')
+  })
+
+  it('leaves out a sentence-like description', () => {
+    expect(recipeMetadata({ ...base, description: 'Ciasto ma chrupiącą kratkę.' }, SITE).title).toBe(
+      'Croissanty · Zapisz Przepis',
+    )
+  })
+
+  it('uses a hand-written meta_title over the variant line', () => {
+    const meta = recipeMetadata({ ...base, description: 'z masłem', meta_title: ' Croissanty jak z Paryża ' }, SITE)
+    expect(meta.title).toBe('Croissanty jak z Paryża · Zapisz Przepis')
+    expect(meta.openGraph?.title).toBe('Croissanty')
+  })
+
   it('keeps og:title the dish alone', () => {
     expect(recipeMetadata(base, SITE).openGraph?.title).toBe('Croissanty')
   })

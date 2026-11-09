@@ -52,6 +52,7 @@ describe('staff registry', () => {
     expect(byName.restore.permission).toBe('recipes.restore')
     expect(byName.merge.permission).toBe('recipes.merge')
     expect(byName.set_taxonomy.permission).toBe('recipes.taxonomy')
+    expect(byName.set_meta_title.permission).toBe('recipes.edit')
     expect(recipes.operations.filter((o) => o.destructive).map((o) => o.name)).toEqual(['delete', 'merge', 'unmerge'])
   })
 
