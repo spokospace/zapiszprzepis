@@ -4,6 +4,26 @@ Dziennik pomiarów produkcji i prób rozwiązań. Nowe wpisy na górze, godziny 
 
 Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichymi minutami, bo błędy trwają dłużej niż samo obciążenie. Pomiary zrobione kilka minut po sobie nie są porównywalne.
 
+## 2026-11-09
+
+### Powtórzone `<title>` przepisów: od 43 grup do zera (#745, #746, #749)
+
+**Jak:** wszystkie adresy `/przepis/…` z `https://zapiszprzepis.pl/sitemap.xml`, pobrane po 8 naraz (to statyczne pliki), wyciągnięty `<title>` każdej strony i policzone grupy adresów o identycznym tytule. Te same kroki w trzech momentach.
+
+**Wynik:**
+
+| Kiedy | Stan | Grupy z tym samym tytułem | Adresy w tych grupach |
+| --- | --- | --- | --- |
+| 2026-11-06 (audyt SEO z Uper) | tytuł = `{title} · Zapisz Przepis` | 43 | 103 |
+| 2026-11-09 09:13 (deploy `22a0996f`, #746) | domyślnie `{title} {description}`, gdy opis to krótki wariant | 7 | 16 |
+| 2026-11-09 09:40 (deploy `083e3d81`) | do tego `meta_title` 13 przepisów, ustawione narzędziem MCP `recipes_set_meta_title` | 0 | 0 |
+
+Ostatni pomiar: 926 adresów, 926 pobranych, 0 błędów. Wszystkie 13 przepisów pokazują nowe tytuły (np. `slonecznikowiec-3` → „Słonecznikowiec z karmelizowanym słonecznikiem · Zapisz Przepis”). `pnpm smoke:prod` po obu deployach: ✓.
+
+**Po drodze: zapisy przepisów przez API nie działały od #722.** Pierwsze 13 wywołań `recipes_set_meta_title` (09:28) skończyło się błędem, choć próbne (`dry_run`) przeszły. W logach Supabase: `POST 400 /rest/v1/rpc/admin_set_meta_title_as`, `proxy_status: PostgREST; error=21000`. Rola `authenticator` ładuje `pg_safeupdate`, a wyzwalacz `bump_recipe_content_version()` z #722 robił `update public.recipe_files_state set content_version = content_version + 1` bez `WHERE`. Każdy insert, update i delete na `recipes` (i zmiana nazwy w `profiles`) przez API kończył się więc błędem od 2026-11-06: import 1214 z 2026-11-07 padł z „Database insert failed: UPDATE requires a WHERE clause”, a `content_version` stał na 1, więc automatyczne odświeżanie plików przepisów ani razu nie ruszyło. Ta sama funkcja wywołana bezpośrednio przez Management API działała (tam `safeupdate` nie jest ładowany), dlatego sprawdzenia migracji tego nie wykryły. Poprawka (#749, `where id`) wgrana przez Management API ok. 09:34; potem 13 zapisów przeszło, `content_version` 1 → 14, cron zamówił build o 09:35:39, a ponowiony import 1214 zakończył się przepisem 1115. Przegląd wszystkich funkcji w `public` na produkcji: innej zmiany bez `WHERE` nie ma; nowy test `src/lib/sql-safeupdate.test.ts` pilnuje tego w migracjach.
+
+**Nie dowodzi:** że Google przyjął nowe tytuły (to widać dopiero w Search Console po ponownym zindeksowaniu), ani że tytuły są unikalne w obrębie wszystkich stron serwisu (liczone tylko `/przepis/…` z sitemapy, bez kategorii i profili). Nowy przepis o nazwie, która już jest, znowu może dać powtórzony tytuł, dopóki nie dostanie wariantu w opisie albo `meta_title`. Nie sprawdzałem, ile importów poza 1214 nie powiodło się od 2026-11-06 bez zapisanego błędu (np. przerwanych przed zapisem statusu).
+
 ## 2026-11-07
 
 ### Strona główna: przeskoki od podmiany czcionki i od nieznanego imienia (#744)
