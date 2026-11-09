@@ -14,7 +14,9 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 **Wynik:** skopiowane 3764 z 3764 plików. Pierwszy przebieg: 2724 plików, 1040 odrzuconych przez Supabase kodem 429 (zbyt szybkie pobieranie; po tym „Too many connections” przy listowaniu), więc dodałem ponawianie i obniżyłem równoległość z 6 do 3; drugi przebieg skończył bez błędów. Rozmiar po migracji ok. 459 MB (945 → 331 MB w pierwszym, 310 → 127 MB w drugim przebiegu) wobec 10 GB darmowego limitu R2.
 
-**Nie dowodzi:** że produkcja wyświetla zdjęcia z R2 (adresy w bazie jeszcze wskazują Supabase, dopóki nie przepiszę ich po deployu), ani że transfer spadnie; to pokaże dopiero panel Usage Supabase kilka dni po przełączeniu. Kompresja nowych zdjęć w Workerze (binding Cloudflare Images) nie była jeszcze sprawdzona na produkcji.
+**Przełączenie (2026-11-09 22:44–22:55 UTC):** PR #756 zmergowany po zielonym `CI`; wersja Workera `ff9dcc41` ma binding `IMAGE_BUCKET` (`wrangler versions view`); `pnpm smoke:prod` ✓. `--rewrite-db --apply`: 925 przepisów i 32 wiersze `recipes_merged_duplicates`; w `recipes` zostało 0 adresów Supabase, w archiwum 2 (klucze `ffd65e00…/114.jpg` i `/210.jpg`, których nie ma w Supabase: HTTP 400). Po wygaśnięciu cache (HTML do 15 min, dane do 1 h) strona główna i 3 losowe przepisy z sitemapy: wszystkie adresy zdjęć na `img.zapiszprzepis.pl`, ani jednego z Supabase (54, 72, 231 i 285 adresów); `pnpm smoke:prod` ✓. Konto QA (`/api/dev/login?as=full`, lokalny dev na bazie produkcyjnej): strona przepisu ze zdjęciami kroków, okładka z R2 przez `/_next/image`, 12 z 13 obrazów w widoku załadowanych, 0 błędnych (pozostały jest leniwy).
+
+**Nie dowodzi:** że transfer spadnie; to pokaże dopiero panel Usage Supabase kilka dni po przełączeniu, a pamięć spadnie dopiero po usunięciu obiektów z bucketu `recipe-images`. Kompresja nowych zdjęć w Workerze (binding Cloudflare Images) nie była jeszcze sprawdzona na produkcji: żaden nowy przepis nie został dodany od deployu. Konto QA sprawdzono lokalnie, nie na produkcji.
 
 ### Powtórzone `<title>` przepisów: od 43 grup do zera (#745, #746, #749)
 
