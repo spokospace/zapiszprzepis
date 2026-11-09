@@ -34,6 +34,12 @@
       "binding": "BACKUPS",
       "bucket_name": "zapiszprzepis-backups"
     },
+    // Recipe photos (src/lib/image-store.ts). Public through the custom domain
+    // img.zapiszprzepis.pl; Supabase Storage no longer holds them (free-plan quota).
+    {
+      "binding": "IMAGE_BUCKET",
+      "bucket_name": "zapiszprzepis-images"
+    },
     // Phase 2 guest-read cache (#445, #545): OpenNext's incremental cache. The bucket
     // must exist before deploying (owner step 1 of the Phase 2 runbook, 10085 otherwise).
     {
