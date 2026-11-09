@@ -1,4 +1,5 @@
 import type { RemotePattern } from 'next/dist/shared/lib/image-config'
+import { IMAGE_BASE_URL } from './image-host'
 
 // The image allowlist is baked in when Next builds, but the Worker's `vars`
 // (wrangler.jsonc) only exist at runtime, so a build without
@@ -16,6 +17,8 @@ export const PRODUCTION_SUPABASE_URL = 'https://wvrlgddgdddwmgzbvtij.supabase.co
  */
 export function imageRemotePatterns(supabaseUrl = PRODUCTION_SUPABASE_URL): RemotePattern[] {
   return [
+    // Photos live in the R2 bucket; the Supabase pattern covers any not yet migrated.
+    { protocol: 'https', hostname: new URL(IMAGE_BASE_URL).hostname, pathname: '/**' },
     {
       protocol: 'https',
       hostname: new URL(supabaseUrl).hostname,

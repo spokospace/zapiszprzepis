@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { compressPhoto, IMAGE_BASE_URL, type ImageStorage } from './image-store'
 import { sha256Hex } from './sha256'
 import { slugify } from './slugify'
 
@@ -217,19 +217,22 @@ async function downloadPhoto(externalUrl: string): Promise<Photo | null> {
 }
 
 /** Stores a downloaded photo at `<pathStem>.<ext>`. Returns the public Storage URL, or null on any failure. */
-async function storePhoto(supabase: SupabaseClient, pathStem: string, photo: Photo): Promise<string | null> {
+async function storePhoto(images: ImageStorage, pathStem: string, photo: Photo): Promise<string | null> {
   try {
-    const path = `${pathStem}.${photo.ext}`
-    const { error: uploadError } = await supabase.storage
+    // Stored as a smaller WebP when the Worker can transform it; the hash the
+    // caller dedupes by was taken from the original bytes, so it is unaffected.
+    const stored = await compressPhoto(photo)
+    const path = `${pathStem}.${stored.ext}`
+    const { error: uploadError } = await images.storage
       .from('recipe-images')
-      .upload(path, photo.bytes, { contentType: photo.contentType, upsert: true })
+      .upload(path, stored.bytes, { contentType: stored.contentType, upsert: true })
 
     if (uploadError) {
       console.warn(`[archiveImage] upload failed: ${uploadError.message}`)
       return null
     }
 
-    const { data: publicUrl } = supabase.storage.from('recipe-images').getPublicUrl(path)
+    const { data: publicUrl } = images.storage.from('recipe-images').getPublicUrl(path)
     return publicUrl.publicUrl
   } catch (error) {
     console.warn(`[archiveImage] error: ${error instanceof Error ? error.message : String(error)}`)
@@ -242,12 +245,12 @@ async function storePhoto(supabase: SupabaseClient, pathStem: string, photo: Pho
  * recipe-images bucket. Returns the public Storage URL, or null on any failure.
  */
 async function archiveImageAt(
-  supabase: SupabaseClient,
+  images: ImageStorage,
   pathStem: string,
   externalUrl: string,
 ): Promise<string | null> {
   const photo = await downloadPhoto(externalUrl)
-  return photo ? storePhoto(supabase, pathStem, photo) : null
+  return photo ? storePhoto(images, pathStem, photo) : null
 }
 
 /** An archived cover: its Storage URL and the hash the gallery skips copies of it by. */
@@ -258,13 +261,13 @@ export interface ArchivedCover {
 
 /** Archives a recipe's cover as `<user>/<recipe>.<ext>`. */
 async function archiveCover(
-  supabase: SupabaseClient,
+  images: ImageStorage,
   userId: string,
   recipeId: number,
   externalUrl: string,
 ): Promise<ArchivedCover | null> {
   const photo = await downloadPhoto(externalUrl)
-  const url = photo ? await storePhoto(supabase, galleryFolder(userId, recipeId), photo) : null
+  const url = photo ? await storePhoto(images, galleryFolder(userId, recipeId), photo) : null
   // The cover keeps one path per recipe, so a re-archive overwrites the file under
   // the same URL and the image caches keep serving the old photo (a multi-recipe
   // page's shared header on a dish card). The content hash in `?v=` is a new URL
@@ -274,18 +277,22 @@ async function archiveCover(
 
 /** Archives a recipe's cover image as `<user>/<recipe>.<ext>`. */
 export async function archiveImage(
-  supabase: SupabaseClient,
+  images: ImageStorage,
   userId: string,
   recipeId: number,
   externalUrl: string,
 ): Promise<string | null> {
-  return (await archiveCover(supabase, userId, recipeId, externalUrl))?.url ?? null
+  return (await archiveCover(images, userId, recipeId, externalUrl))?.url ?? null
 }
 
 // The key ends before the `?v=` cache buster the cover scripts append.
 export function extractStoragePath(imageUrl: string): string | null {
-  const match = imageUrl.match(/\/storage\/v1\/object\/public\/recipe-images\/([^?#]+)/)
-  return match ? match[1] : null
+  const supabase = imageUrl.match(/\/storage\/v1\/object\/public\/recipe-images\/([^?#]+)/)
+  if (supabase) return supabase[1]
+  // The R2 bucket's public host serves keys at the root.
+  if (!imageUrl.startsWith(`${IMAGE_BASE_URL}/`)) return null
+  const key = imageUrl.slice(IMAGE_BASE_URL.length + 1).match(/^[^?#]+/)
+  return key ? key[0] : null
 }
 
 // An image_url that archiving never replaced still points at the source
@@ -921,24 +928,24 @@ const STEP_IMAGE_PREFIX = 'step-'
  * at them). Deleting the recipe removes everything. Never throws.
  */
 export async function removeGallery(
-  supabase: SupabaseClient,
+  images: ImageStorage,
   userId: string,
   recipeId: number,
   keep: ReadonlySet<string> = new Set(),
   { keepStepImages = false }: { keepStepImages?: boolean } = {},
 ): Promise<void> {
   const folder = galleryFolder(userId, recipeId)
-  const files = await listGallery(supabase, folder, 'removeGallery')
+  const files = await listGallery(images, folder, 'removeGallery')
   const stale = files
     .filter((name) => !(keepStepImages && name.startsWith(STEP_IMAGE_PREFIX)))
     .map((name) => `${folder}/${name}`)
     .filter((path) => !keep.has(path))
-  await removeImages(supabase, stale, 'removeGallery')
+  await removeImages(images, stale, 'removeGallery')
 }
 
 /** File names in a gallery folder; empty (and logged) when the listing fails. */
-async function listGallery(supabase: SupabaseClient, folder: string, tag: string): Promise<string[]> {
-  const { data, error } = await supabase.storage.from('recipe-images').list(folder)
+async function listGallery(images: ImageStorage, folder: string, tag: string): Promise<string[]> {
+  const { data, error } = await images.storage.from('recipe-images').list(folder)
   if (error) {
     console.warn(`[${tag}] list failed: ${error.message}`)
     return []
@@ -951,15 +958,15 @@ async function listGallery(supabase: SupabaseClient, folder: string, tag: string
  * step photos — in one remove, for a recipe whose row is already gone. Never throws.
  */
 export async function removeRecipeImages(
-  supabase: SupabaseClient,
+  images: ImageStorage,
   userId: string,
   recipeId: number,
   coverUrl: string | null,
 ): Promise<void> {
   const folder = galleryFolder(userId, recipeId)
   const cover = coverUrl ? extractStoragePath(coverUrl) : null
-  const gallery = (await listGallery(supabase, folder, 'removeRecipeImages')).map((name) => `${folder}/${name}`)
-  await removeImages(supabase, cover ? [cover, ...gallery] : gallery, 'removeRecipeImages')
+  const gallery = (await listGallery(images, folder, 'removeRecipeImages')).map((name) => `${folder}/${name}`)
+  await removeImages(images, cover ? [cover, ...gallery] : gallery, 'removeRecipeImages')
 }
 
 /**
@@ -969,9 +976,9 @@ export async function removeRecipeImages(
  * recipes for months with nothing in the logs), so the count of removed
  * objects is checked, not only the error. Never throws.
  */
-export async function removeImages(supabase: SupabaseClient, paths: string[], tag: string): Promise<string[]> {
+export async function removeImages(images: ImageStorage, paths: string[], tag: string): Promise<string[]> {
   if (paths.length === 0) return []
-  const { data, error } = await supabase.storage.from('recipe-images').remove(paths)
+  const { data, error } = await images.storage.from('recipe-images').remove(paths)
   if (error) {
     console.warn(`[${tag}] remove failed: ${error.message}`)
     return paths
@@ -1033,7 +1040,7 @@ export function orphanedImagePaths(
  * photo from showing under a new URL).
  */
 export async function archiveGallery(
-  supabase: SupabaseClient,
+  images: ImageStorage,
   userId: string,
   recipeId: number,
   sources: string[],
@@ -1053,7 +1060,7 @@ export async function archiveGallery(
         return null
       }
       seen.add(photo.hash)
-      return storePhoto(supabase, `${folder}/${run}-${i}`, photo)
+      return storePhoto(images, `${folder}/${run}-${i}`, photo)
     }),
   )
   const fetchable = sources.length - (archivedCover ? 1 : 0)
@@ -1070,7 +1077,7 @@ export async function archiveGallery(
 
   // A refresh may find fewer photos than last time; stale files must not linger.
   // The step photos beside them are archived in parallel and are not ours to drop.
-  await removeGallery(supabase, userId, recipeId, kept, { keepStepImages: true })
+  await removeGallery(images, userId, recipeId, kept, { keepStepImages: true })
   return gallery
 }
 
@@ -1082,7 +1089,7 @@ export async function archiveGallery(
  * unconditionally.
  */
 export async function archiveStepImages(
-  supabase: SupabaseClient,
+  images: ImageStorage,
   userId: string,
   recipeId: number,
   sources: readonly (string | null)[],
@@ -1091,7 +1098,7 @@ export async function archiveStepImages(
   const folder = galleryFolder(userId, recipeId)
   const archived = await Promise.all(
     sources.map((source, i) =>
-      source ? archiveImageAt(supabase, `${folder}/${STEP_IMAGE_PREFIX}${i}`, source) : Promise.resolve(null),
+      source ? archiveImageAt(images, `${folder}/${STEP_IMAGE_PREFIX}${i}`, source) : Promise.resolve(null),
     ),
   )
   return archived.map((url) => url ?? '')
@@ -1104,17 +1111,17 @@ export async function archiveStepImages(
  * failed to archive, and the stored gallery must be kept.
  */
 export async function archiveRecipeImages(
-  supabase: SupabaseClient,
+  images: ImageStorage,
   userId: string,
   recipeId: number,
   cover: string | undefined,
   gallery: string[],
   { clearStale = false }: { clearStale?: boolean } = {},
 ): Promise<{ cover: string | null; gallery: string[] | null }> {
-  const archivedCover = cover != null ? await archiveCover(supabase, userId, recipeId, cover) : null
+  const archivedCover = cover != null ? await archiveCover(images, userId, recipeId, cover) : null
   const archivedGallery =
     gallery.length > 0 || clearStale
-      ? await archiveGallery(supabase, userId, recipeId, gallery, archivedCover)
+      ? await archiveGallery(images, userId, recipeId, gallery, archivedCover)
       : []
   return { cover: archivedCover?.url ?? null, gallery: archivedGallery }
 }

@@ -6,6 +6,16 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-09
 
+### Zdjęcia: z Supabase Storage do Cloudflare R2 (przekroczony limit planu Free)
+
+**Co:** Supabase ostrzegł (3 dni do 2026-11-11, potem błędy 402), że organizacja przekroczyła limity: pamięć 1,31 GB z 1,1 GB, transfer 11,4 GB z 5,5 GB. Zapytanie o `storage.objects` (Management API): cały bucket `recipe-images` to 3764 pliki, 1255,8 MB, średnio 342 KB; 506 plików JPEG ma ponad 500 KB i zajmuje 584 MB. Decyzja właściciela: zdjęcia nie mają być w Supabase, mają być kompresowane i cachowane.
+
+**Jak:** bucket R2 `zapiszprzepis-images` z domeną `img.zapiszprzepis.pl`; skrypt `scripts/migrate-images-to-r2.ts` kopiuje każdy plik, JPEG/PNG powyżej 150 KB zamienia na WebP (długi bok do 1600 px, jakość 82), zapisuje z `Cache-Control: public, max-age=31536000, immutable`. Próba na co 40. pliku (95 plików): 33,8 MB → 11,9 MB (35%).
+
+**Wynik:** skopiowane 3764 z 3764 plików. Pierwszy przebieg: 2724 plików, 1040 odrzuconych przez Supabase kodem 429 (zbyt szybkie pobieranie; po tym „Too many connections” przy listowaniu), więc dodałem ponawianie i obniżyłem równoległość z 6 do 3; drugi przebieg skończył bez błędów. Rozmiar po migracji ok. 459 MB (945 → 331 MB w pierwszym, 310 → 127 MB w drugim przebiegu) wobec 10 GB darmowego limitu R2.
+
+**Nie dowodzi:** że produkcja wyświetla zdjęcia z R2 (adresy w bazie jeszcze wskazują Supabase, dopóki nie przepiszę ich po deployu), ani że transfer spadnie; to pokaże dopiero panel Usage Supabase kilka dni po przełączeniu. Kompresja nowych zdjęć w Workerze (binding Cloudflare Images) nie była jeszcze sprawdzona na produkcji.
+
 ### Powtórzone `<title>` przepisów: od 43 grup do zera (#745, #746, #749)
 
 **Jak:** wszystkie adresy `/przepis/…` z `https://zapiszprzepis.pl/sitemap.xml`, pobrane po 8 naraz (to statyczne pliki), wyciągnięty `<title>` każdej strony i policzone grupy adresów o identycznym tytule. Te same kroki w trzech momentach.

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { imageStorage } from '@/lib/image-store'
 import { buildFirecrawlOptions, buildEmbedScanOptions } from '@/lib/firecrawl'
 import { NUMBERED_SLUG_ATTEMPTS, recipeSlug, recipeSlugCandidate } from '@/lib/slugify'
 import {
@@ -263,11 +264,12 @@ async function updateRecipe(
  * lost its photos); a null gallery (nothing archived) keeps the old one.
  */
 export async function storeCoverAndGallery(supabase: SupabaseClient, job: RecipeImageJob): Promise<void> {
-  const archived = await archiveRecipeImages(supabase, job.userId, job.recipeId, job.cover, job.gallery, {
+  const images = imageStorage(supabase)
+  const archived = await archiveRecipeImages(images, job.userId, job.recipeId, job.cover, job.gallery, {
     clearStale: job.replace,
   })
   const update: Database['public']['Tables']['recipes']['Update'] = {}
-  const cover = archived.cover ?? (job.coverFallback ? await archiveImage(supabase, job.userId, job.recipeId, job.coverFallback) : null)
+  const cover = archived.cover ?? (job.coverFallback ? await archiveImage(images, job.userId, job.recipeId, job.coverFallback) : null)
   if (cover != null) update.image_url = cover
   if (archived.gallery != null && (job.replace || archived.gallery.length > 0)) update.image_urls = archived.gallery
   await updateRecipe(supabase, job.recipeId, update)
@@ -275,7 +277,7 @@ export async function storeCoverAndGallery(supabase: SupabaseClient, job: Recipe
 
 /** Archives the per-step photos and links them — only when this run found some. */
 export async function storeStepImages(supabase: SupabaseClient, job: RecipeImageJob): Promise<void> {
-  const stepImages = await archiveStepImages(supabase, job.userId, job.recipeId, job.stepSources)
+  const stepImages = await archiveStepImages(imageStorage(supabase), job.userId, job.recipeId, job.stepSources)
   if (stepImages.some(Boolean)) await updateRecipe(supabase, job.recipeId, { step_images: stepImages })
 }
 

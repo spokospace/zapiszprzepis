@@ -13,6 +13,8 @@
  * host, so the fallback can never be used as an open redirect.
  */
 
+import { IMAGE_BASE_URL } from './image-host'
+
 /** A day: re-archiving a recipe overwrites its photo at the same URL. */
 export const IMAGE_CACHE_CONTROL = 'public, max-age=86400'
 
@@ -40,9 +42,9 @@ export function imageFallbackUrl(requestUrl: string, supabaseUrl: string | undef
   try {
     const target = new URL(raw)
     const storage = new URL(supabaseUrl)
-    return target.protocol === 'https:' && target.host === storage.host && target.pathname.startsWith('/storage/v1/object/public/')
-      ? target.toString()
-      : null
+    const onSupabase = target.host === storage.host && target.pathname.startsWith('/storage/v1/object/public/')
+    const onBucket = target.host === new URL(IMAGE_BASE_URL).host
+    return target.protocol === 'https:' && (onSupabase || onBucket) ? target.toString() : null
   } catch {
     return null
   }

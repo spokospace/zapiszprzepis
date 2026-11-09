@@ -78,3 +78,6 @@ scripts/data-fixes/*
 /public/szukaj.html
 /public/index.html
 /public/recipe-files-version.json
+
+# image migration state (scripts/migrate-images-to-r2.ts)
+.migration/
