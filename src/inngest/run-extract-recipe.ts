@@ -1152,8 +1152,8 @@ ${markdown}`
         // taxonomy_locked_at is set the refresh keeps category, tags and
         // extra_categories as they are and refreshes everything else.
         const { data: existingRow } = await (refreshRecipeId != null
-          ? supabase.from('recipes').select('dish_classified_at, taxonomy_locked_at').eq('user_id', userId).eq('id', refreshRecipeId)
-          : supabase.from('recipes').select('dish_classified_at, taxonomy_locked_at').eq('user_id', userId).eq('source_url', sharedUrl).is('source_key', null)
+          ? supabase.from('recipes').select('dish_classified_at, taxonomy_locked_at, content_locked_at').eq('user_id', userId).eq('id', refreshRecipeId)
+          : supabase.from('recipes').select('dish_classified_at, taxonomy_locked_at, content_locked_at').eq('user_id', userId).eq('source_url', sharedUrl).is('source_key', null)
         ).maybeSingle()
         const refreshDishColumns: Record<string, string | null> =
           Object.keys(dishColumns).length > 0 && existingRow?.dish_classified_at == null ? dishColumns : {}
@@ -1162,27 +1162,35 @@ ${markdown}`
             ? {}
             : { category: recipeJSON.category, tags, extra_categories: recipeJSON.extra_categories ?? [] }
 
+        // Staff edited the content by hand (recipes_update): keep it, refresh the rest.
+        const refreshContentColumns =
+          existingRow?.content_locked_at != null
+            ? {}
+            : {
+                title,
+                ingredients: recipeJSON.ingredients,
+                steps: recipeJSON.steps,
+                description,
+                meta_description: metaDescription,
+                ingredient_fingerprint: ingredientFp,
+                prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
+                cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
+                total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
+                times_estimated: timesEstimated,
+                servings,
+              }
+
         const refreshQuery = supabase
           .from('recipes')
           .update({
-            title,
-            ingredients: recipeJSON.ingredients,
-            steps: recipeJSON.steps,
+            ...refreshContentColumns,
             ...refreshTaxonomyColumns,
-            description,
-            meta_description: metaDescription,
-            ingredient_fingerprint: ingredientFp,
             source_type: sourceType,
             // Found an embed this run: store it only when it still embeds, which
             // clears a video that has since gone private; found none (the page
             // lost the embed) keeps the old id. The author is kept the same way.
             ...(youtubeId != null ? { youtube_id: embeddableYoutubeId } : {}),
             ...(sourceAuthor != null ? { source_author: sourceAuthor } : {}),
-            prep_time_minutes: recipeJSON.prepTimeMinutes ?? null,
-            cook_time_minutes: recipeJSON.cookTimeMinutes ?? null,
-            total_time_minutes: recipeJSON.totalTimeMinutes ?? null,
-            times_estimated: timesEstimated,
-            servings,
             ...refreshDishColumns,
             extracted_at: new Date().toISOString(),
           })

@@ -16,7 +16,7 @@ export interface ExtractedIngredient {
   section: string
 }
 
-const MAX_MINUTES = 10_000
+export const MAX_MINUTES = 10_000
 
 /** A string field as text: numbers become their digits ("200"), anything else an empty string. */
 function toText(value: unknown): string {

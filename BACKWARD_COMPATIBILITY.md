@@ -111,6 +111,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 | `recipes_unmerge` (destructive) | `merge_id`* |
 | `recipes_set_taxonomy` | `recipe_id`*, `category`, `tags` (list, from the closed tag list, at most 6; `[]` clears) |
 | `recipes_set_meta_title` | `recipe_id`*, `meta_title`* (up to 70 characters; `""` clears) |
+| `recipes_update` | `recipe_id`*, `title`, `description`, `meta_description`, `servings`, `prep_time_minutes`, `cook_time_minutes`, `total_time_minutes`, `source_author`, `ingredients` (list of `{name*, amount, unit, alt, section}`), `steps` (list, repeats allowed), `step_images` (list, `""` = none), `image_url` (on `img.zapiszprzepis.pl`). Omitted = unchanged; `""` clears a text field. Sets `recipes.content_locked_at` (additive column). `recipes_get` gains the content fields (additive). |
 
 Argument lists are JSON arrays of distinct items; their bounds sit under `items` in the input schema. After a change the caches of the affected recipe pages are emptied, as in the panel.
 

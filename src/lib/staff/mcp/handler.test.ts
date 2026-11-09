@@ -445,10 +445,10 @@ describe('mcp tools/call: recipes', () => {
 
   it('previews a hide with the recipe as it is now and writes nothing', async () => {
     const row = { recipe_id: 5, slug: 'zupa', hidden_at: null }
-    const { service, rpc } = makeService(TOKENS, { admin_get_recipe_as: { ok: true, data: [row] } })
+    const { service, rpc } = makeService(TOKENS, { admin_get_recipe_content_as: { ok: true, data: [row] } })
     const r = await result(await handleMcp(post(call('recipes_hide', { recipe_id: 5, dry_run: true })), service))
     expect(JSON.parse(text(r))).toMatchObject({ dry_run: true, changed: false, current: row })
-    expect(rpc).toHaveBeenCalledWith('admin_get_recipe_as', { p_actor: ADMIN, p_recipe: 5 })
+    expect(rpc).toHaveBeenCalledWith('admin_get_recipe_content_as', { p_actor: ADMIN, p_recipe: 5 })
     expect(rpc).not.toHaveBeenCalledWith('admin_hide_recipe_as', expect.anything())
     expect(revalidateRecipeCaches).not.toHaveBeenCalled()
   })

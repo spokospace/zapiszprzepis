@@ -1,6 +1,7 @@
 import { MAX_TAGS, RECIPE_TAGS } from '@/lib/recipe-tags'
 import { RECIPE_CATEGORIES } from '@/lib/recipe-categories'
 import { MAX_EXTRA_CATEGORIES } from '@/lib/category-membership'
+import { MAX_MINUTES } from '@/lib/extracted-recipe'
 import { finishImportRetry } from './imports'
 import type { ReadTool, ToolArg, WriteTool } from './mcp/types'
 import type { StaffPermission } from './permissions'
@@ -186,6 +187,39 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
         },
       },
       {
+        name: 'update', label: 'Edytuj treść przepisu', permission: 'recipes.edit', destructive: false,
+        mcp: {
+          description: 'Edit the content of a recipe. Omitted fields stay as they are; an empty string clears a text field. ingredients, steps and step_images are each the COMPLETE new list. Read the current values with recipes_get first. Any call locks the content: re-extraction no longer overwrites title, description, ingredients, steps, times or servings. When the number of steps changes and step_images is not given, the step photos are dropped (they are index-aligned with the steps).',
+          rpc: 'admin_update_recipe_content_as', target: 'recipe_id', finish: finishRecipeSlug,
+          args: [
+            arg.recipeId,
+            { name: 'title', param: 'p_title', type: 'string', maxLength: 200, description: 'The recipe title (1-200 characters).' },
+            { name: 'description', param: 'p_description', type: 'string', maxLength: 300, description: 'The short variant line shown under the dish name, e.g. "z białą fasolą". Empty string clears it.' },
+            { name: 'meta_description', param: 'p_meta_description', type: 'string', maxLength: 400, description: 'The longer description shown on the page and in search results. Empty string clears it.' },
+            { name: 'servings', param: 'p_servings', type: 'integer', min: 1, max: 99, description: 'Number of servings (1-99).' },
+            { name: 'prep_time_minutes', param: 'p_prep', type: 'integer', min: 0, max: MAX_MINUTES, description: 'Preparation time in minutes.' },
+            { name: 'cook_time_minutes', param: 'p_cook', type: 'integer', min: 0, max: MAX_MINUTES, description: 'Cooking time in minutes.' },
+            { name: 'total_time_minutes', param: 'p_total', type: 'integer', min: 0, max: MAX_MINUTES, description: 'Total time in minutes. Setting any time marks the times as not estimated.' },
+            { name: 'source_author', param: 'p_source_author', type: 'string', maxLength: 200, description: 'Author of the source. Empty string clears it.' },
+            {
+              name: 'ingredients', param: 'p_ingredients', type: 'object_list', minItems: 1, maxItems: 100, maxLength: 200,
+              itemRequired: ['name'],
+              itemProperties: {
+                name: { description: 'Ingredient name with any preparation note, e.g. "kiszone buraki".' },
+                amount: { description: 'Metric amount as text, e.g. "300-400" or "1/2". Empty when the source gives none.' },
+                unit: { description: 'Metric unit, e.g. "g", "ml", "sztuka". Empty when none.' },
+                alt: { description: 'Household measure from the source, e.g. "3/4 kostki". Empty when none.' },
+                section: { description: 'Group heading, e.g. "Ciasto". Empty when the recipe has no groups.' },
+              },
+              description: 'The complete new ingredient list, in order (1-100 items).',
+            },
+            { name: 'steps', param: 'p_steps', type: 'string_list', minItems: 1, maxItems: 100, maxLength: 3000, allowDuplicates: true, description: 'The complete new list of steps, in order, one string each (1-100).' },
+            { name: 'step_images', param: 'p_step_images', type: 'string_list', maxItems: 100, maxLength: 500, allowDuplicates: true, description: 'Index-aligned with steps: element i is the photo URL of step i ("" for none). URLs must be on https://img.zapiszprzepis.pl/. At most as many as steps. [] removes all step photos.' },
+            { name: 'image_url', param: 'p_image_url', type: 'string', maxLength: 500, description: 'The cover photo: a URL on https://img.zapiszprzepis.pl/ (an already archived image, e.g. one from the gallery of the same recipe). Empty string removes the cover.' },
+          ],
+        },
+      },
+      {
         name: 'set_meta_title', label: 'Zmień tytuł SEO', permission: 'recipes.edit', destructive: false,
         mcp: {
           description: 'Set the SEO <title> of a recipe page (without the " · Zapisz Przepis" suffix, which the site adds). Without one the page uses the recipe title plus its short variant line. An empty string clears it. The page and its static file pick it up on the next recipe-files build.',
@@ -209,7 +243,7 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
           { name: 'after_id', param: 'p_after_id', type: 'integer', min: 1, description: 'Paging: recipe_id of the last row of the previous page.' },
         ],
       },
-      get: { description: 'Get one recipe (hidden ones too).', rpc: 'admin_get_recipe_as', args: [arg.recipeId] },
+      get: { description: 'Get one recipe (hidden ones too) with its full content: description, ingredients, steps, step photos, times, servings, SEO fields, tags and whether the content is locked against re-extraction.', rpc: 'admin_get_recipe_content_as', args: [arg.recipeId] },
     },
   },
   {

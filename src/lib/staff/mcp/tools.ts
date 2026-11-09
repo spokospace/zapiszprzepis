@@ -26,6 +26,7 @@ const TYPE_SCHEMA: Record<ToolArg['type'], Record<string, unknown>> = {
   timestamp: { type: 'string', format: 'date-time' },
   integer_list: { type: 'array', items: { type: 'integer' }, uniqueItems: true },
   string_list: { type: 'array', items: { type: 'string' }, uniqueItems: true },
+  object_list: { type: 'array', items: { type: 'object' } },
 }
 
 function argSchema(a: ToolArg): Record<string, unknown> {
@@ -36,8 +37,18 @@ function argSchema(a: ToolArg): Record<string, unknown> {
   if (a.maxLength !== undefined) bounds.maxLength = a.maxLength
   if (a.values) bounds.enum = [...a.values]
   // On a list the bounds describe its elements (under `items`); its own length uses minItems/maxItems.
-  if (a.type === 'integer_list' || a.type === 'string_list') schema.items = { ...(schema.items as object), ...bounds }
+  if (a.type === 'object_list') {
+    schema.items = {
+      type: 'object',
+      properties: Object.fromEntries(
+        Object.entries(a.itemProperties ?? {}).map(([k, v]) => [k, { type: 'string', maxLength: a.maxLength, description: v.description }]),
+      ),
+      required: [...(a.itemRequired ?? [])],
+      additionalProperties: false,
+    }
+  } else if (a.type === 'integer_list' || a.type === 'string_list') schema.items = { ...(schema.items as object), ...bounds }
   else Object.assign(schema, bounds)
+  if (a.allowDuplicates) delete schema.uniqueItems
   if (a.minItems !== undefined) schema.minItems = a.minItems
   if (a.maxItems !== undefined) schema.maxItems = a.maxItems
   return schema
@@ -106,14 +117,30 @@ export type ParsedArgs =
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}([Tt ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?([Zz]|[+-]\d{2}:?\d{2})?)?$/
 
-function checkList(a: ToolArg, v: unknown, item: ToolArg['type']): string | null {
+function checkList(a: ToolArg, v: unknown, item: 'integer' | 'string' | 'object'): string | null {
   if (!Array.isArray(v)) return 'must be a list'
   if (a.minItems !== undefined && v.length < a.minItems) return `must have at least ${a.minItems} items`
   if (a.maxItems !== undefined && v.length > a.maxItems) return `must have at most ${a.maxItems} items`
-  if (new Set(v).size !== v.length) return 'must not repeat an item'
+  if (!a.allowDuplicates && item !== 'object' && new Set(v).size !== v.length) return 'must not repeat an item'
   for (const one of v) {
-    const issue = checkValue({ ...a, type: item }, one)
+    const issue = item === 'object' ? checkObject(a, one) : checkValue({ ...a, type: item }, one)
     if (issue) return `has an item that ${issue}`
+  }
+  return null
+}
+
+/** One item of an `object_list`: only declared keys, string values within `maxLength`, required keys not blank. */
+function checkObject(a: ToolArg, v: unknown): string | null {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return 'must be an object'
+  const allowed = Object.keys(a.itemProperties ?? {})
+  for (const [key, value] of Object.entries(v)) {
+    if (!allowed.includes(key)) return `has the unknown key "${key}"`
+    if (typeof value !== 'string') return `has a "${key}" that is not a string`
+    if (a.maxLength !== undefined && value.length > a.maxLength) return `has a "${key}" longer than ${a.maxLength} characters`
+  }
+  for (const key of a.itemRequired ?? []) {
+    const value = (v as Record<string, unknown>)[key]
+    if (typeof value !== 'string' || value.trim() === '') return `needs a non-blank "${key}"`
   }
   return null
 }
@@ -131,6 +158,8 @@ function checkValue(a: ToolArg, v: unknown): string | null {
       return checkList(a, v, 'integer')
     case 'string_list':
       return checkList(a, v, 'string')
+    case 'object_list':
+      return checkList(a, v, 'object')
     case 'uuid':
       return typeof v === 'string' && UUID_RE.test(v) ? null : 'must be a uuid'
     case 'timestamp':

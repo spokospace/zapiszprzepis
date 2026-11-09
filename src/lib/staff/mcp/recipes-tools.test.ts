@@ -30,6 +30,7 @@ describe('recipe MCP tools — what is exposed', () => {
         'recipes_set_taxonomy',
         'recipes_unhide',
         'recipes_unmerge',
+        'recipes_update',
       ].sort(),
     )
   })
@@ -40,6 +41,7 @@ describe('recipe MCP tools — what is exposed', () => {
     expect(tool('recipes_restore').permission).toBe('recipes.restore')
     expect(tool('recipes_set_taxonomy').permission).toBe('recipes.taxonomy')
     expect(tool('recipes_set_meta_title').permission).toBe('recipes.edit')
+    expect(tool('recipes_update').permission).toBe('recipes.edit')
     expect(recipeTools.filter((t) => t.destructive).map((t) => t.name).sort()).toEqual(['recipes_delete', 'recipes_merge', 'recipes_unmerge'])
   })
 
@@ -107,6 +109,50 @@ describe('recipe MCP tools — argument checks', () => {
   it('passes the list filter only with a known value', () => {
     expect(parseArgs(tool('recipes_list'), { filter: 'hidden' }).ok).toBe(true)
     expect(parseArgs(tool('recipes_list'), { filter: 'everything' }).ok).toBe(false)
+  })
+})
+
+describe('recipe MCP tools — recipes_update', () => {
+  const update = tool('recipes_update')
+  const salad = [
+    { name: 'kiszone buraki', amount: '300-400', unit: 'g' },
+    { name: 'sól', amount: '', unit: '' },
+  ]
+
+  it('turns the content arguments into the SQL parameters', () => {
+    const parsed = parseArgs(update, {
+      recipe_id: 9, title: 'Sałatka z kiszonych buraków', servings: 4, ingredients: salad,
+      steps: ['Pokroić.', 'Pokroić.'], step_images: ['', ''], image_url: '', dry_run: true,
+    })
+    expect(parsed).toMatchObject({
+      ok: true, dryRun: true,
+      params: { p_recipe: 9, p_title: 'Sałatka z kiszonych buraków', p_servings: 4, p_ingredients: salad, p_steps: ['Pokroić.', 'Pokroić.'], p_step_images: ['', ''], p_image_url: '' },
+    })
+  })
+
+  it('describes ingredients as an array of objects with the allowed keys, and lets steps repeat', () => {
+    const props = (update.inputSchema as { properties: Record<string, Record<string, any>> }).properties
+    expect(props.ingredients).toMatchObject({
+      type: 'array',
+      items: { type: 'object', required: ['name'], additionalProperties: false },
+    })
+    expect(Object.keys(props.ingredients.items.properties).sort()).toEqual(['alt', 'amount', 'name', 'section', 'unit'])
+    expect(props.steps.uniqueItems).toBeUndefined()
+  })
+
+  it.each([
+    ['an ingredient without a name', { recipe_id: 9, ingredients: [{ amount: '1' }] }, 'non-blank "name"'],
+    ['a blank ingredient name', { recipe_id: 9, ingredients: [{ name: '  ' }] }, 'non-blank "name"'],
+    ['an unknown ingredient key', { recipe_id: 9, ingredients: [{ name: 'sól', note: 'x' }] }, 'unknown key "note"'],
+    ['a numeric amount', { recipe_id: 9, ingredients: [{ name: 'sól', amount: 5 }] }, 'not a string'],
+    ['a bare string as an ingredient', { recipe_id: 9, ingredients: ['sól'] }, 'must be an object'],
+    ['an empty ingredient list', { recipe_id: 9, ingredients: [] }, 'at least 1'],
+    ['an empty step list', { recipe_id: 9, steps: [] }, 'at least 1'],
+    ['servings of zero', { recipe_id: 9, servings: 0 }, 'at least 1'],
+  ])('refuses %s', (_label, args, fragment) => {
+    const parsed = parseArgs(update, args)
+    expect(parsed.ok).toBe(false)
+    expect(!parsed.ok && parsed.message).toContain(fragment)
   })
 })
 
