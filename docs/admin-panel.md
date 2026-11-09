@@ -110,7 +110,12 @@ and role**. A moderator's token lists and runs only moderator tools; an admin's 
 tools are generated from `src/lib/staff/registry.ts`, so a resource added there appears without MCP code. Recipe
 moderation is there: `recipes_list`, `recipes_get`, `recipes_hide`, `recipes_unhide`, `recipes_delete`, `recipes_restore`,
 `recipes_merge`, `recipes_unmerge` and `recipes_set_taxonomy`, each under the permission of its panel button, and
-`recipes_set_meta_title` (the recipe's SEO title; MCP only for now, permission `recipes.edit`). A change
+`recipes_set_meta_title` (the recipe's SEO title; MCP only for now, permission `recipes.edit`) and
+`recipes_update` (full content edit: title, descriptions, servings, times, ingredients, steps, step photos, cover; MCP only,
+permission `recipes.edit`). `recipes_get` returns that content too. The first `recipes_update` sets
+`recipes.content_locked_at`, after which the extraction refresh keeps title, description, ingredients, steps, times and
+servings as they are (the same idea as `taxonomy_locked_at`). Migration `20261110100000_admin_recipe_content.sql` must be applied
+before the app that calls it; nothing in the panel UI uses it yet. A change
 empties the page caches of the recipes it touched, the way the panel does (`src/lib/staff/recipe-finish.ts`). The tool and argument names are a contract: see `BACKWARD_COMPATIBILITY.md` §9.
 
 ### Connect

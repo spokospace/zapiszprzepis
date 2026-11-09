@@ -7,7 +7,7 @@ import type { StaffErrorCode } from '../errors'
  * names are a contract (BACKWARD_COMPATIBILITY.md §9), so rename nothing here
  * casually.
  */
-export type ToolArgType = 'string' | 'integer' | 'boolean' | 'uuid' | 'timestamp' | 'integer_list' | 'string_list'
+export type ToolArgType = 'string' | 'integer' | 'boolean' | 'uuid' | 'timestamp' | 'integer_list' | 'string_list' | 'object_list'
 
 export interface ToolArg {
   /** The name the MCP client sees. */
@@ -25,9 +25,17 @@ export interface ToolArg {
   maxLength?: number
   /** Allowed values for `string` (and for each item of a `string_list`). */
   values?: readonly string[]
-  /** Length bounds for the two list types. Items must be distinct. */
+  /** Length bounds for the list types. Items must be distinct unless `allowDuplicates`. */
   minItems?: number
   maxItems?: number
+  /** A `string_list` whose items may repeat (recipe steps; step photos use '' for "none"). */
+  allowDuplicates?: boolean
+  /**
+   * An `object_list`: the keys each item may have. Every value is a string of at most
+   * `maxLength`; the ones in `required` must be non-blank. Other keys are refused.
+   */
+  itemProperties?: Readonly<Record<string, { description: string }>>
+  itemRequired?: readonly string[]
 }
 
 export type ServiceReply = { ok: true; data: unknown } | { ok: false; code: StaffErrorCode }

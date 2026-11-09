@@ -355,6 +355,7 @@ export type Database = {
           source_url: string | null
           step_images: string[]
           extra_categories: Database["public"]["Enums"]["recipe_category"][]
+          content_locked_at: string | null
           taxonomy_locked_at: string | null
           steps: Json
           tags: string[]
@@ -391,6 +392,7 @@ export type Database = {
           source_url?: string | null
           step_images?: string[]
           extra_categories?: Database["public"]["Enums"]["recipe_category"][]
+          content_locked_at?: string | null
           taxonomy_locked_at?: string | null
           steps?: Json
           tags?: string[]
@@ -427,6 +429,7 @@ export type Database = {
           source_url?: string | null
           step_images?: string[]
           extra_categories?: Database["public"]["Enums"]["recipe_category"][]
+          content_locked_at?: string | null
           taxonomy_locked_at?: string | null
           steps?: Json
           tags?: string[]
