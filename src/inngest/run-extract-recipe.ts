@@ -442,7 +442,7 @@ export async function runExtractRecipe(
   }
 
   async function firecrawlScrape(options: ReturnType<typeof buildFirecrawlOptions>) {
-    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+    const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
