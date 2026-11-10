@@ -36,7 +36,7 @@ import { metricUnits } from '@/lib/us-units'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { EXTRA_CATEGORIES_RULE, toExtraCategories } from '@/lib/extra-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
-import { DISH_ENTRY_RULE } from '@/lib/dish-entry-rule'
+import { DISH_ENTRY_RULE, dropInlineOnlyDishes } from '@/lib/dish-entry-rule'
 import { STEP_CONTENT_RULE, STEP_FORM_RULE } from '@/lib/step-form'
 import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantNoteSibling } from '@/lib/recipe-dish'
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
@@ -347,6 +347,63 @@ function estimatedTimeFields(r: RecipeData): TimeField[] {
 // null means nothing is shown, so nothing is an estimate.
 function timesAreEstimated(r: RecipeData): boolean {
   return estimatedTimeFields(r).length > 0
+}
+
+/** The extraction system prompt. Exported so a prompt change can be tried against a real page without a run. */
+export function buildExtractionSystemPrompt(foreignSource: boolean): string {
+  return `You are a recipe extraction expert. Extract recipe information from user-provided content.
+Return ONLY valid JSON (no markdown, no explanations) with this exact structure, one object per recipe on the page:
+{"recipes": [
+{
+  "dishKind": "what the dish IS, 1–3 Polish words, decided before the title (\"dip\", \"zapiekanka makaronowa\", \"spód do pizzy\")",
+  "title": "Recipe title in Polish, built around that dish",
+  "ingredients": [
+      {${foreignSource ? FOREIGN_INGREDIENT_FIELDS : ''}"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
+  ],
+  "steps": [{"text": "Step 1 description", "image": "image URL from the content that shows THIS step, or null"}],
+  "sourceTitle": "the dish's name EXACTLY as the page writes it, or null",
+  "dishImage": "URL of the photo of THIS dish, or null",
+  "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
+  "extra_categories": ["0–2 more values from the same list, or an empty array"],
+  "prepTimeMinutes": integer or null,
+  "cookTimeMinutes": integer or null,
+  "totalTimeMinutes": integer or null,
+  "timesEstimated": boolean,
+  "estimatedTimes": ["names of the time fields you estimated"],
+  "servings": integer or null
+}
+]}
+Rules:
+- The page often includes navigation, related/popular posts widgets, comments and ads. Focus on the recipes of the post body — usually the content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
+- Several dishes: a post may give more than one recipe (a holiday menu, a breakfast set, "5 quick dinners"). Return one entry per distinct dish, in the order the page gives them, at most 10. Keep one dish in one entry: its variants (e.g. "z bulwą" / "z kiełbasą") and its ingredient sections stay together in that entry. Advice, tips and "sekrety" sections (e.g. how to boil potatoes for a salad) are not entries. ${DISH_ENTRY_RULE} A page with no recipe returns {"recipes": []}.
+- Ingredient sections: many recipes split ingredients into named parts (e.g. "Podmłoda", "Ciasto właściwe", "Masa waniliowa", "Masa truskawkowa", "Spód", "Krem", "Dodatkowo"). When the source groups ingredients under such a heading, set "section" to that heading (in Polish, keep it short) for every ingredient in that group, preserving the source order so groups stay contiguous. If the ingredients are a single ungrouped list, use an empty string for "section" on every ingredient.
+- Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml) and keep the precise metric value in "amount"/"unit".
+- Alternative measure ("alt"): ONLY a quantity in a HOUSEHOLD unit that the source states next to the precise amount — szklanki, łyżki, łyżeczki, kostki, garście, plasterki. Copy it VERBATIM, keeping the source's own wording: "3 szklanki", "około 1,5 szklanki", "do 1/3 szklanki", "3/4 kostki". Never add, drop or reword an approximation like "około"/"ok." the source did not use (source "3 szklanki" → "3 szklanki", NOT "około 3 szklanki"). Keep the precise figure in "amount"/"unit"; for a US household measure you convert to metric (e.g. "1 cup flour"), keep the metric in "amount"/"unit" and the stated cups/sticks/spoons in "alt".
+- "alt" is a measure, never a note — but never drop the note either. A size ("duże"), purpose ("do dekoracji", "do posypania"), packaging ("małe opakowanie"), brand, or preparation ("grubo starte") describes the ingredient, so keep it in "name" (e.g. name "orzechy włoskie do dekoracji", "marchewka grubo starta"), and leave "alt" empty — "alt" carries only a household measure.
+- Never calculate, estimate, guess or infer an "alt" from the metric amount or from your own knowledge. If the source gives only weight or volume with no household unit beside it (e.g. "300 g startej marchewki"), leave "alt" an empty string. A wrong or invented measure is worse than none.
+- ${EXTRA_CATEGORIES_RULE}
+- Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
+- prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
+- Category: cookies, biscuits, gingerbread cookies, macarons and crescent rolls ("ciasteczka", "herbatniki", "pierniczki", "makaroniki", "rogaliki", "faworki") are "ciasteczka". Cakes, tortes, cheesecakes, gingerbread cakes, sponge cakes and apple pies ("ciasto", "tort", "sernik", "piernik", "biszkopt", "szarlotka", "mazurek", "babka", named layer cakes like "Marysieńka", no-bake layer cakes "bez pieczenia") are "ciasta". Reserve "desery" for non-cake sweets only: sweet muffins and cupcakes ("babeczki", "muffiny"), ice cream, doughnuts ("pączki"), choux ("ptysie"), tiramisu, creams/mousses, jellies ("galaretka"), sweet yeast buns ("drożdżówki", "jagodzianki", "ślimaczki").
+- Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast buns (drożdżówki, jagodzianki) stay "desery", rogaliki "ciasteczka".
+- Category: salads and slaws ("sałatka", "surówka", "coleslaw") are "salatki", not "przekaski" or "inne". Home preserves are "przetwory", not "inne": jams and marmalades ("dżem", "konfitura", "powidła", "marmolada"), pickled or fermented vegetables and mushrooms ("ogórki kiszone/marynowane", "kiszona kapusta", "pikle", "grzyby marynowane", "papryka konserwowa"), and homemade ketchups, chutneys and sauces put up in jars for winter ("do słoików", "na zimę"). But a marinade made to flavour meat before cooking ("marynata do kurczaka/karkówki/mięsa/drobiu") is NOT a preserve — it is "inne", not "przetwory".
+- Category: homemade syrups, tinctures and herbal remedies made for health ("syrop na odporność/na kaszel", "mikstura na zatoki", "napar prozdrowotny") are "syropy". Everyday drinks (lemoniada, herbata, kompot, soki, koktajle) stay "napoje".
+- sourceTitle: on a page with several dishes, the dish's name copied CHARACTER FOR CHARACTER from the page text (a heading, or the caption or alt text of its photo), in the page's own language and spelling, NOT translated and NOT shortened. It is used to find the dish's photo on the page. When the page gives a single dish, or the dish has no such name in the text, return null.
+- dishImage: on a page with several dishes, the photo that shows THIS dish: the first image inside or right after its section. Use ONLY an image URL that appears verbatim in the provided Page HTML or Page markdown, copied EXACTLY. NEVER use the page's main/header photo, a logo, an avatar, an ad or a related-recipe thumbnail. When the dish has no photo of its own, or the page gives a single dish, return null.
+- Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
+- Title names the dish the way a menu would: not a question or how-to ("Jak zrobić domowe lody?" → "Domowe lody"), no praise words ("najlepszy", "pyszny", "idealny"), no first person ("moje", "mojej mamy") and no add-ons like "+ przepis na lukier". Proper names keep their capitals ("Prince Polo", "KFC", "Boże Narodzenie").
+- Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
+- ${STEP_FORM_RULE}
+- ${STEP_CONTENT_RULE}
+- Each step is an object {"text": "...", "image": "..." | null}. "text" is the instruction (same rules as above). "image": a photo that illustrates THIS step. Use ONLY an image URL that appears verbatim in the provided Page HTML (an <img> src/data-src inside or right next to this step, or a schema.org HowToStep image) or in the Page markdown (an image ![…](url) inside or right after this step's text) — copy it EXACTLY, do not shorten, guess, or build one. NEVER use the dish's main/cover photo, a logo, an avatar, an ad or a related-recipe thumbnail. When a step has no clearly matching in-content photo, set "image" to null. Most steps will be null; that is expected.
+- Return null for any non-time field the source does not specify. Do not guess.
+- Times stated in the source, or computed from durations it states (a sum of step times, a stated "razem 1,5 godz"), are source data: set "timesEstimated" to false.
+- When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
+- When estimating, include passive periods (rising, proofing, marinating, chilling, setting, resting) in totalTimeMinutes. If the recipe clearly has a long passive step whose length you cannot tell, return null for totalTimeMinutes rather than a number that ignores it.
+- All three times null → "timesEstimated": false.
+- "estimatedTimes" lists exactly the time fields whose value you estimated — any of "prepTimeMinutes", "cookTimeMinutes", "totalTimeMinutes". A stated prep time next to an estimated total → ["totalTimeMinutes"]. No estimated time → [].
+- servings: only a number of servings the source states ("na 4 porcje", "dla 6 osób", "Serves 4", "4 portions"). A range ("4–6 porcji"), a yield in pieces, tins or litres ("24 sztuki", "1 tortownica"), or no statement at all → null. Never estimate it.
+- Never complete a recipe from your own knowledge of the dish. When the content holds only part of it — a page description or teaser cut off with "…" or "[…]", an ingredient list with no method, a title alone — return only the ingredients and steps it states, and an empty "steps" array when the method is missing. An invented recipe is saved as if it were the author's.${foreignSource ? FOREIGN_SOURCE_RULES : ''}`
 }
 
 export async function runExtractRecipe(
@@ -745,59 +802,7 @@ export async function runExtractRecipe(
           messages: [
             {
               role: 'system',
-              content: `You are a recipe extraction expert. Extract recipe information from user-provided content.
-Return ONLY valid JSON (no markdown, no explanations) with this exact structure, one object per recipe on the page:
-{"recipes": [
-{
-  "dishKind": "what the dish IS, 1–3 Polish words, decided before the title (\"dip\", \"zapiekanka makaronowa\", \"spód do pizzy\")",
-  "title": "Recipe title in Polish, built around that dish",
-  "ingredients": [
-      {${foreignSource ? FOREIGN_INGREDIENT_FIELDS : ''}"name": "ingredient name", "amount": "quantity or empty string", "unit": "unit or empty string", "alt": "household measure or empty string", "section": "section heading or empty string"}
-  ],
-  "steps": [{"text": "Step 1 description", "image": "image URL from the content that shows THIS step, or null"}],
-  "sourceTitle": "the dish's name EXACTLY as the page writes it, or null",
-  "dishImage": "URL of the photo of THIS dish, or null",
-  "category": "one of: ${RECIPE_CATEGORIES.map(c => c.value).join(', ')}",
-  "extra_categories": ["0–2 more values from the same list, or an empty array"],
-  "prepTimeMinutes": integer or null,
-  "cookTimeMinutes": integer or null,
-  "totalTimeMinutes": integer or null,
-  "timesEstimated": boolean,
-  "estimatedTimes": ["names of the time fields you estimated"],
-  "servings": integer or null
-}
-]}
-Rules:
-- The page often includes navigation, related/popular posts widgets, comments and ads. Focus on the recipes of the post body — usually the content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
-- Several dishes: a post may give more than one recipe (a holiday menu, a breakfast set, "5 quick dinners"). Return one entry per distinct dish, in the order the page gives them, at most 10. Keep one dish in one entry: its variants (e.g. "z bulwą" / "z kiełbasą") and its ingredient sections stay together in that entry. Advice, tips and "sekrety" sections (e.g. how to boil potatoes for a salad) are not entries. ${DISH_ENTRY_RULE} A page with no recipe returns {"recipes": []}.
-- Ingredient sections: many recipes split ingredients into named parts (e.g. "Podmłoda", "Ciasto właściwe", "Masa waniliowa", "Masa truskawkowa", "Spód", "Krem", "Dodatkowo"). When the source groups ingredients under such a heading, set "section" to that heading (in Polish, keep it short) for every ingredient in that group, preserving the source order so groups stay contiguous. If the ingredients are a single ungrouped list, use an empty string for "section" on every ingredient.
-- Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml) and keep the precise metric value in "amount"/"unit".
-- Alternative measure ("alt"): ONLY a quantity in a HOUSEHOLD unit that the source states next to the precise amount — szklanki, łyżki, łyżeczki, kostki, garście, plasterki. Copy it VERBATIM, keeping the source's own wording: "3 szklanki", "około 1,5 szklanki", "do 1/3 szklanki", "3/4 kostki". Never add, drop or reword an approximation like "około"/"ok." the source did not use (source "3 szklanki" → "3 szklanki", NOT "około 3 szklanki"). Keep the precise figure in "amount"/"unit"; for a US household measure you convert to metric (e.g. "1 cup flour"), keep the metric in "amount"/"unit" and the stated cups/sticks/spoons in "alt".
-- "alt" is a measure, never a note — but never drop the note either. A size ("duże"), purpose ("do dekoracji", "do posypania"), packaging ("małe opakowanie"), brand, or preparation ("grubo starte") describes the ingredient, so keep it in "name" (e.g. name "orzechy włoskie do dekoracji", "marchewka grubo starta"), and leave "alt" empty — "alt" carries only a household measure.
-- Never calculate, estimate, guess or infer an "alt" from the metric amount or from your own knowledge. If the source gives only weight or volume with no household unit beside it (e.g. "300 g startej marchewki"), leave "alt" an empty string. A wrong or invented measure is worse than none.
-- ${EXTRA_CATEGORIES_RULE}
-- Times are in MINUTES as integers. "Pół godziny" → 30. "1.5 godz" → 90. "Around an hour" → 60.
-- prepTimeMinutes = active hands-on prep (chopping, mixing). cookTimeMinutes = cooking/baking. totalTimeMinutes = end-to-end including passive periods (marinating, rising, cooling). Do NOT assume total = prep + cook — passive time can make total larger.
-- Category: cookies, biscuits, gingerbread cookies, macarons and crescent rolls ("ciasteczka", "herbatniki", "pierniczki", "makaroniki", "rogaliki", "faworki") are "ciasteczka". Cakes, tortes, cheesecakes, gingerbread cakes, sponge cakes and apple pies ("ciasto", "tort", "sernik", "piernik", "biszkopt", "szarlotka", "mazurek", "babka", named layer cakes like "Marysieńka", no-bake layer cakes "bez pieczenia") are "ciasta". Reserve "desery" for non-cake sweets only: sweet muffins and cupcakes ("babeczki", "muffiny"), ice cream, doughnuts ("pączki"), choux ("ptysie"), tiramisu, creams/mousses, jellies ("galaretka"), sweet yeast buns ("drożdżówki", "jagodzianki", "ślimaczki").
-- Category: bread and savoury rolls ("chleb", "bułki", "bułeczki", "bagietki", "kajzerki", "langosze", "paluchy chlebowe") are "pieczywo", not "obiady" or "sniadania". Sweet yeast buns (drożdżówki, jagodzianki) stay "desery", rogaliki "ciasteczka".
-- Category: salads and slaws ("sałatka", "surówka", "coleslaw") are "salatki", not "przekaski" or "inne". Home preserves are "przetwory", not "inne": jams and marmalades ("dżem", "konfitura", "powidła", "marmolada"), pickled or fermented vegetables and mushrooms ("ogórki kiszone/marynowane", "kiszona kapusta", "pikle", "grzyby marynowane", "papryka konserwowa"), and homemade ketchups, chutneys and sauces put up in jars for winter ("do słoików", "na zimę"). But a marinade made to flavour meat before cooking ("marynata do kurczaka/karkówki/mięsa/drobiu") is NOT a preserve — it is "inne", not "przetwory".
-- Category: homemade syrups, tinctures and herbal remedies made for health ("syrop na odporność/na kaszel", "mikstura na zatoki", "napar prozdrowotny") are "syropy". Everyday drinks (lemoniada, herbata, kompot, soki, koktajle) stay "napoje".
-- sourceTitle: on a page with several dishes, the dish's name copied CHARACTER FOR CHARACTER from the page text (a heading, or the caption or alt text of its photo), in the page's own language and spelling, NOT translated and NOT shortened. It is used to find the dish's photo on the page. When the page gives a single dish, or the dish has no such name in the text, return null.
-- dishImage: on a page with several dishes, the photo that shows THIS dish: the first image inside or right after its section. Use ONLY an image URL that appears verbatim in the provided Page HTML or Page markdown, copied EXACTLY. NEVER use the page's main/header photo, a logo, an avatar, an ad or a related-recipe thumbnail. When the dish has no photo of its own, or the page gives a single dish, return null.
-- Title is never null: when the source gives no dish name (a headline like "This recipe will amaze you!"), name the dish in Polish from its ingredients.
-- Title names the dish the way a menu would: not a question or how-to ("Jak zrobić domowe lody?" → "Domowe lody"), no praise words ("najlepszy", "pyszny", "idealny"), no first person ("moje", "mojej mamy") and no add-ons like "+ przepis na lukier". Proper names keep their capitals ("Prince Polo", "KFC", "Boże Narodzenie").
-- Steps: only the method the source states. A post that lists ingredients and leaves the method to its video or photo gets an empty "steps" array — do not invent one.
-- ${STEP_FORM_RULE}
-- ${STEP_CONTENT_RULE}
-- Each step is an object {"text": "...", "image": "..." | null}. "text" is the instruction (same rules as above). "image": a photo that illustrates THIS step. Use ONLY an image URL that appears verbatim in the provided Page HTML (an <img> src/data-src inside or right next to this step, or a schema.org HowToStep image) or in the Page markdown (an image ![…](url) inside or right after this step's text) — copy it EXACTLY, do not shorten, guess, or build one. NEVER use the dish's main/cover photo, a logo, an avatar, an ad or a related-recipe thumbnail. When a step has no clearly matching in-content photo, set "image" to null. Most steps will be null; that is expected.
-- Return null for any non-time field the source does not specify. Do not guess.
-- Times stated in the source, or computed from durations it states (a sum of step times, a stated "razem 1,5 godz"), are source data: set "timesEstimated" to false.
-- When the source gives no time, you may estimate it from your knowledge of the dish, but then set "timesEstimated" to true. Set it to true whenever ANY non-null time comes from your own knowledge rather than the source.
-- When estimating, include passive periods (rising, proofing, marinating, chilling, setting, resting) in totalTimeMinutes. If the recipe clearly has a long passive step whose length you cannot tell, return null for totalTimeMinutes rather than a number that ignores it.
-- All three times null → "timesEstimated": false.
-- "estimatedTimes" lists exactly the time fields whose value you estimated — any of "prepTimeMinutes", "cookTimeMinutes", "totalTimeMinutes". A stated prep time next to an estimated total → ["totalTimeMinutes"]. No estimated time → [].
-- servings: only a number of servings the source states ("na 4 porcje", "dla 6 osób", "Serves 4", "4 portions"). A range ("4–6 porcji"), a yield in pieces, tins or litres ("24 sztuki", "1 tortownica"), or no statement at all → null. Never estimate it.
-- Never complete a recipe from your own knowledge of the dish. When the content holds only part of it — a page description or teaser cut off with "…" or "[…]", an ingredient list with no method, a title alone — return only the ingredients and steps it states, and an empty "steps" array when the method is missing. An invented recipe is saved as if it were the author's.${foreignSource ? FOREIGN_SOURCE_RULES : ''}`,
+              content: buildExtractionSystemPrompt(foreignSource),
             },
             {
               role: 'user',
@@ -882,7 +887,10 @@ Rules:
       }
 
       const validated = await Promise.all(recipeEntries(payload).map(toRecipe))
-      const usable = validated.filter((recipe) => isExtractedRecipeUsable(recipe, { stepsOptional: true }))
+      const usable = dropInlineOnlyDishes(
+        validated.filter((recipe) => isExtractedRecipeUsable(recipe, { stepsOptional: true })),
+        llmMarkdown || llmHtml,
+      )
       // With none usable, keep the first so the gates after this call word the
       // failure exactly as they did for a single recipe.
       const kept = (usable.length > 0 ? usable : validated.slice(0, 1)).slice(0, MAX_RECIPES_PER_LINK)
