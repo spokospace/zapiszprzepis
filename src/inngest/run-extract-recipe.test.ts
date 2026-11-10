@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { runExtractRecipe, storeCoverAndGallery } from '@/inngest/run-extract-recipe'
+import { DISH_ENTRY_RULE } from '@/lib/dish-entry-rule'
 import { archiveImage, archiveRecipeImages } from '@/lib/recipe-image-archive'
 import { LABEL_MODEL } from '@/lib/recipe-labeling'
 import { EXTRACTION_MODEL, FOREIGN_EXTRACTION_MODEL } from '@/lib/source-language'
@@ -510,6 +511,20 @@ describe('runExtractRecipe — LLM output the database would reject (#134)', () 
     expect(system).toContain('"Pokroić mięso w kostkę."')
     expect(system).toContain('"pokroiłam", "zeszkliłam"')
     expect(system).toContain('"Następnie", "Potem"')
+  })
+
+  it('tells the model a serving idea for leftovers is not a second dish (#759)', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 7 }, error: null })
+    const fetch = makeFetchMock({ openaiContent: VALID_RECIPE_JSON })
+
+    await runExtractRecipe(BASE_EVENT, { fetch, supabase: mock.supabase as any })
+
+    const extraction = fetch.mock.calls.find((c) => String(c[0]).includes('openai.com') && !isLabelingCall(c[1]))
+    const system = JSON.parse(String(extraction?.[1]?.body)).messages[0].content as string
+    expect(system).toContain(DISH_ENTRY_RULE)
+    expect(system).toContain('its own heading or title and its own ingredient list or method')
+    expect(system).toContain('A page with one recipe returns exactly one entry')
   })
 
   it('asks for preparations before their use, no empty closing step and tips as an optional last step', async () => {

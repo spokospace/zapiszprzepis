@@ -36,6 +36,7 @@ import { metricUnits } from '@/lib/us-units'
 import { RECIPE_CATEGORIES, toRecipeCategory } from '@/lib/recipe-categories'
 import { EXTRA_CATEGORIES_RULE, toExtraCategories } from '@/lib/extra-categories'
 import { labelRecipe } from '@/lib/recipe-labeling'
+import { DISH_ENTRY_RULE } from '@/lib/dish-entry-rule'
 import { STEP_CONTENT_RULE, STEP_FORM_RULE } from '@/lib/step-form'
 import { classifyDish, writeVariantNote, type DishVocabularyEntry, type VariantNoteSibling } from '@/lib/recipe-dish'
 import { findNextPageUrl, MAX_EXTRA_PAGES } from '@/lib/paginated-article'
@@ -768,7 +769,7 @@ Return ONLY valid JSON (no markdown, no explanations) with this exact structure,
 ]}
 Rules:
 - The page often includes navigation, related/popular posts widgets, comments and ads. Focus on the recipes of the post body — usually the content under the page's main heading or og:title. Ignore everything in sidebars, "Popular posts" / "Related posts" lists, comments, ad slots, navigation and footers.
-- Several dishes: a post may give more than one recipe (a holiday menu, a breakfast set, "5 quick dinners"). Return one entry per distinct dish, in the order the page gives them, at most 10. Keep one dish in one entry: its variants (e.g. "z bulwą" / "z kiełbasą") and its ingredient sections stay together in that entry. Advice, tips and "sekrety" sections (e.g. how to boil potatoes for a salad) are not entries. A page with no recipe returns {"recipes": []}.
+- Several dishes: a post may give more than one recipe (a holiday menu, a breakfast set, "5 quick dinners"). Return one entry per distinct dish, in the order the page gives them, at most 10. Keep one dish in one entry: its variants (e.g. "z bulwą" / "z kiełbasą") and its ingredient sections stay together in that entry. Advice, tips and "sekrety" sections (e.g. how to boil potatoes for a salad) are not entries. ${DISH_ENTRY_RULE} A page with no recipe returns {"recipes": []}.
 - Ingredient sections: many recipes split ingredients into named parts (e.g. "Podmłoda", "Ciasto właściwe", "Masa waniliowa", "Masa truskawkowa", "Spód", "Krem", "Dodatkowo"). When the source groups ingredients under such a heading, set "section" to that heading (in Polish, keep it short) for every ingredient in that group, preserving the source order so groups stay contiguous. If the ingredients are a single ungrouped list, use an empty string for "section" on every ingredient.
 - Translate to Polish; convert US units to metric (1 cup ≈ 240ml, 1 tbsp ≈ 15ml) and keep the precise metric value in "amount"/"unit".
 - Alternative measure ("alt"): ONLY a quantity in a HOUSEHOLD unit that the source states next to the precise amount — szklanki, łyżki, łyżeczki, kostki, garście, plasterki. Copy it VERBATIM, keeping the source's own wording: "3 szklanki", "około 1,5 szklanki", "do 1/3 szklanki", "3/4 kostki". Never add, drop or reword an approximation like "około"/"ok." the source did not use (source "3 szklanki" → "3 szklanki", NOT "około 3 szklanki"). Keep the precise figure in "amount"/"unit"; for a US household measure you convert to metric (e.g. "1 cup flour"), keep the metric in "amount"/"unit" and the stated cups/sticks/spoons in "alt".
