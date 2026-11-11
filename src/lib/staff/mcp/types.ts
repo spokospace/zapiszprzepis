@@ -67,8 +67,29 @@ export interface WriteTool extends ReadTool {
    */
   target?: string
   /**
+   * Work the Worker must do before the function can write (gallery photos are
+   * downloaded and stored first, so the function records where they landed). Runs
+   * after the permission check and never on a dry run.
+   */
+  prepare?: (ctx: PrepareContext) => Promise<PrepareReply>
+  /**
    * Work the panel does in its server action after the function returns (the import
    * retry sends its Inngest event). Runs after the audited change.
    */
   finish?: (ctx: FinishContext) => Promise<ServiceReply>
+}
+
+/**
+ * `params`: the SQL parameters to call the function with instead. `undo`: reverses
+ * the prepared work (removes stored files) when the function then refuses.
+ */
+export type PrepareReply =
+  | { ok: true; params: Record<string, unknown>; undo?: () => Promise<void> }
+  | { ok: false; code: StaffErrorCode }
+
+export interface PrepareContext {
+  /** The validated SQL parameters, without `p_actor`, `p_via` and `p_token_id`. */
+  params: Record<string, unknown>
+  actorId: string
+  rpc: ServiceRpc
 }

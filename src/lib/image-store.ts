@@ -125,8 +125,13 @@ function bindings(): WorkerBindings | null {
  * `fallback` (a script's own storage, or the Supabase client in tests).
  */
 export function imageStorage(fallback: ImageStorage): ImageStorage {
+  return boundImageStorage() ?? fallback
+}
+
+/** The R2 bucket the Worker has bound, or null outside the Worker (scripts, tests). */
+export function boundImageStorage(): ImageStorage | null {
   const bucket = bindings()?.IMAGE_BUCKET
-  return bucket ? r2Storage(bucket) : fallback
+  return bucket ? r2Storage(bucket) : null
 }
 
 export interface StoredPhoto {

@@ -115,7 +115,11 @@ moderation is there: `recipes_list`, `recipes_get`, `recipes_hide`, `recipes_unh
 permission `recipes.edit`). `recipes_get` returns that content too. The first `recipes_update` sets
 `recipes.content_locked_at`, after which the extraction refresh keeps title, description, ingredients, steps, times and
 servings as they are (the same idea as `taxonomy_locked_at`). Migration `20261110100000_admin_recipe_content.sql` must be applied
-before the app that calls it; nothing in the panel UI uses it yet. A change
+before the app that calls it; nothing in the panel UI uses it yet. `recipes_add_gallery_images` (MCP only, permission
+`recipes.edit`) adds photos to the end of a recipe's gallery from their public URLs: the Worker downloads, compresses and
+stores them on `img.zapiszprzepis.pl` in the owner's folder before `admin_add_gallery_images_as` appends and audits them.
+The cover never changes; an empty gallery starts with it. At most 10 photos per call and 30 in a gallery. Migration
+`20261111100000_admin_recipe_gallery.sql` must be applied before the app that calls it. A change
 empties the page caches of the recipes it touched, the way the panel does (`src/lib/staff/recipe-finish.ts`). The tool and argument names are a contract: see `BACKWARD_COMPATIBILITY.md` §9.
 
 ### Connect

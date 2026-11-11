@@ -55,6 +55,7 @@ const ENGLISH: Partial<Record<StaffErrorCode, string>> = {
   not_retryable: 'This import does not need a retry, or someone already retried it.',
   dispatch_failed: 'Processing could not be started. The import was put back on the failed list; retry again later.',
   invalid_input: 'Invalid input.',
+  images_unreachable: 'None of the images could be downloaded and stored (not an image, unreachable, or too large). Nothing was changed.',
   confirm_mismatch: 'Confirmation does not match. Nothing was changed.',
   unknown: 'The operation failed (internal error). Check the audit log before retrying a change.',
 }
@@ -239,9 +240,22 @@ async function callTool(
     return toolResult({ dry_run: true, tool: tool.name, arguments: parsed.byName, current, changed: false })
   }
 
+  let params = parsed.params
+  let undo: (() => Promise<void>) | undefined
+  if (write.prepare) {
+    const prepared = await write.prepare({ params, actorId, rpc: service.rpc })
+    if (!prepared.ok) return failure(englishError(prepared.code))
+    ;({ params, undo } = prepared)
+  }
+
   // The change itself: the function checks the permission again, writes and audits in one transaction.
-  const reply = await service.rpc(write.rpc, { p_actor: actorId, ...parsed.params, p_via: 'mcp', p_token_id: tokenId })
+  const reply = await service.rpc(write.rpc, { p_actor: actorId, ...params, p_via: 'mcp', p_token_id: tokenId })
   if (!reply.ok) {
+    // Only a refusal the function raised before writing is safe to undo. An `unknown`
+    // failure (a timeout, a lost reply) may hide a committed write that uses the files.
+    if (reply.code !== 'unknown') {
+      await undo?.().catch((err) => console.error(`[mcp] undo after ${write.rpc} failed:`, err))
+    }
     // The function raised before writing (or rolled back); a refusal it could not audit is still recorded here.
     if (reply.code === 'forbidden') await audit(tool.operation, targetId, 'denied')
     return failure(englishError(reply.code))
