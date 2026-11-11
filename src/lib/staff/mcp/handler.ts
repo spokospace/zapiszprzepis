@@ -251,7 +251,11 @@ async function callTool(
   // The change itself: the function checks the permission again, writes and audits in one transaction.
   const reply = await service.rpc(write.rpc, { p_actor: actorId, ...params, p_via: 'mcp', p_token_id: tokenId })
   if (!reply.ok) {
-    await undo?.().catch((err) => console.error(`[mcp] undo after ${write.rpc} failed:`, err))
+    // Only a refusal the function raised before writing is safe to undo. An `unknown`
+    // failure (a timeout, a lost reply) may hide a committed write that uses the files.
+    if (reply.code !== 'unknown') {
+      await undo?.().catch((err) => console.error(`[mcp] undo after ${write.rpc} failed:`, err))
+    }
     // The function raised before writing (or rolled back); a refusal it could not audit is still recorded here.
     if (reply.code === 'forbidden') await audit(tool.operation, targetId, 'denied')
     return failure(englishError(reply.code))

@@ -78,6 +78,7 @@ declare
   max_gallery constant int := 30;
   old_gallery text[];
   new_gallery text[];
+  added text[] := '{}';
   u text;
 begin
   if not public.staff_can(p_actor, 'recipes.edit') then
@@ -101,6 +102,7 @@ begin
   foreach u in array p_image_urls loop
     if not (u = any(new_gallery)) then
       new_gallery := new_gallery || u;
+      added := added || u;
     end if;
   end loop;
   if cardinality(new_gallery) > max_gallery then
@@ -112,7 +114,7 @@ begin
   perform public.staff_audit(
     p_actor, p_via, p_token_id, 'recipes', 'add_gallery_images', p_recipe::text,
     jsonb_build_object('gallery_count', cardinality(old_gallery)),
-    jsonb_build_object('gallery_count', cardinality(new_gallery), 'added', to_jsonb(p_image_urls))
+    jsonb_build_object('gallery_count', cardinality(new_gallery), 'added', to_jsonb(added))
   );
   return rec.slug;
 end;

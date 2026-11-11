@@ -234,7 +234,7 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
       {
         name: 'add_gallery_images', label: 'Dodaj zdjęcia do galerii', permission: 'recipes.edit', destructive: false,
         mcp: {
-          description: `Add photos to the end of a recipe's gallery (shown to signed-in visitors under the cover). Give the photos' public URLs, e.g. from the source blog; they are downloaded, compressed and stored on img.zapiszprzepis.pl, as an import does. The cover is kept: when the gallery is empty it starts with the current cover. A photo repeated within one call is stored once. Fails with nothing changed when no photo could be stored. The gallery holds at most 30 photos, the cover included.`,
+          description: `Add photos to the end of a recipe's gallery (shown to signed-in visitors under the cover). Give the photos' public URLs, e.g. from the source blog; they are downloaded, compressed and stored on img.zapiszprzepis.pl, as an import does. The cover is kept: when the gallery is empty it starts with the current cover. Different URLs that serve identical image bytes are stored once; repeating the same URL is refused. Fails with nothing changed when no photo could be stored. The gallery holds at most 30 photos, the cover included.`,
           rpc: 'admin_add_gallery_images_as', target: 'recipe_id', prepare: prepareGalleryImages(), finish: finishRecipeSlug,
           args: [
             arg.recipeId,
