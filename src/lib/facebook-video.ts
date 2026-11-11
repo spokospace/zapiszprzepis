@@ -107,10 +107,40 @@ export function extractFacebookAudioTrack(html: string, videoId: string): Facebo
   if (urlEnd === -1) return null
   const baseUrl = manifest.slice(urlStart + '<BaseURL>'.length, urlEnd)
   const url = decodeEntities(baseUrl)
-  // Only ever download from Facebook's video CDN.
-  if (!/^https:\/\/[a-z0-9.-]+\.fbcdn\.net\//i.test(url)) return null
+  if (!isVideoCdnUrl(url)) return null
   const duration = manifest.match(/mediaPresentationDuration="([^"]+)"/)?.[1]
   return { url, durationSeconds: duration ? isoDurationSeconds(duration) : null }
+}
+
+/** Audio is only ever downloaded from Facebook's video CDN. */
+function isVideoCdnUrl(url: string): boolean {
+  return /^https:\/\/[a-z0-9.-]+\.fbcdn\.net\//i.test(url)
+}
+
+/** The response body, or null once it passes `limit` bytes; the download is
+ *  cancelled there, so a response without content-length cannot fill memory. */
+async function readCapped(response: Response, limit: number): Promise<Uint8Array | null> {
+  if (!response.body) return null
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > limit) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return bytes
 }
 
 export interface FetchFacebookVideoAudioDeps {
@@ -142,10 +172,11 @@ export async function fetchFacebookVideoAudio(
     if (track.durationSeconds != null && track.durationSeconds > MAX_AUDIO_SECONDS) return null
 
     const audio = await fetch(track.url, { signal: AbortSignal.timeout(30_000) })
-    if (!audio.ok) return null
+    // A redirect must not lead the download off the CDN.
+    if (!audio.ok || (audio.url && !isVideoCdnUrl(audio.url))) return null
     if (Number(audio.headers.get('content-length') ?? 0) > MAX_AUDIO_BYTES) return null
-    const bytes = new Uint8Array(await audio.arrayBuffer())
-    return bytes.byteLength > 0 && bytes.byteLength <= MAX_AUDIO_BYTES ? bytes : null
+    const bytes = await readCapped(audio, MAX_AUDIO_BYTES)
+    return bytes && bytes.byteLength > 0 ? bytes : null
   } catch {
     return null
   }

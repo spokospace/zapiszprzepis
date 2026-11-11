@@ -1624,7 +1624,7 @@ describe('runExtractRecipe — Facebook video narration', () => {
         return Promise.resolve({ ok: true, status: 200, url, text: async () => WATCH_PAGE })
       }
       if (url === AUDIO_URL) {
-        return Promise.resolve({ ok: true, headers: new Headers(), arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer })
+        return Promise.resolve(new Response(new Uint8Array([1, 2, 3])))
       }
       if (url.includes('openai.com') && !isLabelingCall(init)) {
         const content = replies.shift()

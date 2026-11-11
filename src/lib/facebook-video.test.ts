@@ -107,16 +107,26 @@ describe('fetchFacebookVideoAudio', () => {
     audio = AUDIO,
     audioOk = true,
     contentLength,
-  }: { page?: string; pageOk?: boolean; audio?: Uint8Array; audioOk?: boolean; contentLength?: number } = {}) {
+    finalUrl,
+  }: {
+    page?: string
+    pageOk?: boolean
+    audio?: Uint8Array
+    audioOk?: boolean
+    contentLength?: number
+    /** Where the audio request ended up after redirects. */
+    finalUrl?: string
+  } = {}) {
     return vi.fn(async (url: string) => {
       if (url.startsWith('https://www.facebook.com/watch/')) {
         return { ok: pageOk, text: async () => page } as Response
       }
-      return {
-        ok: audioOk,
-        headers: new Headers(contentLength != null ? { 'content-length': String(contentLength) } : {}),
-        arrayBuffer: async () => audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength),
-      } as unknown as Response
+      const response = new Response(audio as Uint8Array<ArrayBuffer>, {
+        status: audioOk ? 200 : 500,
+        headers: contentLength != null ? { 'content-length': String(contentLength) } : {},
+      })
+      if (finalUrl) Object.defineProperty(response, 'url', { value: finalUrl })
+      return response
     }) as unknown as typeof globalThis.fetch & ReturnType<typeof vi.fn>
   }
 
@@ -140,6 +150,19 @@ describe('fetchFacebookVideoAudio', () => {
 
   it('refuses an audio file announced as too large', async () => {
     await expect(fetchFacebookVideoAudio('42', { fetch: mockFetch({ contentLength: MAX_AUDIO_BYTES + 1 }) })).resolves.toBeNull()
+  })
+
+  it('stops reading a body without content-length once it passes the cap', async () => {
+    const big = new Uint8Array(MAX_AUDIO_BYTES + 1)
+    await expect(fetchFacebookVideoAudio('42', { fetch: mockFetch({ audio: big }) })).resolves.toBeNull()
+  })
+
+  it('refuses audio a redirect took off Facebook’s CDN', async () => {
+    const fetch = mockFetch({ finalUrl: 'https://evil.example/a.mp4' })
+    await expect(fetchFacebookVideoAudio('42', { fetch })).resolves.toBeNull()
+    await expect(
+      fetchFacebookVideoAudio('42', { fetch: mockFetch({ finalUrl: 'https://video-waw2-1.xx.fbcdn.net/b.mp4' }) }),
+    ).resolves.toEqual(AUDIO)
   })
 
   it('is null when the page or the audio request fails', async () => {
