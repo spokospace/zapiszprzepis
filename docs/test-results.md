@@ -6,6 +6,18 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-11
 
+### Transkrypcja lektora na produkcji (#768)
+
+**Co:** pierwszy import rolki po wdrożeniu #768 (wersja Workera `aa711a74`, binding `env.AI` widoczny w `wrangler versions view`, `pnpm smoke:prod` ✓ o 01:08 UTC).
+
+**Jak:** `scripts/refresh-recipes.ts pizza-z-kurczaka-keto --run` (wymuszone ponowne wydobycie, ta sama ścieżka co „Odśwież przepis”) dla przepisu 1115, rolka `2499006300627404`, 48 s polskiego lektora, podpis z samymi składnikami.
+
+**Wynik:** share 1225 `completed` o 01:10:10 UTC, ok. 2 minuty po kolejce. Przepis miał 0 kroków, ma 5; kroki odpowiadają nagraniu (papier posmarowany olejem, 200 stopni, ok. 20 minut, jalapeño na koniec), których nie ma w podpisie. Facebook oddał manifest zapytaniu z Cloudflare, a Worker zmieścił się w limicie CPU. Jedna literówka modelu („Zapiekć”) poprawiona ręcznie przez MCP.
+
+**Ile filmów na tym zyska:** lokalnie (yt-dlp + faster-whisper z `vad_filter`) sprawdziłem 15 pozostałych filmów z Facebooka z #766 (bez desek i jajek, 678 nie dało się pobrać). Mowę ma tylko 1115; w pozostałych 14 jest muzyka, a VAD wykrywa 0–1 s mowy. W 4 z nich Whisper i tak zwraca zmyślone krótkie zdanie („Thank you.”, „For more information visit www.fema.gov”). W imporcie taki tekst idzie do drugiego przebiegu LLM, który nie znajduje kroków, więc przepis zostaje przy składnikach z podpisu; kosztuje to jedno dodatkowe wywołanie OpenAI.
+
+**Nie dowodzi:** że sposób działa dla każdej strony na Facebooku ani jak często filmy z lektorem trafiają do importu. Jeden przypadek na produkcji.
+
 ### Transkrypcja lektora z rolek na Facebooku (#766, #767)
 
 **Co:** czy da się wyciągnąć sposób przygotowania z filmu, gdy podpis posta podaje same składniki. Źródło próby: rolka `1804457920964851` (przepis 122, siedem przekąsek z ciasta francuskiego, lektor po polsku).
