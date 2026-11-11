@@ -17,6 +17,7 @@ export const STAFF_ERRORS = {
   dispatch_failed: 'Nie udało się uruchomić przetwarzania. Import wrócił na listę błędów.',
   too_many_tokens: 'Masz już 10 aktywnych tokenów. Unieważnij któryś, zanim utworzysz nowy.',
   invalid_input: 'Dane są niepoprawne.',
+  images_unreachable: 'Nie udało się pobrać ani zapisać żadnego zdjęcia. Nic nie zmieniono.',
   invalid_redirect: 'Przekierowanie musi prowadzić do widocznego przepisu. Sprawdź adres przepisu.',
   canonical_hidden: 'Przepis główny jest ukryty. Najpierw go odkryj.',
   slug_taken: 'Adres tego przepisu zajął już inny przepis.',

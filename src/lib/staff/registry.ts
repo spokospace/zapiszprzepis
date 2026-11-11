@@ -6,6 +6,7 @@ import { finishImportRetry } from './imports'
 import type { ReadTool, ToolArg, WriteTool } from './mcp/types'
 import type { StaffPermission } from './permissions'
 import { finishRecipeMerge, finishRecipeSlug } from './recipe-finish'
+import { prepareGalleryImages } from './recipe-gallery'
 import { MAX_USAGE_DAYS } from './usage'
 
 /**
@@ -227,6 +228,17 @@ export const STAFF_RESOURCES: readonly StaffResource[] = [
           args: [
             arg.recipeId,
             { name: 'meta_title', param: 'p_meta_title', type: 'string', maxLength: 70, required: true, description: 'The title, up to 70 characters, e.g. "Słonecznikowiec z karmelizowanym słonecznikiem". Empty string clears it.' },
+          ],
+        },
+      },
+      {
+        name: 'add_gallery_images', label: 'Dodaj zdjęcia do galerii', permission: 'recipes.edit', destructive: false,
+        mcp: {
+          description: `Add photos to the end of a recipe's gallery (shown to signed-in visitors under the cover). Give the photos' public URLs, e.g. from the source blog; they are downloaded, compressed and stored on img.zapiszprzepis.pl, as an import does. The cover is kept: when the gallery is empty it starts with the current cover. A photo repeated within one call is stored once. Fails with nothing changed when no photo could be stored. The gallery holds at most 30 photos, the cover included.`,
+          rpc: 'admin_add_gallery_images_as', target: 'recipe_id', prepare: prepareGalleryImages(), finish: finishRecipeSlug,
+          args: [
+            arg.recipeId,
+            { name: 'image_urls', param: 'p_image_urls', type: 'string_list', minItems: 1, maxItems: 10, maxLength: 2000, description: 'Public http(s) URLs of the photos, in the order to show them (1-10).' },
           ],
         },
       },

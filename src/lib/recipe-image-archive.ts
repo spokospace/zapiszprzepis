@@ -1021,6 +1021,34 @@ export function orphanedImagePaths(
 }
 
 /**
+ * Archives photos staff add to a recipe's gallery (recipes_add_gallery_images) at
+ * `<user>/<recipe>/<run>-<n>`, beside what is already there: nothing is removed.
+ * Returns the stored URLs in source order; a photo that failed to download, or
+ * repeats an earlier one of the same call byte for byte, is left out. One photo
+ * at a time, so a Worker holds a single original in memory (up to 10 per call).
+ */
+export async function archiveAddedGalleryPhotos(
+  images: ImageStorage,
+  userId: string,
+  recipeId: number,
+  sources: readonly string[],
+): Promise<string[]> {
+  const folder = galleryFolder(userId, recipeId)
+  const run = Date.now().toString(36)
+  const seen = new Set<string>()
+  const stored: string[] = []
+  for (const [i, source] of [...new Set(sources)].entries()) {
+    const photo = await downloadPhoto(source)
+    if (!photo || seen.has(photo.hash)) continue
+    seen.add(photo.hash)
+    const url = await storePhoto(images, `${folder}/${run}-a${i}`, photo)
+    if (url) stored.push(url)
+  }
+  return stored
+}
+
+
+/**
  * Archives the gallery as `<user>/<recipe>/<run>-<n>.<ext>` and returns the
  * Storage URLs of the photos that made it, in order. Photos that fail to
  * download are left out rather than kept as external links: Facebook's expire

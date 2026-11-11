@@ -20,6 +20,7 @@ describe('recipe MCP tools — what is exposed', () => {
   it('has the reads and every operation, named <resource>_<operation>', () => {
     expect(recipeTools.map((t) => t.name).sort()).toEqual(
       [
+        'recipes_add_gallery_images',
         'recipes_delete',
         'recipes_get',
         'recipes_hide',
@@ -42,6 +43,7 @@ describe('recipe MCP tools — what is exposed', () => {
     expect(tool('recipes_set_taxonomy').permission).toBe('recipes.taxonomy')
     expect(tool('recipes_set_meta_title').permission).toBe('recipes.edit')
     expect(tool('recipes_update').permission).toBe('recipes.edit')
+    expect(tool('recipes_add_gallery_images').permission).toBe('recipes.edit')
     expect(recipeTools.filter((t) => t.destructive).map((t) => t.name).sort()).toEqual(['recipes_delete', 'recipes_merge', 'recipes_unmerge'])
   })
 

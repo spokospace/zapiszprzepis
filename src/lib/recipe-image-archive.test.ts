@@ -14,6 +14,7 @@ import {
   coverImage,
   jsonLdImage,
   archiveGallery,
+  archiveAddedGalleryPhotos,
   type ArchivedCover,
   removeGallery,
   removeImages,
@@ -105,6 +106,21 @@ describe('archiveGallery — a failed re-archive never loses the stored gallery'
     expect(result).toEqual([COVER, `${PUBLIC}user-1/7/100-1.jpg`])
     expect(bucket.remove).toHaveBeenCalledWith(['user-1/7/0.jpg', 'user-1/7/1.jpg'])
     expect([...files]).toEqual(['user-1/7/100-1.jpg'])
+  })
+
+  it('adds staff photos beside the stored ones, skipping failures and copies', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(36 * 36) // run id "100"
+    const { supabase, bucket, files } = makeStorage(['0.jpg'])
+    const a = 'https://cdn.example/a.jpg'
+    const b = 'https://cdn.example/b.jpg'
+    const copy = 'https://cdn.example/a-copy.jpg'
+    stubFetch([a, copy], (url) => (url === copy ? a : url))
+
+    const result = await archiveAddedGalleryPhotos(supabase, 'user-1', 7, [a, b, copy])
+
+    expect(result).toEqual([`${PUBLIC}user-1/7/100-a0.jpg`])
+    expect(bucket.remove).not.toHaveBeenCalled()
+    expect([...files].sort()).toEqual(['user-1/7/0.jpg', 'user-1/7/100-a0.jpg'])
   })
 
   it('clears the folder when the source has no gallery', async () => {

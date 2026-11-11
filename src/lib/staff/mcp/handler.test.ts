@@ -468,3 +468,31 @@ describe('mcp tools/call: recipes', () => {
     expect(revalidateRecipeCaches).not.toHaveBeenCalled()
   })
 })
+
+// A tool with a `prepare` step (recipes_add_gallery_images): the Worker work runs only
+// for a real, permitted call, and its failure stops the call before the SQL function.
+describe('mcp tools/call: prepare', () => {
+  const args = { recipe_id: 293, image_urls: ['https://blog.example/a.jpg'] }
+
+  it('does not prepare on a dry run', async () => {
+    const { service, rpc } = makeService(TOKENS, { admin_get_recipe_content_as: { ok: true, data: { owner_id: PLAIN } } })
+    const r = await result(await handleMcp(post(call('recipes_add_gallery_images', { ...args, dry_run: true })), service))
+    expect(r.isError).toBe(false)
+    expect(rpc.mock.calls.map((c) => c[0])).toEqual(['admin_get_recipe_content_as', 'staff_audit'])
+  })
+
+  it('stops before the SQL function when the prepare step fails', async () => {
+    const { service, rpc } = makeService(TOKENS, { admin_get_recipe_content_as: { ok: true, data: null } })
+    const r = await result(await handleMcp(post(call('recipes_add_gallery_images', args)), service))
+    expect(r.isError).toBe(true)
+    expect(text(r)).toBe('Not found.')
+    expect(rpc.mock.calls.map((c) => c[0])).not.toContain('admin_add_gallery_images_as')
+  })
+
+  it('refuses a caller without recipes.edit before preparing anything', async () => {
+    const { service, rpc } = makeService(TOKENS)
+    const r = await result(await handleMcp(post(call('recipes_add_gallery_images', args), raw(2)), service))
+    expect(r.isError).toBe(true)
+    expect(rpc.mock.calls.map((c) => c[0])).not.toContain('admin_get_recipe_content_as')
+  })
+})
