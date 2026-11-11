@@ -52,7 +52,7 @@ There is no public API and no versioned package; the contracts are URLs, payload
 
 ## 6. Worker configuration, cron and bindings
 
-**Surface:** `wrangler.jsonc` (`main: ./custom-worker.ts`, vars, `compatibility_date`, flags `nodejs_compat` and `global_fetch_strictly_public`), cron triggers `30 3 * * *` (backup to R2) and `0 4 * * *` (keep the database awake) matched as exact strings in `custom-worker.ts`, bindings `BACKUPS` (R2 bucket `zapiszprzepis-backups`) and `ASSETS`, the `ratelimits` bindings (`EXA_SEARCH_LIMIT`, `EXTRACTION_LIMIT`, `MCP_LIMIT`, namespace ids `1001`–`1003`), and `src/middleware.ts` (its `/api/mcp` pass-through, see §9).
+**Surface:** `wrangler.jsonc` (`main: ./custom-worker.ts`, vars, `compatibility_date`, flags `nodejs_compat` and `global_fetch_strictly_public`), cron triggers `30 3 * * *` (backup to R2) and `0 4 * * *` (keep the database awake) matched as exact strings in `custom-worker.ts`, bindings `BACKUPS` (R2 bucket `zapiszprzepis-backups`) and `ASSETS`, the `ratelimits` bindings (`EXA_SEARCH_LIMIT`, `EXTRACTION_LIMIT`, `MCP_LIMIT`, namespace ids `1001`–`1003`), the Workers AI binding `AI` (Whisper for Facebook video narration, #767; the extraction runs without it when absent), and `src/middleware.ts` (its `/api/mcp` pass-through, see §9).
 
 **Breaking:** a cron string changed in only one of the two places; a removed or renamed binding; a new binding whose resource does not exist yet; renaming `src/middleware.ts` to `proxy.ts` (pushes the bundle past the 3 MiB free-tier limit, and the deploy fails).
 
