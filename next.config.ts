@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
   },
 }
 
-initOpenNextCloudflareForDev()
+// The Workers AI binding (wrangler.jsonc "ai") only exists remotely, so wrangler
+// opens a remote session for it, which needs Cloudflare credentials. `next dev`
+// has them (wrangler login); a `next build` in GitHub Actions has none and
+// would fail, and nothing calls the binding while building.
+initOpenNextCloudflareForDev({ remoteBindings: process.env.NODE_ENV === "development" })
 
 export default nextConfig

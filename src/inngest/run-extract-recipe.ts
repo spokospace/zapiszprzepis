@@ -18,6 +18,8 @@ import { splitLlmSteps, buildStepImageSources } from '@/lib/step-image-extract'
 import { youtubeIdFromUrl, findEmbeddedYoutubeId, fetchYoutubeOembed, fetchYoutubeTranscript } from '@/lib/youtube'
 import { mayBeBloggerPost, fetchBloggerPost } from '@/lib/blogger-feed'
 import { fetchFacebookPost, isFacebookUrl } from '@/lib/facebook'
+import { facebookVideoId, transcribeFacebookVideo } from '@/lib/facebook-video'
+import type { Transcribe } from '@/lib/transcribe-audio'
 import { publicFacebookAuthor } from '@/lib/facebook-authors'
 import {
   classifyExisting,
@@ -218,6 +220,12 @@ export interface RunExtractRecipeDeps {
    * and every retry redid the whole extraction.
    */
   deferImages?: boolean
+  /**
+   * Speech-to-text for a Facebook video's narration (#767), tried when the
+   * caption holds no method. Absent (local dev, tests that do not need it),
+   * the caption is all a Facebook video gets, as before.
+   */
+  transcribe?: Transcribe
 }
 
 /** The photos a saved recipe still needs archived into Storage and linked. */
@@ -916,24 +924,34 @@ export async function runExtractRecipe(
     let recipes = inputIsJunk ? [] : await extractWithLlm()
     const hasUsable = (dishes: RecipeData[]) => dishes.some((dish) => isExtractedRecipeUsable(dish))
 
-    // YouTube second pass: the description is where channels paste the
-    // recipe, so it is tried first and alone. Only when it yields no usable
-    // recipe — no ingredients, or no steps — fetch the captions and run the
-    // extraction again with the spoken video in front of the LLM. Costs two
-    // fetches and one more OpenAI call, and only for videos that need it.
-    if (canTryTranscript && !hasUsable(recipes)) {
+    // Video second pass: the description or caption is where authors paste
+    // the recipe, so it is tried first and alone. Only when it yields no
+    // usable recipe — no ingredients, or no steps — get what the video says
+    // and run the extraction again with it in front of the LLM: a YouTube
+    // video's captions, or a Facebook video's narration transcribed by
+    // Workers AI (#767). Costs a few fetches, a transcription and one more
+    // OpenAI call, and only for videos that need it.
+    const { transcribe } = deps
+    const facebookVideo = fromPostCaption && transcribe ? facebookVideoId(facebookPost?.canonicalUrl ?? sharedUrl) : null
+    const videoId = canTryTranscript ? youtubeId : facebookVideo
+    const fetchTranscript = canTryTranscript
+      ? () => fetchYoutubeTranscript(youtubeId, { fetch })
+      : facebookVideo && transcribe
+        ? () => transcribeFacebookVideo(facebookVideo, transcribe, { fetch })
+        : null
+    if (fetchTranscript && !hasUsable(recipes)) {
       const fromDescription = recipes
-      const transcript = await fetchYoutubeTranscript(youtubeId, { fetch })
+      const transcript = await fetchTranscript()
       if (transcript) {
-        console.log('[extract-recipe] description had no recipe; retrying with transcript for', youtubeId)
+        console.log('[extract-recipe] description had no recipe; retrying with transcript for', videoId)
         recipes = await extractWithLlm(transcript)
       } else {
-        console.warn('[extract-recipe] no transcript available for', youtubeId)
+        console.warn('[extract-recipe] no transcript available for', videoId)
       }
-      // The captions found no steps either (a music-only video, or auto
+      // The transcript found no steps either (a music-only video, or auto
       // captions in the wrong language). The author's own ingredient list
       // beats whatever the LLM made of them; the method is in the video, which
-      // the recipe page embeds.
+      // the recipe page embeds or links.
       if (
         !hasUsable(recipes) &&
         fromDescription.some((dish) => isExtractedRecipeUsable(dish, { stepsOptional: true }))

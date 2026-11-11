@@ -3,6 +3,7 @@ import { inngest } from './client'
 import { SUPABASE_URL, getSuabaseServiceRoleKey } from '@/lib/env'
 import { recordApiUsage } from '@/lib/api-usage'
 import { revalidateRecipeCaches } from '@/lib/recipe-cache'
+import { workersAiTranscriber } from '@/lib/transcribe-audio'
 import {
   runExtractRecipe,
   storeCoverAndGallery,
@@ -43,7 +44,12 @@ export async function extractRecipeJob({ event, step }: { event: { data: unknown
     // retry counts again). Inside the step, not the handler: the handler body runs
     // once per step of a run and would count the same run several times.
     recordApiUsage(supabase, { service: 'inngest', model: 'extract-recipe' })
-    return runExtractRecipe(event.data as ExtractRecipeEvent, { fetch, supabase, deferImages: true })
+    return runExtractRecipe(event.data as ExtractRecipeEvent, {
+      fetch,
+      supabase,
+      deferImages: true,
+      transcribe: workersAiTranscriber() ?? undefined,
+    })
   })) as Awaited<ReturnType<typeof runExtractRecipe>>
   // The recipe row is written (inserted, refreshed or gap-filled) and the share is
   // complete, so the cached public lists and recipe pages must show it now, not

@@ -1602,6 +1602,92 @@ describe('runExtractRecipe — Facebook short caption', () => {
   })
 })
 
+// #767: a reel whose caption lists only the ingredients, with the method
+// spoken over the video. The watch page carries the DASH manifest; its audio
+// track is transcribed and the extraction runs again with the transcript.
+describe('runExtractRecipe — Facebook video narration', () => {
+  const AUDIO_URL = 'https://video-waw2-2.xx.fbcdn.net/o1/v/t2/f2/m412/a.mp4?_nc_cat=102'
+  const WATCH_PAGE =
+    '<script>{"id":"943809852095733","videoDeliveryLegacyFields":{"dash_manifest_xml_string":' +
+    JSON.stringify(
+      `<MPD mediaPresentationDuration="PT95S"><Period><AdaptationSet contentType="audio"><Representation mimeType="audio/mp4"><BaseURL>${AUDIO_URL}</BaseURL></Representation></AdaptationSet></Period></MPD>`,
+    ) +
+    '}}</script>'
+  const NARRATION = 'Pokrój ciasto na kwadraty. Posmaruj serkiem i upiecz.'
+  const INGREDIENTS_ONLY_JSON = JSON.stringify({ ...JSON.parse(VALID_RECIPE_JSON), steps: [] })
+
+  function makeNarratedReelFetch(openaiContents: string[]) {
+    const replies = [...openaiContents]
+    const base = makeFacebookFetchMock({ caption: 'Ciasto francuskie\nSkładniki:\n- ser\n- jajko' })
+    return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url.startsWith('https://www.facebook.com/watch/?v=943809852095733')) {
+        return Promise.resolve({ ok: true, status: 200, url, text: async () => WATCH_PAGE })
+      }
+      if (url === AUDIO_URL) {
+        return Promise.resolve(new Response(new Uint8Array([1, 2, 3])))
+      }
+      if (url.includes('openai.com') && !isLabelingCall(init)) {
+        const content = replies.shift()
+        if (content == null) return Promise.reject(new Error('OpenAI called more times than expected'))
+        return Promise.resolve({ ok: true, json: async () => ({ choices: [{ message: { content } }] }) })
+      }
+      return base(url, init)
+    })
+  }
+
+  it('transcribes the narration and extracts again when the caption has no steps', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 11 }, error: null })
+    const fetch = makeNarratedReelFetch([INGREDIENTS_ONLY_JSON, VALID_RECIPE_JSON])
+    const transcribe = vi.fn(async () => NARRATION)
+
+    await expect(
+      runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any, transcribe }),
+    ).resolves.toMatchObject({ recipeId: 11 })
+
+    expect(transcribe).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]))
+    const calls = openaiCalls(fetch)
+    expect(calls).toHaveLength(2)
+    expect(promptOf(calls[0] as any)).not.toContain('Video transcript')
+    expect(promptOf(calls[1] as any)).toContain(NARRATION)
+    expect(mock.insertArgs('recipes').steps.length).toBeGreaterThan(0)
+  })
+
+  it('neither downloads nor transcribes when the caption already carries the method', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 12 }, error: null })
+    const fetch = makeNarratedReelFetch([VALID_RECIPE_JSON])
+    const transcribe = vi.fn(async () => NARRATION)
+
+    await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any, transcribe })
+
+    expect(transcribe).not.toHaveBeenCalled()
+    expect(fetch.mock.calls.some(([url]) => String(url).includes('/watch/?v='))).toBe(false)
+  })
+
+  it('keeps the caption’s ingredients when the transcription gives nothing', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 13 }, error: null })
+    const fetch = makeNarratedReelFetch([INGREDIENTS_ONLY_JSON])
+
+    await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any, transcribe: async () => null })
+
+    expect(openaiCalls(fetch)).toHaveLength(1)
+    expect(mock.insertArgs('recipes')).toMatchObject({ steps: [] })
+  })
+
+  it('leaves a Facebook video to its caption where there is no transcriber', async () => {
+    const mock = makeSupabaseMock()
+    mock.queue('recipes', { data: { id: 14 }, error: null })
+    const fetch = makeNarratedReelFetch([INGREDIENTS_ONLY_JSON])
+
+    await runExtractRecipe(FB_EVENT, { fetch, supabase: mock.supabase as any })
+
+    expect(fetch.mock.calls.some(([url]) => String(url).includes('/watch/?v='))).toBe(false)
+    expect(mock.insertArgs('recipes')).toMatchObject({ steps: [] })
+  })
+})
+
 describe('runExtractRecipe — recipe gallery', () => {
   const STEP_PHOTOS =
     '<img src="https://blog.example/a/ciasto-1080x1440.jpg"><img src="https://blog.example/a/krok-1080x1440.jpg">'

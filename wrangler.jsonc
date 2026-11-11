@@ -97,6 +97,14 @@
   "images": {
     "binding": "IMAGES"
   },
+  // Workers AI: Whisper transcribes a Facebook video's narration when its caption
+  // has no method (#767, src/lib/transcribe-audio.ts). Free plan: 10,000 neurons a
+  // day, ~140 per three-minute reel. Nothing to create in Cloudflare. Workers AI
+  // always runs remotely, also under `pnpm dev`; `remote: true` says so.
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://wvrlgddgdddwmgzbvtij.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_49CjHG7pAqYIFe7roJDZdA_5c_jBzj2",

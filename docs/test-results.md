@@ -4,6 +4,27 @@ Dziennik pomiarów produkcji i prób rozwiązań. Nowe wpisy na górze, godziny 
 
 Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichymi minutami, bo błędy trwają dłużej niż samo obciążenie. Pomiary zrobione kilka minut po sobie nie są porównywalne.
 
+## 2026-11-11
+
+### Transkrypcja lektora z rolek na Facebooku (#766, #767)
+
+**Co:** czy da się wyciągnąć sposób przygotowania z filmu, gdy podpis posta podaje same składniki. Źródło próby: rolka `1804457920964851` (przepis 122, siedem przekąsek z ciasta francuskiego, lektor po polsku).
+
+**Jak i wynik:**
+
+| Krok | Wynik |
+| --- | --- |
+| Podpisy 29 postów z #766 przez `fetchFacebookPost` | 0 z opisem przygotowania; 3 linkują do bloga z pełnym przepisem (698, 725, 818), 1 do bloga, który zwraca 404 (702) |
+| yt-dlp + faster-whisper `large-v3-turbo` lokalnie (GPU RTX PRO 3000) | film 40 MB pobrany bez logowania; transkrypcja 163 s nagrania w 21 s, język `pl`, praktycznie bez błędów |
+| Klatki filmu co 4 s (ffmpeg) | tekst na ekranie to tylko napisy lektora, bez ilości składników |
+| Zwykły `fetch` strony `/reel/<id>` albo `/watch?v=<id>` bez nagłówków przeglądarki | 460 KB HTML bez manifestu DASH |
+| `GET /watch/?v=<id>&_rdr` z `Accept: text/html…` i `Sec-Fetch-Mode: navigate` (jak yt-dlp) | przekierowanie na `/Smaczny1/videos/<id>/`, 990 KB HTML z `dash_manifest_xml_string`; ścieżka `audio/mp4` (HE-AAC 52 kb/s) ma 1 054 156 B |
+| Ten plik m4a przez REST API Workers AI `@cf/openai/whisper-large-v3-turbo` (`vad_filter: true`) | HTTP 200 w 7,5 s, `pl` (p = 0,9995), tekst taki sam jak z lokalnego Whispera |
+
+Workers AI na planie Free: 10 000 neuronów dziennie, model zużywa 46,63 neuronu na minutę nagrania (cennik sprawdzony 2026-11-11), czyli ok. 140 na trzyminutową rolkę.
+
+**Nie dowodzi:** że Facebook odda manifest zapytaniu z adresu Cloudflare (sprawdzone tylko z domowego łącza), ani że przeszukanie 1 MB HTML zmieści się w limicie CPU Workera na planie Free. To pokaże dopiero pierwszy import rolki po wdrożeniu #767.
+
 ## 2026-11-09
 
 ### Zdjęcia: z Supabase Storage do Cloudflare R2 (przekroczony limit planu Free)
