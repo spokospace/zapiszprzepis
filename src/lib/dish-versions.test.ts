@@ -6,7 +6,6 @@ import {
   versionsHeading,
   sortVersions,
   parseVersionsSort,
-  dishExclusionFilter,
   type DishVersionRow,
 } from './dish-versions'
 
@@ -195,20 +194,6 @@ describe('versionsHeading', () => {
     // Not in the map, or no dish: the case-free wording.
     expect(versionsHeading(3, 'tajemnicze danie')).toBe('Inne wersje tego dania (3)')
     expect(versionsHeading(3, null)).toBe('Inne wersje tego dania (3)')
-  })
-})
-
-describe('dishExclusionFilter', () => {
-  it('builds the or() filter keeping null-dish rows, only when a dish is given', () => {
-    expect(dishExclusionFilter('sernik na zimno')).toBe('dish.is.null,dish.neq."sernik na zimno"')
-    expect(dishExclusionFilter(null)).toBeNull()
-    expect(dishExclusionFilter(undefined)).toBeNull()
-  })
-
-  it('returns null for a dish outside the safe charset (defends the embedded value)', () => {
-    expect(dishExclusionFilter('sernik"')).toBeNull()
-    expect(dishExclusionFilter('a,b')).toBeNull()
-    expect(dishExclusionFilter('x)')).toBeNull()
   })
 })
 

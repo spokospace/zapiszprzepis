@@ -5,7 +5,6 @@ import { createSupabaseAnonClient } from '@/lib/supabase/anon'
 import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
 import { rankSimilar, type TagCount } from '@/lib/category-tags'
 import { whereInCategory } from '@/lib/category-membership'
-import { dishExclusionFilter } from '@/lib/dish-versions'
 import { dailyRecipeIndex, warsawDayKey } from '@/lib/recipe-of-the-day'
 import type { RecipeSource } from '@/lib/recipe-source'
 import type { Database } from '@/lib/supabase.types'
@@ -51,9 +50,14 @@ export interface SimilarCard {
 /** What the "Podobne" ranking reads from the recipe it is shown on. */
 type SimilarSource = { id: number; category: string; tags: readonly string[]; dish?: string | null }
 
-const SIMILAR_CARD_COLUMNS = 'id, slug, title, image_url, category, description, source_type, source_url, source_author, tags'
-/** Enough tag-sharing candidates to rank; a category holds a few hundred at most. */
+/** A pool row: a card plus the dish, so the recipe's other versions can be left out. */
+type SimilarPoolRow = SimilarCard & { dish: string | null }
+
+const SIMILAR_POOL_COLUMNS = 'id, slug, title, image_url, category, description, source_type, source_url, source_author, tags, dish'
+/** Enough tag-sharing candidates to rank. */
 const SIMILAR_CANDIDATES = 50
+/** PostgREST's row cap; a category holds a few hundred at most. */
+const SIMILAR_POOL_LIMIT = 1000
 
 /**
  * Lists share one tag, so a single `revalidateRecipeCaches()` clears the category
@@ -144,30 +148,42 @@ export async function readPublicRecipe(supabase: SupabaseClient, slug: string): 
 }
 
 /**
- * "Podobne": same category, not this recipe, newest first, ranked by shared tags. A
- * recipe with a dish leaves out its other versions (they show in "Inne przepisy na …"),
- * keeping null-dish rows eligible. Returns the ranked cards only, so the cached entry stays small.
+ * Every card of one category, newest first: what "Podobne" picks from. One read per
+ * category, not two per recipe: the recipe-file export renders every recipe, and the
+ * per-recipe queries were about 30 MB of Supabase egress per build (2026-11-12,
+ * docs/test-results.md). The largest category is about 250 rows, 120 kB.
  */
-export async function readSimilarRecipes(
-  supabase: SupabaseClient,
-  recipe: SimilarSource,
-): Promise<{ cards: SimilarCard[]; total: number }> {
-  const dishFilter = dishExclusionFilter(recipe.dish)
-  const others = (tags?: readonly string[]) => {
-    let q = supabase.from('public_recipes').select(SIMILAR_CARD_COLUMNS).eq('category', recipe.category).neq('id', recipe.id)
-    if (dishFilter) q = q.or(dishFilter)
-    if (tags) q = q.overlaps('tags', [...tags])
-    return q.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(SIMILAR_CANDIDATES)
+export async function readSimilarPool(supabase: SupabaseClient, category: string): Promise<SimilarPoolRow[]> {
+  const { data, error } = await supabase
+    .from('public_recipes')
+    .select(SIMILAR_POOL_COLUMNS)
+    .eq('category', category)
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(SIMILAR_POOL_LIMIT)
+  must(error, 'similar recipes failed')
+  return (data ?? []) as SimilarPoolRow[]
+}
+
+/**
+ * "Podobne" from a category pool: not this recipe, newest first, ranked by shared tags.
+ * A recipe with a dish leaves out its other versions (they show in "Inne przepisy na …"),
+ * keeping null-dish rows eligible. `total` is the whole category, this recipe included.
+ */
+export function pickSimilar(pool: readonly SimilarPoolRow[], recipe: SimilarSource): { cards: SimilarCard[]; total: number } {
+  const own = new Set(recipe.tags)
+  const candidates: SimilarPoolRow[] = []
+  // A wider top-up pool: rankSimilar may drop recipes that contradict the diet.
+  const fill: SimilarPoolRow[] = []
+  for (const r of pool) {
+    if (r.id === recipe.id || (recipe.dish && r.dish === recipe.dish)) continue
+    if (fill.length < SIMILAR_CANDIDATES) fill.push(r)
+    if (candidates.length < SIMILAR_CANDIDATES && (r.tags ?? []).some((t) => own.has(t))) candidates.push(r)
+    if (fill.length === SIMILAR_CANDIDATES && (own.size === 0 || candidates.length === SIMILAR_CANDIDATES)) break
   }
-  const [candidates, fill, count] = await Promise.all([
-    recipe.tags.length > 0 ? others(recipe.tags) : null,
-    // A wider top-up pool: rankSimilar may drop recipes that contradict the diet.
-    others(),
-    supabase.from('public_recipes').select('id', { count: 'exact', head: true }).eq('category', recipe.category),
-  ])
-  must(candidates?.error ?? fill.error ?? count.error, 'similar recipes failed')
-  const cards = rankSimilar(recipe.tags, (candidates?.data ?? []) as SimilarCard[], (fill.data ?? []) as SimilarCard[])
-  return { cards, total: count.count ?? 0 }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- the dish only filters; the cached cards leave it out
+  const cards = rankSimilar(recipe.tags, candidates, fill).map(({ dish, ...card }) => card)
+  return { cards, total: pool.length }
 }
 
 /** „Ostatnio dodane”: the newest public recipes across all users. */
@@ -250,10 +266,19 @@ export function getPublicRecipe(slug: string) {
   return cached('public-recipe', [slug], (c) => readPublicRecipe(c, slug), [recipeTag(slug)])
 }
 
-/** Cached "Podobne" row, keyed by everything the ranking reads from the recipe. */
+/** Cached category pool for "Podobne", keyed per category. */
+function getSimilarPool(category: string) {
+  return cached('similar-pool', [category], (c) => readSimilarPool(c, category))
+}
+
+/**
+ * Cached "Podobne" row, keyed by everything the ranking reads from the recipe. A miss
+ * picks from the cached category pool, so a build reads each category once. The
+ * per-recipe entry stays so a Worker hit loads ~12 cards, not the 120 kB pool.
+ */
 export function getSimilarRecipes(recipe: SimilarSource) {
-  return cached('similar-recipes', [String(recipe.id), recipe.category, recipe.dish ?? '', tagsKey(recipe.tags)], (c) =>
-    readSimilarRecipes(c, recipe),
+  return cached('similar-recipes', [String(recipe.id), recipe.category, recipe.dish ?? '', tagsKey(recipe.tags)], async () =>
+    pickSimilar(await getSimilarPool(recipe.category), recipe),
   )
 }
 

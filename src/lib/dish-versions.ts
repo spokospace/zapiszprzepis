@@ -318,24 +318,6 @@ export function versionsHeading(n: number, dish: string | null | undefined): str
   return genitive ? `Inne wersje ${genitive} (${n})` : `Inne wersje tego dania (${n})`
 }
 
-// --- "Podobne" exclusion ---------------------------------------------------
-
-// Letters, spaces and hyphens only (the same shape normalizeDish enforces).
-// Re-checked here so the embedded value is safe even if a backfill or a
-// service-role write stored a dish the laxer DB CHECK would have let through
-// (the DB constraint only bars uppercase and bounds the length).
-const SAFE_DISH = /^\p{L}[\p{L} -]*\p{L}$/u
-
-/**
- * The PostgREST `or()` filter that drops this dish's other recipes from
- * "Podobne" while keeping null-dish rows — a plain `neq` would drop those too,
- * since `null <> x` is not true in SQL. Null when there is no dish, or a dish
- * outside the safe charset (then "Podobne" simply keeps today's behaviour).
- */
-export function dishExclusionFilter(dish: string | null | undefined): string | null {
-  return dish && SAFE_DISH.test(dish) ? `dish.is.null,dish.neq."${dish}"` : null
-}
-
 // --- Sort ------------------------------------------------------------------
 
 export type VersionsSort = 'popularne' | 'nowe' | 'szybkie'
