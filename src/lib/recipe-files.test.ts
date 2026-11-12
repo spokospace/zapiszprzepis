@@ -2,7 +2,15 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { clearDataCache, exportHomePage, exportRecipeFiles, exportSearchPage, versionToSave, warsawDay } from '../../scripts/export-recipe-files.mjs'
+import {
+  clearDataCache,
+  exportHomePage,
+  exportRecipeFiles,
+  exportSearchPage,
+  exportShortfall,
+  versionToSave,
+  warsawDay,
+} from '../../scripts/export-recipe-files.mjs'
 
 const PAGE = '<html><script type="application/ld+json">{"@type":"Recipe"}</script></html>'
 
@@ -86,6 +94,26 @@ describe('versionToSave', () => {
 
   it('saves no version after a short export, so the cron asks again', () => {
     expect(versionToSave(7, 98, 100)).toBeNull()
+  })
+})
+
+describe('exportShortfall', () => {
+  it('fails the build when the database lists no recipes (2026-11-11: a Supabase outage shipped none)', () => {
+    expect(exportShortfall('all', 0, 0)).toMatch(/no public recipes/)
+  })
+
+  it('fails the build when most recipes did not export', () => {
+    expect(exportShortfall('all', 89, 100)).toMatch(/89 of 100/)
+  })
+
+  it('ships when nine in ten or more exported', () => {
+    expect(exportShortfall('all', 90, 100)).toBeNull()
+    expect(exportShortfall('all', 932, 932)).toBeNull()
+  })
+
+  it('never fails a build that lists slugs itself, [] included', () => {
+    expect(exportShortfall([], 0, 0)).toBeNull()
+    expect(exportShortfall(['a', 'b'], 0, 2)).toBeNull()
   })
 })
 
