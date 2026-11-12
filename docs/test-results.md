@@ -4,6 +4,23 @@ Dziennik pomiarów produkcji i prób rozwiązań. Nowe wpisy na górze, godziny 
 
 Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichymi minutami, bo błędy trwają dłużej niż samo obciążenie. Pomiary zrobione kilka minut po sobie nie są porównywalne.
 
+## 2026-11-12
+
+### Skąd się wziął transfer z Supabase (okres 28.10–28.11)
+
+**Co:** która usługa i co w aplikacji zużyło limity planu Free, zanim Supabase zablokował API.
+
+**Jak:** wykresy dzienne w panelu Supabase (Usage, „Egress per day” z podziałem na usługi, „Cached Egress per day”) odczytane w Chrome; liczba buildów z `wrangler deployments list`; rozmiar danych, które czyta render jednego przepisu, policzony zapytaniem SQL przez Management API (sam odczyt), dla tych samych kolumn i limitów co `readSimilarRecipes` i odczyt przepisu.
+
+**Wynik:**
+- Transfer z cache (12,51 GB) to zdjęcia z Supabase Storage: 6,56 GB 4 listopada, około 1 GB 6 i 9 listopada. Od 10 listopada, po przeniesieniu zdjęć na R2, jest bliski zera.
+- Zwykły transfer (5,58 GB) to w dni ze skokami (1, 3, 9 listopada) też głównie Storage (np. 3.11: 894 MB Storage, 4 MB PostgREST). Ale od 5–6 listopada codziennie 300–560 MB idzie przez PostgREST (6.11: 558 MB, 9.11: 417 MB, 10.11: 319 MB), a przed 5 listopada było to kilka MB dziennie. 5–6 listopada weszły pliki przepisów z eksportem wszystkich przepisów przy każdym buildzie (#720, #722, #723) i automatyczne buildy z crona.
+- Jeden build czyta z bazy około 35 MB: render każdego z 932 przepisów pobiera blok „Podobne” (dwa zapytania po 50 kart z opisem i tagami, średnio 19,6 KB + 13,9 KB), a to daje około 30 MB na build. Same przepisy to 2,5 MB.
+- 300–560 MB dziennie odpowiada 9–16 buildom dziennie (cron pozwala na 12, do tego scalenia do `master`). 9 listopada w ciągu doby było 9 wdrożeń.
+- Limit 5 GB na 30 dni to około 166 MB dziennie, czyli przy obecnym eksporcie najwyżej 4–5 buildów dziennie. Bez zmian limit skończy się także w następnym okresie, mimo że zdjęć już tam nie ma.
+
+**Czego to nie dowodzi:** panel nie dzieli transferu PostgREST na zapytania, więc udział buildów to wniosek ze zbieżności dat i z wyliczenia rozmiaru, a nie z logów. Nie wiadomo, czy Supabase liczy bajty przed kompresją, czy po niej. Ruch użytkowników (kategorie, Worker) mieści się w tej samej kategorii i nie da się go z wykresu oddzielić. Wpis z 2026-11-11 przypisywał zwykły transfer głównie zdjęciom; dla dni od 5 listopada to nieprawda.
+
 ## 2026-11-11
 
 ### Awaria: build przy zablokowanym Supabase usunął pliki przepisów (23:51–00:05 UTC)
