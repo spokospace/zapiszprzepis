@@ -60,6 +60,9 @@ jobs:
       # build off the production database (the sitemap falls back to static entries).
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      # With no database the recipe export would fail the build on purpose; CI measures the
+      # Worker, not the recipe files (scripts/export-recipe-files.mjs).
+      RECIPE_FILES_EXPORT: skip
       NEXT_PUBLIC_SITE_URL: https://zapiszprzepis.pl
       # Same value as production (wrangler.jsonc), so the bundle that is measured
       # keeps the analytics client code that production ships.

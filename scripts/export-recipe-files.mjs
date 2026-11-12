@@ -1,8 +1,13 @@
 // Runs after `next build`: opens recipes on the freshly built server and saves them in public/,
 // which OpenNext copies to the Worker's static assets. /przepis/{slug} then finds
-// przepis/{slug}.html and never starts the Worker. Any failure leaves that recipe on the Worker,
-// so this never fails a build. recipe-files.json is a list of slugs, or "all" for every public
-// recipe; [] serves every recipe and /szukaj from the Worker again.
+// przepis/{slug}.html and never starts the Worker. One recipe that fails stays on the Worker.
+// recipe-files.json is a list of slugs, or "all" for every public recipe; [] serves every
+// recipe and /szukaj from the Worker again.
+//
+// When the export as a whole fails (the recipe list cannot be read, or most recipes do not
+// export), the build fails, so the last good version stays live. 2026-11-11: a build during a
+// Supabase outage (402, quota) skipped the export and shipped a version without recipe files;
+// the Worker could not render them either, so every recipe answered 404.
 //
 // Not generateStaticParams: on a static route a slug outside the list that reads the session
 // answers 500. A saved page is the same stream a live one is: the skeleton from loading.tsx,
@@ -20,6 +25,8 @@ const TIME_LIMIT_MS = 10 * 60_000
 const PAGE_SIZE = 1000
 // One recipe that never exports must not cost 12 builds a day; an outage or the time limit must.
 const COMPLETE_SHARE = 0.99
+// Below this share the build fails instead of shipping most recipes without a file.
+const MIN_SHARE = 0.9
 
 // The status is sent before the page is rendered, so a page that failed half way is still a 200.
 // The recipe's structured data is written only once the recipe has been read.
@@ -87,6 +94,16 @@ export function versionToSave(version, exported, total) {
 }
 
 /**
+ * Why this export must fail the build, or null when it may ship. Only for "all": a short list
+ * of slugs (a pilot, or [] to go back to the Worker) may export nothing.
+ */
+export function exportShortfall(listed, exported, total) {
+  if (listed !== 'all') return null
+  if (total === 0) return 'the database lists no public recipes'
+  return exported >= total * MIN_SHARE ? null : `only ${exported} of ${total} recipes exported`
+}
+
+/**
  * Which content the saved pages hold. The Worker's cron compares it with the database. `day` is
  * the Warsaw day of the saved home page, or null when there is none: the cron then has no daily
  * rebuild to ask for.
@@ -135,7 +152,10 @@ async function main() {
   const version = await contentVersion().catch(() => null)
   const slugs = listed === 'all' ? await publicSlugs() : listed
   const day = warsawDay()
+  if (listed === 'all' && slugs.length === 0) throw new Error(exportShortfall(listed, 0, 0))
   const { exported, home } = slugs.length === 0 ? await clearFiles() : await exportFromServer(slugs)
+  const shortfall = exportShortfall(listed, exported.length, slugs.length)
+  if (shortfall) throw new Error(shortfall)
   writeContentVersion(versionToSave(version, exported.length, slugs.length), home ? day : null)
   return exported
 }
@@ -168,8 +188,17 @@ async function exportFromServer(slugs) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  if (process.env.RECIPE_FILES_EXPORT === 'skip') {
+    // Only for builds that are measured, never deployed (CI): no files, recipes stay on the Worker.
+    console.log('[recipe-files] RECIPE_FILES_EXPORT=skip: no recipe files in this build')
+    process.exit()
+  }
   main()
     .then((exported) => console.log(`[recipe-files] ${exported.length} recipes exported as static files`))
-    .catch((error) => console.error('[recipe-files] skipped:', error.message))
-    .finally(() => process.exit(0))
+    .catch((error) => {
+      // Fails the build: Workers Builds then deploys nothing, and the last good version stays live.
+      console.error('[recipe-files] export failed, stopping the build:', error.message)
+      process.exitCode = 1
+    })
+    .finally(() => process.exit())
 }

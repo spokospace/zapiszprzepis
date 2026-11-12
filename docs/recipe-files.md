@@ -13,6 +13,14 @@ Zwykle zmiana lub usunięcie przepisu widać więc po około 10-15 minutach. Bez
 
 Po 12 buildach w ciągu doby kolejna zmiana czeka do północy UTC albo do ręcznego Retry.
 
+## Gdy baza nie odpowiada, build się nie udaje
+
+Pliki przepisów powstają z bazy podczas builda. Jeśli lista przepisów się nie wczyta albo wyeksportuje się mniej niż 90% przepisów, `scripts/export-recipe-files.mjs` kończy się błędem i build pada. Workers Builds niczego wtedy nie wdraża, więc na produkcji zostaje ostatnia dobra wersja. Wcześniej skrypt wypisywał „skipped” i build przechodził bez plików; 2026-11-11 przy zablokowanym Supabase (402) dało to 404 na każdym przepisie, bo Worker też nie mógł ich wyrenderować.
+
+- CI (`.github/workflows/ci.yml`) nie ma bazy, więc ustawia `RECIPE_FILES_EXPORT=skip`: build bez plików przepisów, tylko do pomiaru Workera. Nigdy nie ustawiaj tego w Workers Builds.
+- Gdy produkcja już straciła pliki: Cloudflare → Workers & Pages → zapiszprzepis → Deployments → **Rollback** przy ostatniej dobrej wersji (token projektu nie ma do tego uprawnień). Wersja zawiera swoje pliki, więc przepisy wracają od razu.
+- Przed scaleniem czegokolwiek do `master` sprawdź, czy Supabase odpowiada; każde scalenie to build produkcji.
+
 ## Automatyczna kontrola po wdrożeniu
 
 Build z deploy hooka nikt nie ogląda, a GitHub Actions nie ma minut. Dlatego cron co 5 minut (`src/lib/post-deploy-check.ts`) sprawdza każdą nową wersję Workera raz: `/szukaj` i trzy najstarsze przepisy muszą odpowiedzieć 200, a każdy plik `/_next/static`, który wskazują, musi się załadować (nie 404 i nie HTML w miejscu CSS/JS). Nie sprawdza tras z Workera (`/`, `/login`): 503 tam to znany problem obciążenia, a kontrola nie ma go zaogniać.

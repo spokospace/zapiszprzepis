@@ -6,6 +6,18 @@ Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichy
 
 ## 2026-11-11
 
+### Awaria: build przy zablokowanym Supabase usunął pliki przepisów (23:51–00:05 UTC)
+
+**Co się stało:** organizacja Supabase przekroczyła limity planu Free w tym okresie rozliczeniowym (transfer 5,58 z 5,5 GB, transfer z cache 12,51 z 5,5 GB, pamięć 1,15 z 1,1 GB; zużyte głównie przez zdjęcia sprzed przeniesienia na R2 9 listopada). Po okresie ostrzeżenia Supabase zablokowało API projektu do 28 listopada: REST odpowiada `402 … exceed_egress_quota, exceed_storage_size_quota`, panel i Management API działają, baza jest cała (932 przepisy, 7 kont). O 23:51 scalenie #772 (sama dokumentacja) uruchomiło build `master`. `scripts/export-recipe-files.mjs` nie wczytał listy przepisów (402), wypisał „skipped” i build przeszedł: wersja `dd1d0fe1` nie miała ani jednego pliku przepisu, a Worker też nie mógł ich wyrenderować. Każdy przepis odpowiadał 404, kategorie 500. Scaliłem bez sprawdzenia, czy Supabase działa.
+
+**Wykrycie:** `pnpm smoke:prod` po buildzie: „recipes → the sitemap lists none”; `curl` przepisów: 404.
+
+**Naprawa:** rollback w panelu Cloudflare do `7af0f678` (#770, zbudowana 2026-11-11 02:35, gdy baza działała); `wrangler rollback` z tokenem projektu odpowiada „No access”. Po rollbacku 40 z 40 losowych przepisów (slugi z kopii bazy) odpowiada 200, strona główna 200. `pnpm smoke:prod` nadal czerwony, bo sitemapa czyta bazę na żywo i jest pusta; to nie dowodzi braku plików. Nie działają (do odblokowania bazy): kategorie, logowanie, ulubione, dodawanie przepisów, sitemapa.
+
+**Kopia:** pełny zrzut wszystkich tabel `public` oraz `auth.users` i `auth.identities` jako JSON przez Management API, 4,1 MB, poza repozytorium (dane osobowe).
+
+**Zabezpieczenie:** eksport kończy się błędem, gdy lista się nie wczyta albo wyeksportuje się mniej niż 90% przepisów, więc build pada i zostaje ostatnia dobra wersja (`docs/recipe-files.md`). Sprawdzone lokalnie przy zablokowanym Supabase: `recipe list: 402`, kod wyjścia 1.
+
 ### Transkrypcja lektora na produkcji (#768)
 
 **Co:** pierwszy import rolki po wdrożeniu #768 (wersja Workera `aa711a74`, binding `env.AI` widoczny w `wrangler versions view`, `pnpm smoke:prod` ✓ o 01:08 UTC).
