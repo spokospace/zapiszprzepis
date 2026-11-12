@@ -36,13 +36,14 @@ import {
   getRecentPublicRecipes,
   getRecipeOfTheDay,
   getSimilarRecipes,
+  pickSimilar,
   readCategoryListing,
   readCategoryFacets,
   readCategoryTotal,
   readPublicRecipe,
   readRecentPublicRecipes,
   readRecipeOfTheDay,
-  readSimilarRecipes,
+  readSimilarPool,
 } from './recipe-cache'
 
 /** A fake Supabase client whose chain resolves to `many` (awaited) / `single` (maybeSingle). */
@@ -115,9 +116,20 @@ describe('cached wrappers — TTL, tags, and viewer-independent keys', () => {
   it('getSimilarRecipes: keyed by what the ranking reads, tag order ignored, list tag', async () => {
     await getSimilarRecipes({ id: 5, category: 'ciasta', tags: ['tanie', 'szybkie'], dish: 'sernik' })
     await getSimilarRecipes({ id: 5, category: 'ciasta', tags: ['szybkie', 'tanie'] })
-    expect(cacheCalls[0].keyParts).toEqual(['similar-recipes', '5', 'ciasta', 'sernik', 'szybkie,tanie'])
-    expect(cacheCalls[1].keyParts).toEqual(['similar-recipes', '5', 'ciasta', '', 'szybkie,tanie'])
-    expect(cacheCalls[0].options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
+    const keys = cacheCalls.map((c) => c.keyParts)
+    expect(keys).toContainEqual(['similar-recipes', '5', 'ciasta', 'sernik', 'szybkie,tanie'])
+    expect(keys).toContainEqual(['similar-recipes', '5', 'ciasta', '', 'szybkie,tanie'])
+    for (const c of cacheCalls) expect(c.options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
+  })
+
+  it('getSimilarRecipes: a miss reads the category pool, cached per category only', async () => {
+    await getSimilarRecipes({ id: 5, category: 'ciasta', tags: ['tanie'], dish: 'sernik' })
+    await getSimilarRecipes({ id: 6, category: 'ciasta', tags: [] })
+    const pools = cacheCalls.filter((c) => c.keyParts[0] === 'similar-pool').map((c) => c.keyParts)
+    expect(pools).toEqual([
+      ['similar-pool', 'ciasta'],
+      ['similar-pool', 'ciasta'],
+    ])
   })
 
   it('getRecentPublicRecipes: keyed by limit only', async () => {
@@ -203,25 +215,41 @@ describe('reads — public_recipes only, no user-scoped columns (no cross-user l
     await expect(readPublicRecipe(client, 's')).rejects.toThrow('recipe read failed')
   })
 
-  it('readSimilarRecipes ranks shared tags first and returns the category total', async () => {
-    const rows = [{ id: 1, tags: ['tanie'] }, { id: 2, tags: ['szybkie'] }]
-    const { client, fromTables, selectCols } = fakeClient({ many: { data: rows, count: 12, error: null } })
-    const out = await readSimilarRecipes(client, { id: 9, category: 'ciasta', tags: ['szybkie'] })
+  it('"Podobne" ranks shared tags first and counts the whole category, this recipe included', async () => {
+    const rows = [
+      { id: 9, tags: ['szybkie'], dish: null },
+      { id: 1, tags: ['tanie'], dish: null },
+      { id: 2, tags: ['szybkie'], dish: null },
+    ]
+    const { client, fromTables, selectCols } = fakeClient({ many: { data: rows, error: null } })
+    const out = pickSimilar(await readSimilarPool(client, 'ciasta'), { id: 9, category: 'ciasta', tags: ['szybkie'] })
     expect(out.cards.map((c) => c.id)).toEqual([2, 1])
-    expect(out.total).toBe(12)
-    expect(new Set(fromTables)).toEqual(new Set(['public_recipes']))
+    expect(out.total).toBe(3)
+    expect(fromTables).toEqual(['public_recipes'])
     expect(selectCols.join(' ')).not.toContain('user_id')
   })
 
-  it('readSimilarRecipes leaves out the other versions of a dish', async () => {
-    const { client, orFilters } = fakeClient({ many: { data: [], count: 0, error: null } })
-    await readSimilarRecipes(client, { id: 9, category: 'ciasta', tags: [], dish: 'sernik' })
-    expect(orFilters).toEqual(['dish.is.null,dish.neq."sernik"'])
+  it('pickSimilar leaves out the other versions of a dish but keeps recipes without one', () => {
+    const pool = [
+      { id: 1, tags: [], dish: 'sernik' },
+      { id: 2, tags: [], dish: null },
+      { id: 3, tags: [], dish: 'szarlotka' },
+    ] as unknown as Parameters<typeof pickSimilar>[0]
+    const out = pickSimilar(pool, { id: 9, category: 'ciasta', tags: [], dish: 'sernik' })
+    expect(out.cards.map((c) => c.id)).toEqual([2, 3])
+    expect(out.cards.every((c) => !('dish' in c))).toBe(true)
   })
 
-  it('readSimilarRecipes throws on a DB error (so a failure is never cached)', async () => {
+  it('pickSimilar ranks only the 50 newest tag-sharing recipes, like the per-recipe query did', () => {
+    const pool = Array.from({ length: 60 }, (_, i) => ({ id: i + 1, tags: i === 55 ? ['tanie', 'szybkie'] : ['tanie'], dish: null }))
+    const out = pickSimilar(pool as unknown as Parameters<typeof pickSimilar>[0], { id: 100, category: 'ciasta', tags: ['tanie', 'szybkie'] })
+    expect(out.cards.map((c) => c.id)).not.toContain(56)
+    expect(out.cards[0].id).toBe(1)
+  })
+
+  it('readSimilarPool throws on a DB error (so a failure is never cached)', async () => {
     const { client } = fakeClient({ many: { data: null, error: { message: 'boom' } } })
-    await expect(readSimilarRecipes(client, { id: 9, category: 'ciasta', tags: [] })).rejects.toThrow('similar recipes failed')
+    await expect(readSimilarPool(client, 'ciasta')).rejects.toThrow('similar recipes failed')
   })
 
   it('readRecentPublicRecipes returns the feed and selects no user_id', async () => {
