@@ -32,7 +32,11 @@ Build z deploy hooka nikt nie ogląda, a GitHub Actions nie ma minut. Dlatego cr
 
 ## Strona główna jako plik
 
-`/` jest zapisywana jak przepisy, jako `public/index.html`. „Przepis dnia” jest w pliku zamrożony, więc `recipe-files-version.json` zapisuje też `day` (dzień warszawski zapisanej strony), a cron co 5 minut prosi o build po polskiej północy (w ramach tych samych limitów: raz na 10 minut, 12 na dobę). Gdy `/` nie wyeksportuje się, `day` to `null`, strona zostaje na Workerze i dziennego builda nie ma. Kategorie (`/przepisy/{kategoria}`) nadal idą przez Workera: czytają `?tag=` i `?strona=` po stronie serwera, więc plik odpowiadałby na każdy wariant adresu tą samą treścią.
+`/` jest zapisywana jak przepisy, jako `public/index.html`. „Przepis dnia” jest w pliku zamrożony, więc `recipe-files-version.json` zapisuje też `day` (dzień warszawski zapisanej strony), a cron co 5 minut prosi o build po polskiej północy (w ramach tych samych limitów: raz na 10 minut, 12 na dobę). Gdy `/` nie wyeksportuje się, `day` to `null`, strona zostaje na Workerze i dziennego builda nie ma. 
+
+## Kategorie jako pliki
+
+Każda kategoria jest zapisywana jako `public/przepisy/{kategoria}.html` (#739). Strona zawiera wszystkie karty kategorii (największa, ciasta, ok. 250), a `?tag=` i `?strona=` filtruje przeglądarka, więc jeden plik odpowiada na każdy wariant adresu i Worker się nie uruchamia. Serwer i plik pokazują pierwszą stronę bez filtra; po wczytaniu JS lista przełącza się na adres. Bez JS link chipa otwiera listę bez filtra. Kategoria, która się nie wyeksportuje, zostaje na Workerze (log: `categories stay on the Worker`); nie wpływa to na próg 90% przepisów. Listę kategorii skrypt czyta z `RECIPE_CATEGORIES` w `src/lib/recipe-categories.ts`.
 
 ## Pilne zdjęcie jednej strony
 
@@ -50,6 +54,8 @@ Dla sprawy prawnej albo danych, które nie mogą czekać na build. Sprawdzone 20
 6. Gdy build się skończy, usuń regułę i sprawdź, czy adres odpowiada 404.
 
 Reguła nie sięga do pamięci telefonu: kto otworzył przepis wcześniej, może mieć kopię w service workerze i zobaczy ją offline. Nie usuwa też zdjęć z magazynu.
+
+Reguła nie usuwa też karty przepisu z listy kategorii: plik `public/przepisy/{kategoria}.html` ma tytuł, zdjęcie, źródło i autora każdego przepisu kategorii, aż build z kroku 5 go podmieni. Sprawdzenie z kroku 4 dotyczy tylko adresu przepisu, nie karty. Reguła na adres kategorii ukryłaby całą kategorię, więc nie jest celowanym rozwiązaniem; kartę usuwa dopiero build.
 
 Plik zniknie też bez reguły, po buildzie. Reguła skraca czas z kilkunastu minut do chwili jej zapisania.
 
