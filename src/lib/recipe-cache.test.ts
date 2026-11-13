@@ -151,6 +151,24 @@ describe('revalidateRecipeCaches', () => {
 })
 
 describe('reads — public_recipes only, no user-scoped columns (no cross-user leakage)', () => {
+  it('readCategoryCards reads ranges until the category is complete', async () => {
+    const ranges: [number, number][] = []
+    const full = Array.from({ length: 1000 }, (_, i) => ({ id: i }))
+    const builder: Record<string, unknown> = {}
+    for (const m of ['select', 'or', 'order']) builder[m] = () => builder
+    builder.range = (from: number, to: number) => {
+      ranges.push([from, to])
+      return Promise.resolve({ data: from === 0 ? full : [{ id: 1000 }], error: null })
+    }
+    const client = { from: () => builder } as unknown as Parameters<typeof readCategoryCards>[0]
+    const cards = await readCategoryCards(client, 'obiady')
+    expect(cards).toHaveLength(1001)
+    expect(ranges).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ])
+  })
+
   it('readCategoryCards returns the rows and selects no user_id', async () => {
     const { client, selectCols, fromTables, orFilters } = fakeClient({ many: { data: [{ id: 1 }], error: null } })
     expect(await readCategoryCards(client, 'obiady')).toEqual([{ id: 1 }])

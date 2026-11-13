@@ -31,6 +31,17 @@ export function useLocationSearch(): string {
   )
 }
 
+const noSubscription = () => () => {}
+
+/** False on the server and in the first client render, true once the page has hydrated. */
+export function useHydrated(): boolean {
+  return useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  )
+}
+
 /**
  * Change the address without asking the server for anything: native pushState, which
  * the Next.js router keeps in sync. The list re-renders from data it already has.

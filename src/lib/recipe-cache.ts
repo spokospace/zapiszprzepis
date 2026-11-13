@@ -95,17 +95,26 @@ export function revalidateRecipeCaches(...slugs: string[]): void {
 
 // ── Reads (take a client, so a fake client unit-tests them; no cookies/user) ──
 
+/** PostgREST answers at most this many rows per request. */
+const CATEGORY_PAGE_ROWS = 1000
+
 /**
  * Every card of a category, newest first: the page filters and pages them in the
- * browser (#739). PostgREST answers at most 1000 rows; a category holds a few hundred.
+ * browser (#739). Read in ranges of PostgREST's row cap, so a category over 1000
+ * recipes is complete (today the largest holds about 250: one request).
  */
 export async function readCategoryCards(supabase: SupabaseClient, category: string): Promise<CategoryCard[]> {
-  const { data, error } = await whereInCategory(supabase.from('public_recipes').select(CATEGORY_CARD_COLUMNS), category)
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(1000)
-  must(error, 'category listing failed')
-  return (data ?? []) as CategoryCard[]
+  const cards: CategoryCard[] = []
+  for (;;) {
+    const { data, error } = await whereInCategory(supabase.from('public_recipes').select(CATEGORY_CARD_COLUMNS), category)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(cards.length, cards.length + CATEGORY_PAGE_ROWS - 1)
+    must(error, 'category listing failed')
+    const rows = (data ?? []) as CategoryCard[]
+    cards.push(...rows)
+    if (rows.length < CATEGORY_PAGE_ROWS) return cards
+  }
 }
 
 /** The guest-safe recipe for a slug; the oldest row wins the bare slug (load-recipe §). */

@@ -55,6 +55,8 @@ Dla sprawy prawnej albo danych, które nie mogą czekać na build. Sprawdzone 20
 
 Reguła nie sięga do pamięci telefonu: kto otworzył przepis wcześniej, może mieć kopię w service workerze i zobaczy ją offline. Nie usuwa też zdjęć z magazynu.
 
+Reguła nie usuwa też karty przepisu z listy kategorii: plik `public/przepisy/{kategoria}.html` ma tytuł, zdjęcie, źródło i autora każdego przepisu kategorii, aż build z kroku 5 go podmieni. Sprawdzenie z kroku 4 dotyczy tylko adresu przepisu, nie karty. Reguła na adres kategorii ukryłaby całą kategorię, więc nie jest celowanym rozwiązaniem; kartę usuwa dopiero build.
+
 Plik zniknie też bez reguły, po buildzie. Reguła skraca czas z kilkunastu minut do chwili jej zapisania.
 
 ## HTTP na HTTPS dla adresów z plików (do ustawienia w strefie)

@@ -52,7 +52,6 @@ export default async function CategoryPage({ params }: { params: Params }) {
   const { kategoria: category } = await params
   if (!isRecipeCategory(category)) notFound()
   const cards = await getCategoryCards(category)
-  if (cards.length >= 1000) console.error(`[przepisy] ${category}: 1000 cards, the read cap; older recipes are left out`)
 
   const label = categoryLabel(category)
   const Icon = CATEGORY_ICONS[category]

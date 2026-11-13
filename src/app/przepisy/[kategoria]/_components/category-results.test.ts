@@ -25,13 +25,18 @@ describe('CategoryResults as saved in the file (no query)', () => {
   it('shows the first page of every card and the whole count', () => {
     expect(html.match(/<li [^>]*id="wynik-\d+"/g)).toHaveLength(24)
     expect(html).toContain('Wszystkie: 30')
-    expect(html).toContain('Przepis 1<')
-    expect(html).not.toContain('Przepis 25<')
+    expect(html).toContain('id="wynik-24"')
+    expect(html).not.toContain('id="wynik-25"')
   })
 
-  it('links the next page and every tag as plain addresses, crawlable without JS', () => {
-    expect(html).toContain('href="/przepisy/ciasta?strona=2#wynik-25"')
-    expect(html).toContain('Pokaż kolejne 6')
+  it('links every later recipe without JS (no ?strona= link, which the file would answer with page 1 again)', () => {
+    expect(html).toContain('<noscript>')
+    for (let i = 25; i <= 30; i++) expect(html).toContain(`href="/przepis/przepis-${i}"`)
+    expect(html).not.toContain('strona=2')
+    expect(html).not.toContain('Pokaż kolejne')
+  })
+
+  it('links every tag as a plain address', () => {
     expect(html).toContain('href="/przepisy/ciasta?tag=kruche"')
     expect(html).toContain('href="/przepisy/ciasta?tag=grill"')
   })

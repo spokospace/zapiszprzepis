@@ -6,13 +6,13 @@ import Link from 'next/link'
 import { CATEGORY_PAGE_SIZE, clampPage, tagCounts, withTags, type CategoryCard } from '@/lib/category-list'
 import { categoryNoun, parsePageParam, parseTagParam, tagFacetsFromCounts, tagSummary } from '@/lib/category-tags'
 import { tagLabel } from '@/lib/recipe-tags'
-import { categoryPath } from '@/lib/routes'
+import { categoryPath, recipePath } from '@/lib/routes'
 import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
 import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { recipesNoun } from '@/app/components/app-menu-model'
 import { buttonClasses } from '@/app/components/ui/button'
 import { isModifiedClick } from '@/app/components/modified-click'
-import { pushLocation, useLocationSearch } from '@/app/components/use-location-search'
+import { pushLocation, useHydrated, useLocationSearch } from '@/app/components/use-location-search'
 import { TagFilter, type TagChip } from './tag-filter'
 
 const LINK = 'font-semibold text-action-text underline underline-offset-4 hover:text-action-hover'
@@ -25,6 +25,7 @@ const LINK = 'font-semibold text-action-text underline underline-offset-4 hover:
  */
 export function CategoryResults({ category, label, cards }: { category: string; label: string; cards: CategoryCard[] }) {
   const search = useLocationSearch()
+  const hydrated = useHydrated()
   const params = new URLSearchParams(search)
   const selected = parseTagParam(params.getAll('tag'))
   const filtered = selected.length > 0
@@ -129,7 +130,23 @@ export function CategoryResults({ category, label, cards }: { category: string; 
         )}
       </div>
 
-      {remaining > 0 && (
+      {/* Without JS the file always shows page 1, so ?strona= would loop: list the rest as plain links. */}
+      {remaining > 0 && !hydrated && (
+        <noscript>
+          <h2 className="text-[19px] font-bold text-ink">Pozostałe przepisy: {label}</h2>
+          <ul className="flex flex-col gap-2 text-[18px]">
+            {matching.slice(list.length).map((r) => (
+              <li key={r.id}>
+                <a href={recipePath(r.slug)} className={LINK}>
+                  {r.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </noscript>
+      )}
+
+      {remaining > 0 && hydrated && (
         <a
           href={`${pageHref(page + 1)}#wynik-${list.length + 1}`}
           onClick={(event) => go(event, pageHref(page + 1), `wynik-${list.length + 1}`)}
