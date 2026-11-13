@@ -37,17 +37,17 @@ export interface TagFacet {
   selected: boolean
 }
 
-/** A `(tag, count)` row as returned by the `category_tag_facets` RPC. */
+/** A `(tag, count)` counter, as `tagCounts` (src/lib/category-list.ts) returns it. */
 export interface TagCount {
   tag: string
   count: number
 }
 
 /**
- * The category page's tag chips, from `category_tag_facets` RPC rows: every
- * selected tag, plus every other tag with a count, ordered selected-first, then
- * most results, then the RECIPE_TAGS order. The AND-logic conditioning on
- * `selected` is done in SQL (`tags @> selected`); this only maps and orders.
+ * The category page's tag chips, from per-tag counters: every selected tag, plus
+ * every other tag with a count, ordered selected-first, then most results, then the
+ * RECIPE_TAGS order. The counters are already conditioned on `selected`
+ * (`tags @> selected`); this only maps and orders.
  */
 export function tagFacetsFromCounts(rows: readonly TagCount[], selected: readonly RecipeTag[]): TagFacet[] {
   const counts = new Map<string, number>()

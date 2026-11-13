@@ -1,13 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useOptimistic, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { chipClasses } from '@/app/components/ui/chip'
 import { recipesNoun } from '@/app/components/app-menu-model'
-import { useListTransition } from '@/app/components/list-transition'
+import { isModifiedClick } from '@/app/components/modified-click'
 
 export interface TagChip {
   value: string
@@ -18,41 +16,35 @@ export interface TagChip {
   href: string
 }
 
-/** The selection after a tap on `value`: toggled, as the server will answer (the optimistic state, #435). */
-export function toggleTag(current: ReadonlySet<string>, value: string): Set<string> {
-  const next = new Set(current)
-  if (!next.delete(value)) next.add(value)
-  return next
-}
-
 /** Chips shown before "Pokaż wszystkie (N)". Selected chips sort first, so they are always visible. */
 export const VISIBLE_CHIPS = 8
 
 /**
  * The tag chips of the public category page (E01-S16). Each chip is a link that
- * toggles its tag in `?tag=`, so the filter works before hydration and is
- * shareable; this component adds the "Pokaż wszystkie" toggle from md and, on a
+ * toggles its tag in `?tag=`, so the address stays shareable and crawlable; a tap
+ * hands the address to `onNavigate`, which filters the cards already in the page
+ * (#739). This component adds the "Pokaż wszystkie" toggle from md and, on a
  * phone, a single row that scrolls sideways with „Więcej ›” / „‹ Wstecz” buttons
  * (style 1b). The row scrolls inside itself, so the page never does (WCAG 1.4.10);
  * every chip is in it, so the toggle is not needed there.
  */
-export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ciasteczka?" (screen 6). */ question: string }) {
+export function TagFilter({
+  chips,
+  question,
+  onNavigate,
+}: {
+  chips: TagChip[]
+  /** "Jakie ciasteczka?" (screen 6). */
+  question: string
+  onNavigate: (href: string) => void
+}) {
   const [expanded, setExpanded] = useState(false)
   const listId = useId()
-  const router = useRouter()
-  const { startTransition } = useListTransition()
-  // A tap marks the chip at once; the server answer (the new list, counts and order) replaces it (#435).
-  const selectedNow = useMemo(() => new Set(chips.filter((c) => c.selected).map((c) => c.value)), [chips])
-  const [selectedValues, toggleSelected] = useOptimistic(selectedNow, toggleTag)
 
   function onChipClick(event: MouseEvent<HTMLAnchorElement>, chip: TagChip) {
-    // A modified click (new tab) and a non-primary button keep the browser's behaviour.
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (isModifiedClick(event)) return
     event.preventDefault()
-    startTransition(() => {
-      toggleSelected(chip.value)
-      router.push(chip.href, { scroll: false })
-    })
+    onNavigate(chip.href)
   }
 
   const hidden = chips.length - VISIBLE_CHIPS
@@ -111,17 +103,16 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
             // Past the first chips: hidden from md until „Pokaż wszystkie”, but always in the phone row.
             className={`shrink-0 md:shrink${!expanded && i >= VISIBLE_CHIPS ? ' hidden max-md:block' : ''}`}
           >
-            <Link
+            <a
               href={chip.href}
-              scroll={false}
               onClick={(event) => onChipClick(event, chip)}
-              className={`${chipClasses(selectedValues.has(chip.value))} max-md:whitespace-nowrap`}
+              className={`${chipClasses(chip.selected)} max-md:whitespace-nowrap`}
             >
               {/* Name reads "kruche 12 przepisów, wybrany": the visible "kruche 12" stays
                   one contiguous run (WCAG 2.5.3), the explicit spaces keep the two
                   flex items from merging into "kruche12". */}
               <span>
-                {selectedValues.has(chip.value) && <span aria-hidden="true">✓ </span>}
+                {chip.selected && <span aria-hidden="true">✓ </span>}
                 {chip.label}{' '}
               </span>
               <span className="text-[16px] font-normal opacity-80">
@@ -129,10 +120,10 @@ export function TagFilter({ chips, question }: { chips: TagChip[]; /** "Jakie ci
                 <span className="sr-only">
                   {' '}
                   {recipesNoun(chip.count)}
-                  {selectedValues.has(chip.value) && ', wybrany'}
+                  {chip.selected && ', wybrany'}
                 </span>
               </span>
-            </Link>
+            </a>
           </li>
         ))}
         {hidden > 0 && (

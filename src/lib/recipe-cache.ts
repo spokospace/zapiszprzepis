@@ -3,8 +3,9 @@ import { unstable_cache, revalidateTag } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSupabaseAnonClient } from '@/lib/supabase/anon'
 import { MY_RECIPE_CARD_COLUMNS, type MyRecipeCard } from '@/lib/my-recipes'
-import { rankSimilar, type TagCount } from '@/lib/category-tags'
+import { rankSimilar } from '@/lib/category-tags'
 import { whereInCategory } from '@/lib/category-membership'
+import type { CategoryCard } from '@/lib/category-list'
 import { dishExclusionFilter } from '@/lib/dish-versions'
 import { dailyRecipeIndex, warsawDayKey } from '@/lib/recipe-of-the-day'
 import type { RecipeSource } from '@/lib/recipe-source'
@@ -30,9 +31,8 @@ export type PublicRecipe = Omit<Recipe, 'user_id' | 'image_urls' | 'source_finge
   extra_categories?: string[] | null
 }
 
-/** The one card shape the category list renders (#444): only what a `RecipeCard` shows + its tags. */
-const CATEGORY_CARD_COLUMNS =
-  'id, slug, title, image_url, category, source_type, source_url, source_author, tags, total_time_minutes, prep_time_minutes, cook_time_minutes'
+/** A category card (`CategoryCard`): only what a `RecipeCard` shows + its tags. */
+const CATEGORY_CARD_COLUMNS = 'id, slug, title, image_url, category, source_type, source_url, source_author, tags'
 
 /** A card of the "Podobne" row on the recipe page. */
 export interface SimilarCard {
@@ -95,39 +95,17 @@ export function revalidateRecipeCaches(...slugs: string[]): void {
 
 // ── Reads (take a client, so a fake client unit-tests them; no cookies/user) ──
 
-/** The category list cards + the exact total (`count`) for „… w kategorii”. */
-export async function readCategoryListing(
-  supabase: SupabaseClient,
-  { category, tags, limit }: { category: string; tags: readonly string[]; limit: number },
-): Promise<{ recipes: PublicRecipe[]; count: number }> {
-  let q = whereInCategory(supabase.from('public_recipes').select(CATEGORY_CARD_COLUMNS, { count: 'exact' }), category)
-  if (tags.length > 0) q = q.contains('tags', tags)
-  const { data, count, error } = await q
+/**
+ * Every card of a category, newest first: the page filters and pages them in the
+ * browser (#739). PostgREST answers at most 1000 rows; a category holds a few hundred.
+ */
+export async function readCategoryCards(supabase: SupabaseClient, category: string): Promise<CategoryCard[]> {
+  const { data, error } = await whereInCategory(supabase.from('public_recipes').select(CATEGORY_CARD_COLUMNS), category)
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })
-    .range(0, limit - 1)
+    .limit(1000)
   must(error, 'category listing failed')
-  return { recipes: (data ?? []) as PublicRecipe[], count: count ?? 0 }
-}
-
-/** Per-tag counters for the chips, aggregated in Postgres (#444). */
-export async function readCategoryFacets(
-  supabase: SupabaseClient,
-  { category, selected }: { category: string; selected: readonly string[] },
-): Promise<TagCount[]> {
-  const { data, error } = await supabase.rpc('category_tag_facets', { p_category: category, p_selected: selected })
-  must(error, 'category facets failed')
-  return (data ?? []) as TagCount[]
-}
-
-/** The whole-category head count, read only for a filtered view (#444). */
-export async function readCategoryTotal(supabase: SupabaseClient, { category }: { category: string }): Promise<number> {
-  const { count, error } = await whereInCategory(
-    supabase.from('public_recipes').select('id', { count: 'exact', head: true }),
-    category,
-  )
-  must(error, 'category total failed')
-  return count ?? 0
+  return (data ?? []) as CategoryCard[]
 }
 
 /** The guest-safe recipe for a slug; the oldest row wins the bare slug (load-recipe §). */
@@ -228,21 +206,9 @@ function cached<T>(
   })()
 }
 
-/** Cached category list + total, keyed per category/tags/page. */
-export function getCategoryListing(params: { category: string; tags: readonly string[]; limit: number }) {
-  return cached('category-listing', [params.category, tagsKey(params.tags), String(params.limit)], (c) =>
-    readCategoryListing(c, params),
-  )
-}
-
-/** Cached per-tag facet counters, keyed per category/selected. */
-export function getCategoryFacets(params: { category: string; selected: readonly string[] }) {
-  return cached('category-facets', [params.category, tagsKey(params.selected)], (c) => readCategoryFacets(c, params))
-}
-
-/** Cached whole-category head count, keyed per category. */
-export function getCategoryTotal(params: { category: string }) {
-  return cached('category-total', [params.category], (c) => readCategoryTotal(c, params))
+/** Cached cards of a category, keyed per category. */
+export function getCategoryCards(category: string) {
+  return cached('category-cards', [category], (c) => readCategoryCards(c, category))
 }
 
 /** Cached guest-safe recipe read, keyed per slug, purged by the recipe's own tag only. */

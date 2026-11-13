@@ -32,7 +32,11 @@ Build z deploy hooka nikt nie ogląda, a GitHub Actions nie ma minut. Dlatego cr
 
 ## Strona główna jako plik
 
-`/` jest zapisywana jak przepisy, jako `public/index.html`. „Przepis dnia” jest w pliku zamrożony, więc `recipe-files-version.json` zapisuje też `day` (dzień warszawski zapisanej strony), a cron co 5 minut prosi o build po polskiej północy (w ramach tych samych limitów: raz na 10 minut, 12 na dobę). Gdy `/` nie wyeksportuje się, `day` to `null`, strona zostaje na Workerze i dziennego builda nie ma. Kategorie (`/przepisy/{kategoria}`) nadal idą przez Workera: czytają `?tag=` i `?strona=` po stronie serwera, więc plik odpowiadałby na każdy wariant adresu tą samą treścią.
+`/` jest zapisywana jak przepisy, jako `public/index.html`. „Przepis dnia” jest w pliku zamrożony, więc `recipe-files-version.json` zapisuje też `day` (dzień warszawski zapisanej strony), a cron co 5 minut prosi o build po polskiej północy (w ramach tych samych limitów: raz na 10 minut, 12 na dobę). Gdy `/` nie wyeksportuje się, `day` to `null`, strona zostaje na Workerze i dziennego builda nie ma. 
+
+## Kategorie jako pliki
+
+Każda kategoria jest zapisywana jako `public/przepisy/{kategoria}.html` (#739). Strona zawiera wszystkie karty kategorii (największa, ciasta, ok. 250), a `?tag=` i `?strona=` filtruje przeglądarka, więc jeden plik odpowiada na każdy wariant adresu i Worker się nie uruchamia. Serwer i plik pokazują pierwszą stronę bez filtra; po wczytaniu JS lista przełącza się na adres. Bez JS link chipa otwiera listę bez filtra. Kategoria, która się nie wyeksportuje, zostaje na Workerze (log: `categories stay on the Worker`); nie wpływa to na próg 90% przepisów. Listę kategorii skrypt czyta z `RECIPE_CATEGORIES` w `src/lib/recipe-categories.ts`.
 
 ## Pilne zdjęcie jednej strony
 

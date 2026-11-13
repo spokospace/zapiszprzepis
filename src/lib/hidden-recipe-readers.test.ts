@@ -17,7 +17,6 @@ const FROM_RECIPES = /\.from\(\s*['"]recipes['"]\s*\)/
 /** One entry per reader in the Phase 2 list; `relation` is what it must read. */
 const READERS: { name: string; file: string; relation: RegExp }[] = [
   { name: 'public_recipes (recipe page, category list, home feed, recipe of the day)', file: 'src/lib/recipe-cache.ts', relation: /from\('public_recipes'\)/ },
-  { name: 'category facets (RPC over public_recipes)', file: 'src/lib/recipe-cache.ts', relation: /rpc\('category_tag_facets'/ },
   { name: 'listCanonicalRecipes / canonicalRecipeBySlug (sitemap, llms.txt, .md)', file: 'src/lib/public-recipe.ts', relation: /from\('public_recipes'\)/ },
   { name: 'search_recipes (RPC over public_recipes)', file: 'src/lib/search.ts', relation: /rpc\('search_recipes'/ },
   { name: 'category context (RPC over public_recipes)', file: 'src/app/przepis/[slug]/category-context.ts', relation: /rpc\('recipe_category_context'/ },

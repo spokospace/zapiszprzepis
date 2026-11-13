@@ -79,6 +79,37 @@ export async function exportHomePage(fetchPage, root = process.cwd()) {
   return true
 }
 
+/**
+ * The category values, read from RECIPE_CATEGORIES in src/lib/recipe-categories.ts (this
+ * script cannot import TypeScript); recipe-files.test.ts checks the two lists agree.
+ */
+export function recipeCategories(source = readFileSync('src/lib/recipe-categories.ts', 'utf8')) {
+  const start = source.indexOf('export const RECIPE_CATEGORIES')
+  // The list ends at the first line that is just `]` (the type has a `[]` of its own).
+  const block = source.slice(start, source.indexOf('\n]', start))
+  return [...block.matchAll(/value: '([a-z0-9-]+)'/g)].map((match) => match[1])
+}
+
+/**
+ * Category lists hold every card of the category and filter `?tag=` / `?strona=` in the
+ * browser, so one file serves every variant of the address (#739). The page marks itself
+ * with `data-category-page="{category}"`, so a wrong or error page is never saved. A
+ * category that failed leaves no file, and the Worker answers as before.
+ */
+export async function exportCategoryPages(categories, fetchPage, root = process.cwd()) {
+  const to = join(root, 'public/przepisy')
+  rmSync(to, { recursive: true, force: true })
+  const saved = []
+  for (const category of categories) {
+    const page = await fetchPage(category).catch(() => null)
+    if (page?.status !== 200 || !page.html.includes(`data-category-page="${category}"`) || !page.html.includes('</html>')) continue
+    mkdirSync(to, { recursive: true })
+    writeFileSync(join(to, `${category}.html`), page.html)
+    saved.push(category)
+  }
+  return saved
+}
+
 /** The Europe/Warsaw civil day as YYYY-MM-DD; the same key as warsawDayKey in src/lib/recipe-of-the-day.ts. */
 export const warsawDay = (date = new Date()) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
@@ -163,6 +194,7 @@ async function main() {
 async function clearFiles() {
   await exportSearchPage(async () => null)
   await exportHomePage(async () => null)
+  await exportCategoryPages([], async () => null)
   return { exported: await exportRecipeFiles([]), home: false }
 }
 
@@ -179,6 +211,10 @@ async function exportFromServer(slugs) {
     if (!(await exportSearchPage(() => open('/szukaj')))) console.error('[recipe-files] /szukaj stays on the Worker')
     const home = await exportHomePage(() => open('/'))
     if (!home) console.error('[recipe-files] / stays on the Worker')
+    const categories = recipeCategories()
+    const savedCategories = await exportCategoryPages(categories, (category) => open(`/przepisy/${category}`))
+    const missed = categories.filter((category) => !savedCategories.includes(category))
+    if (missed.length > 0) console.error(`[recipe-files] categories stay on the Worker: ${missed.join(', ')}`)
     const exported = await exportRecipeFiles(slugs, (slug) => open(`/przepis/${slug}`), { deadline: Date.now() + TIME_LIMIT_MS })
     return { exported, home }
   } finally {
