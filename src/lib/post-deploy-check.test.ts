@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { checkAssets, readPage, needsCheck, runPostDeployCheck, type DeployCheckRecord } from './post-deploy-check'
+import { checkAssets, readPage, readSitemap, needsCheck, runPostDeployCheck, type DeployCheckRecord } from './post-deploy-check'
 
 const record = (over: Partial<DeployCheckRecord>): DeployCheckRecord => ({
   version: 'v1',
@@ -56,14 +56,39 @@ describe('readPage and checkAssets', () => {
   })
 })
 
+const loc = (path: string) => `<url><loc>https://x.test${path}</loc></url>`
+const sitemap = (...paths: string[]) =>
+  new Response(`<urlset>${paths.map(loc).join('')}</urlset>`, { status: 200, headers: { 'content-type': 'application/xml' } })
+
+describe('readSitemap', () => {
+  it('returns the first three recipes, which are the oldest', async () => {
+    const xml = sitemap('/', '/przepisy/zupy', '/przepis/a', '/przepis/b', '/u/ania', '/przepis/c', '/przepis/d')
+    expect(await readSitemap('https://x.test', (async () => xml) as never)).toEqual({
+      failures: [],
+      paths: ['/przepis/a', '/przepis/b', '/przepis/c'],
+    })
+  })
+  it('fails a sitemap without recipes (2026-11-11: 17 URLs, the pages known without the database)', async () => {
+    const xml = sitemap('/', '/przepisy/zupy', '/regulamin')
+    expect(await readSitemap('https://x.test', (async () => xml) as never)).toEqual({
+      failures: ['/sitemap.xml → lists no recipes'],
+      paths: [],
+    })
+  })
+  it('fails a sitemap that does not answer 200', async () => {
+    expect(await readSitemap('https://x.test', (async () => new Response('', { status: 503 })) as never)).toEqual({
+      failures: ['/sitemap.xml → 503'],
+      paths: [],
+    })
+  })
+})
+
 describe('runPostDeployCheck', () => {
   function env(stored: DeployCheckRecord | null) {
     const put = vi.fn<(key: string, value: string) => Promise<undefined>>(async () => undefined)
     return {
       put,
       env: {
-        NEXT_PUBLIC_SUPABASE_URL: 'https://db.test',
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon',
         NEXT_PUBLIC_SITE_URL: 'https://x.test',
         CF_VERSION_METADATA: { id: 'v1' },
         BACKUPS: { get: async () => (stored ? { json: async () => stored } : null), put },
@@ -71,8 +96,8 @@ describe('runPostDeployCheck', () => {
     }
   }
   const good = async (url: string) =>
-    url.includes('/rest/v1/')
-      ? Response.json([{ slug: 'a' }])
+    url.endsWith('/sitemap.xml')
+      ? sitemap('/', '/przepis/a')
       : url.includes('/_next/static/')
         ? file(url.endsWith('.css') ? 'text/css' : 'text/javascript')
         : page()
@@ -92,15 +117,23 @@ describe('runPostDeployCheck', () => {
   it('records a failure with its attempt count and logs it as an error', async () => {
     const { env: e, put } = env(record({ ok: false, attempts: 1 }))
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    await runPostDeployCheck(e, (async (url: string) => (url.includes('/rest/v1/') ? Response.json([{ slug: 'a' }]) : new Response('', { status: 503 }))) as never)
-    expect(JSON.parse(put.mock.calls[0][1])).toMatchObject({ ok: false, attempts: 2 })
+    await runPostDeployCheck(e, (async (url: string) => (url.endsWith('/sitemap.xml') ? sitemap('/przepis/a') : new Response('', { status: 503 }))) as never)
+    expect(JSON.parse(put.mock.calls[0][1])).toMatchObject({ ok: false, attempts: 2, failures: ['/szukaj → 503', '/przepis/a → 503'] })
     expect(err).toHaveBeenCalled()
     err.mockRestore()
   })
-  it('never throws when the sample cannot be read', async () => {
+  it('records a failure when the sitemap lists no recipes, though every page loads', async () => {
+    const { env: e, put } = env(null)
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await runPostDeployCheck(e, (async (url: string) => (url.endsWith('/sitemap.xml') ? sitemap('/', '/regulamin') : good(url))) as never)
+    expect(JSON.parse(put.mock.calls[0][1])).toMatchObject({ ok: false, failures: ['/sitemap.xml → lists no recipes'] })
+    err.mockRestore()
+  })
+  it('never throws when a request fails', async () => {
     const { env: e } = env(null)
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    await expect(runPostDeployCheck(e, (async () => new Response('', { status: 500 })) as never)).resolves.toBeUndefined()
+    await expect(runPostDeployCheck(e, (async () => Promise.reject(new Error('network'))) as never)).resolves.toBeUndefined()
+    expect(err).toHaveBeenCalled()
     err.mockRestore()
   })
 })

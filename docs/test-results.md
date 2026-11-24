@@ -4,6 +4,38 @@ Dziennik pomiarów produkcji i prób rozwiązań. Nowe wpisy na górze, godziny 
 
 Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichymi minutami, bo błędy trwają dłużej niż samo obciążenie. Pomiary zrobione kilka minut po sobie nie są porównywalne.
 
+## 2026-11-24
+
+### Mapa strony bez przepisów i profile z kodem 500 (00:40–01:00 UTC)
+
+**Co:** `https://zapiszprzepis.pl/sitemap.xml` wymienia 17 adresów (strona główna, 13 kategorii, 3 strony prawne) i ani jednego `/przepis/…`; 2026-11-06 miała 946. `/u/tola`, `/u/uzytkownik-3` i `/u/uzytkownik-4` odpowiadają gościowi 500. Zgłoszone ze skanu bez ciasteczek z 2026-11-21.
+
+**Jak i wynik (produkcja, 00:42 UTC):**
+
+| Zapytanie | Wynik |
+| --- | --- |
+| `GET /sitemap.xml` | 200, `x-opennext: 1` (odpowiada Worker), 17 `<loc>`, 0 z `/przepis/` |
+| `GET {supabase}/rest/v1/public_recipes?select=slug&limit=1` kluczem publicznym | 402, `exceed_cached_egress_quota, exceed_egress_quota, exceed_storage_size_quota` |
+| `GET /u/tola`, `/u/uzytkownik-3`, `/u/uzytkownik-4` | 500 |
+| `GET /u/nieistnieje-xyz` (nie ma takiego profilu) | 500, nie 404 |
+| `GET /llms.txt` | 200, same kategorie, 0 przepisów |
+| `GET /przepis/zapiekanka` (plik) | 200 |
+
+**Przyczyna:** jedna dla obu błędów, i nie jest nią żaden commit. Od 2026-11-11 REST Supabase odpowiada 402 (limit planu Free, blokada do 2026-11-28, wpis niżej). Trasa `src/app/sitemap.ts` czyta `public_recipes` przy każdym wejściu, a przy błędzie odczytu zwraca 200 z samymi stronami stałymi: stąd 17 adresów. Strona profilu rzuca błąd przy pierwszym zapytaniu (`[profile] Profile query failed`), także dla nazwy, której nie ma. Przepisy, `/szukaj` i strona główna działają, bo są plikami z builda `7af0f678` (2026-11-11 02:35). #732, #734 i okres #722–#749 nie mają z tym związku: #734 usunął z mapy jeden adres (`/szukaj`), a po #749 mapa nadal miała przepisy (wpis z 2026-11-09 liczy z niej tytuły).
+
+**Poprawka (ten PR):** build zapisuje odpowiedź trasy jako `public/sitemap.xml` i pada, gdy mapa wymienia mniej niż 90% przepisów; kontrola po wdrożeniu z crona czyta mapę i zgłasza błąd, gdy nie ma w niej przepisów (`docs/recipe-files.md`). Profile zostają na Workerze: osobne zgłoszenie.
+
+**Sprawdzenie lokalne:** `next dev` z `NEXT_PUBLIC_SUPABASE_URL` wskazującym na lokalną atrapę REST, która zna tylko odczyty listy z `public_recipes`. Atrapa podaje 905 przepisów: adresy `/przepis/…` z eksportu z 2026-10-30, które 2026-11-21 odpowiedziały 200. Daty są zmyślone (`created_at` co godzinę, co piąty wiersz ze zmienionym `last_modified`).
+
+| Stan atrapy | `/sitemap.xml` z trasy | `exportSitemap` + `sitemapShortfall('all', …, 905)` |
+| --- | --- | --- |
+| odpowiada | 200, 925 adresów: 17 stałych, 905 przepisów, 3 profile; 905 `<lastmod>` równych `last_modified` z atrapy | plik 169 624 B, 925 adresów; „ships” |
+| 402 na wszystko | 200, 17 adresów, 0 przepisów | bez pliku; `the sitemap lists only 0 of 905 recipes` (build pada) |
+
+Przy 402 `/u/tola` na lokalnym serwerze odpowiada 500 z `[profile] Profile query failed: Service for this project is restricted`, czyli tak jak produkcja. Plik `public/sitemap.xml` zostawiony przy działającym `next dev` daje 500 z komunikatem Next o konflikcie pliku i trasy.
+
+**Nie dowodzi:** że cały `pnpm build` przechodzi z nowym krokiem (nie uruchomiłem pełnego builda: laptop miał 13 GB wolnej pamięci przy pracującym zadaniu innej sesji; pierwszy pełny przebieg to build `master` po scaleniu), że Cloudflare poda plik `/sitemap.xml` przed Workerem (wynika z tego samego mechanizmu, co `/` i `/szukaj`, do sprawdzenia nagłówkiem `x-opennext` po wdrożeniu), ani że prawdziwe `last_modified` w bazie są sensowne: baza nie odpowiada też przez Management API (`select 1` kończy się 544, „connection timeout”, przy statusie projektu `ACTIVE_HEALTHY`), więc nie dało się ich odczytać. Poprawka trafi na produkcję dopiero z buildem, który wczyta listę przepisów, czyli po odblokowaniu Supabase.
+
 ## 2026-11-11
 
 ### Awaria: build przy zablokowanym Supabase usunął pliki przepisów (23:51–00:05 UTC)

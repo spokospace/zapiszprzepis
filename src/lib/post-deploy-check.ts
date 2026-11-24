@@ -3,7 +3,8 @@
  * also covers builds started by the recipe-files deploy hook, which no person watches and
  * which GitHub Actions cannot check (no minutes). It is the automatic part of `pnpm smoke:prod`:
  * recipe pages and `/szukaj` (served as files) must answer 200, and every `/_next/static` file
- * they name must load, the failure of 2026-10-22 (HTML naming files that 404).
+ * they name must load, the failure of 2026-10-22 (HTML naming files that 404). The recipes come
+ * from `/sitemap.xml`, which must list some: from 2026-11-11 it listed none, unnoticed.
  *
  * The result is a log line (the alert, read in Observability) and a record in R2. A failed
  * check is retried on the next runs, up to MAX_ATTEMPTS, since a deploy may need a minute.
@@ -11,8 +12,9 @@
  * 503 there is the known load problem, and this check must not add load or noise to it.
  */
 import { staticAssetPaths } from './static-assets'
+import { sitemapRecipePaths } from './smoke-attempts'
 import type { Fetch } from './search-console'
-import { restBase, restHeaders, type CronEnv } from './worker-cron'
+import type { CronEnv } from './worker-cron'
 
 const MAX_ATTEMPTS = 3
 const RECIPE_SAMPLE = 3
@@ -22,10 +24,7 @@ const RECORD_KEY = 'deploy-check/last.json'
 
 export type DeployCheckRecord = { version: string; attempts: number; ok: boolean; at: string; failures: string[] }
 
-export type DeployCheckEnv = Pick<
-  CronEnv,
-  'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_ANON_KEY' | 'NEXT_PUBLIC_SITE_URL' | 'CF_VERSION_METADATA' | 'BACKUPS'
->
+export type DeployCheckEnv = Pick<CronEnv, 'NEXT_PUBLIC_SITE_URL' | 'CF_VERSION_METADATA' | 'BACKUPS'>
 
 /** Whether this version still needs a check: none recorded, or the last one failed with attempts left. */
 export function needsCheck(version: string, last: DeployCheckRecord | null): boolean {
@@ -55,14 +54,15 @@ export async function checkAssets(base: string, assets: string[], fetchFn: Fetch
   return results.filter((failure): failure is string => failure !== null)
 }
 
-async function sampleSlugs(env: DeployCheckEnv, fetchFn: Fetch): Promise<string[]> {
-  // The oldest recipes: every one of them has a file, so a 200 does not depend on the Worker.
-  const res = await fetchFn(
-    `${restBase(env)}/rest/v1/public_recipes?select=slug&order=created_at.asc&limit=${RECIPE_SAMPLE}`,
-    { headers: restHeaders(env.NEXT_PUBLIC_SUPABASE_ANON_KEY) },
-  )
-  if (!res.ok) throw new Error(`recipe sample: Supabase responded ${res.status}`)
-  return ((await res.json()) as { slug: string }[]).map((r) => r.slug)
+/**
+ * The sitemap's failures and the first recipes it lists. Those are the oldest, and every one of
+ * them has a file, so a 200 does not depend on the Worker. A sitemap without recipes is a failure.
+ */
+export async function readSitemap(base: string, fetchFn: Fetch): Promise<{ failures: string[]; paths: string[] }> {
+  const res = await fetchFn(`${base}/sitemap.xml`, { redirect: 'manual' })
+  if (res.status !== 200) return { failures: [`/sitemap.xml → ${res.status}`], paths: [] }
+  const paths = sitemapRecipePaths(await res.text()).slice(0, RECIPE_SAMPLE)
+  return { failures: paths.length === 0 ? ['/sitemap.xml → lists no recipes'] : [], paths }
 }
 
 /** Never throws: it runs inside the scheduled handler, and the log line is the alert. */
@@ -76,15 +76,19 @@ export async function runPostDeployCheck(env: DeployCheckEnv, fetchFn: Fetch = f
     const last = stored ? ((await stored.json()) as DeployCheckRecord) : null
     if (!needsCheck(version, last)) return
 
-    const failures: string[] = []
-    const paths = ['/szukaj', ...(await sampleSlugs(env, fetchFn)).map((slug) => `/przepis/${slug}`)]
+    const sitemap = await readSitemap(base, fetchFn)
+    const paths = ['/szukaj', ...sitemap.paths]
     const pages = await Promise.all(paths.map((path) => readPage(base, path, fetchFn)))
-    failures.push(...pages.flatMap((page) => page.failures), ...(await checkAssets(base, pages.flatMap((page) => page.assets), fetchFn)))
+    const failures = [
+      ...sitemap.failures,
+      ...pages.flatMap((page) => page.failures),
+      ...(await checkAssets(base, pages.flatMap((page) => page.assets), fetchFn)),
+    ]
 
     const attempts = last?.version === version ? last.attempts + 1 : 1
     const record: DeployCheckRecord = { version, attempts, ok: failures.length === 0, at: now.toISOString(), failures }
     await bucket.put(RECORD_KEY, JSON.stringify(record), { httpMetadata: { contentType: 'application/json' } })
-    if (record.ok) console.log(`post-deploy: version ${version} ok (${paths.length} pages and their static files)`)
+    if (record.ok) console.log(`post-deploy: version ${version} ok (the sitemap, ${paths.length} pages and their static files)`)
     else console.error(`post-deploy: version ${version} FAILED (attempt ${attempts}/${MAX_ATTEMPTS}): ${failures.join('; ')}`)
   } catch (error) {
     console.error('post-deploy: check could not run', error)

@@ -1,6 +1,7 @@
 // Runs after `next build`: opens recipes on the freshly built server and saves them in public/,
 // which OpenNext copies to the Worker's static assets. /przepis/{slug} then finds
 // przepis/{slug}.html and never starts the Worker. One recipe that fails stays on the Worker.
+// /sitemap.xml is saved the same way, so it lists the recipes this build read.
 // recipe-files.json is a list of slugs, or "all" for every public recipe; [] serves every
 // recipe and /szukaj from the Worker again.
 //
@@ -79,6 +80,33 @@ export async function exportHomePage(fetchPage, root = process.cwd()) {
   return true
 }
 
+/** How many different recipe pages a sitemap lists. */
+export const sitemapRecipeCount = (xml) => new Set(xml.match(/<loc>[^<]*\/przepis\/[^<]+<\/loc>/g)).size
+
+const sitemapFile = (root) => join(root, 'public/sitemap.xml')
+
+/**
+ * Before the server starts: `next start` lists public/ once, and a sitemap.xml left there by an
+ * earlier build would be served in place of the route, then saved again as if it were new.
+ */
+export function clearSitemap(root = process.cwd()) {
+  rmSync(sitemapFile(root), { force: true })
+}
+
+/**
+ * /sitemap.xml as a file, so it holds the recipes this build read and no longer depends on the
+ * database answering when a crawler asks. The route reads the database on each request and
+ * falls back to the pages it knows without it: from 2026-11-11, with Supabase restricted (402),
+ * production listed 17 URLs and no recipe. Returns the number of recipes listed; a sitemap
+ * without any leaves no file (see sitemapShortfall).
+ */
+export async function exportSitemap(fetchPage, root = process.cwd()) {
+  const page = await fetchPage().catch(() => null)
+  const recipes = page?.status === 200 && page.html.includes('</urlset>') ? sitemapRecipeCount(page.html) : 0
+  if (recipes > 0) writeFileSync(sitemapFile(root), page.html)
+  return recipes
+}
+
 /** The Europe/Warsaw civil day as YYYY-MM-DD; the same key as warsawDayKey in src/lib/recipe-of-the-day.ts. */
 export const warsawDay = (date = new Date()) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
@@ -101,6 +129,15 @@ export function exportShortfall(listed, exported, total) {
   if (listed !== 'all') return null
   if (total === 0) return 'the database lists no public recipes'
   return exported >= total * MIN_SHARE ? null : `only ${exported} of ${total} recipes exported`
+}
+
+/**
+ * Why this sitemap must fail the build, or null when it may ship. `total` counts different
+ * slugs, as the sitemap lists each once. Only for "all", like exportShortfall.
+ */
+export function sitemapShortfall(listed, recipes, total) {
+  if (listed !== 'all') return null
+  return recipes >= total * MIN_SHARE ? null : `the sitemap lists only ${recipes} of ${total} recipes`
 }
 
 /**
@@ -153,8 +190,9 @@ async function main() {
   const slugs = listed === 'all' ? await publicSlugs() : listed
   const day = warsawDay()
   if (listed === 'all' && slugs.length === 0) throw new Error(exportShortfall(listed, 0, 0))
-  const { exported, home } = slugs.length === 0 ? await clearFiles() : await exportFromServer(slugs)
-  const shortfall = exportShortfall(listed, exported.length, slugs.length)
+  const { exported, home, sitemap } = slugs.length === 0 ? await clearFiles() : await exportFromServer(slugs)
+  const shortfall =
+    exportShortfall(listed, exported.length, slugs.length) ?? sitemapShortfall(listed, sitemap, new Set(slugs).size)
   if (shortfall) throw new Error(shortfall)
   writeContentVersion(versionToSave(version, exported.length, slugs.length), home ? day : null)
   return exported
@@ -163,12 +201,14 @@ async function main() {
 async function clearFiles() {
   await exportSearchPage(async () => null)
   await exportHomePage(async () => null)
-  return { exported: await exportRecipeFiles([]), home: false }
+  clearSitemap()
+  return { exported: await exportRecipeFiles([]), home: false, sitemap: 0 }
 }
 
 async function exportFromServer(slugs) {
   // A build cache could bring back the last build's entries, with the old recipes in them.
   clearDataCache()
+  clearSitemap()
   const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', String(PORT)], { stdio: 'inherit' })
   try {
     await waitForServer()
@@ -180,7 +220,11 @@ async function exportFromServer(slugs) {
     const home = await exportHomePage(() => open('/'))
     if (!home) console.error('[recipe-files] / stays on the Worker')
     const exported = await exportRecipeFiles(slugs, (slug) => open(`/przepis/${slug}`), { deadline: Date.now() + TIME_LIMIT_MS })
-    return { exported, home }
+    // Last: the route's answer is the list as it is now, after every page above was read.
+    const sitemap = await exportSitemap(() => open('/sitemap.xml'))
+    if (sitemap === 0) console.error('[recipe-files] /sitemap.xml lists no recipes, so it stays on the Worker')
+    else console.log(`[recipe-files] sitemap.xml saved with ${sitemap} recipes`)
+    return { exported, home, sitemap }
   } finally {
     server.kill()
     clearDataCache()

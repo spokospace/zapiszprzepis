@@ -68,12 +68,17 @@ function breakdown(results: AttemptResult[]): string {
   return [...counts].map(([label, n]) => `${label}×${n}`).join(', ')
 }
 
+/** Every recipe path the sitemap lists, in its order: the oldest recipe first. */
+export function sitemapRecipePaths(sitemapXml: string): string[] {
+  return [...sitemapXml.matchAll(/<loc>https?:\/\/[^/<]+(\/przepis\/[^<]+)<\/loc>/g)].map((m) => m[1])
+}
+
 /**
  * Up to `count` different recipe paths from the sitemap. Random, because a fixed list
  * would be warm in every cache and would hide what a reader moving between recipes meets.
  */
 export function sampleRecipePaths(sitemapXml: string, count: number, random: () => number = Math.random): string[] {
-  const paths = [...sitemapXml.matchAll(/<loc>https?:\/\/[^/<]+(\/przepis\/[^<]+)<\/loc>/g)].map((m) => m[1])
+  const paths = sitemapRecipePaths(sitemapXml)
   for (let i = paths.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1))
     ;[paths[i], paths[j]] = [paths[j], paths[i]]

@@ -4,10 +4,14 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   clearDataCache,
+  clearSitemap,
   exportHomePage,
   exportRecipeFiles,
   exportSearchPage,
   exportShortfall,
+  exportSitemap,
+  sitemapRecipeCount,
+  sitemapShortfall,
   versionToSave,
   warsawDay,
 } from '../../scripts/export-recipe-files.mjs'
@@ -67,6 +71,70 @@ describe('exportHomePage', () => {
     expect(await exportHomePage(fetchPage, dir)).toBe(false)
     expect(existsSync(join(dir, 'public/index.html'))).toBe(false)
     rmSync(dir, { recursive: true })
+  })
+})
+
+describe('exportSitemap', () => {
+  const root = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sitemap-file-'))
+    mkdirSync(join(dir, 'public'))
+    return dir
+  }
+  const loc = (path: string) => `<url><loc>https://zapiszprzepis.pl${path}</loc><lastmod>2026-11-09T10:00:00.000Z</lastmod></url>`
+  const xml = (...paths: string[]) => `<?xml version="1.0" encoding="UTF-8"?><urlset>${paths.map(loc).join('')}</urlset>`
+
+  it('saves the sitemap as the route wrote it and counts its recipes', async () => {
+    const dir = root()
+    const sitemap = xml('/', '/przepisy/zupy', '/przepis/sernik', '/przepis/piernik', '/u/ania')
+    expect(await exportSitemap(async () => ({ status: 200, html: sitemap }), dir)).toBe(2)
+    expect(readFileSync(join(dir, 'public/sitemap.xml'), 'utf8')).toBe(sitemap)
+    rmSync(dir, { recursive: true })
+  })
+
+  it.each([
+    // What the route answers when the database read fails: the pages it knows without it.
+    ['a sitemap without recipes', async () => ({ status: 200, html: xml('/', '/przepisy/zupy', '/regulamin') })],
+    ['an error', async () => ({ status: 500, html: xml('/przepis/sernik') })],
+    ['a cut-off sitemap', async () => ({ status: 200, html: '<urlset><url><loc>https://zapiszprzepis.pl/przepis/sernik</loc>' })],
+    ['no answer', async () => Promise.reject(new Error('down'))],
+  ])('saves no file after %s', async (_name, fetchPage) => {
+    const dir = root()
+    expect(await exportSitemap(fetchPage, dir)).toBe(0)
+    expect(existsSync(join(dir, 'public/sitemap.xml'))).toBe(false)
+    rmSync(dir, { recursive: true })
+  })
+
+  it('counts a recipe listed twice once', () => {
+    expect(sitemapRecipeCount(xml('/przepis/sernik', '/przepis/sernik', '/przepisy/ciasta'))).toBe(1)
+  })
+
+  it('clearSitemap removes the file an earlier build left, and is quiet without one', () => {
+    const dir = root()
+    writeFileSync(join(dir, 'public/sitemap.xml'), 'old')
+    clearSitemap(dir)
+    clearSitemap(dir)
+    expect(existsSync(join(dir, 'public/sitemap.xml'))).toBe(false)
+    rmSync(dir, { recursive: true })
+  })
+})
+
+describe('sitemapShortfall', () => {
+  it('fails the build when the sitemap lists no recipes (from 2026-11-11 production listed 17 URLs, none a recipe)', () => {
+    expect(sitemapShortfall('all', 0, 932)).toMatch(/only 0 of 932/)
+  })
+
+  it('fails the build when the sitemap lists under nine recipes in ten', () => {
+    expect(sitemapShortfall('all', 89, 100)).toMatch(/89 of 100/)
+  })
+
+  it('ships a sitemap that lists nine in ten or more', () => {
+    expect(sitemapShortfall('all', 90, 100)).toBeNull()
+    expect(sitemapShortfall('all', 932, 932)).toBeNull()
+  })
+
+  it('never fails a build that lists slugs itself, [] included', () => {
+    expect(sitemapShortfall([], 0, 0)).toBeNull()
+    expect(sitemapShortfall(['a', 'b'], 0, 2)).toBeNull()
   })
 })
 
