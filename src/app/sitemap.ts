@@ -13,6 +13,11 @@ export const revalidate = 3600
  * profile (/u/{username}), and the legal pages. If the DB read fails the static
  * set is still returned, so a transient error never drops the whole sitemap.
  * Phase 1 of the sitemap spec (#363).
+ *
+ * On production a file answers instead: the build saves this route's answer as
+ * public/sitemap.xml and fails when it lists no recipes
+ * (scripts/export-recipe-files.mjs). The route itself answers in `pnpm dev` and
+ * in a build without recipe files.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const site = await getSiteUrl()

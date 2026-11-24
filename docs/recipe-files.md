@@ -23,7 +23,7 @@ Pliki przepisów powstają z bazy podczas builda. Jeśli lista przepisów się n
 
 ## Automatyczna kontrola po wdrożeniu
 
-Build z deploy hooka nikt nie ogląda, a GitHub Actions nie ma minut. Dlatego cron co 5 minut (`src/lib/post-deploy-check.ts`) sprawdza każdą nową wersję Workera raz: `/szukaj` i trzy najstarsze przepisy muszą odpowiedzieć 200, a każdy plik `/_next/static`, który wskazują, musi się załadować (nie 404 i nie HTML w miejscu CSS/JS). Nie sprawdza tras z Workera (`/`, `/login`): 503 tam to znany problem obciążenia, a kontrola nie ma go zaogniać.
+Build z deploy hooka nikt nie ogląda, a GitHub Actions nie ma minut. Dlatego cron co 5 minut (`src/lib/post-deploy-check.ts`) sprawdza każdą nową wersję Workera raz: `/sitemap.xml` musi odpowiedzieć 200 i wymieniać przepisy, `/szukaj` i trzy najstarsze przepisy z mapy muszą odpowiedzieć 200, a każdy plik `/_next/static`, który wskazują, musi się załadować (nie 404 i nie HTML w miejscu CSS/JS). Nie sprawdza tras z Workera (`/`, `/login`): 503 tam to znany problem obciążenia, a kontrola nie ma go zaogniać.
 
 - Wynik: wiersz w Observability (`post-deploy: version … ok` albo `… FAILED`) i rekord `deploy-check/last.json` w R2 (`zapiszprzepis-backups`).
 - Nieudaną kontrolę powtarza następne uruchomienie crona, do 3 prób na wersję.
@@ -33,6 +33,17 @@ Build z deploy hooka nikt nie ogląda, a GitHub Actions nie ma minut. Dlatego cr
 ## Strona główna jako plik
 
 `/` jest zapisywana jak przepisy, jako `public/index.html`. „Przepis dnia” jest w pliku zamrożony, więc `recipe-files-version.json` zapisuje też `day` (dzień warszawski zapisanej strony), a cron co 5 minut prosi o build po polskiej północy (w ramach tych samych limitów: raz na 10 minut, 12 na dobę). Gdy `/` nie wyeksportuje się, `day` to `null`, strona zostaje na Workerze i dziennego builda nie ma. Kategorie (`/przepisy/{kategoria}`) nadal idą przez Workera: czytają `?tag=` i `?strona=` po stronie serwera, więc plik odpowiadałby na każdy wariant adresu tą samą treścią.
+
+## Mapa strony jako plik
+
+`/sitemap.xml` jest zapisywana podczas builda jako `public/sitemap.xml`: skrypt pobiera odpowiedź trasy `src/app/sitemap.ts` z właśnie zbudowanego serwera, po wszystkich przepisach. Mapa wymienia więc przepisy z chwili builda, razem z `lastmod`, i nie zależy od tego, czy baza odpowiada w chwili, gdy pyta robot. Odświeża się z plikami przepisów (ten sam cron i deploy hook).
+
+- Przy `"all"` build pada, gdy mapa wymienia mniej niż 90% przepisów z bazy (`the sitemap lists only N of M recipes`). Zostaje wtedy ostatnia dobra wersja, ze swoją mapą.
+- Sama trasa przy błędzie bazy odpowiada 200 z samymi stronami stałymi (strona główna, kategorie, strony prawne). Tak było na produkcji od 2026-11-11: Supabase odpowiadał 402, mapa miała 17 adresów i ani jednego przepisu, i nikt tego nie zauważył. Trasa odpowiada już tylko w `pnpm dev` i w buildzie bez plików.
+- Kontrola po wdrożeniu (wyżej) i `pnpm smoke:prod` kończą się błędem, gdy mapa nie wymienia przepisów.
+- Plik zostawiony w `public/` przez wcześniejszy lokalny build skrypt usuwa przed startem serwera. W `pnpm dev` taki plik daje 500 na `/sitemap.xml` (Next zgłasza konflikt pliku i trasy): usuń `public/sitemap.xml`.
+
+Nadal czytają bazę przy każdym wejściu i nie działają, gdy baza nie odpowiada: profile `/u/{username}`, kategorie, `/llms.txt` (zostają same kategorie) i wersje `.md`.
 
 ## Pilne zdjęcie jednej strony
 
