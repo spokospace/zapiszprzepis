@@ -1,34 +1,18 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getCategoryFacets, getCategoryListing, getCategoryTotal } from '@/lib/recipe-cache'
+import { getCategoryCards } from '@/lib/recipe-cache'
 import { CATEGORY_ICONS, categoryLabel, isRecipeCategory } from '@/lib/recipe-categories'
 import { getCategoryMeta } from '@/lib/category-descriptions'
-import { categoryNoun, parsePageParam, parseTagParam, tagFacetsFromCounts, tagSummary, type TagCount } from '@/lib/category-tags'
-import { tagLabel } from '@/lib/recipe-tags'
 import { categoryPath } from '@/lib/routes'
 import { getSiteUrl } from '@/lib/site-url'
 import { categoryOgImagePath } from '@/lib/category-og'
 import { TrackView } from '@/app/components/track-view'
 import { PageContainer } from '@/app/components/page-container'
-import { LIST_CARDS_CLASS, RecipeCard } from '@/app/components/recipe-card'
-import { ListLink } from '@/app/components/list-link'
-import { ListResults, ListTransition } from '@/app/components/list-transition'
-import { RecipeListSnapshot } from '@/app/components/recipe-list-snapshot'
 import { recipesNoun } from '@/app/components/app-menu-model'
-import { buttonClasses } from '@/app/components/ui/button'
-import { TagFilter, type TagChip } from './_components/tag-filter'
+import { CategoryResults } from './_components/category-results'
 import { OG_SITE, SITE_NAME } from '@/lib/site'
 
 type Params = Promise<{ kategoria: string }>
-type SearchParams = Promise<{ tag?: string | string[]; strona?: string | string[] }>
-
-/** Newest first, this many more per "Pokaż kolejne". */
-const PAGE_SIZE = 24
-/** `?strona=` cap: the list is read from the top, and PostgREST answers at most 1000 rows. */
-const MAX_PAGE = Math.floor(1000 / PAGE_SIZE)
-
-const LINK = 'font-semibold text-action-text underline underline-offset-4 hover:text-action-hover'
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { kategoria: category } = await params
@@ -57,69 +41,24 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 /**
- * Every recipe in one category, for guests too (E01-S09), with tag chips
- * (`?tag=a,b`, AND logic) and an aria-live summary (E01-S16), as list cards
- * with "Pokaż kolejne N" (E01-S22, screen 6). Reads the guest-safe
- * public_recipes view: the `category_tag_facets` RPC aggregates the per-tag
- * counters in Postgres (#444), a head count gives the category total, and one
- * read returns the cards shown. An unknown category is a 404, an empty one an
- * empty state.
+ * Every recipe in one category, for guests too (E01-S09), with tag chips (`?tag=a,b`,
+ * AND logic, E01-S16) and "Pokaż kolejne N" (E01-S22, screen 6). It reads no session and
+ * no address on the server: every card of the category goes to the page, and
+ * CategoryResults filters and pages them in the browser, so the build saves the page as
+ * a file (scripts/export-recipe-files.mjs, #739). An unknown category is a 404, an empty
+ * one an empty state; a failed read throws to the route error boundary.
  */
-export default async function CategoryPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
+export default async function CategoryPage({ params }: { params: Params }) {
   const { kategoria: category } = await params
   if (!isRecipeCategory(category)) notFound()
-  const query = await searchParams
-  const selected = parseTagParam(query.tag)
-  const page = Math.min(parsePageParam(query.strona), MAX_PAGE)
-  const shown = page * PAGE_SIZE
-
-  // The user-independent reads — the list cards + exact total, the per-tag facet
-  // counters (#444), and a filtered view's whole-category head count — are cached
-  // per category/tag/page with a short TTL (#445). The counters are an aid, not the content: a failed facet or
-  // count read degrades to no chips / an unknown total, the list still renders.
-  const facetsPromise = getCategoryFacets({ category, selected }).catch((e) => {
-    console.error('[przepisy] Tag facets failed:', e)
-    return [] as TagCount[]
-  })
-  // The "… w kategorii" total equals the cards `count` when nothing is filtered, so
-  // only a filtered view needs its own unfiltered head count (#444); no rows transferred.
-  const categoryCountPromise =
-    selected.length > 0
-      ? getCategoryTotal({ category }).catch((e) => {
-          console.error('[przepisy] Category count failed:', e)
-          return null
-        })
-      : null
-  const [facets, categoryCount, listing] = await Promise.all([
-    facetsPromise,
-    categoryCountPromise,
-    // "Pokaż kolejne" re-renders the list from the top, one page longer. A failed
-    // read throws here, so the route error boundary shows it (not an empty state).
-    getCategoryListing({ category, tags: selected, limit: shown }),
-  ])
-  const { recipes, count } = listing
+  const cards = await getCategoryCards(category)
 
   const label = categoryLabel(category)
   const Icon = CATEGORY_ICONS[category]
-  const total = count ?? 0
-  const filtered = selected.length > 0
-  // The whole category size: the unfiltered cards count, or a filtered view's own head count (null if it failed).
-  const categoryTotal = filtered ? categoryCount : total
-  const clearHref = categoryPath(category)
-  const pageHref = (p: number) => categoryPath(category, { tags: selected, page: p })
-
-  const chips: TagChip[] = tagFacetsFromCounts(facets, selected).map((f) => ({
-    ...f,
-    href: categoryPath(category, {
-      tags: f.selected ? selected.filter((t) => t !== f.value) : [...selected, f.value],
-    }),
-  }))
-
-  const list = recipes ?? []
-  const remaining = total - list.length
 
   return (
-    <main className="min-h-screen bg-surface">
+    // data-category-page: the export checks for it before it saves the file.
+    <main className="min-h-screen bg-surface" data-category-page={category}>
       <TrackView event="category_view" subject={category} />
       <PageContainer className="flex flex-col gap-4 py-6 sm:py-12">
         <header className="flex items-center gap-3">
@@ -128,92 +67,13 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           </span>
           <div className="min-w-0">
             <h1 className="text-[28px] leading-[1.1] font-bold break-words text-ink">{label}</h1>
-            {categoryTotal != null && (
-              <p className="text-[16px] text-ink-soft">
-                {categoryTotal} {recipesNoun(categoryTotal)} w kategorii
-              </p>
-            )}
+            <p className="text-[16px] text-ink-soft">
+              {cards.length} {recipesNoun(cards.length)} w kategorii
+            </p>
           </div>
         </header>
 
-        {/* One transition for the chips and the list: a tap marks the chip at once and the list dims until the new one has rendered (#435). */}
-        <ListTransition>
-        {chips.length > 0 && <TagFilter chips={chips} question={`Jakie ${categoryNoun(label)}?`} />}
-
-        <ListResults className="flex flex-col gap-4">
-        {(filtered || list.length > 0) && (
-          <div
-            className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-tile px-4 py-3 ${filtered ? 'bg-surface-accent' : 'bg-surface-3'}`}
-          >
-            <p role="status" aria-live="polite" className="min-w-0 text-[18px] leading-snug wrap-anywhere text-ink">
-              {filtered ? tagSummary(total, selected) : `Wszystkie: ${total} ${recipesNoun(total)}`}
-            </p>
-            {filtered && (
-              <ListLink href={clearHref} className={buttonClasses('outline', 'md')}>
-                <span aria-hidden="true">×&nbsp;</span>Wyczyść
-              </ListLink>
-            )}
-          </div>
-        )}
-
-        {list.length === 0 ? (
-          <p className="max-w-prose text-[18px] text-ink-soft">
-            {filtered ? (
-              <>
-                Brak przepisów z tymi tagami. Odznacz jeden z tagów albo{' '}
-                <Link href={clearHref} className={LINK}>
-                  pokaż wszystkie przepisy: {label}
-                </Link>
-                .
-              </>
-            ) : (
-              <>
-                W tej kategorii nie ma jeszcze przepisów.{' '}
-                <Link href="/" className={LINK}>
-                  Wróć na stronę główną
-                </Link>
-              </>
-            )}
-          </p>
-        ) : (
-          <>
-            <RecipeListSnapshot
-              listKey="kategoria"
-              label={filtered ? `${label}: ${selected.map(tagLabel).join(', ')}` : label}
-              href={pageHref(page)}
-              items={list.map((r) => ({ slug: r.slug, title: r.title }))}
-            />
-            <ol className={LIST_CARDS_CLASS}>
-              {list.map((r, i) => (
-                // scroll-mt clears the sticky header when "Pokaż kolejne" jumps here.
-                <li key={r.id} id={`wynik-${i + 1}`} className="scroll-mt-28">
-                  <RecipeCard
-                    slug={r.slug}
-                    title={r.title}
-                    imageUrl={r.image_url}
-                    category={r.category}
-                    sourceType={r.source_type}
-                    sourceUrl={r.source_url}
-                    sourceAuthor={r.source_author}
-                    from="kategoria"
-                    favorite={{ recipeId: r.id }}
-                  />
-                </li>
-              ))}
-            </ol>
-          </>
-        )}
-        </ListResults>
-
-        {remaining > 0 && page < MAX_PAGE && list.length > 0 && (
-          <Link
-            href={`${pageHref(page + 1)}#wynik-${list.length + 1}`}
-            className={`${buttonClasses('outline', 'lg')} w-full`}
-          >
-            Pokaż kolejne {Math.min(PAGE_SIZE, remaining)}
-          </Link>
-        )}
-        </ListTransition>
+        <CategoryResults category={category} label={label} cards={cards} />
       </PageContainer>
     </main>
   )

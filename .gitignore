@@ -77,6 +77,7 @@ scripts/data-fixes/*
 /public/przepis/
 /public/szukaj.html
 /public/index.html
+/public/przepisy/
 /public/recipe-files-version.json
 
 # image migration state (scripts/migrate-images-to-r2.ts)

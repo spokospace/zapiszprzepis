@@ -29,16 +29,12 @@ import {
   RECIPES_LIST_TAG,
   recipeTag,
   revalidateRecipeCaches,
-  getCategoryListing,
-  getCategoryFacets,
-  getCategoryTotal,
+  getCategoryCards,
   getPublicRecipe,
   getRecentPublicRecipes,
   getRecipeOfTheDay,
   getSimilarRecipes,
-  readCategoryListing,
-  readCategoryFacets,
-  readCategoryTotal,
+  readCategoryCards,
   readPublicRecipe,
   readRecentPublicRecipes,
   readRecipeOfTheDay,
@@ -81,27 +77,15 @@ describe('cached wrappers — TTL, tags, and viewer-independent keys', () => {
     cacheCalls.length = 0
   })
 
-  it('getCategoryListing: keyed by category/tags/limit only, 1 h TTL, list tag', async () => {
-    await getCategoryListing({ category: 'obiady', tags: ['szybkie', 'tanie'], limit: 24 })
+  it('getCategoryCards: keyed by category only, 1 h TTL, list tag', async () => {
+    await getCategoryCards('obiady')
     const { keyParts, options } = cacheCalls[0]
-    expect(keyParts).toEqual(['category-listing', 'obiady', 'szybkie,tanie', '24'])
+    expect(keyParts).toEqual(['category-cards', 'obiady'])
     expect(options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
     // No key part looks like a user id / cookie — nothing viewer-specific is cached.
     expect(keyParts.join('|')).not.toMatch(/user|cookie|session/i)
   })
 
-  it('getCategoryListing: tag order does not change the key (sorted)', async () => {
-    await getCategoryListing({ category: 'obiady', tags: ['tanie', 'szybkie'], limit: 24 })
-    expect(cacheCalls[0].keyParts).toEqual(['category-listing', 'obiady', 'szybkie,tanie', '24'])
-  })
-
-  it('getCategoryFacets / getCategoryTotal carry the 1 h TTL + list tag', async () => {
-    await getCategoryFacets({ category: 'obiady', selected: ['tanie', 'szybkie'] })
-    await getCategoryTotal({ category: 'obiady' })
-    expect(cacheCalls[0].keyParts).toEqual(['category-facets', 'obiady', 'szybkie,tanie'])
-    expect(cacheCalls[1].keyParts).toEqual(['category-total', 'obiady'])
-    for (const c of cacheCalls) expect(c.options).toEqual({ revalidate: 3600, tags: [RECIPES_LIST_TAG] })
-  })
 
   it('getPublicRecipe: keyed by slug, tagged with its own tag only, so an import does not purge it', async () => {
     await getPublicRecipe('sernik-wiedenski')
@@ -167,28 +151,33 @@ describe('revalidateRecipeCaches', () => {
 })
 
 describe('reads — public_recipes only, no user-scoped columns (no cross-user leakage)', () => {
-  it('readCategoryListing returns rows + count and selects no user_id', async () => {
-    const { client, selectCols, fromTables, orFilters } = fakeClient({ many: { data: [{ id: 1 }], count: 7, error: null } })
-    const out = await readCategoryListing(client, { category: 'obiady', tags: [], limit: 24 })
-    expect(out).toEqual({ recipes: [{ id: 1 }], count: 7 })
+  it('readCategoryCards reads ranges until the category is complete', async () => {
+    const ranges: [number, number][] = []
+    const full = Array.from({ length: 1000 }, (_, i) => ({ id: i }))
+    const builder: Record<string, unknown> = {}
+    for (const m of ['select', 'or', 'order']) builder[m] = () => builder
+    builder.range = (from: number, to: number) => {
+      ranges.push([from, to])
+      return Promise.resolve({ data: from === 0 ? full : [{ id: 1000 }], error: null })
+    }
+    const client = { from: () => builder } as unknown as Parameters<typeof readCategoryCards>[0]
+    const cards = await readCategoryCards(client, 'obiady')
+    expect(cards).toHaveLength(1001)
+    expect(ranges).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ])
+  })
+
+  it('readCategoryCards returns the rows and selects no user_id', async () => {
+    const { client, selectCols, fromTables, orFilters } = fakeClient({ many: { data: [{ id: 1 }], error: null } })
+    expect(await readCategoryCards(client, 'obiady')).toEqual([{ id: 1 }])
     // The list holds the recipes whose primary OR extra category is this one (#689).
     expect(orFilters).toEqual(['category.eq.obiady,extra_categories.cs.{obiady}'])
     expect(fromTables).toEqual(['public_recipes'])
     expect(selectCols.join(' ')).not.toContain('user_id')
   })
 
-  it('readCategoryFacets passes selected tags to the RPC and returns the counters', async () => {
-    const { client } = fakeClient({ rpc: { data: [{ tag: 'tanie', count: 3 }], error: null } })
-    const out = await readCategoryFacets(client, { category: 'obiady', selected: ['tanie'] })
-    expect(out).toEqual([{ tag: 'tanie', count: 3 }])
-  })
-
-  it('readCategoryTotal returns the head count', async () => {
-    const { client, orFilters } = fakeClient({ many: { count: 42, error: null } })
-    expect(await readCategoryTotal(client, { category: 'obiady' })).toBe(42)
-    // The total uses the same predicate as the listing, so the two cannot disagree.
-    expect(orFilters).toEqual(['category.eq.obiady,extra_categories.cs.{obiady}'])
-  })
 
   it('readPublicRecipe returns the first (oldest) row or null', async () => {
     const hit = fakeClient({ many: { data: [{ id: 9, slug: 's' }], error: null } })

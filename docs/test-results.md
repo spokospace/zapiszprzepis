@@ -4,6 +4,21 @@ Dziennik pomiarów produkcji i prób rozwiązań. Nowe wpisy na górze, godziny 
 
 Przed porównywaniem liczb: testy obciążeniowe rozdzielaj co najmniej 30 cichymi minutami, bo błędy trwają dłużej niż samo obciążenie. Pomiary zrobione kilka minut po sobie nie są porównywalne.
 
+## 2026-11-24
+
+### Kategorie jako pliki: sprawdzenie na kopii bazy, bez Workera (#739, PR #777)
+
+**Co:** czy strona kategorii z PR #777 działa jako sam plik, z filtrami i stronami w przeglądarce, zanim Supabase zostanie odblokowany (REST nadal 402).
+
+**Jak:** lokalna atrapa PostgREST podająca 932 przepisy z kopii bazy z 2026-11-12; `next build` i `scripts/export-recipe-files.mjs` z adresem atrapy; potem serwer, który podaje wyłącznie pliki (`public/**` i `/_next/static`), a na wszystko inne odpowiada 503 i to loguje. Przeglądarka: desktop i 375 px.
+
+**Wynik:**
+- Eksport: 932 z 932 przepisów i 13 z 13 kategorii zapisane w 28 s. `ciasta.html` ma 288 KB (32 KB gzip) przy 211 KB (18 KB gzip) dzisiejszej strony z Workera; zawiera 24 karty i 224 linki do pozostałych przepisów w `<noscript>`.
+- Z samego pliku: wejście z `?tag=kruche` pokazuje 48 przepisów, drugi chip zawęża do 2, „Wyczyść” wraca do 248, „Pokaż kolejne” daje 48 kart i adres `?strona=2`, wstecz i dalej przywracają poprzednie widoki. `?strona=99` pokazuje całą kategorię, nieznany tag jest pomijany. Bez błędów w konsoli poza zdjęciami, bez przewijania w poziomie przy 375 px.
+- Jedyne żądania, które wymagały Workera, to `/_next/image` (zdjęcia kart) i `favicon.ico`. Żadnego żądania o dane ani RSC.
+
+**Czego to nie dowodzi:** atrapa obsługuje tylko zapytania tej strony, więc nie sprawdza prawdziwego PostgREST ani RLS. Pliki podawał lokalny serwer, nie zasoby Cloudflare, więc po buildzie `master` trzeba potwierdzić brak wywołań Workera na produkcji. Zdjęcia kart nadal idą przez Workera (jak na każdej stronie), więc kategoria nie zależy od bazy, ale zdjęcia zależą od Workera. Przy wejściu z filtrem w adresie przez chwilę widać listę bez filtra, zanim wczyta się JS.
+
 ## 2026-11-11
 
 ### Awaria: build przy zablokowanym Supabase usunął pliki przepisów (23:51–00:05 UTC)

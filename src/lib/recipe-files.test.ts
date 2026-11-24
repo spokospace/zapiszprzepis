@@ -4,13 +4,16 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   clearDataCache,
+  exportCategoryPages,
   exportHomePage,
+  recipeCategories,
   exportRecipeFiles,
   exportSearchPage,
   exportShortfall,
   versionToSave,
   warsawDay,
 } from '../../scripts/export-recipe-files.mjs'
+import { RECIPE_CATEGORIES } from './recipe-categories'
 
 const PAGE = '<html><script type="application/ld+json">{"@type":"Recipe"}</script></html>'
 
@@ -66,6 +69,55 @@ describe('exportHomePage', () => {
     writeFileSync(join(dir, 'public/index.html'), 'old')
     expect(await exportHomePage(fetchPage, dir)).toBe(false)
     expect(existsSync(join(dir, 'public/index.html'))).toBe(false)
+    rmSync(dir, { recursive: true })
+  })
+})
+
+describe('recipeCategories', () => {
+  it('lists the same categories as RECIPE_CATEGORIES, in order', () => {
+    expect(recipeCategories()).toEqual(RECIPE_CATEGORIES.map((c) => c.value))
+  })
+})
+
+describe('exportCategoryPages', () => {
+  const root = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'category-files-'))
+    mkdirSync(join(dir, 'public'))
+    return dir
+  }
+  const page = (category: string) => `<html><main data-category-page="${category}"></main></html>`
+
+  it('saves each finished category page under its value', async () => {
+    const dir = root()
+    const saved = await exportCategoryPages(['zupy', 'ciasta'], async (c: string) => ({ status: 200, html: page(c) }), dir)
+    expect(saved).toEqual(['zupy', 'ciasta'])
+    expect(readFileSync(join(dir, 'public/przepisy/zupy.html'), 'utf8')).toBe(page('zupy'))
+    rmSync(dir, { recursive: true })
+  })
+
+  it('leaves on the Worker an error page, another page, a cut-off page and a failed request', async () => {
+    const dir = root()
+    const pages: Record<string, { status: number; html: string }> = {
+      zupy: { status: 500, html: page('zupy') },
+      ciasta: { status: 200, html: page('obiady') },
+      salatki: { status: 200, html: page('salatki').replace('</html>', '') },
+      obiady: { status: 200, html: page('obiady') },
+    }
+    const fetchPage = async (c: string) => {
+      if (c === 'napoje') throw new Error('refused')
+      return pages[c]
+    }
+    expect(await exportCategoryPages(['zupy', 'ciasta', 'salatki', 'napoje', 'obiady'], fetchPage, dir)).toEqual(['obiady'])
+    expect(readdirSync(join(dir, 'public/przepisy'))).toEqual(['obiady.html'])
+    rmSync(dir, { recursive: true })
+  })
+
+  it('removes the files of an earlier build', async () => {
+    const dir = root()
+    mkdirSync(join(dir, 'public/przepisy'))
+    writeFileSync(join(dir, 'public/przepisy/stara.html'), 'old')
+    expect(await exportCategoryPages([], async () => null, dir)).toEqual([])
+    expect(existsSync(join(dir, 'public/przepisy'))).toBe(false)
     rmSync(dir, { recursive: true })
   })
 })
